@@ -128,6 +128,10 @@ if(HP_PHYSFS_VENDORED)
 
     add_subdirectory("${HP_ROOT_PATH}/external/physfs")
 
+    set_target_properties(physfs PROPERTIES
+        COMPILE_OPTIONS "-D_POSIX_C_SOURCE=200809L"
+    )
+
     list(APPEND HP_EXTERNAL_INSTALL_TARGETS "physfs")
     list(APPEND HP_EXTERNAL_LIBS "physfs")
 
