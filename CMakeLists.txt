@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(hyperion VERSION 0.1.0 LANGUAGES C CXX)
 
-# Used standard declaration
+# Used language standards
 
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_EXTENSIONS OFF)
@@ -226,6 +226,10 @@ if(HP_ASSIMP_VENDORED)
 
     list(APPEND HP_EXTERNAL_INSTALL_TARGETS "assimp")
     list(APPEND HP_EXTERNAL_LIBS "assimp")
+
+    if(ASSIMP_BUILD_ZLIB)
+        list(APPEND HP_EXTERNAL_INSTALL_TARGETS "zlibstatic")
+    endif()
 
 elseif()
     find_package(assimp REQUIRED)
