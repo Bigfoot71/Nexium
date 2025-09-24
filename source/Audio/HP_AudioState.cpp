@@ -24,6 +24,7 @@
 #include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_timer.h>
 #include <algorithm>
+#include <stdexcept>    //< Only for initialization errors
 
 /* === DR WAV Implementation === */
 
