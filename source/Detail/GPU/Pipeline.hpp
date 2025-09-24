@@ -113,7 +113,7 @@ public:
 
     void useProgram(const Program& program) const noexcept;
 
-    void setUniformUint1(int location, uint value) const noexcept;
+    void setUniformUint1(int location, uint32_t value) const noexcept;
     void setUniformUint2(int location, const HP_IVec2& value) const noexcept;
     void setUniformUint3(int location, const HP_IVec3& value) const noexcept;
     void setUniformUint4(int location, const HP_IVec4& value) const noexcept;
@@ -463,7 +463,7 @@ inline void Pipeline::useProgram(const Program& program) const noexcept
     }
 }
 
-inline void Pipeline::setUniformUint1(int location, uint value) const noexcept
+inline void Pipeline::setUniformUint1(int location, uint32_t value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setUint1(location, value);

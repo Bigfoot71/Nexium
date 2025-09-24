@@ -60,7 +60,7 @@ private:
     friend class Pipeline;
 
 private:
-    void setUint1(int location, uint value) const noexcept;
+    void setUint1(int location, uint32_t value) const noexcept;
     void setUint2(int location, const HP_IVec2& value) const noexcept;
     void setUint3(int location, const HP_IVec3& value) const noexcept;
     void setUint4(int location, const HP_IVec4& value) const noexcept;
@@ -194,7 +194,7 @@ inline GLuint Program::id() const noexcept
 
 /* === Private Implementation === */
 
-inline void Program::setUint1(int location, uint value) const noexcept
+inline void Program::setUint1(int location, uint32_t value) const noexcept
 {
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(value));
@@ -206,9 +206,9 @@ inline void Program::setUint2(int location, const HP_IVec2& value) const noexcep
 {
     SDL_assert(value.x > 0 && value.y > 0);
 
-    uint v[2] = {
-        static_cast<uint>(value.x),
-        static_cast<uint>(value.y)
+    uint32_t v[2] = {
+        static_cast<uint32_t>(value.x),
+        static_cast<uint32_t>(value.y)
     };
 
     if (std::memcmp(mUniformCache[location].data(), v, sizeof(v)) != 0) {
@@ -221,10 +221,10 @@ inline void Program::setUint3(int location, const HP_IVec3& value) const noexcep
 {
     SDL_assert(value.x >= 0 && value.y >= 0 && value.z >= 0);
 
-    uint v[3] = {
-        static_cast<uint>(value.x),
-        static_cast<uint>(value.y),
-        static_cast<uint>(value.z)
+    uint32_t v[3] = {
+        static_cast<uint32_t>(value.x),
+        static_cast<uint32_t>(value.y),
+        static_cast<uint32_t>(value.z)
     };
 
     if (std::memcmp(mUniformCache[location].data(), v, sizeof(v)) != 0) {
@@ -237,11 +237,11 @@ inline void Program::setUint4(int location, const HP_IVec4& value) const noexcep
 {
     SDL_assert(value.x >= 0 && value.y >= 0 && value.z >= 0 && value.w >= 0);
 
-    uint v[4] = {
-        static_cast<uint>(value.x),
-        static_cast<uint>(value.y),
-        static_cast<uint>(value.z),
-        static_cast<uint>(value.w)
+    uint32_t v[4] = {
+        static_cast<uint32_t>(value.x),
+        static_cast<uint32_t>(value.y),
+        static_cast<uint32_t>(value.z),
+        static_cast<uint32_t>(value.w)
     };
 
     if (std::memcmp(mUniformCache[location].data(), v, sizeof(v)) != 0) {
