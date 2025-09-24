@@ -1,0 +1,240 @@
+/**
+ * Copyright (c) 2025 Le Juez Victor
+ *
+ * This software is provided "as-is", without any express or implied warranty. In no event
+ * will the authors be held liable for any damages arising from the use of this software.
+ *
+ * Permission is granted to anyone to use this software for any purpose, including commercial
+ * applications, and to alter it and redistribute it freely, subject to the following restrictions:
+ *
+ *   1. The origin of this software must not be misrepresented; you must not claim that you
+ *   wrote the original software. If you use this software in a product, an acknowledgment
+ *   in the product documentation would be appreciated but is not required.
+ *
+ *   2. Altered source versions must be plainly marked as such, and must not be misrepresented
+ *   as being the original software.
+ *
+ *   3. This notice may not be removed or altered from any source distribution.
+ */
+
+#ifndef HP_SCENE_LIGHT_MANAGER_HPP
+#define HP_SCENE_LIGHT_MANAGER_HPP
+
+#include <Hyperion/HP_Render.h>
+
+#include "../../Detail/Util/ObjectPool.hpp"
+#include "../../Detail/GPU/Texture.hpp"
+#include "../../Detail/GPU/Buffer.hpp"
+#include "./BoneBufferManager.hpp"
+#include "./ProgramCache.hpp"
+#include "./ViewFrustum.hpp"
+#include "../HP_Light.hpp"
+#include "./DrawCall.hpp"
+
+namespace scene {
+
+/* === Declaration === */
+
+class LightManager {
+public:
+    struct ProcessParams {
+        ProgramCache& programs;
+        const ViewFrustum& viewFrustum;
+        const gpu::Texture& textureWhite;
+        const HP_Environment& environement;
+        const BoneBufferManager& boneBuffer;
+        const BucketDrawCalls& drawCalls;
+        const ArrayDrawData& drawData;
+    };
+
+public:
+    LightManager(HP_IVec2 resolution, int shadowRes);
+
+    /** Light life-cycle management */
+    HP_Light* create(HP_LightType type);
+    void destroy(HP_Light* light);
+
+    /** Lighting state update */
+    void process(const ProcessParams& params);
+
+    /** Buffers and textures getters */
+    const gpu::Buffer& lightsBuffer() const;
+    const gpu::Buffer& shadowBuffer() const;
+    const gpu::Buffer& tilesBuffer() const;
+    const gpu::Buffer& indexBuffer() const;
+    const gpu::Texture& shadowCube() const;
+    const gpu::Texture& shadow2D() const;
+
+    /** Info getters */
+    int activeCount() const;
+    HP_IVec2 clusterSize() const;
+    HP_IVec3 clusterCount() const;
+    int maxLightsPerCluster() const;
+    float clusterSliceScale() const;
+    float clusterSliceBias() const;
+    int shadowResolution() const;
+
+    /** State management */
+    void markShadowDirty();
+    void markLightDirty();
+
+private:
+    /** Process functions */
+    void updateState(const ProcessParams& params);
+    void uploadActive(const ProcessParams& params);
+    void computeClusters(const ProcessParams& params);
+    void renderShadowMaps(const ProcessParams& params);
+
+private:
+    static constexpr float SlicesPerDepthOctave = 3.0f;     ///< Number of depth slices per depth octave
+    static constexpr int MaxLightsPerCluster = 32;          ///< Maximum number of lights in a single cluster
+
+private:
+    /* --- Object Pools --- */
+
+    util::ObjectPool<HP_Light, 32> mLights{};
+
+    /* --- Shadow Framebuffers and Targets --- */
+
+    gpu::Framebuffer mFramebufferShadowCube{};
+    gpu::Framebuffer mFramebufferShadow2D{};
+    gpu::Texture mShadowMapCubeArray{};         ///< Contient les distances mondiales dans des cubemaps
+    gpu::Texture mShadowMap2DArray{};           ///< Contient les distances mondiales dans des texture 2D
+    gpu::Texture mShadowDepth{};                ///< Depth buffer commun pour le depth testing (TODO: En faire un renderbuffer)
+
+    /* --- Storage Buffers --- */
+
+    gpu::Buffer mStorageLights{};               ///< Storage contenant les lumieres
+    gpu::Buffer mStorageShadow{};               ///< Storage contenant les indices de layer de shadow map pour chaque lumiere
+    gpu::Buffer mStorageClusters{};             ///< Storage contenant les tuiles (nombre de lumiere par tuile)
+    gpu::Buffer mStorageIndex{};                ///< Storage contenant les indices de lumieres pour chaque tuile
+    gpu::Buffer mStorageClusterAABB{};          ///< Storage contenant les AABB des clusters (calculé lors du light culling GPU, pourrait etre utile plus tard)
+
+    /* --- Additionnal Data --- */
+
+    int mShadowResolution{};
+
+    HP_IVec3 mClusterCount{};                   ///< Nombre de cluster X/Y/Z
+    HP_IVec2 mClusterSize{};                    ///< Taille d'un cluster X/Y
+
+    float mClusterSliceScale{};
+    float mClusterSliceBias{};
+
+    int mActiveLightCount{0};
+    int mActiveShadow2DCount{0};
+    int mActiveShadowCubeCount{0};
+
+    bool mLightDirty{false};                    //< Indicates if the state of active lights has changed, this tells us to re-upload them
+    bool mShadowDirty{false};                   //< Indicates if the state of active shadows has changed, this tells us to re-upload them
+};
+
+/* === Public Implementation === */
+
+inline HP_Light* LightManager::create(HP_LightType type)
+{
+    return mLights.create(*this, type);
+}
+
+inline void LightManager::destroy(HP_Light* light)
+{
+    if (light != nullptr) {
+        if (light->isActive()) {
+            mShadowDirty = true;
+            mLightDirty = true;
+        }
+        mLights.destroy(light);
+    }
+}
+
+inline void LightManager::process(const ProcessParams& params)
+{
+    updateState(params);
+    uploadActive(params);
+    computeClusters(params);
+    renderShadowMaps(params);
+}
+
+inline const gpu::Buffer& LightManager::lightsBuffer() const
+{
+    return mStorageLights;
+}
+
+inline const gpu::Buffer& LightManager::shadowBuffer() const
+{
+    return mStorageShadow;
+}
+
+inline const gpu::Buffer& LightManager::tilesBuffer() const
+{
+    return mStorageClusters;
+}
+
+inline const gpu::Buffer& LightManager::indexBuffer() const
+{
+    return mStorageIndex;
+}
+
+inline const gpu::Texture& LightManager::shadowCube() const
+{
+    return mShadowMapCubeArray;
+}
+
+inline const gpu::Texture& LightManager::shadow2D() const
+{
+    return mShadowMap2DArray;
+}
+
+inline int LightManager::activeCount() const
+{
+    return mActiveLightCount;
+}
+
+inline HP_IVec2 LightManager::clusterSize() const
+{
+    return mClusterSize;
+}
+
+inline HP_IVec3 LightManager::clusterCount() const
+{
+    return mClusterCount;
+}
+
+inline int LightManager::maxLightsPerCluster() const
+{
+    return MaxLightsPerCluster;
+}
+
+inline float LightManager::clusterSliceScale() const
+{
+    return mClusterSliceScale;
+}
+
+inline float LightManager::clusterSliceBias() const
+{
+    return mClusterSliceBias;
+}
+
+inline int LightManager::shadowResolution() const
+{
+    return mShadowResolution;
+}
+
+inline void LightManager::markShadowDirty()
+{
+    if (!mShadowDirty) {
+        HP_INTERNAL_LOG(V, "RENDER: Shadows have been marked dirty to the LightManager");
+        mShadowDirty = true;
+    }
+}
+
+inline void LightManager::markLightDirty()
+{
+    if (!mLightDirty) {
+        HP_INTERNAL_LOG(V, "RENDER: Lights have been marked dirty to the LightManager");
+        mLightDirty = true;
+    }
+}
+
+} // namespace scene
+
+#endif // HP_SCENE_LIGHT_MANAGER_HPP

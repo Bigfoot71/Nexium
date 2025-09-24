@@ -1,0 +1,447 @@
+cmake_minimum_required(VERSION 3.20)
+project(hyperion VERSION 0.1.0 LANGUAGES C CXX)
+
+# Used standard declaration
+
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Hot reload for MSVC compilers if supported
+
+if(POLICY CMP0141)
+    cmake_policy(SET CMP0141 NEW)
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
+endif()
+
+# Determine the project's root directory and check if it's the main project
+
+set(HP_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(HP_IS_MAIN ON)
+else()
+    set(HP_IS_MAIN OFF)
+endif()
+
+# Hyperion build config options
+
+option(HP_BUILD_TESTS "Enable building tests" ${HP_IS_MAIN})
+option(HP_BUILD_DOCS "Build documentation with Doxygen" ${HP_IS_MAIN})
+
+option(HP_BUILD_SHARED "Build Hyperion as a shared library" OFF)
+option(HP_INSTALL "Enable installation of the Hyperion library" ${HP_IS_MAIN})
+
+option(HP_SDL3_VENDORED "Build SDL3 from vendored submodule" OFF)
+option(HP_PHYSFS_VENDORED "Build PhysFS from vendored submodule" OFF)
+option(HP_FREETYPE_VENDORED "Build Freetype from vendored submodule" OFF)
+option(HP_ASSIMP_VENDORED "Build Assimp from vendored submodule" OFF)
+
+# Shared build setup
+
+if(HP_BUILD_SHARED)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    add_definitions(-DHP_BUILD_SHARED)
+endif()
+
+# Set the cmake module path
+
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# Include standard cmake scripts
+
+include(CheckLibraryExists)
+include(EmbedShaders)
+include(EmbedAssets)
+
+# External dependencies
+
+set(HP_EXTERNAL_INSTALL_TARGETS "")
+set(HP_EXTERNAL_LIBS "")
+
+# Configure SDL
+
+if(HP_SDL3_VENDORED)
+
+    set(SDL_SHARED          ON CACHE BOOL "")
+
+    set(SDL_STATIC          OFF CACHE BOOL "")
+    set(SDL_INSTALL         OFF CACHE BOOL "")
+    set(SDL_EXAMPLES        OFF CACHE BOOL "")
+    set(SDL_TEST_LIBRARY    OFF CACHE BOOL "")
+
+    set(SDL_VIDEO           ON CACHE BOOL "")
+    set(SDL_AUDIO           ON CACHE BOOL "")
+    set(SDL_JOYSTICK        ON CACHE BOOL "")
+    set(SDL_OPENGL          ON CACHE BOOL "")
+
+    set(SDL_DIALOG          OFF CACHE BOOL "")
+    set(SDL_RENDER          OFF CACHE BOOL "")
+    set(SDL_CAMERA          OFF CACHE BOOL "")
+    set(SDL_HAPTIC          OFF CACHE BOOL "")
+    set(SDL_POWER           OFF CACHE BOOL "")
+    set(SDL_SENSOR          OFF CACHE BOOL "")
+    set(SDL_GPU             OFF CACHE BOOL "")
+    set(SDL_VULKAN          OFF CACHE BOOL "")
+    set(SDL_DIRECTX         OFF CACHE BOOL "")
+    set(SDL_OPENGLES        OFF CACHE BOOL "")
+    set(SDL_OFFSCREEN       OFF CACHE BOOL "")
+
+    add_subdirectory("${HP_ROOT_PATH}/external/SDL")
+
+    list(APPEND HP_EXTERNAL_INSTALL_TARGETS "SDL3_Headers")
+    list(APPEND HP_EXTERNAL_INSTALL_TARGETS "SDL3-shared")
+    list(APPEND HP_EXTERNAL_LIBS "SDL3::SDL3")
+
+else()
+    find_package(SDL3 REQUIRED)
+    list(APPEND HP_EXTERNAL_LIBS "SDL3::SDL3")
+endif()
+
+# Configure PhysFS
+
+if(HP_PHYSFS_VENDORED)
+
+    set(PHYSFS_BUILD_SHARED             ON CACHE BOOL "")
+
+    set(PHYSFS_BUILD_STATIC             OFF CACHE BOOL "")
+    set(PHYSFS_BUILD_TEST               OFF CACHE BOOL "")
+    set(PHYSFS_DISABLE_INSTALL          OFF CACHE BOOL "")
+    set(PHYSFS_BUILD_DOCS               OFF CACHE BOOL "")
+
+    set(PHYSFS_ARCHIVE_ZIP              ON CACHE BOOL "")
+    set(PHYSFS_ARCHIVE_7Z               ON CACHE BOOL "")
+    set(PHYSFS_ARCHIVE_GRP              OFF CACHE BOOL "")
+    set(PHYSFS_ARCHIVE_WAD              OFF CACHE BOOL "")
+    set(PHYSFS_ARCHIVE_CSM              OFF CACHE BOOL "")
+    set(PHYSFS_ARCHIVE_HOG              OFF CACHE BOOL "")
+    set(PHYSFS_ARCHIVE_MVL              OFF CACHE BOOL "")
+    set(PHYSFS_ARCHIVE_QPAK             OFF CACHE BOOL "")
+    set(PHYSFS_ARCHIVE_SLB              OFF CACHE BOOL "")
+    set(PHYSFS_ARCHIVE_ISO9660          OFF CACHE BOOL "")
+    set(PHYSFS_ARCHIVE_VDF              OFF CACHE BOOL "")
+    set(PHYSFS_ARCHIVE_LECARCHIVES      OFF CACHE BOOL "")
+
+    add_subdirectory("${HP_ROOT_PATH}/external/physfs")
+
+    list(APPEND HP_EXTERNAL_INSTALL_TARGETS "physfs")
+    list(APPEND HP_EXTERNAL_LIBS "physfs")
+
+else()
+    find_package(PhysFS REQUIRED)
+    list(APPEND HP_EXTERNAL_LIBS "PhysFS::PhysFS")
+endif()
+
+# Configure FreeType
+
+if(HP_FREETYPE_VENDORED)
+
+    set(FT_DISABLE_ZLIB                 ON CACHE BOOL "")
+    set(FT_DISABLE_BZIP2                ON CACHE BOOL "")
+    set(FT_DISABLE_PNG                  ON CACHE BOOL "")
+    set(FT_DISABLE_HARFBUZZ             ON CACHE BOOL "")
+    set(FT_DISABLE_BROTLI               ON CACHE BOOL "")
+
+    add_subdirectory("${HP_ROOT_PATH}/external/freetype")
+
+    list(APPEND HP_EXTERNAL_INSTALL_TARGETS "freetype")
+    list(APPEND HP_EXTERNAL_LIBS "freetype")
+
+else()
+    find_package(Freetype REQUIRED)
+    list(APPEND HP_EXTERNAL_LIBS "Freetype::Freetype")
+endif()
+
+# Configure Assimp
+
+if(HP_ASSIMP_VENDORED)
+
+    set(ASSIMP_INJECT_DEBUG_POSTFIX     OFF CACHE BOOL "")
+    set(ASSIMP_WARNINGS_AS_ERRORS       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_TESTS              OFF CACHE BOOL "")
+    set(ASSIMP_INSTALL                  OFF CACHE BOOL "")
+
+    set(ASSIMP_IGNORE_GIT_HASH          ON CACHE BOOL "")
+    set(ASSIMP_NO_EXPORT                ON CACHE BOOL "")
+
+    set(ASSIMP_BUILD_COLLADA_IMPORTER   ON CACHE BOOL "")
+    set(ASSIMP_BUILD_GLTF_IMPORTER      ON CACHE BOOL "")
+    set(ASSIMP_BUILD_OBJ_IMPORTER       ON CACHE BOOL "")
+    set(ASSIMP_BUILD_FBX_IMPORTER       ON CACHE BOOL "")
+
+    set(ASSIMP_BUILD_IQM_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_M3D_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_AMF_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_BVH_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_OFF_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_COB_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_STL_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_3DS_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_AC_IMPORTER        OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_ASE_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_ASSBIN_IMPORTER    OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_B3D_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_DXF_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_CSM_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_HMP_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_IRRMESH_IMPORTER   OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_IRR_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_LWO_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_LWS_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_MD2_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_MD3_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_MD5_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_MDC_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_MDL_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_NFF_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_NDO_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_OGRE_IMPORTER      OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_OPENGEX_IMPORTER   OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_PLY_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_MS3D_IMPORTER      OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_BLEND_IMPORTER     OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_IFC_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_XGL_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_Q3D_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_Q3BSP_IMPORTER     OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_RAW_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_SIB_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_SMD_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_TERRAGEN_IMPORTER  OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_3D_IMPORTER        OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_X_IMPORTER         OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_X3D_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_3MF_IMPORTER       OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_MMD_IMPORTER       OFF CACHE BOOL "")
+
+    add_subdirectory("${HP_ROOT_PATH}/external/assimp")
+
+    list(APPEND HP_EXTERNAL_INSTALL_TARGETS "assimp")
+    list(APPEND HP_EXTERNAL_LIBS "assimp")
+
+elseif()
+    find_package(assimp REQUIRED)
+    list(APPEND HP_EXTERNAL_LIBS "assimp::assimp")
+endif()
+
+# List all the Hyperion sources
+
+set(HP_SOURCES
+
+    "${HP_ROOT_PATH}/source/Detail/GPU/VertexArray.cpp"
+    "${HP_ROOT_PATH}/source/Detail/GPU/Framebuffer.cpp"
+    "${HP_ROOT_PATH}/source/Detail/GPU/Texture.cpp"
+    "${HP_ROOT_PATH}/source/Detail/GPU/Buffer.cpp"
+    "${HP_ROOT_PATH}/source/Detail/Helper.cpp"
+
+    "${HP_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelAnimation.cpp"
+    "${HP_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelMaterial.cpp"
+    "${HP_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelMesh.cpp"
+    "${HP_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelBone.cpp"
+    "${HP_ROOT_PATH}/source/Render/Core/SharedAssets.cpp"
+    "${HP_ROOT_PATH}/source/Render/Core/PoolCubemap.cpp"
+    "${HP_ROOT_PATH}/source/Render/Core/PoolModel.cpp"
+
+    "${HP_ROOT_PATH}/source/Render/Overlay/Overlay.cpp"
+
+    "${HP_ROOT_PATH}/source/Render/Scene/SharedAssets.cpp"
+    "${HP_ROOT_PATH}/source/Render/Scene/ProgramCache.cpp"
+    "${HP_ROOT_PATH}/source/Render/Scene/LightManager.cpp"
+    "${HP_ROOT_PATH}/source/Render/Scene/Scene.cpp"
+
+    "${HP_ROOT_PATH}/source/Render/HP_ReflectionProbe.cpp"
+    "${HP_ROOT_PATH}/source/Render/HP_Cubemap.cpp"
+    "${HP_ROOT_PATH}/source/Render/HP_Light.cpp"
+    "${HP_ROOT_PATH}/source/Render/HP_Font.cpp"
+
+    "${HP_ROOT_PATH}/source/Audio/HP_AudioStream.cpp"
+    "${HP_ROOT_PATH}/source/Audio/HP_AudioState.cpp"
+    "${HP_ROOT_PATH}/source/Audio/HP_AudioClip.cpp"
+
+    "${HP_ROOT_PATH}/source/Core/HP_CoreState.cpp"
+
+    "${HP_ROOT_PATH}/source/HP_Codepoint.c"
+    "${HP_ROOT_PATH}/source/HP_Render.cpp"
+    "${HP_ROOT_PATH}/source/HP_Audio.cpp"
+    "${HP_ROOT_PATH}/source/HP_Core.cpp"
+    "${HP_ROOT_PATH}/source/HP_Init.cpp"
+    "${HP_ROOT_PATH}/source/HP_Rand.cpp"
+    "${HP_ROOT_PATH}/source/HP_Image.c"
+    "${HP_ROOT_PATH}/source/HP_Math.c"
+
+)
+
+# Create the Hyperion library target
+
+if(HP_BUILD_SHARED)
+    add_library("${PROJECT_NAME}" SHARED ${HP_SOURCES})
+else()
+    add_library("${PROJECT_NAME}" STATIC ${HP_SOURCES})
+endif()
+
+# Link private deps to Hyperion
+
+target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+        ${HP_EXTERNAL_LIBS}
+)
+
+# Adding external sources to Hyperion
+
+target_sources(${PROJECT_NAME}
+    PRIVATE
+        "${HP_ROOT_PATH}/external/glad/src/gles2.c"
+        "${HP_ROOT_PATH}/external/mojoAL/mojoal.c"
+)
+
+# Embed shaders
+
+embed_assets(${PROJECT_NAME}
+    "${HP_ROOT_PATH}/assets/brdf_lut_512_rg16_float.raw"
+    "${HP_ROOT_PATH}/assets/font.ttf"
+)
+
+embed_shaders(${PROJECT_NAME}
+    "${HP_ROOT_PATH}/shaders/common/screen.vert"
+    "${HP_ROOT_PATH}/shaders/common/cube.vert"
+    "${HP_ROOT_PATH}/shaders/process/cubemap_from_equirectangular.frag"
+    "${HP_ROOT_PATH}/shaders/process/cubemap_irradiance.frag"
+    "${HP_ROOT_PATH}/shaders/process/cubemap_prefilter.frag"
+    "${HP_ROOT_PATH}/shaders/overlay/generic.vert"
+    "${HP_ROOT_PATH}/shaders/overlay/generic.frag"
+    "${HP_ROOT_PATH}/shaders/overlay/overlay.frag"
+    "${HP_ROOT_PATH}/shaders/scene/light_culling.comp"
+    "${HP_ROOT_PATH}/shaders/scene/skybox.vert"
+    "${HP_ROOT_PATH}/shaders/scene/skybox.frag"
+    "${HP_ROOT_PATH}/shaders/scene/forward.vert"
+    "${HP_ROOT_PATH}/shaders/scene/forward.frag"
+    "${HP_ROOT_PATH}/shaders/scene/shadow.vert"
+    "${HP_ROOT_PATH}/shaders/scene/shadow.frag"
+    "${HP_ROOT_PATH}/shaders/scene/output.frag"
+)
+
+# Specify the include directories
+
+target_include_directories(${PROJECT_NAME}
+    PUBLIC
+        $<BUILD_INTERFACE:${HP_ROOT_PATH}/include>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        "${CMAKE_CURRENT_BINARY_DIR}/external/assimp/include"
+        "${HP_ROOT_PATH}/external/freetype/include"
+        "${HP_ROOT_PATH}/external/assimp/include"
+        "${HP_ROOT_PATH}/external/FP16/include"
+        "${HP_ROOT_PATH}/external/glad/include"
+        "${HP_ROOT_PATH}/external/SDL/include"
+        "${HP_ROOT_PATH}/external/physfs/src"
+        "${HP_ROOT_PATH}/external/mojoAL/AL"
+        "${HP_ROOT_PATH}/external/dr_libs"
+        "${HP_ROOT_PATH}/external/stb"
+)
+
+# Link external dependencies
+
+check_library_exists(m cos "" HP_HAVE_LIB_M)
+
+if(HP_HAVE_LIB_M)
+    target_link_libraries(${PROJECT_NAME} PUBLIC m)
+endif()
+
+# Plateform configuration
+
+if(WIN32)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC HP_PLATFORM_WINDOWS)
+elseif(APPLE)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC HP_PLATFORM_MACOS)
+elseif(ANDROID)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC HP_PLATFORM_ANDROID)
+elseif(UNIX)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC HP_PLATFORM_LINUX)
+endif()
+
+# Build documentation
+
+if(HP_BUILD_DOXYGEN)
+    find_package(Doxygen REQUIRED)
+
+    set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+    set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+    configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+
+    add_custom_target(docs
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating API documentation with Doxygen"
+        VERBATIM
+    )
+endif()
+
+# Install configuration
+
+if(HP_INSTALL)
+
+    include(GNUInstallDirs)
+
+    # Installing the library (static or shared)
+    install(TARGETS ${PROJECT_NAME}
+        EXPORT HyperionTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+    # Installing vendored dependencies
+    install(TARGETS ${HP_EXTERNAL_INSTALL_TARGETS}
+        EXPORT HyperionTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+
+    # Installing public headers
+    install(DIRECTORY "${HP_ROOT_PATH}/include/"
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        FILES_MATCHING PATTERN "*.h"
+    )
+
+    # Export for find_package
+    install(EXPORT HyperionTargets
+        FILE HyperionTargets.cmake
+        NAMESPACE hyperion::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/hyperion
+    )
+
+    # Minimal config for find_package
+    include(CMakePackageConfigHelpers)
+
+    write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/HyperionConfigVersion.cmake"
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY AnyNewerVersion
+    )
+
+    configure_package_config_file(
+        "${HP_ROOT_PATH}/cmake/HyperionConfig.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/HyperionConfig.cmake"
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/hyperion
+    )
+
+    install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/HyperionConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/HyperionConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/hyperion
+    )
+
+endif()
+
+# Example configuration
+
+if(HP_BUILD_TESTS)
+    include("${HP_ROOT_PATH}/tests/CMakeLists.txt")
+endif()

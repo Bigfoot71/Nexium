@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(SDL3 REQUIRED)
+find_dependency(physfs REQUIRED)
+find_dependency(freetype REQUIRED)
+find_dependency(assimp REQUIRED)
+
+include("${CMAKE_CURRENT_LIST_DIR}/HyperionTargets.cmake")

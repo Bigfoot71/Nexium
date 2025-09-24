@@ -1,0 +1,252 @@
+/**
+ * Copyright (c) 2025 Le Juez Victor
+ *
+ * This software is provided "as-is", without any express or implied warranty. In no event
+ * will the authors be held liable for any damages arising from the use of this software.
+ *
+ * Permission is granted to anyone to use this software for any purpose, including commercial
+ * applications, and to alter it and redistribute it freely, subject to the following restrictions:
+ *
+ *   1. The origin of this software must not be misrepresented; you must not claim that you
+ *   wrote the original software. If you use this software in a product, an acknowledgment
+ *   in the product documentation would be appreciated but is not required.
+ *
+ *   2. Altered source versions must be plainly marked as such, and must not be misrepresented
+ *   as being the original software.
+ *
+ *   3. This notice may not be removed or altered from any source distribution.
+ */
+
+/* === Profile Specific === */
+
+#ifdef GL_ES
+precision highp float;
+#endif
+
+/* === Includes === */
+
+#include "../include/lights.glsl"
+
+/* === Storage Buffers === */
+
+layout(std430, binding = 0) buffer LightBuffer {
+    Light sLights[];
+};
+
+layout(std430, binding = 1) buffer ClusterBuffer {
+    uint sClusters[]; //< Contains number of lights for each cluster
+};
+
+layout(std430, binding = 2) buffer IndexBuffer {
+    uint sIndices[]; //< Contains the light indices for each cluster
+};
+
+layout(std430, binding = 3) buffer ClusterAABBBuffer {
+    Cluster sClusterAABBs[]; //< Contains AABB for each cluster
+};
+
+/* === Uniform Buffers === */
+
+layout(std140, binding = 0) uniform ViewFrustum {
+    mat4 viewProj;
+    mat4 view;
+    mat4 proj;
+    mat4 invViewProj;
+    mat4 invView;
+    mat4 invProj;
+    vec3 position;
+    uint cullMask;
+    float near;
+    float far;
+} uFrustum;
+
+/* === Uniforms === */
+
+layout(location = 0) uniform uvec3 uClusterCount;
+layout(location = 1) uniform float uClusterSliceScale;
+layout(location = 2) uniform float uClusterSliceBias;
+
+layout(location = 3) uniform uint uNumLights;
+layout(location = 4) uniform uint uMaxLightsPerCluster;
+
+/* === Helper Functions === */
+
+void ClusterBounds(uvec3 clusterCoord, out vec3 minBounds, out vec3 maxBounds)
+{
+    // XY -> NDC
+    vec2 texMin = vec2(clusterCoord.xy) / vec2(uClusterCount.xy);
+    vec2 texMax = vec2(clusterCoord.xy + 1u) / vec2(uClusterCount.xy);
+    vec2 ndcMin = texMin * 2.0 - 1.0;
+    vec2 ndcMax = texMax * 2.0 - 1.0;
+
+    // Z slice -> view space depth
+    float zNearSlice = exp2((float(clusterCoord.z) - uClusterSliceBias) / uClusterSliceScale);
+    float zFarSlice  = exp2((float(clusterCoord.z+1u) - uClusterSliceBias) / uClusterSliceScale);
+    float viewZNear = -zNearSlice;
+    float viewZFar  = -zFarSlice;
+
+    // 4 corners in NDC (X,Y), Z = 1 because we’ll rescale in view space
+    vec4 ndcCorners[4] = vec4[4](
+        vec4(ndcMin.x, ndcMin.y, 1.0, 1.0),
+        vec4(ndcMax.x, ndcMin.y, 1.0, 1.0),
+        vec4(ndcMin.x, ndcMax.y, 1.0, 1.0),
+        vec4(ndcMax.x, ndcMax.y, 1.0, 1.0)
+    );
+
+    // Init bounds
+    minBounds = vec3( 1e20);
+    maxBounds = vec3(-1e20);
+
+    // Helper
+    for (int i = 0; i < 4; ++i) {
+        // Back-project corner into view space
+        vec4 v = uFrustum.invProj * ndcCorners[i];
+        v /= v.w;
+
+        // Scale to near/far slice depth
+        vec3 cNear = v.xyz * (viewZNear / v.z);
+        vec3 cFar  = v.xyz * (viewZFar  / v.z);
+
+        minBounds = min(minBounds, cNear);
+        maxBounds = max(maxBounds, cNear);
+        minBounds = min(minBounds, cFar);
+        maxBounds = max(maxBounds, cFar);
+    }
+}
+
+/* === AABB Cluster Intersection === */
+
+bool SphereAABBIntersect(vec3 sphereCenter, float sphereRadius, vec3 aabbMin, vec3 aabbMax)
+{
+    vec3 closestPoint = clamp(sphereCenter, aabbMin, aabbMax);
+    vec3 delta = sphereCenter - closestPoint;
+
+    return dot(delta, delta) <= (sphereRadius * sphereRadius);
+}
+
+bool ConeAABBIntersect(vec3 coneApex, vec3 coneDir, float coneRange, float coneAngleCos, vec3 aabbMin, vec3 aabbMax)
+{
+    // Use a bounding sphere for the cone as a first approximation
+    vec3 coneEnd = coneApex + coneDir * coneRange;
+    float coneRadius = coneRange * sqrt(max(0.0, 1.0 - coneAngleCos * coneAngleCos));
+
+    // Center of the bounding sphere at the midpoint of the cone
+    vec3 boundingSphereCenter = (coneApex + coneEnd) * 0.5;
+    float boundingSphereRadius = distance(coneApex, coneEnd) * 0.5 + coneRadius * 0.5;
+
+    if (!SphereAABBIntersect(boundingSphereCenter, boundingSphereRadius, aabbMin, aabbMax)) {
+        return false;
+    }
+
+    // More accurate test, checks if the AABB actually intersects the cone
+    // To simplify, we test whether at least one corner of the AABB is in the cone
+    vec3 corners[8] = vec3[8](
+        vec3(aabbMin.x, aabbMin.y, aabbMin.z),
+        vec3(aabbMax.x, aabbMin.y, aabbMin.z),
+        vec3(aabbMin.x, aabbMax.y, aabbMin.z),
+        vec3(aabbMax.x, aabbMax.y, aabbMin.z),
+        vec3(aabbMin.x, aabbMin.y, aabbMax.z),
+        vec3(aabbMax.x, aabbMin.y, aabbMax.z),
+        vec3(aabbMin.x, aabbMax.y, aabbMax.z),
+        vec3(aabbMax.x, aabbMax.y, aabbMax.z)
+    );
+
+    for (int i = 0; i < 8; i++) {
+        vec3 toCorner = corners[i] - coneApex;
+        float distanceToApex = length(toCorner);
+        if (distanceToApex <= coneRange) {
+            float cosAngle = dot(normalize(toCorner), coneDir);
+            if (cosAngle >= coneAngleCos) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/* === Light Volume Test === */
+
+bool OmniLightAffectsCluster(in Light L, vec3 clusterMin, vec3 clusterMax)
+{
+    vec3 lightViewPos = (uFrustum.view * vec4(L.position, 1.0)).xyz;
+    return SphereAABBIntersect(lightViewPos, L.range, clusterMin, clusterMax);
+}
+
+bool SpotLightAffectsCluster(in Light L, vec3 clusterMin, vec3 clusterMax)
+{
+    vec3 lightViewPos = (uFrustum.view * vec4(L.position, 1.0)).xyz;
+    vec3 lightViewDir = normalize((uFrustum.view * vec4(L.direction, 0.0)).xyz);
+    return ConeAABBIntersect(lightViewPos, lightViewDir, L.range, L.outerCutOff, clusterMin, clusterMax);
+}
+
+/* === Program === */
+
+layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
+
+void main()
+{
+    /* --- Calculating cluster coordinates and its index --- */
+
+    uvec3 clusterCoord = uvec3(gl_GlobalInvocationID.xyz);
+    if (any(greaterThanEqual(clusterCoord, uClusterCount))) {
+        return;
+    }
+
+    uint clusterId = L_ClusterIndex(clusterCoord, uClusterCount);
+
+    /* --- Calculate cluster bounds --- */
+
+    vec3 clusterMin = vec3(0.0);
+    vec3 clusterMax = vec3(0.0);
+    ClusterBounds(clusterCoord, clusterMin, clusterMax);
+
+    // Store AABB for this cluster (useful for later passes)
+    sClusterAABBs[clusterId].minBounds = clusterMin;
+    sClusterAABBs[clusterId].maxBounds = clusterMax;
+
+    /* --- Iteration and testing for each light --- */
+
+    uint appended = 0u;
+
+    for (uint i = 0u; i < uNumLights; ++i)
+    {
+        Light L = sLights[i];
+
+        /* --- Test if this light's layer mask is valid for current camera --- */
+
+        if ((uFrustum.cullMask & L.layerMask) == 0u) {
+            continue;
+        }
+
+        /* --- Test if light affects this cluster based on light type --- */
+
+        bool affects = false;
+        switch (L.type) {
+            case LIGHT_DIR:
+                affects = true; // Directional lights affect all clusters
+                break;
+            case LIGHT_OMNI:
+                affects = OmniLightAffectsCluster(L, clusterMin, clusterMax);
+                break;
+            case LIGHT_SPOT:
+                affects = SpotLightAffectsCluster(L, clusterMin, clusterMax);
+                break;
+        }
+
+        if (!affects) {
+            continue;
+        }
+
+        /* --- Add light to cluster if capacity allows --- */
+
+        if (appended < uint(uMaxLightsPerCluster)) {
+            uint base = clusterId * uMaxLightsPerCluster;
+            uint dst = base + appended;
+            sIndices[dst] = i;
+            appended++;
+        }
+    }
+
+    sClusters[clusterId] = appended;
+}
