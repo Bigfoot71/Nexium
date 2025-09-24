@@ -426,12 +426,25 @@ def process_shader(filepath):
     return shader_content
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python glsl_processor.py <shader_path>", file=sys.stderr)
+    if len(sys.argv) < 2 or len(sys.argv) > 3:
+        print("Usage: python glsl_processor.py <shader_path> [output_file]", file=sys.stderr)
+        print("  If output_file is not specified, output goes to stdout", file=sys.stderr)
         sys.exit(1)
 
-    formatted_shader = process_shader(sys.argv[1])
-    print(formatted_shader, end="")
+    input_file = sys.argv[1]
+    output_file = sys.argv[2] if len(sys.argv) == 3 else None
+
+    formatted_shader = process_shader(input_file)
+
+    if output_file:
+        try:
+            with open(output_file, 'w', encoding='utf-8') as f:
+                f.write(formatted_shader)
+        except Exception as e:
+            print(f"Error writing to output file: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(formatted_shader, end="")
 
 if __name__ == "__main__":
     main()
