@@ -32,11 +32,15 @@ def escape_c_string(text):
     text = text.replace('\t', '\\t')   # Convert tabs
     return text
 
-def write_header_from_file(file_path, out_path, mode='binary'):
+def write_header_from_file(file_path, out_path, mode='binary', custom_name=None):
     """Convert a file into a C header"""
-    name = os.path.basename(file_path)
-    guard = to_identifier(name) + '_H'
-    array_name = to_identifier(name)
+    if custom_name:
+        array_name = to_identifier(custom_name)
+        guard = array_name + '_H'
+    else:
+        name = os.path.basename(file_path)
+        guard = to_identifier(name) + '_H'
+        array_name = to_identifier(name)
 
     if mode == 'text':
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -151,7 +155,7 @@ def main():
     input_group.add_argument('-s', '--string', help='String to convert')
     input_group.add_argument('--stdin', action='store_true', help='Read from stdin')
 
-    parser.add_argument('-n', '--name', help='Array name (required with --string or --stdin)')
+    parser.add_argument('-n', '--name', help='Array name (overrides filename-based name when using --file)')
     parser.add_argument('-m', '--mode', choices=['text', 'binary'],
                        default='binary',
                        help='Output mode: text for string literals, binary for byte arrays (default: binary)')
@@ -162,7 +166,7 @@ def main():
         parser.error("--name is required when using --string or --stdin")
 
     if args.file:
-        write_header_from_file(args.file, args.output, args.mode)
+        write_header_from_file(args.file, args.output, args.mode, args.name)
     elif args.string:
         write_header_from_string(args.string, args.name, args.output, args.mode)
     elif args.stdin:
