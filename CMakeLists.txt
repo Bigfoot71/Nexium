@@ -298,6 +298,13 @@ target_link_libraries(${PROJECT_NAME}
         ${HP_EXTERNAL_LIBS}
 )
 
+# Adding compile definitions for external sources
+
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        AL_LIBTYPE_STATIC
+)
+
 # Adding external sources to Hyperion
 
 target_sources(${PROJECT_NAME}
