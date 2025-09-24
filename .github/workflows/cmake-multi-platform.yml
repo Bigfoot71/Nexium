@@ -16,8 +16,8 @@ jobs:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
       fail-fast: false
 
-      # Set up a matrix to run the following 3 configurations:
-      # 1. <Windows, Release, latest MSVC compiler toolchain on the default runner image, default generator>
+      # Set up a matrix to run the following configurations:
+      # 1. <Windows, Release, Clang compiler toolchain, Ninja generator>
       # 2. <Linux, Release, latest GCC compiler toolchain on the default runner image, default generator>
       # 3. <Linux, Release, latest Clang compiler toolchain on the default runner image, default generator>
       #
@@ -25,30 +25,32 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         build_type: [Release]
-        c_compiler: [gcc, clang, cl]
+        c_compiler: [gcc, clang]
         include:
           - os: windows-latest
-            c_compiler: cl
-            cpp_compiler: cl
+            c_compiler: clang
+            cpp_compiler: clang++
+            generator: "Ninja"
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
+            generator: "Unix Makefiles"
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
-        exclude:
-          - os: windows-latest
-            c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
-          - os: ubuntu-latest
-            c_compiler: cl
+            generator: "Unix Makefiles"
 
     steps:
     - name: Checkout code with submodules
       uses: actions/checkout@v4
       with:
         submodules: 'recursive'
+
+    - name: Install Clang and Ninja for Windows
+      if: runner.os == 'Windows'
+      run: |
+        choco install llvm ninja -y
+        echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
 
     - name: Install dependencies for Ubuntu
       if: runner.os == 'Linux'
@@ -65,6 +67,10 @@ jobs:
           libudev-dev libhidapi-dev \
           libxkbcommon-dev
 
+    - name: Setup MSVC environment
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
@@ -77,6 +83,7 @@ jobs:
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -G "${{ matrix.generator }}"
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
