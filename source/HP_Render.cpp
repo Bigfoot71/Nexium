@@ -2614,9 +2614,9 @@ void HP_UpdateMeshAABB(HP_Mesh* mesh)
 
 /* === InstanceBuffer - Public API === */
 
-HP_InstanceBuffer* HP_CreateInstanceBuffer(void)
+HP_InstanceBuffer* HP_CreateInstanceBuffer(HP_InstanceData bitfield, size_t count)
 {
-    return gRender->meshes.createInstanceBuffer();
+    return gRender->meshes.createInstanceBuffer(bitfield, count);
 }
 
 void HP_DestroyInstanceBuffer(HP_InstanceBuffer* buffer)
@@ -2624,9 +2624,19 @@ void HP_DestroyInstanceBuffer(HP_InstanceBuffer* buffer)
     gRender->meshes.destroyInstanceBuffer(buffer);
 }
 
-void HP_SetInstanceBufferData(HP_InstanceBuffer* buffer, const HP_Mat4* matrices, const HP_Color* colors, const HP_Vec4* custom, int count)
+void HP_ReserveInstanceBuffer(HP_InstanceBuffer* buffer, HP_InstanceData bitfield, size_t count, bool keepData)
 {
-    buffer->setData(matrices, colors, custom, count);
+    buffer->reserveBufferCapacity(bitfield, count, keepData);
+}
+
+void HP_UpdateInstanceBuffer(HP_InstanceBuffer* buffer, HP_InstanceData type, const void* data, size_t offset, size_t count, bool keepData)
+{
+    buffer->updateBufferData(type, data, offset, count, keepData);
+}
+
+void HP_SetInstanceBufferState(HP_InstanceBuffer* buffer, HP_InstanceData bitfield, bool enabled)
+{
+    buffer->setBufferState(bitfield, enabled);
 }
 
 /* === Model - Public API === */

@@ -68,6 +68,19 @@ typedef uint16_t HP_Layer;
 #define HP_LAYER_16     (1 << 15)
 
 /**
+ * @brief Bitfield type representing types of instance data stored in an instance buffer.
+ * 
+ * These flags can be combined using bitwise OR to specify multiple types at once.
+ */
+typedef uint8_t HP_InstanceData;
+
+#define HP_INSTANCE_DATA_MATRIX     (1 << 0)    ///< Instance data contains transformation matrices (HP_Mat4).
+#define HP_INSTANCE_DATA_COLOR      (1 << 1)    ///< Instance data contains colors (HP_Color).
+#define HP_INSTANCE_DATA_CUSTOM     (1 << 2)    /**< Instance data contains custom vectors (HP_Vec4).\
+                                                  *  Currently not used. Reserved for future extensions.\
+                                                  */
+
+/**
  * @brief Defines the type of projection used by a camera.
  */
 typedef enum HP_Projection {
@@ -1397,9 +1410,56 @@ HPAPI void HP_UpdateMeshAABB(HP_Mesh* mesh);
  * @{
  */
 
-HPAPI HP_InstanceBuffer* HP_CreateInstanceBuffer(void);
+/**
+ * @brief Create an instance buffer with pre-allocated GPU memory.
+ *
+ * @param bitfield Types of instance data to allocate.
+ * @param count Number of instances to pre-allocate (internal memory size only).
+ * @return HP_InstanceBuffer* Pointer to the created instance buffer.
+ *
+ * @note You control the number of instances used at draw time.
+ */
+HPAPI HP_InstanceBuffer* HP_CreateInstanceBuffer(HP_InstanceData bitfield, size_t count);
+
+/**
+ * @brief Destroy an instance buffer and free GPU memory.
+ *
+ * @param buffer Pointer to the instance buffer to destroy.
+ */
 HPAPI void HP_DestroyInstanceBuffer(HP_InstanceBuffer* buffer);
-HPAPI void HP_SetInstanceBufferData(HP_InstanceBuffer* buffer, const HP_Mat4* matrices, const HP_Color* colors, const HP_Vec4* custom, int count);
+
+/**
+ * @brief Ensure the GPU memory allocated is at least the given size.
+ *
+ * @param buffer The instance buffer to resize if needed.
+ * @param bitfield Types of instance data to consider.
+ * @param count Number of instances to reserve memory for.
+ * @param keepData Whether to preserve existing buffer data on reallocation.
+ */
+HPAPI void HP_ReserveInstanceBuffer(HP_InstanceBuffer* buffer, HP_InstanceData bitfield, size_t count, bool keepData);
+
+/**
+ * @brief Update instance buffer data for a single type.
+ *
+ * @param buffer The instance buffer to update.
+ * @param type Type of instance data to update.
+ * @param data Pointer to the data to copy.
+ * @param offset Offset in instances to start writing.
+ * @param count Number of instances to update.
+ * @param keepData Whether to preserve existing data if reallocation occurs.
+ *
+ * @note Only a single type is allowed. If multiple types are provided, the lowest flag is used.
+ */
+HPAPI void HP_UpdateInstanceBuffer(HP_InstanceBuffer* buffer, HP_InstanceData type, const void* data, size_t offset, size_t count, bool keepData);
+
+/**
+ * @brief Enable or disable certain types of instance data.
+ *
+ * @param buffer The instance buffer to modify.
+ * @param bitfield Types of instance data to enable/disable.
+ * @param enabled True to enable, false to disable.
+ */
+HPAPI void HP_SetInstanceBufferState(HP_InstanceBuffer* buffer, HP_InstanceData bitfield, bool enabled);
 
 /** @} */ // end of InstanceBuffer
 

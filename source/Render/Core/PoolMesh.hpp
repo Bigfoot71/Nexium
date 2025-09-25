@@ -33,7 +33,7 @@ namespace render {
 class PoolMesh {
 public:
     /** Instance buffer functions */
-    HP_InstanceBuffer* createInstanceBuffer();
+    HP_InstanceBuffer* createInstanceBuffer(HP_InstanceData bitfield, size_t count);
     void destroyInstanceBuffer(HP_InstanceBuffer* buffer);
 
     /** Mesh functions */
@@ -50,9 +50,18 @@ private:
 
 /* === Public Implementation === */
 
-inline HP_InstanceBuffer* PoolMesh::createInstanceBuffer()
+inline HP_InstanceBuffer* PoolMesh::createInstanceBuffer(HP_InstanceData bitfield, size_t count)
 {
-    return mInstanceBuffers.create();
+    HP_InstanceBuffer* instances = mInstanceBuffers.create();
+    if (!instances) {
+        HP_INTERNAL_LOG(E, "RENDER: Failed to create instance buffer; Object pool issue");
+        return nullptr;
+    }
+
+    instances->setBufferState(bitfield, true);
+    instances->reserveBufferCapacity(bitfield, count, false);
+
+    return instances;
 }
 
 inline void PoolMesh::destroyInstanceBuffer(HP_InstanceBuffer* buffer)

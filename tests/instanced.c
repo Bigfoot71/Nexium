@@ -30,8 +30,9 @@ int main(void)
         );
     }
 
-    HP_InstanceBuffer* instances = HP_CreateInstanceBuffer();
-    HP_SetInstanceBufferData(instances, matrices, colors, NULL, INSTANCE_COUNT);
+    HP_InstanceBuffer* instances = HP_CreateInstanceBuffer(HP_INSTANCE_DATA_MATRIX | HP_INSTANCE_DATA_COLOR, INSTANCE_COUNT);
+    HP_UpdateInstanceBuffer(instances, HP_INSTANCE_DATA_MATRIX, matrices, 0, INSTANCE_COUNT, false);
+    HP_UpdateInstanceBuffer(instances, HP_INSTANCE_DATA_COLOR, colors, 0, INSTANCE_COUNT, false);
 
     HP_Light* light = HP_CreateLight(HP_LIGHT_DIR);
     HP_SetLightDirection(light, HP_VEC3(-1, -1, -1));

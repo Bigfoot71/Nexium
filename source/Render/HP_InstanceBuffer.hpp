@@ -21,7 +21,11 @@
 #define HP_INSTANCE_BUFFER_HPP
 
 #include "../Detail/GPU/Buffer.hpp"
+#include "../Detail/Helper.hpp"
+
+#include <Hyperion/HP_Render.h>
 #include <Hyperion/HP_Math.h>
+#include <span>
 
 /* === Declaration === */
 
@@ -29,84 +33,69 @@ class HP_InstanceBuffer {
 public:
     HP_InstanceBuffer() = default;
 
-    void setData(const HP_Mat4* matrices, const HP_Color* colors, const HP_Vec4* custom, int count);
+    /** Buffer management */
+    void updateBufferData(HP_InstanceData type, const void* data, size_t offset, size_t count, bool keepData);
+    void reserveBufferCapacity(HP_InstanceData type, size_t capacity, bool keepData);
+    void setBufferState(HP_InstanceData type, bool enabled);
 
-    const gpu::Buffer* matrices() const;
-    const gpu::Buffer* colors() const;
-    const gpu::Buffer* custom() const;
-
-private:
-    gpu::Buffer mMatrices{};    //< HP_Mat4
-    gpu::Buffer mColors{};      //< HP_Color
-    gpu::Buffer mCustom{};      //< HP_Vec4
+    /** Queries */
+    const gpu::Buffer* getBuffer(HP_InstanceData type) const;
 
 private:
-    bool mHasMatrices{};
-    bool mHasColors{};
-    bool mHasCustom{};
+    struct BufferInfo {
+        gpu::Buffer buffer{};
+        bool enabled{false};
+    };
+    std::array<BufferInfo, 3> mBuffers{};
+
+private:
+    static constexpr size_t TypeSizes[3] = {
+        sizeof(HP_Mat4),
+        sizeof(HP_Color),
+        sizeof(HP_Vec4)
+    };
 };
 
 /* === Public Implementation === */
 
-inline void HP_InstanceBuffer::setData(const HP_Mat4* matrices, const HP_Color* colors, const HP_Vec4* custom, int count)
+inline void HP_InstanceBuffer::updateBufferData(HP_InstanceData type, const void* data, size_t offset, size_t count, bool keepData)
 {
-    mHasMatrices = (matrices != nullptr);
-    mHasColors = (colors != nullptr);
-    mHasCustom = (custom != nullptr);
+    type = helper::bitScanForward(type);
+    BufferInfo& info = mBuffers[type];
 
-    if (mHasMatrices) {
-        if (mMatrices.isValid()) {
-            mMatrices.reserve(sizeof(HP_Mat4) * count, false);
-            mMatrices.upload(matrices);
-        }
-        else {
-            mMatrices = gpu::Buffer(
-                GL_ARRAY_BUFFER, sizeof(HP_Mat4) * count,
-                matrices, GL_DYNAMIC_DRAW
-            );
-        }
+    offset *= TypeSizes[type];
+    count *= TypeSizes[type];
+
+    if (!info.buffer.isValid()) {
+        info.buffer = gpu::Buffer(GL_ARRAY_BUFFER, offset + count, nullptr, GL_DYNAMIC_DRAW);
+    } else {
+        info.buffer.reserve(offset + count, keepData);
     }
 
-    if (mHasColors) {
-        if (mColors.isValid()) {
-            mColors.reserve(sizeof(HP_Color) * count, false);
-            mColors.upload(colors);
-        }
-        else {
-            mColors = gpu::Buffer(
-                GL_ARRAY_BUFFER, sizeof(HP_Color) * count,
-                colors, GL_DYNAMIC_DRAW
-            );
-        }
-    }
-
-    if (mHasCustom) {
-        if (mCustom.isValid()) {
-            mCustom.reserve(sizeof(HP_Vec4) * count, false);
-            mCustom.upload(custom);
-        }
-        else {
-            mCustom = gpu::Buffer(
-                GL_ARRAY_BUFFER, sizeof(HP_Vec4) * count,
-                custom, GL_DYNAMIC_DRAW
-            );
-        }
-    }
+    info.buffer.upload(offset, count, data);
 }
 
-inline const gpu::Buffer* HP_InstanceBuffer::matrices() const
+inline void HP_InstanceBuffer::reserveBufferCapacity(HP_InstanceData bitfield, size_t count, bool keepData)
 {
-    return mHasMatrices ? &mMatrices : nullptr;
+    helper::forEachBit(static_cast<uint32_t>(bitfield), [&](int index) {
+        if (!mBuffers[index].buffer.isValid()) {
+            mBuffers[index].buffer = gpu::Buffer(GL_ARRAY_BUFFER, count * TypeSizes[index], nullptr, GL_DYNAMIC_DRAW);
+        } else {
+            mBuffers[index].buffer.reserve(count * TypeSizes[index], keepData);
+        }
+    });
 }
 
-inline const gpu::Buffer* HP_InstanceBuffer::colors() const
+inline void HP_InstanceBuffer::setBufferState(HP_InstanceData bitfield, bool enabled)
 {
-    return mHasColors ? &mColors : nullptr;
+    helper::forEachBit(static_cast<uint32_t>(bitfield), [&](int index) {
+        mBuffers[index].enabled = enabled;
+    });
 }
 
-inline const gpu::Buffer* HP_InstanceBuffer::custom() const
+inline const gpu::Buffer* HP_InstanceBuffer::getBuffer(HP_InstanceData type) const
 {
-    return mHasCustom ? &mCustom : nullptr;
+    return &mBuffers[helper::bitScanForward(type)].buffer;
 }
 
 #endif // HP_INSTANCE_BUFFER_HPP

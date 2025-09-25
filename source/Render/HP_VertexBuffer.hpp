@@ -262,9 +262,9 @@ inline HP_VertexBuffer::HP_VertexBuffer(const HP_Vertex3D* vertices, int vCount,
 inline void HP_VertexBuffer::bindInstances(const HP_InstanceBuffer& instances)
 {
     mVAO.bindVertexBuffers({
-        { 1, instances.matrices() },
-        { 2, instances.colors() },
-        { 3, instances.custom() }
+        { 1, instances.getBuffer(HP_INSTANCE_DATA_MATRIX) },
+        { 2, instances.getBuffer(HP_INSTANCE_DATA_COLOR) },
+        { 3, instances.getBuffer(HP_INSTANCE_DATA_CUSTOM) }
     });
 }
 

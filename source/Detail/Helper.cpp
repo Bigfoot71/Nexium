@@ -18,20 +18,12 @@
  */
 
 #include "./Helper.hpp"
-#include <SDL3/SDL_stdinc.h>
 
 namespace {
 char gBuffer[256];
 }
 
 namespace helper {
-
-const char* getFileExt(const char* filePath)
-{
-    const char* dot = strrchr(filePath, '.');
-    if (!dot || dot == filePath) return NULL;
-    return dot + 1;
-}
 
 const char* concatCString(const char* a, const char* b)
 {
