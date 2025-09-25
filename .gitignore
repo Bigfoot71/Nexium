@@ -78,3 +78,6 @@ out/
 # For Android
 android-project/local.properties
 android-project/.gradle/
+
+# Misc
+TODO
