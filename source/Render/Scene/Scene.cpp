@@ -158,24 +158,24 @@ void Scene::renderScene()
 
     /* --- Send constant uniforms --- */
 
-    pipeline.setUniformInt1(7, mLights.activeCount() > 0);
-    pipeline.setUniformUint2(8, mFramebufferScene.dimension());
-    pipeline.setUniformUint3(9, mLights.clusterCount());
-    pipeline.setUniformUint1(10, mLights.maxLightsPerCluster());
-    pipeline.setUniformFloat1(11, mLights.clusterSliceScale());
-    pipeline.setUniformFloat1(12, mLights.clusterSliceBias());
+    pipeline.setUniformInt1(10, mLights.activeCount() > 0);
+    pipeline.setUniformUint2(11, mFramebufferScene.dimension());
+    pipeline.setUniformUint3(12, mLights.clusterCount());
+    pipeline.setUniformUint1(13, mLights.maxLightsPerCluster());
+    pipeline.setUniformFloat1(14, mLights.clusterSliceScale());
+    pipeline.setUniformFloat1(15, mLights.clusterSliceBias());
 
-    pipeline.setUniformFloat1(16, mEnvironment.sky.diffuse * mEnvironment.sky.intensity);
-    pipeline.setUniformFloat1(17, mEnvironment.sky.specular * mEnvironment.sky.intensity);
+    pipeline.setUniformFloat1(19, mEnvironment.sky.diffuse * mEnvironment.sky.intensity);
+    pipeline.setUniformFloat1(20, mEnvironment.sky.specular * mEnvironment.sky.intensity);
 
     if (mEnvironment.sky.probe != nullptr) {
-        pipeline.setUniformInt1(14, true);
-        pipeline.setUniformFloat4(15, mEnvironment.sky.rotation);
-        pipeline.setUniformInt1(18, mEnvironment.sky.probe->prefilter().mipLevels());
+        pipeline.setUniformInt1(17, true);
+        pipeline.setUniformFloat4(18, mEnvironment.sky.rotation);
+        pipeline.setUniformInt1(21, mEnvironment.sky.probe->prefilter().mipLevels());
     }
     else {
-        pipeline.setUniformFloat3(13, mEnvironment.ambient);
-        pipeline.setUniformInt1(14, false);
+        pipeline.setUniformFloat3(16, mEnvironment.ambient);
+        pipeline.setUniformInt1(17, false);
     }
 
     /* --- Bind constant textures --- */
@@ -204,8 +204,9 @@ void Scene::renderScene()
         }
 
         const DrawData& data = mDrawData[call.dataIndex()];
+        bool useInstancing = data.useInstancing();
 
-        if (!mFrustum.containsObb(call.mesh().aabb, data.transform())) {
+        if (!useInstancing && !mFrustum.containsObb(call.mesh().aabb, data.transform())) {
             continue;
         }
 
@@ -261,25 +262,29 @@ void Scene::renderScene()
         pipeline.setUniformInt1(5, data.isAnimated());
         pipeline.setUniformInt1(6, data.boneMatrixOffset());
 
+        /* --- Send instance data --- */
+
+        pipeline.setUniformInt1(7, useInstancing);
+
         /* --- Send material data --- */
 
         pipeline.setUniformFloat4(2, mat.albedo.color);
         pipeline.setUniformFloat2(3, mat.texOffset);
         pipeline.setUniformFloat2(4, mat.texScale);
 
-        pipeline.setUniformFloat3(19, mat.emission.color);
-        pipeline.setUniformFloat1(20, mat.emission.energy);
-        pipeline.setUniformFloat1(21, mat.orm.aoLightAffect);
-        pipeline.setUniformFloat1(22, mat.orm.occlusion);
-        pipeline.setUniformFloat1(23, mat.orm.roughness);
-        pipeline.setUniformFloat1(24, mat.orm.metalness);
-        pipeline.setUniformFloat1(25, mat.normal.scale);
-        pipeline.setUniformFloat1(26, mat.alphaCutOff);
-        pipeline.setUniformUint1(27, call.mesh().layerMask);
+        pipeline.setUniformFloat3(22, mat.emission.color);
+        pipeline.setUniformFloat1(23, mat.emission.energy);
+        pipeline.setUniformFloat1(24, mat.orm.aoLightAffect);
+        pipeline.setUniformFloat1(25, mat.orm.occlusion);
+        pipeline.setUniformFloat1(26, mat.orm.roughness);
+        pipeline.setUniformFloat1(27, mat.orm.metalness);
+        pipeline.setUniformFloat1(28, mat.normal.scale);
+        pipeline.setUniformFloat1(29, mat.alphaCutOff);
+        pipeline.setUniformUint1(30, call.mesh().layerMask);
 
         /* --- Draw! --- */
 
-        call.draw(pipeline);
+        call.draw(pipeline, data.instances(), data.instanceCount());
     }
 
     /* --- Resolve in case of multi sampled scene --- */

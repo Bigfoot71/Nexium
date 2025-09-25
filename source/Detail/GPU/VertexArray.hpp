@@ -20,7 +20,7 @@
 #ifndef HP_GPU_VERTEX_ARRAY_HPP
 #define HP_GPU_VERTEX_ARRAY_HPP
 
-#include "../Util/DynamicArray.hpp"
+#include "../Util/FixedArray.hpp"
 #include "./Buffer.hpp"
 
 #include <Hyperion/HP_Core.h>
@@ -45,11 +45,20 @@ struct VertexAttribute {
     GLsizei stride;        // Stride between vertices
     GLintptr offset;       // Offset in the buffer
     GLuint divisor;        // For instancing (0 = per vertex, >0 = per instance)
+    union {
+        HP_IVec4 vInt;
+        HP_Vec4 vFloat;
+    } defaultValue;
 };
 
 struct VertexBufferDesc {
     Buffer* buffer;
     std::initializer_list<VertexAttribute> attributes;
+};
+
+struct VertexBufferState {
+    const Buffer* attachedBuffer{nullptr};
+    util::FixedArray<VertexAttribute> attributes;
 };
 
 /* === Declaration === */
@@ -72,20 +81,29 @@ public:
     bool isValid() const noexcept;
     GLuint id() const noexcept;
 
-    /** Access to buffers */
+    /** Access to index buffer */
+    const Buffer* indexBuffer() const noexcept;
+
+    /** Access to vertex buffers */
     size_t vertexBufferCount() const noexcept;
-    Buffer* getVertexBuffer(size_t index) noexcept;
-    const Buffer* getVertexBuffer(size_t index) const noexcept;
-    Buffer* getIndexBuffer() noexcept;
-    const Buffer* getIndexBuffer() const noexcept;
+    const Buffer* vertexBuffer(size_t index) const noexcept;
+    bool hasVertexBuffer(size_t index) const noexcept;
+    void bindVertexBuffer(size_t index, const Buffer* buffer) noexcept;
+    void unbindVertexBuffer(size_t index) noexcept;
+    void bindVertexBuffers(std::initializer_list<std::pair<size_t, const Buffer*>> buffers) noexcept;
+    void unbindVertexBuffers(std::initializer_list<size_t> indices) noexcept;
 
 private:
     /** Member variables */
     GLuint mID{0};
-    util::DynamicArray<Buffer*> mVertexBuffers;
-    Buffer* mIndexBuffer{nullptr};
+    const Buffer* mIndexBuffer{nullptr};
+    util::FixedArray<VertexBufferState> mVertexBuffers;
 
 private:
+    /** Private helpers */
+    void applyDefaultAttribute(const VertexAttribute& attr) noexcept;
+    void setupVertexAttribute(const VertexAttribute& attr) noexcept;
+
     /** Static helpers */
     static bool isValidAttributeSize(GLint size) noexcept;
     static bool isValidAttributeType(GLenum type) noexcept;
@@ -108,11 +126,9 @@ inline VertexArray::~VertexArray() noexcept
 
 inline VertexArray::VertexArray(VertexArray&& other) noexcept
     : mID(std::exchange(other.mID, 0))
+    , mIndexBuffer(std::exchange(other.mIndexBuffer, nullptr))
     , mVertexBuffers(std::move(other.mVertexBuffers))
-    , mIndexBuffer(other.mIndexBuffer)
-{
-    other.mIndexBuffer = nullptr;
-}
+{ }
 
 inline VertexArray& VertexArray::operator=(VertexArray&& other) noexcept
 {
@@ -121,15 +137,15 @@ inline VertexArray& VertexArray::operator=(VertexArray&& other) noexcept
             glDeleteVertexArrays(1, &mID);
         }
         mID = std::exchange(other.mID, 0);
-        mVertexBuffers = std::move(other.mVertexBuffers);
         mIndexBuffer = std::exchange(other.mIndexBuffer, nullptr);
+        mVertexBuffers = std::move(other.mVertexBuffers);
     }
     return *this;
 }
 
 inline bool VertexArray::isValid() const noexcept
 {
-    return mID > 0;
+    return (mID > 0);
 }
 
 inline GLuint VertexArray::id() const noexcept
@@ -137,32 +153,65 @@ inline GLuint VertexArray::id() const noexcept
     return mID;
 }
 
+inline const Buffer* VertexArray::indexBuffer() const noexcept
+{
+    return mIndexBuffer;
+}
+
 inline size_t VertexArray::vertexBufferCount() const noexcept
 {
     return mVertexBuffers.size();
 }
 
-inline Buffer* VertexArray::getVertexBuffer(size_t index) noexcept
+inline const Buffer* VertexArray::vertexBuffer(size_t index) const noexcept
 {
-    return mVertexBuffers[index];
+    return mVertexBuffers[index].attachedBuffer;
 }
 
-inline const Buffer* VertexArray::getVertexBuffer(size_t index) const noexcept
+inline bool VertexArray::hasVertexBuffer(size_t index) const noexcept
 {
-    return mVertexBuffers[index];
+    return (mVertexBuffers[index].attachedBuffer != nullptr);
 }
 
-inline Buffer* VertexArray::getIndexBuffer() noexcept
+/* === Private Implementation === */
+
+inline void VertexArray::applyDefaultAttribute(const VertexAttribute& attr) noexcept
 {
-    return mIndexBuffer;
+    glDisableVertexAttribArray(attr.location);
+
+    if (isIntegerAttributeType(attr.type)) {
+        glVertexAttribI4iv(attr.location, attr.defaultValue.vInt.v);
+    }
+    else {
+        glVertexAttrib4fv(attr.location, attr.defaultValue.vFloat.v);
+    }
+
+    if (attr.divisor > 0) {
+        glVertexAttribDivisor(attr.location, attr.divisor);
+    }
 }
 
-inline const Buffer* VertexArray::getIndexBuffer() const noexcept
+inline void VertexArray::setupVertexAttribute(const VertexAttribute& attr) noexcept
 {
-    return mIndexBuffer;
+    glEnableVertexAttribArray(attr.location);
+    
+    if (isIntegerAttributeType(attr.type) && attr.normalized == GL_FALSE) {
+        glVertexAttribIPointer(
+            attr.location, attr.size, attr.type, attr.stride,
+            reinterpret_cast<const void*>(attr.offset)
+        );
+    }
+    else {
+        glVertexAttribPointer(
+            attr.location, attr.size, attr.type, attr.normalized,
+            attr.stride, reinterpret_cast<const void*>(attr.offset)
+        );
+    }
+    
+    if (attr.divisor > 0) {
+        glVertexAttribDivisor(attr.location, attr.divisor);
+    }
 }
-
-/* === Private Static Implementation === */
 
 inline bool VertexArray::isValidAttributeSize(GLint size) noexcept
 {

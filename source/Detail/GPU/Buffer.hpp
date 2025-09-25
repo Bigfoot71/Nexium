@@ -143,7 +143,7 @@ inline Buffer& Buffer::operator=(Buffer&& other) noexcept
 
 inline bool Buffer::isValid() const noexcept
 {
-    return mID > 0;
+    return (mID > 0);
 }
 
 inline GLuint Buffer::id() const noexcept
@@ -190,7 +190,7 @@ inline T* Buffer::mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access
     return static_cast<T*>(mapRange(offset, length, access));
 }
 
-/* === Private Static Implementation === */
+/* === Private Implementation === */
 
 inline bool Buffer::isValidTarget(GLenum target) noexcept
 {

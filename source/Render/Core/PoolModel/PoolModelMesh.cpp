@@ -271,7 +271,7 @@ HP_Mesh* PoolModel::processMesh(const aiMesh* mesh, const HP_Mat4& transform)
 
     /* --- Create the mesh in the pool and return it --- */
 
-    HP_Mesh* modelMesh = mPoolMesh.create(vertices, vertexCount, indices, indexCount, aabb, true);
+    HP_Mesh* modelMesh = mPoolMesh.createMesh(vertices, vertexCount, indices, indexCount, aabb, true);
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);
@@ -334,7 +334,7 @@ bool PoolModel::processMeshes(HP_Model* model, const aiScene* scene, const aiNod
 
     if (!processMeshesRecursive(model, scene, node, HP_MAT4_IDENTITY)) {
         for (int i = 0; i < model->meshCount; i++) {
-            mPoolMesh.destroy(model->meshes[i]);
+            mPoolMesh.destroyMesh(model->meshes[i]);
         }
         SDL_free(model->meshMaterials);
         SDL_free(model->meshes);

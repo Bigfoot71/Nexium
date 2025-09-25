@@ -109,31 +109,31 @@ layout(std140, binding = 0) uniform ViewFrustum {
 
 /* === Uniforms === */
 
-layout(location = 7) uniform bool uHasActiveLights;
+layout(location = 10) uniform bool uHasActiveLights;
 
-layout(location = 8) uniform uvec2 uScreenSize;             //< Must match the dimensions of the render target
-layout(location = 9) uniform uvec3 uClusterCount;
-layout(location = 10) uniform uint uMaxLightsPerCluster;
-layout(location = 11) uniform float uClusterSliceScale;
-layout(location = 12) uniform float uClusterSliceBias;
+layout(location = 11) uniform uvec2 uScreenSize;             //< Must match the dimensions of the render target
+layout(location = 12) uniform uvec3 uClusterCount;
+layout(location = 13) uniform uint uMaxLightsPerCluster;
+layout(location = 14) uniform float uClusterSliceScale;
+layout(location = 15) uniform float uClusterSliceBias;
 
-layout(location = 13) uniform vec3 uAmbientColor;
+layout(location = 16) uniform vec3 uAmbientColor;
 
-layout(location = 14) uniform bool uHasProbe;
-layout(location = 15) uniform vec4 uQuatProbe;
-layout(location = 16) uniform float uProbeDiffuseFactor;
-layout(location = 17) uniform float uProbeSpecularFactor;
-layout(location = 18) uniform int uProbePrefilterMipCount;
+layout(location = 17) uniform bool uHasProbe;
+layout(location = 18) uniform vec4 uQuatProbe;
+layout(location = 19) uniform float uProbeDiffuseFactor;
+layout(location = 20) uniform float uProbeSpecularFactor;
+layout(location = 21) uniform int uProbePrefilterMipCount;
 
-layout(location = 19) uniform vec3 uEmissionColor;
-layout(location = 20) uniform float uEmissionEnergy;
-layout(location = 21) uniform float uAoLightAffect;
-layout(location = 22) uniform float uOcclusion;
-layout(location = 23) uniform float uRoughness;
-layout(location = 24) uniform float uMetalness;
-layout(location = 25) uniform float uNormalScale;
-layout(location = 26) uniform float uAlphaCutOff;
-layout(location = 27) uniform uint uLayerMask;
+layout(location = 22) uniform vec3 uEmissionColor;
+layout(location = 23) uniform float uEmissionEnergy;
+layout(location = 24) uniform float uAoLightAffect;
+layout(location = 25) uniform float uOcclusion;
+layout(location = 26) uniform float uRoughness;
+layout(location = 27) uniform float uMetalness;
+layout(location = 28) uniform float uNormalScale;
+layout(location = 29) uniform float uAlphaCutOff;
+layout(location = 30) uniform uint uLayerMask;
 
 /* === Fragments === */
 

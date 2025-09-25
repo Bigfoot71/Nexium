@@ -24,6 +24,7 @@
 #include "./Core/HP_InternalLog.hpp"
 
 #include "./Render/HP_RenderState.hpp"
+#include "./Render/HP_InstanceBuffer.hpp"
 #include "./Render/HP_Texture.hpp"
 #include "./Render/HP_Font.hpp"
 #include "./Detail/Helper.hpp"
@@ -1551,20 +1552,31 @@ void HP_End3D(void)
 
 void HP_DrawMesh3D(const HP_Mesh* mesh, const HP_Material* material, const HP_Transform* transform)
 {
-    if (mesh != nullptr) {
-        gRender->scene.drawMesh(
-            *mesh,
-            material ? *material : HP_GetDefaultMaterial(),
-            transform ? *transform : HP_TRANSFORM_IDENTITY
-        );
-    }
+    gRender->scene.drawMesh(
+        *mesh, nullptr, 0,
+        material ? *material : HP_GetDefaultMaterial(),
+        transform ? *transform : HP_TRANSFORM_IDENTITY
+    );
+}
+
+void HP_DrawMeshInstanced3D(const HP_Mesh* mesh, const HP_InstanceBuffer* instances, int instanceCount,
+                            const HP_Material* material, const HP_Transform* transform)
+{
+    gRender->scene.drawMesh(
+        *mesh, instances, instanceCount,
+        material ? *material : HP_GetDefaultMaterial(),
+        transform ? *transform : HP_TRANSFORM_IDENTITY
+    );
 }
 
 void HP_DrawModel3D(const HP_Model* model, const HP_Transform* transform)
 {
-    if (model != nullptr) {
-        gRender->scene.drawModel(*model, transform ? *transform : HP_TRANSFORM_IDENTITY);
-    }
+    gRender->scene.drawModel(*model, nullptr, 0, transform ? *transform : HP_TRANSFORM_IDENTITY);
+}
+
+void HP_DrawModelInstanced3D(const HP_Model* model, const HP_InstanceBuffer* instances, int instanceCount, const HP_Transform* transform)
+{
+    gRender->scene.drawModel(*model, instances, instanceCount, transform ? *transform : HP_TRANSFORM_IDENTITY);
 }
 
 /* === Camera - Public API === */
@@ -1817,7 +1829,7 @@ HP_Mesh* HP_CreateMesh(const HP_Vertex3D* vertices, int vCount, const uint32_t* 
 
     /* --- Mesh creation --- */
 
-    HP_Mesh* mesh = gRender->meshes.create(vCopy, vCount, iCopy, iCount, true);
+    HP_Mesh* mesh = gRender->meshes.createMesh(vCopy, vCount, iCopy, iCount, true);
     if (mesh == nullptr) {
         SDL_free(vCopy);
         SDL_free(iCopy);
@@ -1829,7 +1841,7 @@ HP_Mesh* HP_CreateMesh(const HP_Vertex3D* vertices, int vCount, const uint32_t* 
 
 void HP_DestroyMesh(HP_Mesh* mesh)
 {
-    gRender->meshes.destroy(mesh);
+    gRender->meshes.destroyMesh(mesh);
 }
 
 HP_Mesh* HP_GenMeshQuad(HP_Vec2 size, HP_Vec2 subDiv, HP_Vec3 normal)
@@ -1929,7 +1941,7 @@ HP_Mesh* HP_GenMeshQuad(HP_Vec2 size, HP_Vec2 subDiv, HP_Vec3 normal)
 
     /* --- Mesh creation and finalization --- */
 
-    HP_Mesh* mesh = gRender->meshes.create(vertices, vertexCount, indices, indexCount, true);
+    HP_Mesh* mesh = gRender->meshes.createMesh(vertices, vertexCount, indices, indexCount, true);
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);
@@ -2064,7 +2076,7 @@ HP_Mesh* HP_GenMeshCube(HP_Vec3 size, HP_Vec3 subDiv)
 
     /* --- Mesh creation and finalization --- */
 
-    HP_Mesh* mesh = gRender->meshes.create(vertices, vertexCount, indices, indexCount, true);
+    HP_Mesh* mesh = gRender->meshes.createMesh(vertices, vertexCount, indices, indexCount, true);
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);
@@ -2158,7 +2170,7 @@ HP_Mesh* HP_GenMeshSphere(float radius, int slices, int rings)
 
     /* --- Mesh creation and finalization --- */
 
-    HP_Mesh* mesh = gRender->meshes.create(vertices, vertexCount, indices, indexCount, true);
+    HP_Mesh* mesh = gRender->meshes.createMesh(vertices, vertexCount, indices, indexCount, true);
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);
@@ -2342,7 +2354,7 @@ HP_Mesh* HP_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
 
     /* --- Mesh creation and finalization --- */
 
-    HP_Mesh* mesh = gRender->meshes.create(vertices, vertexCount, indices, indexCount, true);
+    HP_Mesh* mesh = gRender->meshes.createMesh(vertices, vertexCount, indices, indexCount, true);
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);
@@ -2557,7 +2569,7 @@ HP_Mesh* HP_GenMeshCapsule(float radius, float height, int slices, int rings)
 
     /* --- Mesh creation and finalization --- */
 
-    HP_Mesh* mesh = gRender->meshes.create(vertices, vertexCount, indices, indexCount, true);
+    HP_Mesh* mesh = gRender->meshes.createMesh(vertices, vertexCount, indices, indexCount, true);
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);
@@ -2569,7 +2581,7 @@ HP_Mesh* HP_GenMeshCapsule(float radius, float height, int slices, int rings)
 
 void HP_UpdateMeshBuffer(HP_Mesh* mesh)
 {
-    gRender->meshes.upload(mesh);
+    gRender->meshes.updateMesh(mesh);
 }
 
 void HP_UpdateMeshAABB(HP_Mesh* mesh)
@@ -2598,6 +2610,23 @@ void HP_UpdateMeshAABB(HP_Mesh* mesh)
             mesh->aabb.max = HP_Vec3Max(mesh->aabb.max, pos);
         }
     }
+}
+
+/* === InstanceBuffer - Public API === */
+
+HP_InstanceBuffer* HP_CreateInstanceBuffer(void)
+{
+    return gRender->meshes.createInstanceBuffer();
+}
+
+void HP_DestroyInstanceBuffer(HP_InstanceBuffer* buffer)
+{
+    gRender->meshes.destroyInstanceBuffer(buffer);
+}
+
+void HP_SetInstanceBufferData(HP_InstanceBuffer* buffer, const HP_Mat4* matrices, const HP_Color* colors, const HP_Vec4* custom, int count)
+{
+    buffer->setData(matrices, colors, custom, count);
 }
 
 /* === Model - Public API === */

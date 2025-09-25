@@ -30,6 +30,8 @@ layout(location = 1) in vec2 aTexCoord;
 layout(location = 4) in vec4 aColor;
 layout(location = 5) in ivec4 aBoneIDs;
 layout(location = 6) in vec4 aWeights;
+layout(location = 7) in mat4 iMatModel;
+layout(location = 11) in vec4 iColor;
 
 /* === Storage Buffers === */
 
@@ -46,6 +48,7 @@ layout(location = 3) uniform vec2 uTCScale;
 layout(location = 4) uniform float uAlpha;
 layout(location = 5) uniform bool uSkinning;
 layout(location = 6) uniform int uBoneOffset;
+layout(location = 7) uniform bool uInstancing;
 
 /* === Varyings === */
 
@@ -57,22 +60,26 @@ layout(location = 2) out float vAlpha;
 
 void main()
 {
-    vec3 skinPosition = aPosition;
+    vec3 position = aPosition;
 
     if (uSkinning)
     {
-        mat4 skinMatrix =
+        mat4 sMatModel =
             aWeights.x * sBoneMatrices[uBoneOffset + aBoneIDs.x] +
             aWeights.y * sBoneMatrices[uBoneOffset + aBoneIDs.y] +
             aWeights.z * sBoneMatrices[uBoneOffset + aBoneIDs.z] +
             aWeights.w * sBoneMatrices[uBoneOffset + aBoneIDs.w];
 
-        skinPosition = vec3(skinMatrix * vec4(aPosition, 1.0));
+        position = vec3(sMatModel * vec4(position, 1.0));
     }
 
-    vPosition = vec3(uMatModel * vec4(skinPosition, 1.0));
+    if (uInstancing) {
+        position = vec3(iMatModel * vec4(position, 1.0));
+    }
+
+    vPosition = vec3(uMatModel * vec4(position, 1.0));
     vTexCoord = uTCOffset + aTexCoord * uTCScale;
-    vAlpha = uAlpha * aColor.a;
+    vAlpha = aColor.a * iColor.a * uAlpha;
 
     gl_Position = uLightViewProj * vec4(vPosition, 1.0);
 }

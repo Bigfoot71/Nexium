@@ -49,7 +49,7 @@
 
 Here’s a checklist of the major features that are still missing:
 
-- [ ] Instanced rendering
+- [x] Instanced rendering
 - [ ] Unshaded rendering mode
 - [ ] Rendering to custom render targets
 - [ ] Procedural skybox cubemap generation

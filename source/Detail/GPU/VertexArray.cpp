@@ -38,12 +38,12 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
 
     for (const auto& vbDesc : vertexBuffers)
     {
-        if (!vbDesc.buffer || !vbDesc.buffer->isValid()) {
+        if (vbDesc.buffer && !vbDesc.buffer->isValid()) {
             HP_INTERNAL_LOG(E, "GPU: Invalid vertex buffer provided");
             return;
         }
 
-        if (vbDesc.buffer->target() != GL_ARRAY_BUFFER) {
+        if (vbDesc.buffer && vbDesc.buffer->target() != GL_ARRAY_BUFFER) {
             HP_INTERNAL_LOG(E, "GPU: Vertex buffer must have GL_ARRAY_BUFFER target");
             return;
         }
@@ -85,7 +85,6 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
             HP_INTERNAL_LOG(E, "GPU: Invalid index buffer provided");
             return;
         }
-
         if (mIndexBuffer->target() != GL_ELEMENT_ARRAY_BUFFER) {
             HP_INTERNAL_LOG(E, "GPU: Index buffer must have GL_ELEMENT_ARRAY_BUFFER target");
             return;
@@ -100,67 +99,114 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
         return;
     }
 
-    /* --- Reserve and store references to vertex buffers --- */
+    /* --- Reserve space to store references of vertex buffers and attributes --- */
 
-    if (!mVertexBuffers.reserve(vertexBuffers.size())) {
+    mVertexBuffers = decltype(mVertexBuffers)(vertexBuffers.size());
+    if (mVertexBuffers.capacity() < vertexBuffers.size()) {
         HP_INTERNAL_LOG(E, "GPU: Failed to allocate buffer to store vertex array buffers");
         glDeleteVertexArrays(1, &mID);
         mID = 0;
         return;
     }
 
-    for (const auto& vbDesc : vertexBuffers) {
-        mVertexBuffers.push_back(vbDesc.buffer);
-    }
-
     /* --- Bind VAO, set up vertex attributes and buffer bindings --- */
 
-    Pipeline::withVertexArrayBind(mID,
-        [&]()
+    Pipeline::withVertexArrayBind(mID, [&]()
+    {
+        if (mIndexBuffer) {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer->id());
+        }
+
+        for (const VertexBufferDesc& desc : vertexBuffers)
         {
-            if (mIndexBuffer) {
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer->id());
+            mVertexBuffers.emplace_back(desc.buffer, util::FixedArray<VertexAttribute>(desc.attributes.size()));
+
+            if (desc.buffer != nullptr) {
+                glBindBuffer(GL_ARRAY_BUFFER, desc.buffer->id());
             }
 
-            for (size_t bufferIndex = 0; bufferIndex < mVertexBuffers.size(); ++bufferIndex)
-            {
-                Buffer* buffer = mVertexBuffers[bufferIndex];
-
-                glBindBuffer(GL_ARRAY_BUFFER, buffer->id());
-
-                for (const auto& attr : vertexBuffers.begin()[bufferIndex].attributes)
-                {
-                    glEnableVertexAttribArray(attr.location);
-
-                    if (isIntegerAttributeType(attr.type) && attr.normalized == GL_FALSE) {
-                        glVertexAttribIPointer(
-                            attr.location, attr.size, attr.type, attr.stride,
-                            reinterpret_cast<const void*>(attr.offset)
-                        );
-                    }
-                    else {
-                        glVertexAttribPointer(
-                            attr.location, attr.size, attr.type, attr.normalized,
-                            attr.stride, reinterpret_cast<const void*>(attr.offset)
-                        );
-                    }
-
-                    if (attr.divisor > 0) {
-                        glVertexAttribDivisor(attr.location, attr.divisor);
-                    }
-                }
-            }
-
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-            if (glGetError() != GL_NO_ERROR) {
-                HP_INTERNAL_LOG(E, "GPU: Failed to setup vertex array");
-                glDeleteVertexArrays(1, &mID);
-                mID = 0;
-                return;
+            for (const VertexAttribute& attr : desc.attributes) {
+                mVertexBuffers.back()->attributes.emplace_back(attr);
+                if (desc.buffer) setupVertexAttribute(attr);
+                else applyDefaultAttribute(attr);
             }
         }
-    );
+
+        // REVIEW: `withBind` already unbinds the buffer, could we review the error handling?
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        if (glGetError() != GL_NO_ERROR) {
+            HP_INTERNAL_LOG(E, "GPU: Failed to setup vertex array");
+            glDeleteVertexArrays(1, &mID);
+            mID = 0;
+            return;
+        }
+    });
+}
+
+void VertexArray::bindVertexBuffer(size_t index, const Buffer* buffer) noexcept
+{
+    SDL_assert(buffer && !buffer->isValid());
+
+    if (mVertexBuffers[index].attachedBuffer == buffer) {
+        return;
+    }
+
+    Pipeline::withVertexArrayBind(mID, [&]()  {
+        glBindBuffer(GL_ARRAY_BUFFER, buffer ? buffer->id() : 0);
+        for (const VertexAttribute& attr : mVertexBuffers[index].attributes) {
+            if (buffer) setupVertexAttribute(attr);
+            else applyDefaultAttribute(attr);
+        }
+    });
+
+    mVertexBuffers[index].attachedBuffer = buffer;
+}
+
+void VertexArray::unbindVertexBuffer(size_t index) noexcept
+{
+    if (mVertexBuffers[index].attachedBuffer == nullptr) {
+        return;
+    }
+
+    Pipeline::withVertexArrayBind(mID, [&]()  {
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        for (const VertexAttribute& attr : mVertexBuffers[index].attributes) {
+            applyDefaultAttribute(attr);
+        }
+    });
+
+    mVertexBuffers[index].attachedBuffer = nullptr;
+}
+
+void VertexArray::bindVertexBuffers(std::initializer_list<std::pair<size_t, const Buffer*>> buffers) noexcept
+{
+    Pipeline::withVertexArrayBind(mID, [&]()  {
+        for (const auto& [index, buffer] : buffers) {
+            if (mVertexBuffers[index].attachedBuffer != buffer) {
+                glBindBuffer(GL_ARRAY_BUFFER, buffer ? buffer->id() : 0);
+                for (const VertexAttribute& attr : mVertexBuffers[index].attributes) {
+                    if (buffer) setupVertexAttribute(attr);
+                    else applyDefaultAttribute(attr);
+                }
+                mVertexBuffers[index].attachedBuffer = buffer;
+            }
+        }
+    });
+}
+
+void VertexArray::unbindVertexBuffers(std::initializer_list<size_t> indices) noexcept
+{
+    Pipeline::withVertexArrayBind(mID, [&]() {
+        for (size_t index : indices) {
+            if (mVertexBuffers[index].attachedBuffer != nullptr) {
+                glBindBuffer(GL_ARRAY_BUFFER, 0);
+                for (const VertexAttribute& attr : mVertexBuffers[index].attributes) {
+                    applyDefaultAttribute(attr);
+                }
+                mVertexBuffers[index].attachedBuffer = nullptr;
+            }
+        }
+    });
 }
 
 } // namespace gpu

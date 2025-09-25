@@ -35,10 +35,10 @@ layout(binding = 0) uniform sampler2D uTexAlbedo;
 
 /* === Uniforms === */
 
-layout(location = 7) uniform vec3 uLightPosition;
-layout(location = 8) uniform float uAlphaCutOff;
-layout(location = 9) uniform float uLambda;
-layout(location = 10) uniform float uFar;
+layout(location = 10) uniform vec3 uLightPosition;
+layout(location = 11) uniform float uAlphaCutOff;
+layout(location = 12) uniform float uLambda;
+layout(location = 13) uniform float uFar;
 
 /* === Fragments === */
 

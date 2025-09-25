@@ -117,30 +117,26 @@ inline void PoolModel::destroyModel(HP_Model* model)
 {
     if (model == nullptr) return;
 
-    // Libérer les meshes via PoolMesh
     for (int i = 0; i < model->meshCount; i++) {
         if (model->meshes[i]) {
-            mPoolMesh.destroy(model->meshes[i]);
+            mPoolMesh.destroyMesh(model->meshes[i]);
         }
     }
 
-    // Libérer les textures via PoolTexture
     for (int i = 0; i < model->materialCount; i++) {
         HP_Material& mat = model->materials[i];
-        if (mat.albedo.texture) mPoolTexture.destroy(mat.albedo.texture);
-        if (mat.normal.texture) mPoolTexture.destroy(mat.normal.texture);
-        if (mat.emission.texture) mPoolTexture.destroy(mat.emission.texture);
-        if (mat.orm.texture) mPoolTexture.destroy(mat.orm.texture);
+        mPoolTexture.destroy(mat.albedo.texture);
+        mPoolTexture.destroy(mat.normal.texture);
+        mPoolTexture.destroy(mat.emission.texture);
+        mPoolTexture.destroy(mat.orm.texture);
     }
 
-    // Libérer les arrays
     SDL_free(model->meshes);
     SDL_free(model->meshMaterials);
     SDL_free(model->materials);
     SDL_free(model->bones);
     SDL_free(model->boneOffsets);
 
-    // Libère l'espace dans la pool
     mPoolModel.destroy(model);
 }
 

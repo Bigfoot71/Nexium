@@ -203,6 +203,13 @@ typedef enum HP_Tonemap {
 typedef struct HP_VertexBuffer HP_VertexBuffer;
 
 /**
+ * @brief Opaque handle to a GPU instance buffer.
+ *
+ * Represents per-instance data stored on the GPU, used for instanced rendering.
+ */
+typedef struct HP_InstanceBuffer HP_InstanceBuffer;
+
+/**
  * @brief Opaque handle to a GPU texture.
  *
  * Represents a 2D image stored on the GPU.
@@ -1044,12 +1051,46 @@ HPAPI void HP_End3D(void);
 HPAPI void HP_DrawMesh3D(const HP_Mesh* mesh, const HP_Material* material, const HP_Transform* transform);
 
 /**
+ * @brief Draws a 3D mesh with instanced rendering.
+ *
+ * Renders the given mesh multiple times in a single draw call using per-instance data.
+ *
+ * @param mesh Pointer to the mesh to draw (cannot be NULL).
+ * @param instances Pointer to the instance buffer containing per-instance attributes (cannot be NULL).
+ * @param instanceCount Number of instances to render (must be > 0).
+ * @param material Pointer to the material to use (can be NULL to use the default material).
+ * @param transform Pointer to the base transformation matrix applied to all instances
+ *                  (can be NULL to use identity).
+ *
+ * @note No frustum culling is performed for instanced rendering.
+ */
+HPAPI void HP_DrawMeshInstanced3D(const HP_Mesh* mesh, const HP_InstanceBuffer* instances, int instanceCount,
+                                  const HP_Material* material, const HP_Transform* transform);
+
+/**
  * @brief Draws a 3D model.
  * @param model Pointer to the model to draw (cannot be NULL).
  * @param transform Pointer to the transformation matrix (can be NULL to use identity).
  * @note Draws all meshes contained in the model with their associated materials.
  */
 HPAPI void HP_DrawModel3D(const HP_Model* model, const HP_Transform* transform);
+
+/**
+ * @brief Draws a 3D model with instanced rendering.
+ *
+ * Renders the given model multiple times in a single draw call using per-instance data.
+ * All meshes in the model are drawn with their associated materials.
+ *
+ * @param model Pointer to the model to draw (cannot be NULL).
+ * @param instances Pointer to the instance buffer containing per-instance attributes (cannot be NULL).
+ * @param instanceCount Number of instances to render (must be > 0).
+ * @param transform Pointer to the base transformation matrix applied to all instances
+ *                  (can be NULL to use identity).
+ *
+ * @note No frustum culling is performed for instanced rendering.
+ */
+HPAPI void HP_DrawModelInstanced3D(const HP_Model* model, const HP_InstanceBuffer* instances,
+                                   int instanceCount, const HP_Transform* transform);
 
 /** @} */ // end of Draw3D
 
@@ -1350,6 +1391,17 @@ HPAPI void HP_UpdateMeshBuffer(HP_Mesh* mesh);
 HPAPI void HP_UpdateMeshAABB(HP_Mesh* mesh);
 
 /** @} */ // end of Mesh
+
+/**
+ * @defgroup InstanceBuffer Instance Buffer Functions
+ * @{
+ */
+
+HPAPI HP_InstanceBuffer* HP_CreateInstanceBuffer(void);
+HPAPI void HP_DestroyInstanceBuffer(HP_InstanceBuffer* buffer);
+HPAPI void HP_SetInstanceBufferData(HP_InstanceBuffer* buffer, const HP_Mat4* matrices, const HP_Color* colors, const HP_Vec4* custom, int count);
+
+/** @} */ // end of InstanceBuffer
 
 /**
  * @defgroup Model Model Functions

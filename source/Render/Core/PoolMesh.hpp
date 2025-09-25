@@ -21,6 +21,7 @@
 #define HP_RENDER_POOL_MESH_HPP
 
 #include "../../Detail/Util/ObjectPool.hpp"
+#include "../HP_InstanceBuffer.hpp"
 #include "../HP_VertexBuffer.hpp"
 #include "Hyperion/HP_Render.h"
 #include <cfloat>
@@ -31,19 +32,35 @@ namespace render {
 
 class PoolMesh {
 public:
-    HP_Mesh* create(HP_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, const HP_BoundingBox& aabb, bool upload);
-    HP_Mesh* create(HP_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, bool upload);
-    void destroy(HP_Mesh* mesh);
-    void upload(HP_Mesh* mesh);
+    /** Instance buffer functions */
+    HP_InstanceBuffer* createInstanceBuffer();
+    void destroyInstanceBuffer(HP_InstanceBuffer* buffer);
+
+    /** Mesh functions */
+    HP_Mesh* createMesh(HP_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, const HP_BoundingBox& aabb, bool upload);
+    HP_Mesh* createMesh(HP_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, bool upload);
+    void destroyMesh(HP_Mesh* mesh);
+    void updateMesh(HP_Mesh* mesh);
 
 private:
+    util::ObjectPool<HP_InstanceBuffer, 128> mInstanceBuffers{};
     util::ObjectPool<HP_VertexBuffer, 512> mVertexBuffers{};
     util::ObjectPool<HP_Mesh, 512> mMeshes{};
 };
 
 /* === Public Implementation === */
 
-inline HP_Mesh* PoolMesh::create(HP_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, const HP_BoundingBox& aabb, bool upload)
+inline HP_InstanceBuffer* PoolMesh::createInstanceBuffer()
+{
+    return mInstanceBuffers.create();
+}
+
+inline void PoolMesh::destroyInstanceBuffer(HP_InstanceBuffer* buffer)
+{
+    mInstanceBuffers.destroy(buffer);
+}
+
+inline HP_Mesh* PoolMesh::createMesh(HP_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, const HP_BoundingBox& aabb, bool upload)
 {
     SDL_assert(vertices != nullptr && vCount > 0);
 
@@ -84,7 +101,7 @@ inline HP_Mesh* PoolMesh::create(HP_Vertex3D* vertices, int vCount, uint32_t* in
     return mesh;
 }
 
-inline HP_Mesh* PoolMesh::create(HP_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, bool upload)
+inline HP_Mesh* PoolMesh::createMesh(HP_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, bool upload)
 {
     SDL_assert(vertices != nullptr && vCount > 0);
 
@@ -110,10 +127,10 @@ inline HP_Mesh* PoolMesh::create(HP_Vertex3D* vertices, int vCount, uint32_t* in
 
     /* --- Create the mesh --- */
 
-    return create(vertices, vCount, indices, iCount, { min, max }, upload);
+    return createMesh(vertices, vCount, indices, iCount, { min, max }, upload);
 }
 
-inline void PoolMesh::destroy(HP_Mesh* mesh)
+inline void PoolMesh::destroyMesh(HP_Mesh* mesh)
 {
     if (mesh != nullptr) {
         SDL_free(mesh->vertices);
@@ -122,7 +139,7 @@ inline void PoolMesh::destroy(HP_Mesh* mesh)
     }
 }
 
-inline void PoolMesh::upload(HP_Mesh* mesh)
+inline void PoolMesh::updateMesh(HP_Mesh* mesh)
 {
     if (mesh->buffer == nullptr) {
         mesh->buffer = mVertexBuffers.create(mesh->vertices, mesh->vertexCount, mesh->indices, mesh->indexCount);

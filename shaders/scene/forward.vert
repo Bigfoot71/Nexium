@@ -32,6 +32,9 @@ layout(location = 3) in vec4 aTangent;
 layout(location = 4) in vec4 aColor;
 layout(location = 5) in ivec4 aBoneIDs;
 layout(location = 6) in vec4 aWeights;
+layout(location = 7) in mat4 iMatModel;
+layout(location = 11) in vec4 iColor;
+layout(location = 12) in vec4 iCustom;
 
 /* === Storage Buffers === */
 
@@ -58,13 +61,12 @@ layout(std140, binding = 0) uniform ViewFrustum {
 
 layout(location = 0) uniform mat4 uMatModel;
 layout(location = 1) uniform mat3 uMatNormal;
-
 layout(location = 2) uniform vec4 uColAlbedo;
 layout(location = 3) uniform vec2 uTCOffset;
 layout(location = 4) uniform vec2 uTCScale;
-
 layout(location = 5) uniform bool uSkinning;
 layout(location = 6) uniform int uBoneOffset;
+layout(location = 7) uniform bool uInstancing;
 
 /* === Varyings === */
 
@@ -77,32 +79,40 @@ layout(location = 3) out mat3 vTBN;
 
 void main()
 {
-    vec3 skinPosition = aPosition;
-    vec3 skinTangent = aTangent.xyz;
-    vec3 skinNormal = aNormal;
+    vec3 position = aPosition;
+    vec3 tangent = aTangent.xyz;
+    vec3 normal = aNormal;
 
     if (uSkinning)
     {
-        mat4 skinMatModel =
+        mat4 sMatModel =
             aWeights.x * sBoneMatrices[uBoneOffset + aBoneIDs.x] +
             aWeights.y * sBoneMatrices[uBoneOffset + aBoneIDs.y] +
             aWeights.z * sBoneMatrices[uBoneOffset + aBoneIDs.z] +
             aWeights.w * sBoneMatrices[uBoneOffset + aBoneIDs.w];
 
-        mat3 skinMatNormal = mat3(transpose(inverse(skinMatModel)));
+        mat3 sMatNormal = mat3(transpose(inverse(sMatModel)));
 
-        skinPosition = vec3(skinMatModel * vec4(aPosition, 1.0));
-        skinTangent = skinMatNormal * aTangent.xyz;
-        skinNormal = skinMatNormal * aNormal;
+        position = vec3(sMatModel * vec4(position, 1.0));
+        tangent = sMatNormal * tangent.xyz;
+        normal = sMatNormal * normal;
     }
 
-    vec3 T = normalize(uMatNormal * skinTangent);
-    vec3 N = normalize(uMatNormal * skinNormal);
+    if (uInstancing)
+    {
+        mat3 iMatNormal = mat3(transpose(inverse(iMatModel)));
+        position = vec3(iMatModel * vec4(position, 1.0));
+        tangent = iMatNormal * tangent.xyz;
+        normal = iMatNormal * normal;
+    }
+
+    vec3 T = normalize(uMatNormal * tangent);
+    vec3 N = normalize(uMatNormal * normal);
     vec3 B = normalize(cross(N, T) * aTangent.w);
 
-    vPosition = vec3(uMatModel * vec4(skinPosition, 1.0));
+    vPosition = vec3(uMatModel * vec4(position, 1.0));
     vTexCoord = uTCOffset + aTexCoord * uTCScale;
-    vColor = aColor * uColAlbedo;
+    vColor = aColor * iColor * uColAlbedo;
     vTBN = mat3(T, B, N);
 
     gl_Position = uFrustum.viewProj * vec4(vPosition, 1.0);

@@ -41,14 +41,17 @@ public:
 public:
     DrawCall(int dataIndex, const HP_Mesh& mesh, const HP_Material& material);
 
+    /** Draw call category management */
     static Category category(const HP_Material& material);
     Category category() const;
 
+    /** Draw call data */
     const HP_Material& material() const;
     const HP_Mesh& mesh() const;
     int dataIndex() const;
 
-    void draw(const gpu::Pipeline& pipeline) const;
+    /** Draw command */
+    void draw(const gpu::Pipeline& pipeline, const HP_InstanceBuffer* instances, int instanceCount) const;
 
 private:
     HP_Material mMaterial;
@@ -91,15 +94,29 @@ inline int DrawCall::dataIndex() const
     return mDataIndex;
 }
 
-inline void DrawCall::draw(const gpu::Pipeline& pipeline) const
+inline void DrawCall::draw(const gpu::Pipeline& pipeline, const HP_InstanceBuffer* instances, int instanceCount) const
 {
     pipeline.bindVertexArray(mMesh.buffer->vao());
 
-    if (mMesh.buffer->ebo().isValid()) {
-        pipeline.drawElements(GL_TRIANGLES, GL_UNSIGNED_INT, mMesh.indexCount);
+    bool useInstancing = (instances && instanceCount > 0);
+    bool hasEBO = mMesh.buffer->ebo().isValid();
+
+    if (useInstancing) {
+        mMesh.buffer->bindInstances(*instances);
     }
-    else {
-        pipeline.draw(GL_TRIANGLES, 0, mMesh.vertexCount);
+
+    if (hasEBO) {
+        useInstancing ? 
+            pipeline.drawElementsInstanced(GL_TRIANGLES, GL_UNSIGNED_INT, mMesh.indexCount, instanceCount) :
+            pipeline.drawElements(GL_TRIANGLES, GL_UNSIGNED_INT, mMesh.indexCount);
+    } else {
+        useInstancing ?
+            pipeline.drawInstanced(GL_TRIANGLES, mMesh.vertexCount, instanceCount) :
+            pipeline.draw(GL_TRIANGLES, mMesh.vertexCount);
+    }
+
+    if (useInstancing) {
+        mMesh.buffer->unbindInstances();
     }
 }
 

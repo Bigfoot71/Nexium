@@ -49,8 +49,8 @@ public:
     void end();
 
     /** Push draw call functions */
-    void drawMesh(const HP_Mesh& mesh, const HP_Material& material, const HP_Transform& transform);
-    void drawModel(const HP_Model& model, const HP_Transform& transform);
+    void drawMesh(const HP_Mesh& mesh, const HP_InstanceBuffer* instances, int instanceCount, const HP_Material& material, const HP_Transform& transform);
+    void drawModel(const HP_Model& model, const HP_InstanceBuffer* instances, int instanceCount, const HP_Transform& transform);
 
     ProgramCache& programs();
     const LightManager& lights() const;
@@ -112,14 +112,14 @@ inline void Scene::begin(const HP_Camera& camera, const HP_Environment& env)
     mEnvironment = env;
 }
 
-inline void Scene::drawMesh(const HP_Mesh& mesh, const HP_Material& material, const HP_Transform& transform)
+inline void Scene::drawMesh(const HP_Mesh& mesh, const HP_InstanceBuffer* instances, int instanceCount, const HP_Material& material, const HP_Transform& transform)
 {
     int dataIndex = mDrawData.size();
-    mDrawData.emplace_back(transform);
+    mDrawData.emplace_back(transform, instances, instanceCount);
     mDrawCalls.emplace(DrawCall::category(material), dataIndex, mesh, material);
 }
 
-inline void Scene::drawModel(const HP_Model& model, const HP_Transform& transform)
+inline void Scene::drawModel(const HP_Model& model, const HP_InstanceBuffer* instances, int instanceCount, const HP_Transform& transform)
 {
     /* --- If the model is rigged we upload its bone transformations to the buffer --- */
 
@@ -155,7 +155,7 @@ inline void Scene::drawModel(const HP_Model& model, const HP_Transform& transfor
         mDrawCalls.emplace(DrawCall::category(material), dataIndex, *model.meshes[i], material);
     }
 
-    mDrawData.emplace_back(transform, boneMatrixOffset);
+    mDrawData.emplace_back(transform, instances, instanceCount, boneMatrixOffset);
 }
 
 inline void Scene::end()
