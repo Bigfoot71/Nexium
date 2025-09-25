@@ -57,8 +57,8 @@ public:
     void realloc(GLsizeiptr newSize, const void* data) noexcept;                // Reallocates buffer to newSize and uploads data, no data preservation guarantee
     void realloc(GLsizeiptr newSize, bool keepData) noexcept;                   // Reallocates buffer to newSize, optionally preserving existing data
 
-    void upload(const void* data) noexcept;                                     // Overwrite entire buffer content, keep current size
-    void upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept;   // Overwrite part of the buffer at given offset
+    bool upload(const void* data) noexcept;                                     // Overwrite entire buffer content, keep current size
+    bool upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept;   // Overwrite part of the buffer at given offset
 
     /** Memory mapping */
     template <typename T>
@@ -173,9 +173,9 @@ inline void Buffer::reserve(GLsizeiptr size, bool keepData) noexcept
     }
 }
 
-inline void Buffer::upload(const void* data) noexcept
+inline bool Buffer::upload(const void* data) noexcept
 {
-    upload(0, mSize, data);
+    return upload(0, mSize, data);
 }
 
 template <typename T>

@@ -137,11 +137,11 @@ void Buffer::realloc(GLsizeiptr size, bool keepData) noexcept
     );
 }
 
-void Buffer::upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept
+bool Buffer::upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept
 {
     if (!isValid()) {
         HP_INTERNAL_LOG(E, "GPU: Cannot set sub data on invalid buffer");
-        return;
+        return false;
     }
 
     if (offset < 0 || size <= 0 || offset + size > mSize) {
@@ -149,12 +149,12 @@ void Buffer::upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept
                 static_cast<long long>(offset),
                 static_cast<long long>(offset + size),
                 static_cast<long long>(mSize));
-        return;
+        return false;
     }
 
     if (!data) {
         HP_INTERNAL_LOG(E, "GPU: Buffer sub data cannot be null");
-        return;
+        return false;
     }
 
     Pipeline::withBufferBind(mTarget, mID, [&]() {
@@ -163,6 +163,8 @@ void Buffer::upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept
             HP_INTERNAL_LOG(E, "GPU: Failed to set buffer sub data");
         }
     });
+
+    return true;
 }
 
 void* Buffer::map(GLenum access) noexcept
