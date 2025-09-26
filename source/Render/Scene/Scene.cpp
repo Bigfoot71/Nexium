@@ -67,10 +67,19 @@ Scene::Scene(const render::SharedAssets& assets, HP_AppDesc& desc)
             .target = GL_TEXTURE_2D,
             .internalFormat = GL_RGBA16F,
             .data = nullptr,
-            .width = int(mTargetInfo.resolution.x),
-            .height = int(mTargetInfo.resolution.y),
-            .depth = 0,
-            .mipmap = false,
+            .width = mTargetInfo.resolution.x,
+            .height = mTargetInfo.resolution.y
+        }
+    );
+
+    mTargetSceneNormal = gpu::Texture(
+        gpu::TextureConfig
+        {
+            .target = GL_TEXTURE_2D,
+            .internalFormat = GL_RG16F,
+            .data = nullptr,
+            .width = mTargetInfo.resolution.x,
+            .height = mTargetInfo.resolution.y
         }
     );
 
@@ -80,16 +89,18 @@ Scene::Scene(const render::SharedAssets& assets, HP_AppDesc& desc)
             .target = GL_TEXTURE_2D,
             .internalFormat = GL_DEPTH_COMPONENT24,
             .data = nullptr,
-            .width = int(mTargetInfo.resolution.x),
-            .height = int(mTargetInfo.resolution.y),
-            .depth = 0,
-            .mipmap = false,
+            .width = mTargetInfo.resolution.x,
+            .height = mTargetInfo.resolution.y
         }
     );
 
-    /* --- Configure framebuffers --- */
+    /* --- Configure scene framebuffer --- */
 
-    mFramebufferScene = gpu::Framebuffer({ &mTargetSceneColor }, &mTargetSceneDepth);
+    mFramebufferScene = gpu::Framebuffer(
+        { &mTargetSceneColor, &mTargetSceneNormal },
+        &mTargetSceneDepth
+    );
+
     if (desc.render3D.sampleCount > 1) {
         mFramebufferScene.setSampleCount(desc.render3D.sampleCount);
     }
@@ -123,7 +134,10 @@ void Scene::renderScene()
     pipeline.setViewport(mFramebufferScene);
 
     pipeline.setDepthMode(gpu::DepthMode::WriteOnly);
-    pipeline.clear(mFramebufferScene, mEnvironment.background);
+
+    pipeline.clearDepth(1.0f);
+    pipeline.clearColor(0, mEnvironment.background);
+    pipeline.clearColor(1, HP_COLOR(0.25f, 0.25f, 1.0f, 1.0f));
 
     /* --- Bind common UBOs --- */
 
@@ -133,6 +147,8 @@ void Scene::renderScene()
 
     if (mEnvironment.sky.cubemap != nullptr)
     {
+        mFramebufferScene.setDrawBuffers({0});
+
         pipeline.setDepthMode(gpu::DepthMode::Disabled);
         pipeline.useProgram(mPrograms.skybox());
 
@@ -141,6 +157,8 @@ void Scene::renderScene()
         pipeline.setUniformFloat1(1, mEnvironment.sky.intensity);
 
         pipeline.draw(GL_TRIANGLES, 36);
+
+        mFramebufferScene.enableAllDrawBuffers();
     }
 
     /* --- Setup forward pipeline --- */

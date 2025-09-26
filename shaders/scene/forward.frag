@@ -138,6 +138,7 @@ layout(location = 30) uniform uint uLayerMask;
 /* === Fragments === */
 
 layout(location = 0) out vec4 FragColor;
+layout(location = 1) out vec4 FragNormal;
 
 /* === Lighting Functions === */
 
@@ -518,6 +519,10 @@ void main()
     FragColor.rgb += skySpecular + specular;
     FragColor.rgb += emission;
     FragColor.a = albedo.a;
+
+    /* Store normals */
+
+    FragNormal = vec4(vec2(M_EncodeOctahedral(N)), vec2(1.0));
 
     /* DEBUG: Tiles */
 

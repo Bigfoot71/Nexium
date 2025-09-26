@@ -89,6 +89,7 @@ private:
     /* --- Render Targets --- */
 
     gpu::Texture mTargetSceneColor{};
+    gpu::Texture mTargetSceneNormal{};
     gpu::Texture mTargetSceneDepth{};
 
     /* --- Framebuffers --- */
