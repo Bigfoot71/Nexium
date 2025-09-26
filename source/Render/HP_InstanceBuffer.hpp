@@ -25,7 +25,7 @@
 
 #include <Hyperion/HP_Render.h>
 #include <Hyperion/HP_Math.h>
-#include <span>
+#include <array>
 
 /* === Declaration === */
 
