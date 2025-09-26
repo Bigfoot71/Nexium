@@ -70,18 +70,28 @@ def remove_newlines(shader_content):
     return "".join(result)
 
 def normalize_spaces(shader_content):
-    """Remove redundant spaces around operators and symbols"""
+    """Remove redundant spaces around operators and symbols, excluding preprocessor directives"""
+    lines = shader_content.split('\n')
+    processed_lines = []
+
     symbols = [',', '.', '(', ')', '{', '}', ';', ':', '+', '-', '*', '/', '=']
 
-    for symbol in symbols:
-        escaped = re.escape(symbol)
-        shader_content = re.sub(rf'[ \t]+{escaped}', symbol, shader_content)
-        shader_content = re.sub(rf'{escaped}[ \t]+', symbol, shader_content)
+    for line in lines:
+        if line.lstrip().startswith('#'):
+            # Preserve preprocessor directives as is
+            processed_lines.append(line)
+        else:
+            # Apply normalization to other lines
+            processed_line = line
+            for symbol in symbols:
+                escaped = re.escape(symbol)
+                processed_line = re.sub(rf'[ \t]+{escaped}', symbol, processed_line)
+                processed_line = re.sub(rf'{escaped}[ \t]+', symbol, processed_line)
 
-    shader_content = re.sub(r'\s+\n', '\n', shader_content)
-    shader_content = re.sub(r'[ \t]+', ' ', shader_content)
+            processed_line = re.sub(r'[ \t]+', ' ', processed_line)
+            processed_lines.append(processed_line)
 
-    return shader_content
+    return '\n'.join(processed_lines)
 
 # === Main === #
 
