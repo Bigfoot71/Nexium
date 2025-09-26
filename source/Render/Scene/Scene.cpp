@@ -271,6 +271,7 @@ void Scene::renderScene()
         pipeline.setUniformFloat4(2, mat.albedo.color);
         pipeline.setUniformFloat2(3, mat.texOffset);
         pipeline.setUniformFloat2(4, mat.texScale);
+        pipeline.setUniformUint1(8, mat.billboard);
 
         pipeline.setUniformFloat3(22, mat.emission.color);
         pipeline.setUniformFloat1(23, mat.emission.energy);

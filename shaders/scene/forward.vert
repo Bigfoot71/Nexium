@@ -23,6 +23,10 @@
 precision highp float;
 #endif
 
+/* === Includes === */
+
+#include "../include/billboard.glsl"
+
 /* === Attributes === */
 
 layout(location = 0) in vec3 aPosition;
@@ -67,6 +71,7 @@ layout(location = 4) uniform vec2 uTCScale;
 layout(location = 5) uniform bool uSkinning;
 layout(location = 6) uniform int uBoneOffset;
 layout(location = 7) uniform bool uInstancing;
+layout(location = 8) uniform uint uBillboard;
 
 /* === Varyings === */
 
@@ -75,42 +80,50 @@ layout(location = 1) out vec2 vTexCoord;
 layout(location = 2) out vec4 vColor;
 layout(location = 3) out mat3 vTBN;
 
+/* === Helper Functions === */
+
+mat4 SkinMatrix(ivec4 boneIDs, vec4 weights, int offset)
+{
+    return weights.x * sBoneMatrices[offset + boneIDs.x] +
+           weights.y * sBoneMatrices[offset + boneIDs.y] +
+           weights.z * sBoneMatrices[offset + boneIDs.z] +
+           weights.w * sBoneMatrices[offset + boneIDs.w];
+}
+
 /* === Program === */
 
 void main()
 {
-    vec3 position = aPosition;
-    vec3 tangent = aTangent.xyz;
-    vec3 normal = aNormal;
+    mat4 matModel = uMatModel;
+    mat3 matNormal = uMatNormal;
 
-    if (uSkinning)
-    {
-        mat4 sMatModel =
-            aWeights.x * sBoneMatrices[uBoneOffset + aBoneIDs.x] +
-            aWeights.y * sBoneMatrices[uBoneOffset + aBoneIDs.y] +
-            aWeights.z * sBoneMatrices[uBoneOffset + aBoneIDs.z] +
-            aWeights.w * sBoneMatrices[uBoneOffset + aBoneIDs.w];
-
-        mat3 sMatNormal = mat3(transpose(inverse(sMatModel)));
-
-        position = vec3(sMatModel * vec4(position, 1.0));
-        tangent = sMatNormal * tangent.xyz;
-        normal = sMatNormal * normal;
+    if (uSkinning) {
+        mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, uBoneOffset);
+        matModel = sMatModel * matModel;
+        matNormal = mat3(transpose(inverse(sMatModel))) * matNormal;
     }
 
-    if (uInstancing)
-    {
-        mat3 iMatNormal = mat3(transpose(inverse(iMatModel)));
-        position = vec3(iMatModel * vec4(position, 1.0));
-        tangent = iMatNormal * tangent.xyz;
-        normal = iMatNormal * normal;
+    if (uInstancing) {
+        matModel = iMatModel * matModel;
+        matNormal = mat3(transpose(inverse(iMatModel))) * matNormal;
     }
 
-    vec3 T = normalize(uMatNormal * tangent);
-    vec3 N = normalize(uMatNormal * normal);
+    switch(uBillboard) {
+    case BILLBOARD_NONE:
+        break;
+    case BILLBOARD_FRONT:
+        BillboardFront(matModel, matNormal, uFrustum.invView);
+        break;
+    case BILLBOARD_Y_AXIS:
+        BillboardYAxis(matModel, matNormal, uFrustum.invView);
+        break;
+    }
+
+    vec3 T = normalize(matNormal * aTangent.xyz);
+    vec3 N = normalize(matNormal * aNormal);
     vec3 B = normalize(cross(N, T) * aTangent.w);
 
-    vPosition = vec3(uMatModel * vec4(position, 1.0));
+    vPosition = vec3(matModel * vec4(aPosition, 1.0));
     vTexCoord = uTCOffset + aTexCoord * uTCScale;
     vColor = aColor * iColor * uColAlbedo;
     vTBN = mat3(T, B, N);

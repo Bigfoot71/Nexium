@@ -312,7 +312,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         return;
     }
 
-    /* --- Lambda pour les appels de dessin --- */
+    /* --- Lambda for drawing calls --- */
 
     const auto draw = [&params](const gpu::Pipeline& pipeline, const DrawCall& call, const DrawData& data)
     {
@@ -326,6 +326,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         pipeline.setUniformInt1(5, data.isAnimated());
         pipeline.setUniformInt1(6, data.boneMatrixOffset());
         pipeline.setUniformInt1(7, data.useInstancing());
+        pipeline.setUniformUint1(8, call.material().billboard);
         pipeline.setUniformFloat1(11, call.material().alphaCutOff);
 
         switch (call.mesh().shadowFaceMode) {
@@ -365,11 +366,12 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
     pipeline.setViewport(0, 0, mShadowResolution, mShadowResolution);
     pipeline.useProgram(params.programs.shadow());
 
-    /* --- Bind storage buffers --- */
+    /* --- Bind UBOs and SSBOs --- */
 
+    pipeline.bindUniform(0, params.viewFrustum.buffer());
     pipeline.bindStorage(0, params.boneBuffer.buffer());
 
-    /* --- Iterations à travers toutes les lumieres avec ombres actives --- */
+    /* --- Iterates through all lights with shadows active --- */
 
     for (HP_Light& light : mLights)
     {

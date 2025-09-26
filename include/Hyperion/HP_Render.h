@@ -119,6 +119,19 @@ typedef enum HP_FontType {
 } HP_FontType;
 
 /**
+ * @brief Defines billboard modes for 3D objects.
+ *
+ * This enumeration defines how a 3D object aligns itself relative to the camera.
+ * It provides options to disable billboarding or to enable specific modes of alignment.
+ */
+typedef enum HP_BillboardMode {
+    HP_BILLBOARD_DISABLED,      ///< Billboarding is disabled; the object retains its original orientation.
+    HP_BILLBOARD_FRONT,         ///< Full billboarding; the object fully faces the camera, rotating on all axes.
+    HP_BILLBOARD_Y_AXIS         /**< Y-axis constrained billboarding; the object rotates only around the Y-axis,
+                                     keeping its "up" orientation fixed. This is suitable for upright objects like characters or signs. */
+} HP_BillboardMode;
+
+/**
  * @brief Defines blending modes for rendering.
  */
 typedef enum HP_BlendMode {
@@ -388,35 +401,36 @@ typedef struct HP_Mesh {
 typedef struct HP_Material {
 
     struct {
-        HP_Texture* texture;    ///< Albedo texture (diffuse color). Default: NULL (white texture)
-        HP_Color color;         ///< Albedo color multiplier. Default: White
+        HP_Texture* texture;        ///< Albedo texture (diffuse color). Default: NULL (white texture)
+        HP_Color color;             ///< Albedo color multiplier. Default: White
     } albedo;
 
     struct {
-        HP_Texture* texture;    ///< Emission texture (self-illumination). Default: NULL (white texture)
-        HP_Color color;         ///< Emission color multiplier. Default: White
-        float energy;           ///< Strength of the emission. Default: 0.0f
+        HP_Texture* texture;        ///< Emission texture (self-illumination). Default: NULL (white texture)
+        HP_Color color;             ///< Emission color multiplier. Default: White
+        float energy;               ///< Strength of the emission. Default: 0.0f
     } emission;
 
     struct {
-        HP_Texture* texture;    ///< ORM texture (Occlusion-Roughness-Metallic). Default: NULL (white texture)
-        float aoLightAffect;    ///< How ambient occlusion affects lighting. Default: 0.0f
-        float occlusion;        ///< Occlusion factor. Default: 1.0f
-        float roughness;        ///< Surface roughness. Default: 1.0f
-        float metalness;        ///< Surface metallic factor. Default: 0.0f
+        HP_Texture* texture;        ///< ORM texture (Occlusion-Roughness-Metallic). Default: NULL (white texture)
+        float aoLightAffect;        ///< How ambient occlusion affects lighting. Default: 0.0f
+        float occlusion;            ///< Occlusion factor. Default: 1.0f
+        float roughness;            ///< Surface roughness. Default: 1.0f
+        float metalness;            ///< Surface metallic factor. Default: 0.0f
     } orm;
 
     struct {
-        HP_Texture* texture;    ///< Normal map texture. Default: NULL (front facing)
-        float scale;            ///< Normal map intensity. Default: 1.0f
+        HP_Texture* texture;        ///< Normal map texture. Default: NULL (front facing)
+        float scale;                ///< Normal map intensity. Default: 1.0f
     } normal;
 
-    float alphaCutOff;          ///< Fragments with alpha below this value are discarded (0 disables discard). Default: 1e-6f.
-    HP_Vec2 texOffset;          ///< Texture coordinate offset. Default: vec2(0,0)
-    HP_Vec2 texScale;           ///< Texture coordinate scaling. Default: vec2(1,1)
+    float alphaCutOff;              ///< Fragments with alpha below this value are discarded (0 disables discard). Default: 1e-6f.
+    HP_Vec2 texOffset;              ///< Texture coordinate offset. Default: vec2(0,0)
+    HP_Vec2 texScale;               ///< Texture coordinate scaling. Default: vec2(1,1)
 
-    HP_BlendMode blend;         ///< Blending mode for rendering. Default: Opaque
-    HP_CullMode cull;           ///< Face culling mode. Default: Back face
+    HP_BillboardMode billboard;     ///< Billboard mode applied to the object
+    HP_BlendMode blend;             ///< Blending mode for rendering. Default: Opaque
+    HP_CullMode cull;               ///< Face culling mode. Default: Back face
 
 } HP_Material;
 
