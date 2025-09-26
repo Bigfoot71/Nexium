@@ -20,6 +20,7 @@
 #ifndef HP_DETAIL_HELPER_HPP
 #define HP_DETAIL_HELPER_HPP
 
+#include <Hyperion/HP_Macros.h>
 #include <SDL3/SDL_stdinc.h>
 #include <type_traits>
 
@@ -46,13 +47,10 @@ constexpr int bitScanForward(uint32_t flag)
         }
         return -1;
     }
-#if defined(_MSC_VER)
-    unsigned long index{};
-    _BitScanForward(&index, flag);
-    return static_cast<int>(index);
-#else
-    return __builtin_ctz(flag);
-#endif
+
+    return (flag == 0) ? -1 : static_cast<int>(
+        HP_CTZ64(static_cast<uint64_t>(flag))
+    );
 }
 
 /**

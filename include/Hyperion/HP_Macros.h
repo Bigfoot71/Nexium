@@ -89,6 +89,44 @@
     ((x) * (x) * (x))
 
 /**
+ * @brief Count leading zeros in a 64-bit integer.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+#   define HP_CLZ64(x) ((x) ? __builtin_clzll(x) : 64)
+#elif defined(_MSC_VER)
+#   include <intrin.h>
+#   define HP_CLZ64(x) \
+    ((x) ? ({ unsigned long _i; _BitScanReverse64(&_i, (x)); 63 - _i; }) : 64)
+#else
+#   define HP_CLZ64(x) \
+    ((x) == 0 ? 64 : ({ \
+        uint64_t _v = (x); \
+        int _n = 0; \
+        while ((_v & (1ULL << 63)) == 0) { _n++; _v <<= 1; } \
+        _n; \
+    }))
+#endif
+
+/**
+ * @brief Count trailing zeros in a 64-bit integer.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+#   define HP_CTZ64(x) ((x) ? __builtin_ctzll(x) : 64)
+#elif defined(_MSC_VER)
+#   include <intrin.h>
+#   define HP_CTZ64(x) \
+    ((x) ? ({ unsigned long _i; _BitScanForward64(&_i, (x)); (int)_i; }) : 64)
+#else
+#   define HP_CTZ64(x) \
+    ((x) == 0 ? 64 : ({ \
+        uint64_t _v = (x); \
+        int _n = 0; \
+        while ((_v & 1ULL) == 0) { _n++; _v >>= 1; } \
+        _n; \
+    }))
+#endif
+
+/**
  * @brief Sets a specific bit in a variable
  */
 #define HP_BIT_SET(var, bit) \
@@ -161,161 +199,30 @@
     ((x) > 0 && ((x) & ((x) - 1)) == 0)
 
 /**
- * @brief Next power of 2 (generic for uint8_t, uint16_t, uint32_t, uint64_t)
+ * @brief Compute the next power of 2 greater than or equal to a 64-bit integer
  */
-#define HP_NEXT_PO2(x) \
-    _Generic((x), \
-        uint8_t: ({ \
-            uint8_t _x = (x); \
-            if (_x == 0) _x = 1; \
-            else if ((_x & (_x - 1)) == 0) _x <<= 1; \
-            else { \
-                _x--; \
-                _x |= _x >> 1; \
-                _x |= _x >> 2; \
-                _x |= _x >> 4; \
-                _x++; \
-            } \
-            _x; \
-        }), \
-        uint16_t: ({ \
-            uint16_t _x = (x); \
-            if (_x == 0) _x = 1; \
-            else if ((_x & (_x - 1)) == 0) _x <<= 1; \
-            else { \
-                _x--; \
-                _x |= _x >> 1; \
-                _x |= _x >> 2; \
-                _x |= _x >> 4; \
-                _x |= _x >> 8; \
-                _x++; \
-            } \
-            _x; \
-        }), \
-        uint32_t: ({ \
-            uint32_t _x = (x); \
-            if (_x == 0) _x = 1; \
-            else if ((_x & (_x - 1)) == 0) _x <<= 1; \
-            else { \
-                _x--; \
-                _x |= _x >> 1; \
-                _x |= _x >> 2; \
-                _x |= _x >> 4; \
-                _x |= _x >> 8; \
-                _x |= _x >> 16; \
-                _x++; \
-            } \
-            _x; \
-        }), \
-        uint64_t: ({ \
-            uint64_t _x = (x); \
-            if (_x == 0) _x = 1; \
-            else if ((_x & (_x - 1)) == 0) _x <<= 1; \
-            else { \
-                _x--; \
-                _x |= _x >> 1; \
-                _x |= _x >> 2; \
-                _x |= _x >> 4; \
-                _x |= _x >> 8; \
-                _x |= _x >> 16; \
-                _x |= _x >> 32; \
-                _x++; \
-            } \
-            _x; \
-        }) \
-    )
+#define HP_NEXT_PO2(x) ({ \
+    uint64_t _x = (x); \
+    (_x <= 1) ? 1 : (1ULL << (64 - HP_CLZ64(_x - 1))); \
+})
 
 /**
- * @brief Previous power of 2 (generic for uint8_t, uint16_t, uint32_t, uint64_t)
+ * @brief Compute the previous power of 2 less than or equal to a 64-bit integer
  */
-#define HP_PREV_PO2(x) \
-    _Generic((x), \
-        uint8_t: ({ \
-            uint8_t _x = (x); \
-            if (_x == 0) _x = 0; \
-            else if ((_x & (_x - 1)) == 0) _x >>= 1; \
-            else { \
-                _x |= _x >> 1; \
-                _x |= _x >> 2; \
-                _x |= _x >> 4; \
-                _x = _x - (_x >> 1); \
-            } \
-            _x; \
-        }), \
-        uint16_t: ({ \
-            uint16_t _x = (x); \
-            if (_x == 0) _x = 0; \
-            else if ((_x & (_x - 1)) == 0) _x >>= 1; \
-            else { \
-                _x |= _x >> 1; \
-                _x |= _x >> 2; \
-                _x |= _x >> 4; \
-                _x |= _x >> 8; \
-                _x = _x - (_x >> 1); \
-            } \
-            _x; \
-        }), \
-        uint32_t: ({ \
-            uint32_t _x = (x); \
-            if (_x == 0) _x = 0; \
-            else if ((_x & (_x - 1)) == 0) _x >>= 1; \
-            else { \
-                _x |= _x >> 1; \
-                _x |= _x >> 2; \
-                _x |= _x >> 4; \
-                _x |= _x >> 8; \
-                _x |= _x >> 16; \
-                _x = _x - (_x >> 1); \
-            } \
-            _x; \
-        }), \
-        uint64_t: ({ \
-            uint64_t _x = (x); \
-            if (_x == 0) _x = 0; \
-            else if ((_x & (_x - 1)) == 0) _x >>= 1; \
-            else { \
-                _x |= _x >> 1; \
-                _x |= _x >> 2; \
-                _x |= _x >> 4; \
-                _x |= _x >> 8; \
-                _x |= _x >> 16; \
-                _x |= _x >> 32; \
-                _x = _x - (_x >> 1); \
-            } \
-            _x; \
-        }) \
-    )
+#define HP_PREV_PO2(x) ({ \
+    uint64_t _x = (x); \
+    (_x == 0) ? 0 : (1ULL << (63 - HP_CLZ64(_x))); \
+})
 
 /**
- * @brief Nearest power of 2 (generic for uint8_t, uint16_t, uint32_t, uint64_t)
+ * @brief Compute the nearest power of 2 to a 64-bit integer.
  */
-#define HP_NEAR_PO2(x) \
-    _Generic((x), \
-        uint8_t: ({ \
-            uint8_t _x = (x); \
-            uint8_t _next = HP_NEXT_PO2(_x); \
-            uint8_t _prev = HP_PREV_PO2(_x); \
-            (_x - _prev < _next - _x) ? _prev : _next; \
-        }), \
-        uint16_t: ({ \
-            uint16_t _x = (x); \
-            uint16_t _next = HP_NEXT_PO2(_x); \
-            uint16_t _prev = HP_PREV_PO2(_x); \
-            (_x - _prev < _next - _x) ? _prev : _next; \
-        }), \
-        uint32_t: ({ \
-            uint32_t _x = (x); \
-            uint32_t _next = HP_NEXT_PO2(_x); \
-            uint32_t _prev = HP_PREV_PO2(_x); \
-            (_x - _prev < _next - _x) ? _prev : _next; \
-        }), \
-        uint64_t: ({ \
-            uint64_t _x = (x); \
-            uint64_t _next = HP_NEXT_PO2(_x); \
-            uint64_t _prev = HP_PREV_PO2(_x); \
-            (_x - _prev < _next - _x) ? _prev : _next; \
-        }) \
-    )
+#define HP_NEAR_PO2(x) ({ \
+    uint64_t _x = (x); \
+    uint64_t _next = HP_NEXT_PO2(_x); \
+    uint64_t _prev = HP_PREV_PO2(_x); \
+    (_x - _prev < _next - _x) ? _prev : _next; \
+})
 
 /**
  * @brief The multiple of B after A

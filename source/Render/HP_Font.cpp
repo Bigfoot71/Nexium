@@ -20,6 +20,7 @@
 #include "./HP_Font.hpp"
 
 #include "../Core/HP_InternalLog.hpp"
+#include "Hyperion/HP_Macros.h"
 
 /* === FreeType Includes === */
 
@@ -374,14 +375,8 @@ bool HP_Font::generateFontAtlas(HP_Image* atlas, const uint8_t* fileData, int da
     int atlasSize = (int)roundf(sqrtf((float)estimatedArea));
 
     // Get next po2 if necessary
-    if ((atlasSize & (atlasSize - 1)) != 0) {
-        --atlasSize;
-        atlasSize |= atlasSize >> 1;
-        atlasSize |= atlasSize >> 2;
-        atlasSize |= atlasSize >> 4;
-        atlasSize |= atlasSize >> 8;
-        atlasSize |= atlasSize >> 16;
-        ++atlasSize;
+    if (!HP_IS_PO2(atlasSize)) {
+        atlasSize = HP_NEXT_PO2(atlasSize);
     }
 
     // Try rectangle first (wider than tall)
