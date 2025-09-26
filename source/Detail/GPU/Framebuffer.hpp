@@ -151,6 +151,10 @@ inline Framebuffer::Framebuffer(std::initializer_list<Texture*> colorAttachments
     }
 
     createResolveFramebuffer();
+
+    if (isValid()) {
+        enableAllDrawBuffers();
+    }
 }
 
 inline Framebuffer::~Framebuffer() noexcept
