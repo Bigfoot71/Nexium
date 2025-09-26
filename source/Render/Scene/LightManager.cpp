@@ -342,6 +342,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                 pipeline.setCullMode(gpu::CullMode::Disabled);
                 break;
             }
+            break;
         case HP_SHADOW_FACE_FRONT:
             pipeline.setCullMode(gpu::CullMode::Back);
             break;
