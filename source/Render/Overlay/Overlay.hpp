@@ -45,58 +45,53 @@ public:
     Overlay(const Overlay&) = delete;
     Overlay& operator=(const Overlay&) = delete;
 
-    // Gestion de base
+    /** Setters */
     void setProjection(const HP_Mat4& projection);
     void setTexture(const HP_Texture* texture);
     void setFont(const HP_Font* font);
     void setColor(HP_Color color);
 
-    // Ajout de données
+    /** Adding data */
     void addVertex(float x, float y, float u, float v);
     void addVertex(const HP_Vertex2D& vertex);
     void addIndex(uint16_t index);
 
-    // Rendu
+    /** Render */
     void clear();
     void flush();
     void blit();
 
-    // Informations
+    /** Infos */
     uint16_t nextVertexIndex() const;
     const HP_Font& currentFont() const;
 
-    // Signalement de dessin
+    /** Draw call report */
     void ensureDrawCall(DrawCall::Mode mode, int vertices, int indices);
 
 private:
-    /* --- CPU Buffers --- */
-
+    /** CPU Buffers */
     util::StaticArray<DrawCall, MaxDrawCalls> mDrawCalls;
     util::StaticArray<HP_Vertex2D, MaxVertices> mVertices;
     util::StaticArray<uint16_t, MaxIndices> mIndices;
 
-    /* --- GPU Buffers --- */
-
+    /** GPU Buffers */
     gpu::VertexArray mVertexArray{};
     gpu::Buffer mUniformBuffer{};
     gpu::Buffer mVertexBuffer{};
     gpu::Buffer mIndexBuffer{};
 
-    /* --- Program Shaders --- */
-
+    /** Program Shaders */
     gpu::Program mProgramFontBitmap{};
     gpu::Program mProgramFontSDF{};
     gpu::Program mProgramTexture{};
     gpu::Program mProgramColor{};
     gpu::Program mProgramOverlay{};
 
-    /* --- Framebuffer --- */
-
+    /** Framebuffer */
     gpu::Framebuffer mFramebuffer{};
     gpu::Texture mTargetColor{};
 
-    /* --- Current State --- */
-
+    /** Current State */
     HP_Color mCurrentColor = HP_WHITE;
     const HP_Font* mCurrentFont = nullptr;
     const HP_Texture* mCurrentTexture = nullptr;

@@ -194,7 +194,7 @@ inline void VertexArray::applyDefaultAttribute(const VertexAttribute& attr) noex
 inline void VertexArray::setupVertexAttribute(const VertexAttribute& attr) noexcept
 {
     glEnableVertexAttribArray(attr.location);
-    
+
     if (isIntegerAttributeType(attr.type) && attr.normalized == GL_FALSE) {
         glVertexAttribIPointer(
             attr.location, attr.size, attr.type, attr.stride,
@@ -207,7 +207,7 @@ inline void VertexArray::setupVertexAttribute(const VertexAttribute& attr) noexc
             attr.stride, reinterpret_cast<const void*>(attr.offset)
         );
     }
-    
+
     if (attr.divisor > 0) {
         glVertexAttribDivisor(attr.location, attr.divisor);
     }

@@ -73,7 +73,7 @@ enum class BlendMode {
 };
 
 enum class CullMode {
-    Disabled,       // glDisable(GL_CULL_FACE) - défaut OpenGL
+    Disabled,       // glDisable(GL_CULL_FACE)
     Front,          // glEnable(GL_CULL_FACE), glCullFace(GL_FRONT)
     Back,           // glEnable(GL_CULL_FACE), glCullFace(GL_BACK)
     FrontAndBack,   // glEnable(GL_CULL_FACE), glCullFace(GL_FRONT_AND_BACK)

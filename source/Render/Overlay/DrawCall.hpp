@@ -44,8 +44,8 @@ struct DrawCall {
         const HP_Font* font;
     };
 
-    size_t offset;  // Offset dans le buffer d'indices (en nombre d'indices)
-    size_t count;   // Nombre d'indices à dessiner
+    size_t offset;  // Offset in the index buffer (in number of indices)
+    size_t count;   // Number of indices to draw
     Mode mode;
 };
 

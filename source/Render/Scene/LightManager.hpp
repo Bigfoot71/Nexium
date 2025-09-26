@@ -98,24 +98,24 @@ private:
 
     gpu::Framebuffer mFramebufferShadowCube{};
     gpu::Framebuffer mFramebufferShadow2D{};
-    gpu::Texture mShadowMapCubeArray{};         ///< Contient les distances mondiales dans des cubemaps
-    gpu::Texture mShadowMap2DArray{};           ///< Contient les distances mondiales dans des texture 2D
-    gpu::Texture mShadowDepth{};                ///< Depth buffer commun pour le depth testing (TODO: En faire un renderbuffer)
+    gpu::Texture mShadowMapCubeArray{};         ///< Contains world distances in cubemaps
+    gpu::Texture mShadowMap2DArray{};           ///< Contains world distances in 2D textures
+    gpu::Texture mShadowDepth{};                ///< Common depth buffer for depth testing (TODO: Make it a renderbuffer)
 
     /* --- Storage Buffers --- */
 
-    gpu::Buffer mStorageLights{};               ///< Storage contenant les lumieres
-    gpu::Buffer mStorageShadow{};               ///< Storage contenant les indices de layer de shadow map pour chaque lumiere
-    gpu::Buffer mStorageClusters{};             ///< Storage contenant les tuiles (nombre de lumiere par tuile)
-    gpu::Buffer mStorageIndex{};                ///< Storage contenant les indices de lumieres pour chaque tuile
-    gpu::Buffer mStorageClusterAABB{};          ///< Storage contenant les AABB des clusters (calculé lors du light culling GPU, pourrait etre utile plus tard)
+    gpu::Buffer mStorageLights{};               ///< Storage containing the lights
+    gpu::Buffer mStorageShadow{};               ///< Storage containing the shadow map layer indices for each light
+    gpu::Buffer mStorageClusters{};             ///< Storage containing the tiles (number of lights per tile)
+    gpu::Buffer mStorageIndex{};                ///< Storage containing the light indices for each tile
+    gpu::Buffer mStorageClusterAABB{};          ///< Storage containing the cluster AABBs (computed during GPU light culling, could be useful later)
 
     /* --- Additionnal Data --- */
 
     int mShadowResolution{};
 
-    HP_IVec3 mClusterCount{};                   ///< Nombre de cluster X/Y/Z
-    HP_IVec2 mClusterSize{};                    ///< Taille d'un cluster X/Y
+    HP_IVec3 mClusterCount{};                   ///< Number of clusters X/Y/Z
+    HP_IVec2 mClusterSize{};                    ///< Size of a cluster X/Y
 
     float mClusterSliceScale{};
     float mClusterSliceBias{};

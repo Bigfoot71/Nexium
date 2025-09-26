@@ -422,7 +422,7 @@ void DynamicArray<T>::shrink_to_fit() noexcept
             mCapacity = 0;
         }
         else {
-            reallocate(mSize); // Ignore les échecs ici
+            reallocate(mSize); // Ignore failures here
         }
     }
 }

@@ -40,7 +40,7 @@ public:
     ObjectPool() noexcept;
     ~ObjectPool() noexcept;
 
-    /** Non copiable, uniquement déplaçable */
+    /** Move operator (only) */
     ObjectPool(const ObjectPool&) = delete;
     ObjectPool& operator=(const ObjectPool&) = delete;
     ObjectPool(ObjectPool&& other) noexcept;

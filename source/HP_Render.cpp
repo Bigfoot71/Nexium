@@ -1237,11 +1237,9 @@ void HP_DrawRingArcBorder2D(HP_Vec2 center, float innerRadius, float outerRadius
     float cosA = cosf(startAngle);
     float sinA = sinf(startAngle);
 
-    // Points initiaux
     HP_Vec2 outerStart = { center.x + outerRadius * cosA, center.y + outerRadius * sinA };
     HP_Vec2 innerStart = { center.x + innerRadius * cosA, center.y + innerRadius * sinA };
 
-    // premier trait radial
     HP_DrawLine2D(innerStart, outerStart, thickness);
 
     HP_Vec2 outerPrev = outerStart;
@@ -1256,7 +1254,6 @@ void HP_DrawRingArcBorder2D(HP_Vec2 center, float innerRadius, float outerRadius
         HP_Vec2 outerCurr = { center.x + outerRadius * cosA, center.y + outerRadius * sinA };
         HP_Vec2 innerCurr = { center.x + innerRadius * cosA, center.y + innerRadius * sinA };
 
-        // arcs extérieur et intérieur
         HP_DrawLine2D(outerPrev, outerCurr, thickness);
         HP_DrawLine2D(innerPrev, innerCurr, thickness);
 
@@ -1264,7 +1261,6 @@ void HP_DrawRingArcBorder2D(HP_Vec2 center, float innerRadius, float outerRadius
         innerPrev = innerCurr;
     }
 
-    // dernier trait radial
     HP_DrawLine2D(innerPrev, outerPrev, thickness);
 }
 

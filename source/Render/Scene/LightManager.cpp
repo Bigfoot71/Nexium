@@ -261,7 +261,7 @@ void LightManager::computeClusters(const ProcessParams& params)
         return;
     }
 
-    /* --- Adapter le nombre de cluster en Z selon le scenario --- */
+    /* --- Adapt the number of clusters in Z according to the view frustum --- */
 
     // SlicesPerDepthOctave defines how many logarithmically-distributed depth slices are
     // allocated per doubling of distance from the near plane. Higher values increase
@@ -274,7 +274,7 @@ void LightManager::computeClusters(const ProcessParams& params)
     mStorageIndex.reserve(clusterTotal * MaxLightsPerCluster * sizeof(uint32_t), false);
     mStorageClusterAABB.reserve(clusterTotal * (sizeof(HP_Vec4) + sizeof(HP_Vec3)), false); //< minBounds and maxBounds with padding
 
-    /* --- Calculer les paramètres de slicing en Z --- */
+    /* --- Calculate the Z-slicing parameters --- */
 
     mClusterSliceScale = float(mClusterCount.z) / log2(params.viewFrustum.far() / params.viewFrustum.near());
     mClusterSliceBias = -float(mClusterCount.z) * log2(params.viewFrustum.near()) / log2(params.viewFrustum.far() / params.viewFrustum.near());

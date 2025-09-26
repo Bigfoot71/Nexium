@@ -20,10 +20,9 @@
 #ifndef HP_MACROS_H
 #define HP_MACROS_H
 
-#include <stddef.h>
-#include <stdint.h>
 #include <stdbool.h>
-#include <assert.h>
+#include <stdint.h>
+#include <stddef.h>
 
 /**
  * @brief Returns the minimum of two values
@@ -342,16 +341,18 @@
 #define HP_UNUSED(x) ((void)(x))
 
 /**
- * @brief Compile-time assertion
- */
-#define HP_STATIC_ASSERT(cond, msg) \
-    static_assert(cond, msg)
-
-/**
  * @brief Debug assertion
  */
 #ifndef NDEBUG
-#    define HP_ASSERT(cond) assert(cond)
+#    define HP_ASSERT(cond)                                                    \
+        do {                                                                   \
+            if (!(cond)) {                                                     \
+                fprintf(stderr,                                                \
+                        "[ASSERT FAILED] %s\nFile: %s\nLine: %d\n",            \
+                        #cond, __FILE__, __LINE__);                            \
+                abort();                                                       \
+            }                                                                  \
+        } while (0)
 #else
 #    define HP_ASSERT(cond) ((void)0)
 #endif

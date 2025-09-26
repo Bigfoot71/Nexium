@@ -133,12 +133,12 @@ void Overlay::flush()
         return;
     }
 
-    /* --- Upload des données --- */
+    /* --- Upload data --- */
 
     mVertexBuffer.upload(0, mVertices.size() * sizeof(HP_Vertex2D), mVertices.data());
     mIndexBuffer.upload(0, mIndices.size() * sizeof(uint16_t), mIndices.data());
 
-    /* --- Configuration du pipeline --- */
+    /* --- Setup pipeline --- */
 
     gpu::Pipeline pipeline;
 
@@ -148,7 +148,7 @@ void Overlay::flush()
     pipeline.bindFramebuffer(mFramebuffer);
     pipeline.setViewport(mFramebuffer);
 
-    /* --- Rendu de tous les draw calls --- */
+    /* --- Render all draw calls --- */
 
     for (const DrawCall& call : mDrawCalls) {
         switch (call.mode) {
