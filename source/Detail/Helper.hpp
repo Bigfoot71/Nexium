@@ -55,7 +55,6 @@ constexpr int bitScanForward(uint32_t flag)
 #endif
 }
 
-
 /**
  * @brief Iterate over all set bits in a bitfield and call a provided function on each index.
  * 
