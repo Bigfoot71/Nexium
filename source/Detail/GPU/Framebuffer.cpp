@@ -17,8 +17,10 @@
  *   3. This notice may not be removed or altered from any source distribution.
  */
 
+#include "../Util/StaticArray.hpp"
 #include "./Framebuffer.hpp"
 #include "./Pipeline.hpp"
+#include "Texture.hpp"
 
 namespace gpu {
 
@@ -43,16 +45,13 @@ void Framebuffer::enableAllDrawBuffers() noexcept
         return;
     }
 
-    constexpr GLenum buffers[] {
-        GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,
-        GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5,
-        GL_COLOR_ATTACHMENT6, GL_COLOR_ATTACHMENT7, GL_COLOR_ATTACHMENT8
-    };
-
-    SDL_assert(mColorAttachments.size() < SDL_arraysize(buffers));
+    util::StaticArray<GLenum, 32> buffers{};
+    for (int i = 0; i < mColorAttachments.size(); i++) {
+        buffers.push_back(GL_COLOR_ATTACHMENT0 + i);
+    }
 
     Pipeline::withFramebufferBind(renderId(), [&]() {
-        glDrawBuffers(static_cast<GLsizei>(mColorAttachments.size()), buffers);
+        glDrawBuffers(static_cast<GLsizei>(buffers.size()), buffers.data());
     });
 }
 
