@@ -33,8 +33,13 @@ void Framebuffer::setDrawBuffers(std::initializer_list<GLenum> buffers) noexcept
         return;
     }
 
+    util::StaticArray<GLenum, 32> glBuffers{};
+    for (int i = 0; i < HP_MIN(glBuffers.capacity(), buffers.size()); i++) {
+        glBuffers.push_back(GL_COLOR_ATTACHMENT0 + buffers.begin()[i]);
+    }
+
     Pipeline::withFramebufferBind(renderId(), [&]() {
-        glDrawBuffers(static_cast<GLsizei>(buffers.size()), buffers.begin());
+        glDrawBuffers(static_cast<GLsizei>(glBuffers.size()), glBuffers.begin());
     });
 }
 
