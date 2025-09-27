@@ -34,22 +34,30 @@ class ProgramCache {
 public:
     ProgramCache(const gpu::Shader& vertScreen);
 
+    /** Scene programs */
     gpu::Program& lightCulling();
     gpu::Program& forward();
     gpu::Program& skybox();
     gpu::Program& shadow();
 
+    /** Post process programs */
     gpu::Program& output(HP_Tonemap tonemap);
+    gpu::Program& bilateralBlur();
+    gpu::Program& ssaoPass();
+    gpu::Program& ssaoPost();
 
 private:
-    void buildOutput(HP_Tonemap tonemap);
-
-private:
-    std::array<gpu::Program, HP_TONEMAP_COUNT> mOutput{};
+    /** Scene programs */
     gpu::Program mLightCulling{};
     gpu::Program mForward{};
     gpu::Program mSkybox{};
     gpu::Program mShadow{};
+
+    /** Post process programs */
+    std::array<gpu::Program, HP_TONEMAP_COUNT> mOutput{};
+    gpu::Program mBilateralBlur{};
+    gpu::Program mSsaoPass{};
+    gpu::Program mSsaoPost{};
 
 private:
     const gpu::Shader& mVertexShaderScreen;
@@ -70,14 +78,6 @@ inline gpu::Program& ProgramCache::forward()
 inline gpu::Program& ProgramCache::shadow()
 {
     return mShadow;
-}
-
-inline gpu::Program& ProgramCache::output(HP_Tonemap tonemap)
-{
-    if (!mOutput[tonemap].isValid()) {
-        buildOutput(tonemap);
-    }
-    return mOutput[tonemap];
 }
 
 } // namespace scene

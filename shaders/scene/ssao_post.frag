@@ -17,31 +17,42 @@
  *   3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef HP_RENDER_SCENE_SHARED_ASSETS_HPP
-#define HP_RENDER_SCENE_SHARED_ASSETS_HPP
+/* === Profile Specific === */
 
-#include "../../Detail/GPU/Shader.hpp"
-#include "../HP_Texture.hpp"
-#include "../HP_Font.hpp"
+#ifdef GL_ES
+precision mediump float;
+#endif
 
-namespace scene {
+/* === Varyings === */
 
-class SharedAssets {
-public:
-    SharedAssets() = default;
+layout(location = 0) in vec2 vTexCoord;
 
-    const gpu::Texture& textureSsaoKernel();
-    const gpu::Texture& textureSsaoNoise();
-    const gpu::Texture& textureBrdfLut();
-    const gpu::Texture& textureNormal();
+/* === Samplers === */
 
-private:
-    gpu::Texture mTextureSsaoKernel;
-    gpu::Texture mTextureSsaoNoise;
-    gpu::Texture mTextureBrdfLut;
-    gpu::Texture mTextureNormal;
-};
+layout(binding = 0) uniform sampler2D uTexScene;
+layout(binding = 1) uniform sampler2D uTexAO;
 
-} // namespace scene
+/* === Uniforms === */
 
-#endif // HP_RENDER_SCENE_SHARED_ASSETS_HPP
+layout(location = 0) uniform float uIntensity;
+layout(location = 1) uniform float uPower;
+
+/* === Fragments === */
+
+layout(location = 0) out vec4 FragColor;
+
+/* === Program === */
+
+void main()
+{
+    vec3 scene = texture(uTexScene, vTexCoord).rgb;
+    float ao = texture(uTexAO, vTexCoord).r;
+
+    if (uPower != 1.0) {
+        ao = pow(ao, uPower);
+    }
+
+    ao = mix(1.0, ao, uIntensity);
+
+    FragColor = vec4(scene.rgb * ao, 1.0);
+}

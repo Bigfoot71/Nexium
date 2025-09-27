@@ -111,6 +111,10 @@ Scene::Scene(const render::SharedAssets& assets, HP_AppDesc& desc)
         GL_RGB16F, desc.render3D.resolution.x, desc.render3D.resolution.y
     );
 
+    mSwapAuxiliary = gpu::SwapBuffer(
+        GL_RGB16F, desc.render3D.resolution.x / 2, desc.render3D.resolution.y / 2
+    );
+
     /* --- Reserve enough space for the draw calls array --- */
 
     if (!mDrawCalls.reserve(1024)) {
@@ -311,13 +315,91 @@ void Scene::renderScene()
     mFramebufferScene.resolve();
 }
 
-void Scene::postProcess()
+void Scene::postSSAO(bool firstPass)
+{
+    // Right now SSAO is done in a simple way by directly darkening
+    // the rendered scene, instead of being physically correct.
+    // The proper way would be to run a depth pre-pass to get depth
+    // and normals of opaque objects, compute SSAO, and apply it to
+    // ambient light during the forward pass. But that makes things
+    // more complicated for material shaders, which
+    // aren’t in yet, and could hurt performance on mobile.
+    // So for now we stick with this simpler version until it’s needed.
+
+    gpu::Pipeline pipeline;
+
+    /* --- Bind common stuff --- */
+
+    pipeline.bindUniform(0, mFrustum.buffer());
+
+    /* --- Generate ambient occlusion --- */
+
+    pipeline.bindFramebuffer(mSwapAuxiliary.target());
+    {
+        pipeline.setViewport(0, 0, 1920/2, 1080/2);
+        pipeline.useProgram(mPrograms.ssaoPass());
+
+        pipeline.bindTexture(0, mTargetSceneDepth);
+        pipeline.bindTexture(1, mTargetSceneNormal);
+        pipeline.bindTexture(2, mAssetsScene.textureSsaoKernel());
+        pipeline.bindTexture(3, mAssetsScene.textureSsaoNoise());
+
+        pipeline.setUniformFloat1(0, mEnvironment.ssao.radius);
+        pipeline.setUniformFloat1(1, mEnvironment.ssao.bias);
+
+        pipeline.draw(GL_TRIANGLES, 3);
+    }
+    mSwapAuxiliary.swap();
+
+    /* --- Blur ambient occlusion --- */
+
+    pipeline.useProgram(mPrograms.bilateralBlur());
+
+    pipeline.bindTexture(1, mTargetSceneDepth);
+    pipeline.setUniformFloat1(1, mEnvironment.ssao.radius);
+
+    pipeline.bindFramebuffer(mSwapAuxiliary.target());
+    {
+        pipeline.bindTexture(0, mSwapAuxiliary.source());
+        pipeline.setUniformFloat2(0, HP_VEC2(1.0f / mSwapAuxiliary.source().width(), 0.0f));
+        pipeline.draw(GL_TRIANGLES, 3);
+    }
+    mSwapAuxiliary.swap();
+
+    pipeline.bindFramebuffer(mSwapAuxiliary.target());
+    {
+        pipeline.bindTexture(0, mSwapAuxiliary.source());
+        pipeline.setUniformFloat2(0, HP_VEC2(0.0f, 1.0f / mSwapAuxiliary.source().height()));
+        pipeline.draw(GL_TRIANGLES, 3);
+    }
+    mSwapAuxiliary.swap();
+
+    /* --- Apply SSAO --- */
+
+    pipeline.bindFramebuffer(mSwapPostProcess.target());
+    {
+        pipeline.setViewport(0, 0, 1920, 1080);
+        pipeline.useProgram(mPrograms.ssaoPost());
+
+        pipeline.bindTexture(0, firstPass ? mTargetSceneColor : mSwapPostProcess.source());
+        pipeline.bindTexture(1, mSwapAuxiliary.source());
+
+        pipeline.setUniformFloat1(0, mEnvironment.ssao.intensity);
+        pipeline.setUniformFloat1(1, mEnvironment.ssao.power);
+
+        pipeline.draw(GL_TRIANGLES, 3);
+    }
+    mSwapPostProcess.swap();
+}
+
+void Scene::postFinal(bool firstPass)
 {
     gpu::Pipeline pipeline;
 
-    pipeline.useProgram(mPrograms.output(mEnvironment.tonemap.mode));
-    pipeline.bindTexture(0, mTargetSceneColor);
     pipeline.setViewport(HP_GetWindowSize());
+
+    pipeline.useProgram(mPrograms.output(mEnvironment.tonemap.mode));
+    pipeline.bindTexture(0, firstPass ? mTargetSceneColor : mSwapPostProcess.source());
 
     pipeline.setUniformFloat1(0, mEnvironment.tonemap.exposure);
     pipeline.setUniformFloat1(1, mEnvironment.tonemap.white);

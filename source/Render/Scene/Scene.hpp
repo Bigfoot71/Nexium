@@ -58,7 +58,8 @@ public:
 
 private:
     void renderScene();
-    void postProcess();
+    void postSSAO(bool firstPass);
+    void postFinal(bool firstPass);
 
 private:
     struct TargetInfo {
@@ -68,40 +69,32 @@ private:
     };
 
 private:
-    /* --- Shared Assets --- */
-
+    /** Shared assets */
     const render::SharedAssets& mAssetsCommon;
     scene::SharedAssets mAssetsScene;
 
-    /* --- Scene data --- */
-
+    /** Scene data */
     HP_Environment mEnvironment{};
     BucketDrawCalls mDrawCalls{};
     ArrayDrawData mDrawData{};
     ViewFrustum mFrustum{};
 
-    /* --- Managers --- */
-
+    /** Managers */
     BoneBufferManager mBoneBuffer;
     ProgramCache mPrograms;
     LightManager mLights;
 
-    /* --- Render Targets --- */
-
+    /** Scene render targets */
     gpu::Texture mTargetSceneColor{};
     gpu::Texture mTargetSceneNormal{};
     gpu::Texture mTargetSceneDepth{};
-
-    /* --- Framebuffers --- */
-
     gpu::Framebuffer mFramebufferScene{};
 
-    /* --- Swap Buffers --- */
+    /** Swap buffers */
+    gpu::SwapBuffer mSwapPostProcess{};     //< Ping-pong buffer used during scene post process
+    gpu::SwapBuffer mSwapAuxiliary{};       //< Secondary ping-pong buffer in half resolution
 
-    gpu::SwapBuffer mSwapPostProcess{};
-
-    /* --- State infos --- */
-
+    /** State infos */
     TargetInfo mTargetInfo{};
 };
 
@@ -186,7 +179,15 @@ inline void Scene::end()
     /* --- Render scene --- */
 
     renderScene();
-    postProcess();
+
+    bool firstPass = true;
+
+    if (mEnvironment.ssao.enabled) {
+        postSSAO(firstPass);
+        firstPass = false;
+    }
+
+    postFinal(firstPass);
 
     /* --- Reset state --- */
 

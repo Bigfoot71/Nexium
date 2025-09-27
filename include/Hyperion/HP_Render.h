@@ -325,18 +325,26 @@ typedef struct HP_BoundingBox {
  */
 typedef struct HP_Environment {
 
-    HP_BoundingBox bounds;         ///< Scene bounds, used for directional light shadows and spatial calculations.
-    HP_Color background;           ///< Fallback background color if no skybox is defined.
-    HP_Color ambient;              ///< Fallback ambient light color if no reflection probe is defined.
+    HP_BoundingBox bounds;          ///< Scene bounds, used for directional light shadows and spatial calculations.
+    HP_Color background;            ///< Fallback background color if no skybox is defined.
+    HP_Color ambient;               ///< Fallback ambient light color if no reflection probe is defined.
 
     struct {
-        HP_Cubemap* cubemap;       ///< Skybox cubemap texture. If null, 'background' is used.
-        HP_ReflectionProbe* probe; ///< Global reflection probe derived from the skybox. If null, 'ambient' is used.
-        HP_Quat rotation;          ///< Orientation applied to the skybox and its reflection probe.
-        float intensity;           ///< Overall sky contribution (affects cubemap and IBL).
-        float specular;            ///< Specular reflection contribution (prefiltered environment).
-        float diffuse;             ///< Diffuse lighting contribution (irradiance).
+        HP_Cubemap* cubemap;        ///< Skybox cubemap texture. If null, 'background' is used.
+        HP_ReflectionProbe* probe;  ///< Global reflection probe derived from the skybox. If null, 'ambient' is used.
+        HP_Quat rotation;           ///< Orientation applied to the skybox and its reflection probe.
+        float intensity;            ///< Overall sky contribution (affects cubemap and IBL).
+        float specular;             ///< Specular reflection contribution (prefiltered environment).
+        float diffuse;              ///< Diffuse lighting contribution (irradiance).
     } sky;
+
+    struct {
+        float intensity;            ///< Overall strength of the SSAO effect (scales the occlusion).
+        float radius;               ///< Sampling radius in view-space units; larger values capture broader occlusion.
+        float power;                ///< Exponent applied to the SSAO term; higher values darken occlusion and sharpen falloff.
+        float bias;                 ///< Small depth offset to reduce self-occlusion artifacts on flat surfaces.
+        bool enabled;               ///< Enables or disables the SSAO pass.
+    } ssao;
 
     struct {
         float brightness;           ///< Global brightness adjustment.
@@ -1196,6 +1204,12 @@ HPAPI void HP_ApplyCameraTransform(HP_Camera* camera, HP_Mat4 transform, HP_Vec3
  *   - intensity: 1.0
  *   - specular contribution: 1.0
  *   - diffuse contribution: 1.0
+ * - ssao:
+ *   - intensity: 1.0
+ *   - radius: 0.5
+ *   - power: 1.0
+ *   - bias: 0.025
+ *   - enabled: false
  * - global adjustments:
  *   - brightness: 1.0
  *   - contrast: 1.0

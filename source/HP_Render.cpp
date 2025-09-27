@@ -1691,6 +1691,13 @@ HP_Environment HP_GetDefaultEnvironment(void)
             .specular = 1.0f,
             .diffuse = 1.0f
         },
+        .ssao = {
+            .intensity = 1.0f,
+            .radius = 0.5f,
+            .power = 1.0f,
+            .bias = 0.025f,
+            .enabled = false
+        },
         .adjustment = {
             .brightness = 1.0f,
             .contrast = 1.0f,

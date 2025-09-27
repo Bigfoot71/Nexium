@@ -326,6 +326,8 @@ embed_shaders(${PROJECT_NAME}
     "${HP_ROOT_PATH}/shaders/process/cubemap_from_equirectangular.frag"
     "${HP_ROOT_PATH}/shaders/process/cubemap_irradiance.frag"
     "${HP_ROOT_PATH}/shaders/process/cubemap_prefilter.frag"
+    "${HP_ROOT_PATH}/shaders/process/bilateral_blur.frag"
+    "${HP_ROOT_PATH}/shaders/process/ssao_pass.frag"
     "${HP_ROOT_PATH}/shaders/overlay/generic.vert"
     "${HP_ROOT_PATH}/shaders/overlay/generic.frag"
     "${HP_ROOT_PATH}/shaders/overlay/overlay.frag"
@@ -336,6 +338,7 @@ embed_shaders(${PROJECT_NAME}
     "${HP_ROOT_PATH}/shaders/scene/forward.frag"
     "${HP_ROOT_PATH}/shaders/scene/shadow.vert"
     "${HP_ROOT_PATH}/shaders/scene/shadow.frag"
+    "${HP_ROOT_PATH}/shaders/scene/ssao_post.frag"
     "${HP_ROOT_PATH}/shaders/scene/output.frag"
 )
 

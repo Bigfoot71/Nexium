@@ -26,6 +26,10 @@
 #include <shaders/skybox.frag.h>
 #include <shaders/shadow.vert.h>
 #include <shaders/shadow.frag.h>
+
+#include <shaders/bilateral_blur.frag.h>
+#include <shaders/ssao_pass.frag.h>
+#include <shaders/ssao_post.frag.h>
 #include <shaders/output.frag.h>
 
 namespace scene {
@@ -67,34 +71,82 @@ gpu::Program& ProgramCache::skybox()
     return mSkybox;
 }
 
-/* --- Private Implementation === */
-
-void ProgramCache::buildOutput(HP_Tonemap tonemap)
+gpu::Program& ProgramCache::output(HP_Tonemap tonemap)
 {
-    const char* tonemapper = "TONEMAPPER TONEMAP_LINEAR";
+    if (!mOutput[tonemap].isValid())
+    {
+        const char* tonemapper = "TONEMAPPER TONEMAP_LINEAR";
 
-    switch (tonemap) {
-    case HP_TONEMAP_LINEAR:
-        break;
-    case HP_TONEMAP_REINHARD:
-        tonemapper = "TONEMAPPER TONEMAP_REINHARD";
-        break;
-    case HP_TONEMAP_FILMIC:
-        tonemapper = "TONEMAPPER TONEMAP_FILMIC";
-        break;
-    case HP_TONEMAP_ACES:
-        tonemapper = "TONEMAPPER TONEMAP_ACES";
-        break;
-    case HP_TONEMAP_AGX:
-        tonemapper = "TONEMAPPER TONEMAP_AGX";
-        break;
-    default:
-        HP_INTERNAL_LOG(W, "RENDER: Unknown tonemap mode (%i); Linear will be used", tonemap);
-        break;
+        switch (tonemap) {
+        case HP_TONEMAP_LINEAR:
+            break;
+        case HP_TONEMAP_REINHARD:
+            tonemapper = "TONEMAPPER TONEMAP_REINHARD";
+            break;
+        case HP_TONEMAP_FILMIC:
+            tonemapper = "TONEMAPPER TONEMAP_FILMIC";
+            break;
+        case HP_TONEMAP_ACES:
+            tonemapper = "TONEMAPPER TONEMAP_ACES";
+            break;
+        case HP_TONEMAP_AGX:
+            tonemapper = "TONEMAPPER TONEMAP_AGX";
+            break;
+        default:
+            HP_INTERNAL_LOG(W, "RENDER: Unknown tonemap mode (%i); Linear will be used", tonemap);
+            break;
+        }
+
+        gpu::Shader frag(GL_FRAGMENT_SHADER, OUTPUT_FRAG, {tonemapper});
+        mOutput[tonemap] = gpu::Program(mVertexShaderScreen, frag);
     }
 
-    gpu::Shader frag(GL_FRAGMENT_SHADER, OUTPUT_FRAG, {tonemapper});
-    mOutput[tonemap] = gpu::Program(mVertexShaderScreen, frag);
+    return mOutput[tonemap];
+}
+
+gpu::Program& ProgramCache::bilateralBlur()
+{
+    if (!mBilateralBlur.isValid()) {
+        mBilateralBlur = gpu::Program(
+            mVertexShaderScreen,
+            gpu::Shader(
+                GL_FRAGMENT_SHADER,
+                BILATERAL_BLUR_FRAG
+            )
+        );
+    }
+
+    return mBilateralBlur;
+}
+
+gpu::Program& ProgramCache::ssaoPass()
+{
+    if (!mSsaoPass.isValid()) {
+        mSsaoPass = gpu::Program(
+            mVertexShaderScreen,
+            gpu::Shader(
+                GL_FRAGMENT_SHADER,
+                SSAO_PASS_FRAG
+            )
+        );
+    }
+
+    return mSsaoPass;
+}
+
+gpu::Program& ProgramCache::ssaoPost()
+{
+    if (!mSsaoPost.isValid()) {
+        mSsaoPost = gpu::Program(
+            mVertexShaderScreen,
+            gpu::Shader(
+                GL_FRAGMENT_SHADER,
+                SSAO_POST_FRAG
+            )
+        );
+    }
+
+    return mSsaoPost;
 }
 
 } // namespace scene
