@@ -108,10 +108,14 @@ HP_Texture* PoolModel::loadTexture(const aiScene* scene, const aiMaterial* mater
 {
     /* --- Get texture info --- */
 
-    aiTextureMapMode wrapMode{};
+    // TODO: Currently, only the first wrap mode is considered, which may be incorrect
+    //       The wrap system with HP_Texture should be revised to handle wrapping on each axis
+    //       See also 'loadTextureORM' if a change is made
+
+    aiTextureMapMode wrapMode[2]{};
     aiString path{};
 
-    if (material->GetTexture(type, index, &path, nullptr, nullptr, nullptr, nullptr, &wrapMode) != AI_SUCCESS) {
+    if (material->GetTexture(type, index, &path, nullptr, nullptr, nullptr, nullptr, wrapMode) != AI_SUCCESS) {
         return nullptr; // No texture of this type
     }
 
@@ -125,7 +129,7 @@ HP_Texture* PoolModel::loadTexture(const aiScene* scene, const aiMaterial* mater
 
     /* --- Upload the texture to VRAM --- */
 
-    HP_Texture* texture = mPoolTexture.createTexture(image, getWrapMode(wrapMode));
+    HP_Texture* texture = mPoolTexture.createTexture(image, getWrapMode(wrapMode[0]));
     if (isAllocated) {
         HP_DestroyImage(&image);
     }
@@ -143,10 +147,10 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
 
     /* --- Check for glTF combined metallic-roughness texture first --- */
 
-    aiTextureMapMode gltfWrapMode;
-    struct aiString gltfPath;
+    aiTextureMapMode gltfWrapMode[2]{};
+    aiString gltfPath{};
 
-    if (material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &gltfPath, nullptr, nullptr, nullptr, nullptr, &gltfWrapMode) == AI_SUCCESS)
+    if (material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &gltfPath, nullptr, nullptr, nullptr, nullptr, gltfWrapMode) == AI_SUCCESS)
     {
         bool gltfAllocated;
         HP_Image gltfImage = loadImage(scene, gltfPath, &gltfAllocated);
@@ -179,7 +183,7 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
             HP_Image ormImage = HP_ComposeImagesRGB(sources, HP_WHITE);
 
             if (ormImage.pixels != nullptr) {
-                ormTexture = mPoolTexture.createTexture(ormImage, getWrapMode(gltfWrapMode));
+                ormTexture = mPoolTexture.createTexture(ormImage, getWrapMode(gltfWrapMode[0]));
                 HP_DestroyImage(&ormImage);
             }
 
@@ -205,28 +209,28 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
     bool roughnessAllocated = false;
     bool metalnessAllocated = false;
 
-    aiTextureMapMode occlusionWrapMode{};
-    aiTextureMapMode roughnessWrapMode{};
-    aiTextureMapMode metalnessWrapMode{};
+    aiTextureMapMode occlusionWrapMode[2]{};
+    aiTextureMapMode roughnessWrapMode[2]{};
+    aiTextureMapMode metalnessWrapMode[2]{};
 
     // Load occlusion
     struct aiString occlusionPath;
-    if (material->GetTexture(aiTextureType_AMBIENT_OCCLUSION, 0, &occlusionPath, nullptr, nullptr, nullptr, nullptr, &occlusionWrapMode) == AI_SUCCESS) {
+    if (material->GetTexture(aiTextureType_AMBIENT_OCCLUSION, 0, &occlusionPath, nullptr, nullptr, nullptr, nullptr, occlusionWrapMode) == AI_SUCCESS) {
         occlusionImage = loadImage(scene, occlusionPath, &occlusionAllocated);
         *hasOcclusion = (occlusionImage.pixels != nullptr);
     }
-    else if (material->GetTexture(aiTextureType_LIGHTMAP, 0, &occlusionPath, nullptr, nullptr, nullptr, nullptr, &occlusionWrapMode) == AI_SUCCESS) {
+    else if (material->GetTexture(aiTextureType_LIGHTMAP, 0, &occlusionPath, nullptr, nullptr, nullptr, nullptr, occlusionWrapMode) == AI_SUCCESS) {
         occlusionImage = loadImage(scene, occlusionPath, &occlusionAllocated);
         *hasOcclusion = (occlusionImage.pixels != nullptr);
     }
 
     // Load roughness (with shininess fallback)
     struct aiString roughnessPath;
-    if (material->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &roughnessPath, nullptr, nullptr, nullptr, nullptr, &roughnessWrapMode) == AI_SUCCESS) {
+    if (material->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &roughnessPath, nullptr, nullptr, nullptr, nullptr, roughnessWrapMode) == AI_SUCCESS) {
         roughnessImage = loadImage(scene, roughnessPath, &roughnessAllocated);
         *hasRoughness = (roughnessImage.pixels != nullptr);
     }
-    else if (material->GetTexture(aiTextureType_SHININESS, 0, &roughnessPath, nullptr, nullptr, nullptr, nullptr, &roughnessWrapMode) == AI_SUCCESS) {
+    else if (material->GetTexture(aiTextureType_SHININESS, 0, &roughnessPath, nullptr, nullptr, nullptr, nullptr, roughnessWrapMode) == AI_SUCCESS) {
         roughnessImage = loadImage(scene, roughnessPath, &roughnessAllocated);
         if (roughnessImage.pixels) {
             *hasRoughness = true;
@@ -236,7 +240,7 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
 
     // Load metalness
     struct aiString metalnessPath;
-    if (material->GetTexture(aiTextureType_METALNESS, 0, &metalnessPath, nullptr, nullptr, nullptr, nullptr, &metalnessWrapMode) == AI_SUCCESS) {
+    if (material->GetTexture(aiTextureType_METALNESS, 0, &metalnessPath, nullptr, nullptr, nullptr, nullptr, metalnessWrapMode) == AI_SUCCESS) {
         metalnessImage = loadImage(scene, metalnessPath, &metalnessAllocated);
         *hasMetalness = (metalnessImage.pixels != nullptr);
     }
@@ -254,9 +258,9 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
     {
         aiTextureMapMode wrapMode = aiTextureMapMode_Clamp;
 
-        if (sources[1]) wrapMode = roughnessWrapMode;
-        else if (sources[2]) wrapMode = metalnessWrapMode;
-        else if (sources[0]) wrapMode = occlusionWrapMode;
+        if (sources[1]) wrapMode = roughnessWrapMode[0];
+        else if (sources[2]) wrapMode = metalnessWrapMode[0];
+        else if (sources[0]) wrapMode = occlusionWrapMode[0];
 
         ormTexture = mPoolTexture.createTexture(ormImage, getWrapMode(wrapMode));
         HP_DestroyImage(&ormImage);
