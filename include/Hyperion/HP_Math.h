@@ -3171,7 +3171,7 @@ HPAPI HP_Mat4 HP_Mat4Sub(const HP_Mat4* left, const HP_Mat4* right);
 /**
  * @brief Multiply two matrices
  */
-HPAPI HP_Mat4 HP_Mat4Mul(const HP_Mat4* left, const HP_Mat4* right);
+HPAPI HP_Mat4 HP_Mat4Mul(const HP_Mat4* HP_RESTRICT left, const HP_Mat4* HP_RESTRICT right);
 
 /**
  * @brief Multiply two arrays of matrices
