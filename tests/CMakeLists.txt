@@ -20,3 +20,25 @@ add_hyperion_test("hp-overlay" "${HP_ROOT_PATH}/tests/overlay.c")
 add_hyperion_test("hp-skybox" "${HP_ROOT_PATH}/tests/skybox.c")
 add_hyperion_test("hp-ssao" "${HP_ROOT_PATH}/tests/ssao.c")
 add_hyperion_test("hp-pbr" "${HP_ROOT_PATH}/tests/pbr.c")
+
+if(WIN32)
+    set(vendored_dirs
+        "${CMAKE_BINARY_DIR}/external/SDL"
+        "${CMAKE_BINARY_DIR}/external/physfs"
+        "${CMAKE_BINARY_DIR}/external/freetype"
+        "${CMAKE_BINARY_DIR}/external/assimp"
+    )
+    foreach(dir IN LISTS vendored_dirs)
+        if(EXISTS "${dir}")
+            file(GLOB_RECURSE dll_files "${dir}/*.dll")
+            foreach(dll_file ${dll_files})
+                add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                            "${dll_file}"
+                            "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+                    COMMENT "Copying ${dll_file}"
+                )
+            endforeach()
+        endif()
+    endforeach()
+endif()
