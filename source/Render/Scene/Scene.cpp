@@ -53,12 +53,6 @@ Scene::Scene(const render::SharedAssets& assets, HP_AppDesc& desc)
 
     desc.render3D.sampleCount = HP_MAX(desc.render3D.sampleCount, 1);
 
-    /* --- Get internal resolution --- */
-
-    mTargetInfo.resolution = desc.render3D.resolution;
-    mTargetInfo.texelSize = HP_IVec2Rcp(desc.render3D.resolution);
-    mTargetInfo.aspect = static_cast<float>(desc.render3D.resolution.x) / desc.render3D.resolution.y;
-
     /* --- Create render targets --- */
 
     mTargetSceneColor = gpu::Texture(
@@ -67,8 +61,8 @@ Scene::Scene(const render::SharedAssets& assets, HP_AppDesc& desc)
             .target = GL_TEXTURE_2D,
             .internalFormat = GL_RGBA16F,
             .data = nullptr,
-            .width = mTargetInfo.resolution.x,
-            .height = mTargetInfo.resolution.y
+            .width = desc.render3D.resolution.x,
+            .height = desc.render3D.resolution.y
         }
     );
 
@@ -78,8 +72,8 @@ Scene::Scene(const render::SharedAssets& assets, HP_AppDesc& desc)
             .target = GL_TEXTURE_2D,
             .internalFormat = GL_RG16F,
             .data = nullptr,
-            .width = mTargetInfo.resolution.x,
-            .height = mTargetInfo.resolution.y
+            .width = desc.render3D.resolution.x,
+            .height = desc.render3D.resolution.y
         }
     );
 
@@ -89,8 +83,8 @@ Scene::Scene(const render::SharedAssets& assets, HP_AppDesc& desc)
             .target = GL_TEXTURE_2D,
             .internalFormat = GL_DEPTH_COMPONENT24,
             .data = nullptr,
-            .width = mTargetInfo.resolution.x,
-            .height = mTargetInfo.resolution.y
+            .width = desc.render3D.resolution.x,
+            .height = desc.render3D.resolution.y
         }
     );
 
@@ -396,7 +390,10 @@ void Scene::postFinal(bool firstPass)
 {
     gpu::Pipeline pipeline;
 
-    pipeline.setViewport(HP_GetWindowSize());
+    if (mTargetInfo.target != nullptr) {
+        pipeline.bindFramebuffer(mTargetInfo.target->framebuffer());
+    }
+    pipeline.setViewport(mTargetInfo.resolution);
 
     pipeline.useProgram(mPrograms.output(mEnvironment.tonemap.mode));
     pipeline.bindTexture(0, firstPass ? mTargetSceneColor : mSwapPostProcess.source());

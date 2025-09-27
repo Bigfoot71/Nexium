@@ -141,8 +141,6 @@ public:
     void clearColor(int attachment, HP_Color color) const noexcept;
     void clearDepth(float depth) const noexcept;
 
-    void blitToBackBuffer(const gpu::Framebuffer& src, int xDst, int yDst, int wDst, int hDst) const noexcept;
-
     void draw(GLenum mode, GLsizei count) const noexcept;
     void draw(GLenum mode, GLint first, GLsizei count) const noexcept;
 
@@ -161,7 +159,9 @@ public:
     void dispatchCompute(GLuint numGroupsX, GLuint numGroupsY, GLuint numGroupsZ) const noexcept;
     void dispatchComputeIndirect(GLintptr indirect) const noexcept;
 
-    void memoryBarrier(GLbitfield barriers) noexcept;
+public:
+    static void blitToBackBuffer(const gpu::Framebuffer& src, int xDst, int yDst, int wDst, int hDst, bool linear) noexcept;
+    static void memoryBarrier(GLbitfield barriers) noexcept;
 
 private:
     // Prevents reentrancy for 'withXBind' functions
@@ -617,25 +617,6 @@ inline void Pipeline::clearDepth(float depth) const noexcept
     glClearBufferfv(GL_DEPTH, 0, &depth);
 }
 
-inline void Pipeline::blitToBackBuffer(const gpu::Framebuffer& src, int xDst, int yDst, int wDst, int hDst) const noexcept
-{
-    HP_IVec2 srcSize = src.dimension();
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, src.resolveId());
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glReadBuffer(GL_COLOR_ATTACHMENT0);
-
-    glBlitFramebuffer(
-        0, 0, srcSize.x, srcSize.y,
-        xDst, yDst, wDst, hDst,
-        GL_COLOR_BUFFER_BIT, GL_NEAREST
-    );
-
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glReadBuffer(GL_BACK);
-}
-
 inline void Pipeline::draw(GLenum mode, GLsizei count) const noexcept
 {
     glDrawArrays(mode, 0, count);
@@ -708,6 +689,25 @@ inline void Pipeline::dispatchCompute(GLuint numGroupsX, GLuint numGroupsY, GLui
 inline void Pipeline::dispatchComputeIndirect(GLintptr indirect) const noexcept
 {
     glDispatchComputeIndirect(indirect);
+}
+
+inline void Pipeline::blitToBackBuffer(const gpu::Framebuffer& src, int xDst, int yDst, int wDst, int hDst, bool linear) noexcept
+{
+    HP_IVec2 srcSize = src.dimension();
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, src.resolveId());
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+    glBlitFramebuffer(
+        0, 0, srcSize.x, srcSize.y,
+        xDst, yDst, xDst + wDst, yDst + hDst,
+        GL_COLOR_BUFFER_BIT, linear ? GL_NEAREST : GL_LINEAR
+    );
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glReadBuffer(GL_BACK);
 }
 
 inline void Pipeline::memoryBarrier(GLbitfield barriers) noexcept

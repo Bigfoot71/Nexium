@@ -125,10 +125,10 @@ inline void PoolModel::destroyModel(HP_Model* model)
 
     for (int i = 0; i < model->materialCount; i++) {
         HP_Material& mat = model->materials[i];
-        mPoolTexture.destroy(mat.albedo.texture);
-        mPoolTexture.destroy(mat.normal.texture);
-        mPoolTexture.destroy(mat.emission.texture);
-        mPoolTexture.destroy(mat.orm.texture);
+        mPoolTexture.destroyTexture(mat.albedo.texture);
+        mPoolTexture.destroyTexture(mat.normal.texture);
+        mPoolTexture.destroyTexture(mat.emission.texture);
+        mPoolTexture.destroyTexture(mat.orm.texture);
     }
 
     SDL_free(model->meshes);

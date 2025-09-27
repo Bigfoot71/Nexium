@@ -26,7 +26,7 @@ int main(void)
     {
         CMN_UpdateCamera(&camera, HP_VEC3_ZERO, 16.0f, 0.0f);
 
-        HP_Begin3D(&camera, &env);
+        HP_Begin3D(&camera, &env, NULL);
         {
             HP_Transform transform = HP_TRANSFORM_IDENTITY;
 

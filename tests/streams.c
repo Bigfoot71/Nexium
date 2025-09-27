@@ -25,7 +25,7 @@ int main(void)
 
     while (HP_FrameStep())
     {
-        HP_Begin2D();
+        HP_Begin2D(NULL);
 
         HP_SetColor2D(HP_BLACK);
         HP_DrawRect2D(0, 0, HP_GetWindowWidth(), HP_GetWindowHeight());

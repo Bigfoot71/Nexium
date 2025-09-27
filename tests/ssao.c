@@ -26,7 +26,7 @@ int main(void)
             env.ssao.enabled = !env.ssao.enabled;
         }
 
-        HP_Begin3D(&camera, &env);
+        HP_Begin3D(&camera, &env, NULL);
         {
             HP_DrawMesh3D(ground, NULL, NULL);
 

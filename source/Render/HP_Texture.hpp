@@ -32,6 +32,7 @@
 class HP_Texture {
 public:
     HP_Texture(const HP_Image& image, HP_TextureFilter filter, HP_TextureWrap wrap, float anisotropy);
+    HP_Texture(int w, int h); // Exists for HP_RenderTexture
 
     bool isValid() const;
 
@@ -81,6 +82,28 @@ inline HP_Texture::HP_Texture(const HP_Image& image, HP_TextureFilter filter, HP
             .tWrap = glWrap,
             .rWrap = glWrap,
             .anisotropy = anisotropy
+        }
+    );
+}
+
+inline HP_Texture::HP_Texture(int w, int h)
+{
+    mTexture = gpu::Texture(
+        gpu::TextureConfig
+        {
+            .target = GL_TEXTURE_2D,
+            .internalFormat = GL_RGB8,
+            .data = nullptr,
+            .width = w,
+            .height = h,
+        },
+        gpu::TextureParam
+        {
+            .minFilter = GL_LINEAR,
+            .magFilter = GL_LINEAR,
+            .sWrap = GL_CLAMP_TO_EDGE,
+            .tWrap = GL_CLAMP_TO_EDGE,
+            .rWrap = GL_CLAMP_TO_EDGE
         }
     );
 }

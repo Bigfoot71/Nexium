@@ -125,7 +125,7 @@ HP_Texture* PoolModel::loadTexture(const aiScene* scene, const aiMaterial* mater
 
     /* --- Upload the texture to VRAM --- */
 
-    HP_Texture* texture = mPoolTexture.create(image, getWrapMode(wrapMode));
+    HP_Texture* texture = mPoolTexture.createTexture(image, getWrapMode(wrapMode));
     if (isAllocated) {
         HP_DestroyImage(&image);
     }
@@ -179,7 +179,7 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
             HP_Image ormImage = HP_ComposeImagesRGB(sources, HP_WHITE);
 
             if (ormImage.pixels != nullptr) {
-                ormTexture = mPoolTexture.create(ormImage, getWrapMode(gltfWrapMode));
+                ormTexture = mPoolTexture.createTexture(ormImage, getWrapMode(gltfWrapMode));
                 HP_DestroyImage(&ormImage);
             }
 
@@ -258,7 +258,7 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
         else if (sources[2]) wrapMode = metalnessWrapMode;
         else if (sources[0]) wrapMode = occlusionWrapMode;
 
-        ormTexture = mPoolTexture.create(ormImage, getWrapMode(wrapMode));
+        ormTexture = mPoolTexture.createTexture(ormImage, getWrapMode(wrapMode));
         HP_DestroyImage(&ormImage);
     }
 

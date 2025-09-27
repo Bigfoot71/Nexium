@@ -51,7 +51,7 @@ Here’s a checklist of the major features that are still missing:
 
 - [x] Instanced rendering
 - [ ] Unshaded rendering mode
-- [ ] Rendering to custom render targets
+- [x] Rendering to custom render targets
 - [ ] Procedural skybox cubemap generation
 - [ ] Dynamic reflection probes
 - [ ] Post-processing effects: fog, bloom, SSAO, SSR

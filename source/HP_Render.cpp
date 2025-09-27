@@ -37,7 +37,7 @@ HP_Texture* HP_CreateTexture(const HP_Image* image)
         HP_INTERNAL_LOG(E, "RENDER: Failed to load texture; Image is null");
         return nullptr;
     }
-    return gRender->textures.create(*image);
+    return gRender->textures.createTexture(*image);
 }
 
 HP_Texture* HP_LoadTexture(const char* filePath)
@@ -50,7 +50,7 @@ HP_Texture* HP_LoadTexture(const char* filePath)
 
 void HP_DestroyTexture(HP_Texture* texture)
 {
-    gRender->textures.destroy(texture);
+    gRender->textures.destroyTexture(texture);
 }
 
 void HP_SetDefaultTextureFilter(HP_TextureFilter filter)
@@ -127,11 +127,34 @@ HP_Vec2 HP_MeasureText(const HP_Font* font, const char* text, float fontSize, HP
     return fnt.measureText(text, fontSize, spacing);
 }
 
+/* === RenderTexture - Public API === */
+
+HP_RenderTexture* HP_CreateRenderTexture(int w, int h)
+{
+    return gRender->textures.createRenderTexture(w, h);
+}
+
+void HP_DestroyRenderTexture(HP_RenderTexture* target)
+{
+    gRender->textures.destroyRenderTexture(target);
+}
+
+HP_Texture* HP_GetRenderTexture(HP_RenderTexture* target)
+{
+    return &target->texture();
+}
+
+void HP_BlitRenderTexture(const HP_RenderTexture* target, int xDst, int yDst, int wDst, int hDst, bool linear)
+{
+    target->blit(xDst, yDst, wDst, hDst, linear);
+}
+
 /* === Draw2D - Public API === */
 
-void HP_Begin2D(void)
+void HP_Begin2D(HP_RenderTexture* target)
 {
     HP_IVec2 size = HP_GetWindowSize();
+    gRender->overlay.setRenderTexture(target);
     gRender->overlay.setProjection(HP_Mat4Ortho(
         0, size.x, size.y, 0, 0, 1
     ));
@@ -1533,11 +1556,12 @@ void HP_DrawText2D(const char* text, HP_Vec2 position, float fontSize, HP_Vec2 s
 
 /* === Draw3D - Public API === */
 
-void HP_Begin3D(const HP_Camera* camera, const HP_Environment* env)
+void HP_Begin3D(const HP_Camera* camera, const HP_Environment* env, const HP_RenderTexture* target)
 {
     gRender->scene.begin(
         camera ? *camera : HP_GetDefaultCamera(),
-        env ? *env : HP_GetDefaultEnvironment()
+        env ? *env : HP_GetDefaultEnvironment(),
+        target
     );
 }
 

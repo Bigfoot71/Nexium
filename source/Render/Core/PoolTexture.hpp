@@ -22,6 +22,7 @@
 
 #include "../../Detail/Util/ObjectPool.hpp"
 #include "../../Core/HP_InternalLog.hpp"
+#include "../HP_RenderTexture.hpp"
 #include "../HP_Texture.hpp"
 
 namespace render {
@@ -30,15 +31,19 @@ namespace render {
 
 class PoolTexture {
 public:
-    HP_Texture* create(const HP_Image& image, HP_TextureWrap wrap);
-    HP_Texture* create(const HP_Image& image);
-    void destroy(HP_Texture* texture);
+    HP_Texture* createTexture(const HP_Image& image, HP_TextureWrap wrap);
+    HP_Texture* createTexture(const HP_Image& image);
+    void destroyTexture(HP_Texture* texture);
+
+    HP_RenderTexture* createRenderTexture(int w, int h);
+    void destroyRenderTexture(HP_RenderTexture* renderTexture);
 
     void setDefaultFilter(HP_TextureFilter filter);
     void setDefaultAnisotropy(float anisotropy);
 
 private:
-    util::ObjectPool<HP_Texture, 1024> mPool;
+    util::ObjectPool<HP_RenderTexture, 8> mRenderTextures;
+    util::ObjectPool<HP_Texture, 1024> mTextures;
 
 private:
     HP_TextureFilter mDefaultFilter{HP_TEXTURE_FILTER_BILINEAR};
@@ -47,9 +52,9 @@ private:
 
 /* === Public Implementation === */
 
-inline HP_Texture* PoolTexture::create(const HP_Image& image, HP_TextureWrap wrap)
+inline HP_Texture* PoolTexture::createTexture(const HP_Image& image, HP_TextureWrap wrap)
 {
-    HP_Texture* texture = mPool.create(image, mDefaultFilter, wrap, mDefaultFilter);
+    HP_Texture* texture = mTextures.create(image, mDefaultFilter, wrap, mDefaultFilter);
     if (texture == nullptr) {
         HP_INTERNAL_LOG(E, "RENDER: Failed to load texture; Object pool issue");
         return texture;
@@ -57,22 +62,46 @@ inline HP_Texture* PoolTexture::create(const HP_Image& image, HP_TextureWrap wra
 
     if (!texture->isValid()) {
         HP_INTERNAL_LOG(E, "RENDER: Failed to load texture; GPU-side issue");
-        mPool.destroy(texture);
+        mTextures.destroy(texture);
         return nullptr;
     }
 
     return texture;
 }
 
-inline HP_Texture* PoolTexture::create(const HP_Image& image)
+inline HP_Texture* PoolTexture::createTexture(const HP_Image& image)
 {
-    return create(image, HP_TEXTURE_WRAP_CLAMP);
+    return createTexture(image, HP_TEXTURE_WRAP_CLAMP);
 }
 
-inline void PoolTexture::destroy(HP_Texture* texture)
+inline void PoolTexture::destroyTexture(HP_Texture* texture)
 {
     if (texture != nullptr) {
-        mPool.destroy(texture);
+        mTextures.destroy(texture);
+    }
+}
+
+inline HP_RenderTexture* PoolTexture::createRenderTexture(int w, int h)
+{
+    HP_RenderTexture* renderTexture = mRenderTextures.create(w, h);
+    if (renderTexture == nullptr) {
+        HP_INTERNAL_LOG(E, "RENDER: Failed to create render texture; Object pool issue");
+        return renderTexture;
+    }
+
+    if (!renderTexture->isValid()) {
+        HP_INTERNAL_LOG(E, "RENDER: Failed to create render texture; GPU-side issue");
+        mRenderTextures.destroy(renderTexture);
+        return nullptr;
+    }
+
+    return renderTexture;
+}
+
+inline void PoolTexture::destroyRenderTexture(HP_RenderTexture* renderTexture)
+{
+    if (renderTexture != nullptr) {
+        mRenderTextures.destroy(renderTexture);
     }
 }
 

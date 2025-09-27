@@ -183,8 +183,15 @@ void Overlay::blit()
 
     gpu::Pipeline pipeline;
 
+    if (mCurrentTarget != nullptr) {
+        pipeline.bindFramebuffer(mCurrentTarget->framebuffer());
+        pipeline.setViewport(mCurrentTarget->framebuffer());
+    }
+    else {
+        pipeline.setViewport(HP_GetWindowSize());
+    }
+
     pipeline.useProgram(mProgramOverlay);
-    pipeline.setViewport(HP_GetWindowSize());
 
     pipeline.setBlendMode(gpu::BlendMode::Premultiplied);
     pipeline.bindTexture(0, mTargetColor);

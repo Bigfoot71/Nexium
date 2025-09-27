@@ -27,6 +27,7 @@
 #include "../../Detail/GPU/SwapBuffer.hpp"
 #include "../../Detail/GPU/Texture.hpp"
 #include "../Core/SharedAssets.hpp"
+#include "../HP_RenderTexture.hpp"
 
 #include "./BoneBufferManager.hpp"
 #include "./SharedAssets.hpp"
@@ -45,7 +46,7 @@ public:
     Scene(const render::SharedAssets& assets, HP_AppDesc& desc);
 
     /** Begin/End 3D mode functions */
-    void begin(const HP_Camera& camera, const HP_Environment& env);
+    void begin(const HP_Camera& camera, const HP_Environment& env, const HP_RenderTexture* target);
     void end();
 
     /** Push draw call functions */
@@ -63,9 +64,9 @@ private:
 
 private:
     struct TargetInfo {
-        HP_IVec2 resolution;
-        HP_Vec2 texelSize;
-        float aspect;
+        const HP_RenderTexture* target{nullptr};
+        HP_IVec2 resolution{};
+        float aspect{};
     };
 
 private:
@@ -100,8 +101,12 @@ private:
 
 /* === Public Implementation === */
 
-inline void Scene::begin(const HP_Camera& camera, const HP_Environment& env)
+inline void Scene::begin(const HP_Camera& camera, const HP_Environment& env, const HP_RenderTexture* target)
 {
+    mTargetInfo.target = target;
+    mTargetInfo.resolution = (target) ? target->framebuffer().dimension() : HP_GetWindowSize();
+    mTargetInfo.aspect = static_cast<float>(mTargetInfo.resolution.x) / mTargetInfo.resolution.y;
+
     mFrustum.update(camera, mTargetInfo.aspect);
     mEnvironment = env;
 }

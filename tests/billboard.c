@@ -45,7 +45,7 @@ int main(void)
 
         HP_Transform transform = HP_TRANSFORM_IDENTITY;
 
-        HP_Begin3D(&camera, NULL);
+        HP_Begin3D(&camera, NULL, NULL);
         {
             transform.translation.y = -0.5f;
             HP_DrawMesh3D(ground, NULL, &transform);
@@ -55,7 +55,7 @@ int main(void)
         }
         HP_End3D();
 
-        HP_Begin2D();
+        HP_Begin2D(NULL);
         {
             HP_SetColor2D(HP_BLACK);
             HP_DrawText2D(

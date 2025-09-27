@@ -46,7 +46,7 @@ int main(void)
         CMN_UpdateCamera(&camera, HP_VEC3(0, 1, 0), 2.0f, 1.0f);
         model->animFrame += 40 * HP_GetFrameTime();
 
-        HP_Begin3D(&camera, NULL);
+        HP_Begin3D(&camera, NULL, NULL);
         HP_DrawMesh3D(ground, NULL, NULL);
         HP_DrawModelInstanced3D(model, instances, INSTANCE_COUNT, NULL);
         HP_End3D();

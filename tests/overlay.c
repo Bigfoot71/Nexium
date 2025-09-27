@@ -46,7 +46,7 @@ int main(void)
     {
         CMN_UpdateCamera(&camera, HP_VEC3_ZERO, 5.0f, 2.5f);
 
-        HP_Begin3D(&camera, NULL);
+        HP_Begin3D(&camera, NULL, NULL);
         {
             HP_DrawMesh3D(quad, &matQuad, &(HP_Transform) {
                 HP_VEC3(0, -0.5f, 0), HP_QUAT_IDENTITY, HP_VEC3_ONE
@@ -55,7 +55,7 @@ int main(void)
         }
         HP_End3D();
 
-        HP_Begin2D();
+        HP_Begin2D(NULL);
         {
             HP_SetColor2D(HP_COLOR(0.25f, 0.25f, 0.25f, 0.75f));
             HP_DrawRectRounded2D(4, 4, 250, HP_GetWindowHeight() - 8, 16.0f, 8);

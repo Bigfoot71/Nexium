@@ -28,6 +28,7 @@
 #include "../../Detail/GPU/Pipeline.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
 #include "../Core/SharedAssets.hpp"
+#include "../HP_RenderTexture.hpp"
 #include "../HP_Texture.hpp"
 
 namespace overlay {
@@ -46,6 +47,7 @@ public:
     Overlay& operator=(const Overlay&) = delete;
 
     /** Setters */
+    void setRenderTexture(const HP_RenderTexture* target);
     void setProjection(const HP_Mat4& projection);
     void setTexture(const HP_Texture* texture);
     void setFont(const HP_Font* font);
@@ -95,12 +97,18 @@ private:
     HP_Color mCurrentColor = HP_WHITE;
     const HP_Font* mCurrentFont = nullptr;
     const HP_Texture* mCurrentTexture = nullptr;
+    const HP_RenderTexture* mCurrentTarget = nullptr;
 
 private:
     const render::SharedAssets& mAssets;
 };
 
 /* === Public Implementation === */
+
+inline void Overlay::setRenderTexture(const HP_RenderTexture* target)
+{
+    mCurrentTarget = target;
+}
 
 inline void Overlay::setProjection(const HP_Mat4& projection)
 {

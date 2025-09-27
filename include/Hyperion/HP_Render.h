@@ -222,6 +222,13 @@ typedef enum HP_Tonemap {
 /* === Handlers === */
 
 /**
+ * @brief Opaque handle to a render texture.
+ *
+ * Represents a render texture containing a depth color target.
+ */
+typedef struct HP_RenderTexture HP_RenderTexture;
+
+/**
  * @brief Opaque handle to a GPU vertex buffer.
  *
  * Represents a collection of vertices stored on the GPU.
@@ -656,6 +663,45 @@ HPAPI HP_Vec2 HP_MeasureText(const HP_Font* font, const char* text, float fontSi
 /** @} */ // end of Font
 
 /**
+ * @defgroup RenderTexture Render Texture Functions
+ * @{
+ */
+
+/**
+ * @brief Creates an off-screen render texture.
+ * @param w Width of the render texture in pixels.
+ * @param h Height of the render texture in pixels.
+ * @return Pointer to the newly created render texture, or NULL on failure.
+ */
+HPAPI HP_RenderTexture* HP_CreateRenderTexture(int w, int h);
+
+/**
+ * @brief Destroys a render texture.
+ * @param target Pointer to the render texture to destroy.
+ */
+HPAPI void HP_DestroyRenderTexture(HP_RenderTexture* target);
+
+/**
+ * @brief Retrieves the color texture of a render texture.
+ * @param target Pointer to the render texture.
+ * @return Pointer to the color texture.
+ */
+HPAPI HP_Texture* HP_GetRenderTexture(HP_RenderTexture* target);
+
+/**
+ * @brief Blits a render texture to the screen.
+ * @param target Pointer to the render texture to draw.
+ * @param xDst X coordinate of the destination rectangle (in screen space).
+ * @param yDst Y coordinate of the destination rectangle (in screen space).
+ * @param wDst Width of the destination rectangle.
+ * @param hDst Height of the destination rectangle.
+ * @param linear If true, applies linear filtering when scaling; otherwise nearest-neighbor.
+ */
+HPAPI void HP_BlitRenderTexture(const HP_RenderTexture* target, int xDst, int yDst, int wDst, int hDst, bool linear);
+
+/** @} */ // end of RenderTexture
+
+/**
  * @defgroup Draw2D 2D Drawing Functions
  * @{
  */
@@ -664,8 +710,10 @@ HPAPI HP_Vec2 HP_MeasureText(const HP_Font* font, const char* text, float fontSi
  * @brief Begins 2D rendering.
  *
  * Sets up the rendering state for drawing 2D primitives.
+ *
+ * @param target Render texture to draw into (can be NULL to render to the screen).
  */
-HPAPI void HP_Begin2D(void);
+HPAPI void HP_Begin2D(HP_RenderTexture* target);
 
 /**
  * @brief Ends 2D rendering.
@@ -1068,8 +1116,9 @@ HPAPI void HP_DrawText2D(const char* text, HP_Vec2 position, float fontSize, HP_
  * Sets up the rendering state for 3D primitives, meshes, and models.
  * @param camera Pointer to the camera to use (can be NULL to use the default camera).
  * @param env Pointer to the environment to use (can be NULL to use the default environment).
+ * @param target Render texture to draw into (can be NULL to render to the screen).
  */
-HPAPI void HP_Begin3D(const HP_Camera* camera, const HP_Environment* env);
+HPAPI void HP_Begin3D(const HP_Camera* camera, const HP_Environment* env, const HP_RenderTexture* target);
 
 /**
  * @brief Finalizes 3D rendering.

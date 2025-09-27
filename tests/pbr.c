@@ -46,7 +46,7 @@ int main(void)
     while (HP_FrameStep()) {
         if (HP_IsKeyJustPressed(HP_KEY_SPACE)) env = (env + 1) % HP_ARRAY_SIZE(envs);
         CMN_UpdateCamera(&camera, HP_VEC3_ZERO, 2.5f, 1.0f);
-        HP_Begin3D(&camera, &envs[env]);
+        HP_Begin3D(&camera, &envs[env], NULL);
         HP_DrawModel3D(model, NULL);
         HP_End3D();
     }
