@@ -285,9 +285,9 @@ set(HP_SOURCES
 # Create the Hyperion library target
 
 if(HP_BUILD_SHARED)
-    add_library("${PROJECT_NAME}" SHARED ${HP_SOURCES})
+    add_library(${PROJECT_NAME} SHARED ${HP_SOURCES})
 else()
-    add_library("${PROJECT_NAME}" STATIC ${HP_SOURCES})
+    add_library(${PROJECT_NAME} STATIC ${HP_SOURCES})
 endif()
 
 # Link private deps to Hyperion
