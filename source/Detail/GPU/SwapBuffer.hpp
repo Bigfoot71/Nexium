@@ -43,12 +43,7 @@ public:
     void swap() noexcept;
 
 private:
-    struct Buffer {
-        Framebuffer framebuffer{};
-        Texture texture{};
-    };
-
-private:
+    using Buffer = std::pair<Framebuffer, Texture>;
     std::array<Buffer, 2> mBuffers{};
     int mTargetIdx{};
 };
@@ -58,7 +53,7 @@ private:
 inline SwapBuffer::SwapBuffer(GLenum internalFormat, int w, int h) noexcept
 {
     for (int i = 0; i < 2; i++) {
-        mBuffers[i].texture = gpu::Texture(
+        mBuffers[i].second = gpu::Texture(
             TextureConfig
             {
                 .target = GL_TEXTURE_2D,
@@ -76,8 +71,8 @@ inline SwapBuffer::SwapBuffer(GLenum internalFormat, int w, int h) noexcept
                 .rWrap = GL_CLAMP_TO_EDGE
             }
         );
-        mBuffers[i].framebuffer = gpu::Framebuffer(
-            {&mBuffers[i].texture}
+        mBuffers[i].first = gpu::Framebuffer(
+            {&mBuffers[i].second}
         );
     }
 }
@@ -98,12 +93,12 @@ inline SwapBuffer& SwapBuffer::operator=(SwapBuffer&& other) noexcept
 
 inline const Framebuffer& SwapBuffer::target() const noexcept
 {
-    return mBuffers[mTargetIdx].framebuffer;
+    return mBuffers[mTargetIdx].first;
 }
 
 inline const Texture& SwapBuffer::source() const noexcept
 {
-    return mBuffers[!mTargetIdx].texture;
+    return mBuffers[!mTargetIdx].second;
 }
 
 inline void SwapBuffer::swap() noexcept

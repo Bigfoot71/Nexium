@@ -20,7 +20,7 @@
 #include "../Util/StaticArray.hpp"
 #include "./Framebuffer.hpp"
 #include "./Pipeline.hpp"
-#include "Texture.hpp"
+#include "./Texture.hpp"
 
 namespace gpu {
 
@@ -85,7 +85,7 @@ void Framebuffer::resolve() noexcept
     }
 
     // Resolve depth attachment if present
-    if (mDepthStencilAttachment) {
+    if (mDepthStencilAttachment.isValid()) {
         resolveDepthAttachment();
     }
 
@@ -98,15 +98,11 @@ void Framebuffer::attachTexturesToResolveFramebuffer() noexcept
 {
     Pipeline::withFramebufferBind(mResolveFramebuffer, [&]()
     {
-        /* --- Attach color textures --- */
-
         for (size_t i = 0; i < mColorAttachments.size(); ++i) {
             updateColorAttachment(static_cast<int>(i), false);
         }
 
-        /* --- Attach depth/stencil texture if provided --- */
-
-        if (mDepthStencilAttachment) {
+        if (mDepthStencilAttachment.isValid()) {
             updateDepthAttachment(false);
         }
     });
@@ -114,14 +110,12 @@ void Framebuffer::attachTexturesToResolveFramebuffer() noexcept
 
 void Framebuffer::updateColorAttachment(int index, bool bind) noexcept
 {
-    if (!mColorAttachments[index]) {
-        return;
-    }
+    SDL_assert(mColorAttachments[index].isValid());
 
-    const Texture* texture = mColorAttachments[index];
+    const TextureView& texture = mColorAttachments[index];
     GLenum attachment = GL_COLOR_ATTACHMENT0 + static_cast<GLenum>(index);
-    GLenum target = texture->target();
-    GLuint textureId = texture->id();
+    GLenum target = texture.target();
+    GLuint textureId = texture.id();
 
     const AttachmentTarget& targetInfo = mColorTargets[index];
 
@@ -152,14 +146,12 @@ void Framebuffer::updateColorAttachment(int index, bool bind) noexcept
 
 void Framebuffer::updateDepthAttachment(bool bind) noexcept
 {
-    if (!mDepthStencilAttachment) {
-        return;
-    }
+    SDL_assert(mDepthStencilAttachment.isValid());
 
-    const Texture* texture = mDepthStencilAttachment;
-    GLenum attachment = getDepthStencilAttachment(texture->internalFormat());
-    GLenum target = texture->target();
-    GLuint textureId = texture->id();
+    const TextureView& texture = mDepthStencilAttachment;
+    GLenum attachment = getDepthStencilAttachment(texture.internalFormat());
+    GLenum target = texture.target();
+    GLuint textureId = texture.id();
 
     const AttachmentTarget& targetInfo = mDepthTarget;
 
@@ -190,9 +182,7 @@ void Framebuffer::updateDepthAttachment(bool bind) noexcept
 
 void Framebuffer::resolveColorAttachment(int index) noexcept
 {
-    if (!mColorAttachments[index]) {
-        return;
-    }
+    SDL_assert(mColorAttachments[index].isValid());
 
     int fbWidth = width();
     int fbHeight = height();
@@ -219,9 +209,7 @@ void Framebuffer::resolveColorAttachment(int index) noexcept
 
 void Framebuffer::resolveDepthAttachment() noexcept
 {
-    if (!mDepthStencilAttachment) {
-        return;
-    }
+    SDL_assert(mDepthStencilAttachment.isValid());
 
     int fbWidth = width();
     int fbHeight = height();
@@ -264,7 +252,7 @@ void Framebuffer::createAndAttachMultisampleRenderbuffers() noexcept
 
     /* --- Create depth renderbuffer if needed --- */
 
-    if (mDepthStencilAttachment && mDepthRenderbuffer == 0) {
+    if (mDepthStencilAttachment.isValid() && mDepthRenderbuffer == 0) {
         glGenRenderbuffers(1, &mDepthRenderbuffer);
     }
 
@@ -274,15 +262,14 @@ void Framebuffer::createAndAttachMultisampleRenderbuffers() noexcept
     {
         /* --- Configure color renderbuffers --- */
 
-        for (size_t i = 0; i < mColorAttachments.size(); ++i) {
-            if (!mColorAttachments[i]) {
-                continue;
-            }
+        for (size_t i = 0; i < mColorAttachments.size(); ++i)
+        {
+            SDL_assert(mColorAttachments[i].isValid());
 
             glBindRenderbuffer(GL_RENDERBUFFER, mColorRenderbuffers[i]);
             glRenderbufferStorageMultisample(
                 GL_RENDERBUFFER, mSampleCount,
-                mColorAttachments[i]->internalFormat(),
+                mColorAttachments[i].internalFormat(),
                 fbWidth, fbHeight
             );
 
@@ -296,15 +283,16 @@ void Framebuffer::createAndAttachMultisampleRenderbuffers() noexcept
 
         /* --- Configure depth/stencil renderbuffer --- */
 
-        if (mDepthStencilAttachment && mDepthRenderbuffer > 0) {
+        if (mDepthStencilAttachment.isValid() && mDepthRenderbuffer > 0)
+        {
             glBindRenderbuffer(GL_RENDERBUFFER, mDepthRenderbuffer);
             glRenderbufferStorageMultisample(
                 GL_RENDERBUFFER, mSampleCount,
-                mDepthStencilAttachment->internalFormat(),
+                mDepthStencilAttachment.internalFormat(),
                 fbWidth, fbHeight
             );
 
-            GLenum attachment = getDepthStencilAttachment(mDepthStencilAttachment->internalFormat());
+            GLenum attachment = getDepthStencilAttachment(mDepthStencilAttachment.internalFormat());
             glFramebufferRenderbuffer(
                 GL_FRAMEBUFFER, attachment,
                 GL_RENDERBUFFER,

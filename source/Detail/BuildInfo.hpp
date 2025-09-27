@@ -22,7 +22,7 @@
 
 namespace detail {
 
-class BuildInfo {
+struct BuildInfo {
 #ifdef NDEBUG
 static constexpr bool release = true;
 static constexpr bool debug = false;

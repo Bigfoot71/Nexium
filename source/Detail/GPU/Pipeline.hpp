@@ -595,7 +595,7 @@ inline void Pipeline::clear(const gpu::Framebuffer& framebuffer, HP_Color color,
         glClearBufferfv(GL_COLOR, i, reinterpret_cast<const float*>(&color));
     }
 
-    if (framebuffer.getDepthAttachment() != nullptr) {
+    if (framebuffer.getDepthAttachment().isValid()) {
         glClearBufferfv(GL_DEPTH, 0, &depth);
     }
 }

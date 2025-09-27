@@ -22,6 +22,8 @@
 
 #include "../../Core/HP_InternalLog.hpp"
 #include "../Util/DynamicArray.hpp"
+#include "./TextureView.hpp"
+#include "../BuildInfo.hpp"
 #include "./Texture.hpp"
 
 #include <Hyperion/HP_Core.h>
@@ -36,6 +38,24 @@ namespace gpu {
 
 /* === Declaration === */
 
+/**
+ * Framebuffer allows the creation of a FBO with a set of color attachments and an
+ * optional depth/stencil attachment. It automatically manages multisample internally
+ * by creating and maintaining the required multisampled renderbuffers. 
+ *
+ * Resolution of multisampled renderbuffers into the attached textures is not automatic 
+ * and must be performed explicitly via the provided resolve method.
+ *
+ * Warning points:
+ *  - Attachments (color and depth/stencil) are immutable after construction. They cannot
+ *    be replaced or resized.
+ *  - The framebuffer stores TextureViews of the attached textures. These TextureViews
+ *    capture the state of the textures at the time of attachment.
+ *  - It is strictly forbidden to modify the storage of any attached texture after
+ *    framebuffer creation. Changing width, height, depth, mip levels, or reallocating
+ *    the texture will break the internal logic for multisampling and renderbuffer
+ *    management, and can also invalidate internal safety/debug checks.
+ */
 class Framebuffer {
 public:
     /** Constructors */
@@ -58,8 +78,8 @@ public:
     HP_IVec2 dimensions() const noexcept;
 
     /** Attachment access (always the original textures) */
-    const Texture* getColorAttachment(int index) const noexcept;
-    const Texture* getDepthAttachment() const noexcept;
+    const TextureView& getColorAttachment(int index) const noexcept;
+    const TextureView& getDepthAttachment() const noexcept;
     size_t colorAttachmentCount() const noexcept;
 
     /** Draw buffers control */
@@ -97,10 +117,10 @@ private:
     /** Member variables */
     GLuint mResolveFramebuffer{0};                      //< Framebuffer with original textures
     GLuint mMultisampleFramebuffer{0};                  //< Framebuffer MSAA (optional)
-    util::DynamicArray<const Texture*> mColorAttachments;
+    util::DynamicArray<TextureView> mColorAttachments;
     util::DynamicArray<GLuint> mColorRenderbuffers;     //< MSAA color renderbuffers
     GLuint mDepthRenderbuffer{0};                       //< MSAA depth/stencil renderbuffer
-    const Texture* mDepthStencilAttachment{nullptr};
+    TextureView mDepthStencilAttachment{};
     int mSampleCount{0};
 
     /** Layer/face tracking */
@@ -126,28 +146,47 @@ private:
 /* === Public Implementation === */
 
 inline Framebuffer::Framebuffer(std::initializer_list<const Texture*> colorAttachments, const Texture* depthStencilAttachment) noexcept
-    : mColorAttachments(colorAttachments), mDepthStencilAttachment(depthStencilAttachment)
 {
-    if (mColorAttachments.empty()) {
+    if (colorAttachments.size() == 0) {
         HP_INTERNAL_LOG(E, "GPU: Framebuffer requires at least one color attachment");
         return;
+    }
+
+    // Validate texture attachments
+    if constexpr (detail::BuildInfo::debug) {
+        HP_IVec2 expectedDims{};
+        bool first = true;
+        for (const Texture* tex : colorAttachments)  {
+            SDL_assert(tex != nullptr);
+            if (first) expectedDims = tex->dimensions(), first = false;
+            else SDL_assert(tex->dimensions() == expectedDims);
+        }
+        if (depthStencilAttachment) {
+            SDL_assert(depthStencilAttachment->dimensions() == expectedDims);
+        }
+    }
+
+    // Allocate space for color attachments
+    if (!mColorAttachments.reserve(colorAttachments.size())) {
+        HP_INTERNAL_LOG(E, "GPU: Failed to allocate space to store color attachments IDs");
+        return;
+    }
+
+    // Validate and push color attachments
+    for (size_t i = 0; i < colorAttachments.size(); ++i) {
+        mColorAttachments.emplace_back(*colorAttachments.begin()[i]);
     }
 
     // Initialize color targets array
     mColorTargets.resize(mColorAttachments.size());
 
-    // Validate color attachments
-    for (size_t i = 0; i < mColorAttachments.size(); ++i) {
-        if (!mColorAttachments[i] || !mColorAttachments[i]->isValid()) {
-            HP_INTERNAL_LOG(E, "GPU: Invalid color attachment at index %zu", i);
+    // Validate depth/stencil attachment if provided and keep its ID
+    if (depthStencilAttachment) {
+        if (!depthStencilAttachment->isValid()) {
+            HP_INTERNAL_LOG(E, "GPU: Invalid depth/stencil attachment");
             return;
         }
-    }
-
-    // Validate depth/stencil attachment if provided
-    if (mDepthStencilAttachment && !mDepthStencilAttachment->isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Invalid depth/stencil attachment");
-        return;
+        mDepthStencilAttachment = *depthStencilAttachment;
     }
 
     createResolveFramebuffer();
@@ -171,8 +210,8 @@ inline Framebuffer::Framebuffer(Framebuffer&& other) noexcept
     , mColorAttachments(std::move(other.mColorAttachments))
     , mColorRenderbuffers(std::move(other.mColorRenderbuffers))
     , mDepthRenderbuffer(std::exchange(other.mDepthRenderbuffer, 0))
-    , mDepthStencilAttachment(std::exchange(other.mDepthStencilAttachment, nullptr))
-    , mSampleCount(std::exchange(other.mSampleCount, 0))
+    , mDepthStencilAttachment(other.mDepthStencilAttachment)
+    , mSampleCount(other.mSampleCount)
     , mColorTargets(std::move(other.mColorTargets))
     , mDepthTarget(other.mDepthTarget)
 { }
@@ -180,11 +219,10 @@ inline Framebuffer::Framebuffer(Framebuffer&& other) noexcept
 inline Framebuffer& Framebuffer::operator=(Framebuffer&& other) noexcept
 {
     if (this != &other) {
-        // Clean up current resources
         destroyMultisampleFramebuffer();
-        if (mResolveFramebuffer != 0) glDeleteFramebuffers(1, &mResolveFramebuffer);
-
-        // Move from other
+        if (mResolveFramebuffer != 0) {
+            glDeleteFramebuffers(1, &mResolveFramebuffer);
+        }
         mResolveFramebuffer = std::exchange(other.mResolveFramebuffer, 0);
         mMultisampleFramebuffer = std::exchange(other.mMultisampleFramebuffer, 0);
         mColorAttachments = std::move(other.mColorAttachments);
@@ -194,17 +232,13 @@ inline Framebuffer& Framebuffer::operator=(Framebuffer&& other) noexcept
         mSampleCount = other.mSampleCount;
         mColorTargets = std::move(other.mColorTargets);
         mDepthTarget = other.mDepthTarget;
-
-        other.mDepthStencilAttachment = nullptr;
-        other.mSampleCount = 0;
-        other.mDepthTarget = {};
     }
     return *this;
 }
 
 inline bool Framebuffer::isValid() const noexcept
 {
-    return mResolveFramebuffer > 0;
+    return (mResolveFramebuffer > 0);
 }
 
 inline GLuint Framebuffer::resolveId() const noexcept
@@ -221,27 +255,25 @@ inline GLuint Framebuffer::renderId() const noexcept
 
 inline int Framebuffer::width() const noexcept
 {
-    return mColorAttachments.empty() ? 0
-        : (mColorAttachments[0] ? mColorAttachments[0]->width() : 0);
+    return mColorAttachments[0].width();
 }
 
 inline int Framebuffer::height() const noexcept
 {
-    return mColorAttachments.empty() ? 0
-        : (mColorAttachments[0] ? mColorAttachments[0]->height() : 0);
+    return mColorAttachments[0].height();
 }
 
 inline HP_IVec2 Framebuffer::dimensions() const noexcept
 {
-    return HP_IVEC2(width(), height());
+    return mColorAttachments[0].dimensions();
 }
 
-inline const Texture* Framebuffer::getColorAttachment(int index) const noexcept
+inline const TextureView& Framebuffer::getColorAttachment(int index) const noexcept
 {
     return mColorAttachments[index];
 }
 
-inline const Texture* Framebuffer::getDepthAttachment() const noexcept
+inline const TextureView& Framebuffer::getDepthAttachment() const noexcept
 {
     return mDepthStencilAttachment;
 }
@@ -291,23 +323,18 @@ inline void Framebuffer::setColorAttachmentTarget(int attachmentIndex, int layer
     }
 
     SDL_assert(attachmentIndex >= 0 && attachmentIndex < static_cast<int>(mColorAttachments.size()));
-
-    const Texture* texture = mColorAttachments[attachmentIndex];
-    if (!texture) {
-        HP_INTERNAL_LOG(E, "GPU: Color attachment %d is null", attachmentIndex);
-        return;
-    }
+    const TextureView& texture = mColorAttachments[attachmentIndex];
 
     // Validate mipmap level
-    SDL_assert(level >= 0 && level < texture->mipLevels());
+    SDL_assert(level >= 0 && level < texture.mipLevels());
 
     // Validate target
-    GLenum target = texture->target();
+    GLenum target = texture.target();
     SDL_assert(target != GL_TEXTURE_2D);
 
     // Validate layer and face parameters
     if (target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY) {
-        SDL_assert(layer >= 0 && layer < texture->depth());
+        SDL_assert(layer >= 0 && layer < texture.depth());
         if (target == GL_TEXTURE_2D_ARRAY) {
             SDL_assert(face == 0);
         }
@@ -327,21 +354,21 @@ inline void Framebuffer::setColorAttachmentTarget(int attachmentIndex, int layer
 
 inline void Framebuffer::setDepthAttachmentTarget(int layer, int face, int level) noexcept
 {
-    if (!isValid() || !mDepthStencilAttachment) {
+    if (!isValid() || !mDepthStencilAttachment.isValid()) {
         HP_INTERNAL_LOG(E, "GPU: Cannot set depth attachment target on invalid framebuffer or no depth attachment");
         return;
     }
 
     // Validate mipmap level
-    SDL_assert(level >= 0 && level < mDepthStencilAttachment->mipLevels());
+    SDL_assert(level >= 0 && level < mDepthStencilAttachment.mipLevels());
 
     // Validate target
-    GLenum target = mDepthStencilAttachment->target();
+    GLenum target = mDepthStencilAttachment.target();
     SDL_assert(target != GL_TEXTURE_2D);
 
     // Validate layer and face parameters
     if (target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY) {
-        SDL_assert(layer >= 0 && layer < mDepthStencilAttachment->depth());
+        SDL_assert(layer >= 0 && layer < mDepthStencilAttachment.depth());
         if (target == GL_TEXTURE_2D_ARRAY) {
             SDL_assert(face == 0);
         }
