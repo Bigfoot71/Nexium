@@ -693,7 +693,7 @@ inline void Pipeline::dispatchComputeIndirect(GLintptr indirect) const noexcept
 
 inline void Pipeline::blitToBackBuffer(const gpu::Framebuffer& src, int xDst, int yDst, int wDst, int hDst, bool linear) noexcept
 {
-    HP_IVec2 srcSize = src.dimension();
+    HP_IVec2 srcSize = src.dimensions();
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, src.resolveId());
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

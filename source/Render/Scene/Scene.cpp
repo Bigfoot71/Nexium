@@ -175,7 +175,7 @@ void Scene::renderScene()
     /* --- Send constant uniforms --- */
 
     pipeline.setUniformInt1(10, mLights.activeCount() > 0);
-    pipeline.setUniformUint2(11, mFramebufferScene.dimension());
+    pipeline.setUniformUint2(11, mFramebufferScene.dimensions());
     pipeline.setUniformUint3(12, mLights.clusterCount());
     pipeline.setUniformUint1(13, mLights.maxLightsPerCluster());
     pipeline.setUniformFloat1(14, mLights.clusterSliceScale());
@@ -330,7 +330,7 @@ void Scene::postSSAO(bool firstPass)
 
     pipeline.bindFramebuffer(mSwapAuxiliary.target());
     {
-        pipeline.setViewport(0, 0, 1920/2, 1080/2);
+        pipeline.setViewport(mSwapAuxiliary.target());
         pipeline.useProgram(mPrograms.ssaoPass());
 
         pipeline.bindTexture(0, mTargetSceneDepth);
@@ -372,7 +372,7 @@ void Scene::postSSAO(bool firstPass)
 
     pipeline.bindFramebuffer(mSwapPostProcess.target());
     {
-        pipeline.setViewport(0, 0, 1920, 1080);
+        pipeline.setViewport(mSwapPostProcess.target());
         pipeline.useProgram(mPrograms.ssaoPost());
 
         pipeline.bindTexture(0, firstPass ? mTargetSceneColor : mSwapPostProcess.source());

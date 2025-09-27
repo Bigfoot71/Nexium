@@ -104,7 +104,7 @@ private:
 inline void Scene::begin(const HP_Camera& camera, const HP_Environment& env, const HP_RenderTexture* target)
 {
     mTargetInfo.target = target;
-    mTargetInfo.resolution = (target) ? target->framebuffer().dimension() : HP_GetWindowSize();
+    mTargetInfo.resolution = (target) ? target->framebuffer().dimensions() : HP_GetWindowSize();
     mTargetInfo.aspect = static_cast<float>(mTargetInfo.resolution.x) / mTargetInfo.resolution.y;
 
     mFrustum.update(camera, mTargetInfo.aspect);

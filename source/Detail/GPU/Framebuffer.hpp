@@ -55,7 +55,7 @@ public:
     GLuint renderId() const noexcept;   // Always returns the active framebuffer (MSAA or normal)
     int width() const noexcept;
     int height() const noexcept;
-    HP_IVec2 dimension() const noexcept;
+    HP_IVec2 dimensions() const noexcept;
 
     /** Attachment access (always the original textures) */
     const Texture* getColorAttachment(int index) const noexcept;
@@ -231,7 +231,7 @@ inline int Framebuffer::height() const noexcept
         : (mColorAttachments[0] ? mColorAttachments[0]->height() : 0);
 }
 
-inline HP_IVec2 Framebuffer::dimension() const noexcept
+inline HP_IVec2 Framebuffer::dimensions() const noexcept
 {
     return HP_IVEC2(width(), height());
 }
