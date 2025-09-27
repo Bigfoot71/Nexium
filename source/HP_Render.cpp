@@ -894,7 +894,7 @@ void HP_DrawCircle2D(HP_Vec2 center, float radius, int segments)
 
     gRender->overlay.addVertex(center.x, center.y, 0.5f, 0.5f);
 
-    float delta = (2.0f * HP_PI) / (float)segments;
+    float delta = HP_TAU / segments;
     float cosDelta = cosf(delta);
     float sinDelta = sinf(delta);
 
@@ -929,7 +929,7 @@ void HP_DrawCircleBorder2D(HP_Vec2 p, float radius, int segments, float thicknes
 {
     if (segments < 3) segments = 32;
 
-    float delta = (2.0f * HP_PI) / (float)segments;
+    float delta = HP_TAU / segments;
     float cosDelta = cosf(delta);
     float sinDelta = sinf(delta);
 
@@ -963,7 +963,7 @@ void HP_DrawEllipse2D(HP_Vec2 center, HP_Vec2 radius, int segments)
 
     gRender->overlay.addVertex(center.x, center.y, 0.5f, 0.5f);
 
-    float delta = (2.0f * HP_PI) / (float)segments;
+    float delta = HP_TAU / segments;
     float cosDelta = cosf(delta);
     float sinDelta = sinf(delta);
 
@@ -1002,23 +1002,21 @@ void HP_DrawEllipseBorder2D(HP_Vec2 p, HP_Vec2 r, int segments, float thickness)
 {
     if (segments < 3) segments = 32;
 
-    float delta = (2.0f * HP_PI) / (float)segments;
+    float delta = HP_TAU / segments;
     float cosDelta = cosf(delta);
     float sinDelta = sinf(delta);
 
-    float ux = 1.0f;
-    float uy = 0.0f;
+    HP_Vec2 u = { 1.0f, 0.0f };
+    HP_Vec2 prev = p + HP_Vec2{ r.x * u.x, r.y * u.y };
 
-    HP_Vec2 prev = { p.x + r.x * ux, p.y + r.y * uy };
+    for (int i = 1; i <= segments; i++)
+    {
+        u = HP_VEC2(
+            u.x * cosDelta - u.y * sinDelta,
+            u.x * sinDelta + u.y * cosDelta
+        );
 
-    for (int i = 1; i <= segments; i++) {
-        float newUX = ux * cosDelta - uy * sinDelta;
-        float newUY = ux * sinDelta + uy * cosDelta;
-        ux = newUX;
-        uy = newUY;
-
-        HP_Vec2 curr = (HP_Vec2){ p.x + r.x * ux, p.y + r.y * uy };
-
+        HP_Vec2 curr = p + HP_Vec2{ r.x * u.x, r.y * u.y };
         HP_DrawLine2D(prev, curr, thickness);
         prev = curr;
     }
@@ -1032,7 +1030,7 @@ void HP_DrawPieSlice2D(HP_Vec2 center, float radius, float startAngle, float end
     angleDiff = HP_WrapRadians(angleDiff);
     if (angleDiff < 0.0f) angleDiff += HP_TAU;
 
-    float deltaAngle = angleDiff / (float)segments;
+    float deltaAngle = angleDiff / segments;
 
     float cosDelta = cosf(deltaAngle);
     float sinDelta = sinf(deltaAngle);
@@ -1076,7 +1074,7 @@ void HP_DrawPieSliceBorder2D(HP_Vec2 center, float radius, float startAngle, flo
     angleDiff = HP_WrapRadians(angleDiff);
     if (angleDiff < 0.0f) angleDiff += HP_TAU;
 
-    float deltaAngle = angleDiff / (float)segments;
+    float deltaAngle = angleDiff / segments;
     float cosDelta = cosf(deltaAngle);
     float sinDelta = sinf(deltaAngle);
 
@@ -1110,7 +1108,7 @@ void HP_DrawRing2D(HP_Vec2 center, float innerRadius, float outerRadius, int seg
 
     uint16_t baseIndex = gRender->overlay.nextVertexIndex();
 
-    float deltaAngle = HP_TAU / (float)segments;
+    float deltaAngle = HP_TAU / segments;
     float cosDelta = cosf(deltaAngle);
     float sinDelta = sinf(deltaAngle);
 
@@ -1159,7 +1157,7 @@ void HP_DrawRingBorder2D(HP_Vec2 center, float innerRadius, float outerRadius, i
     if (segments < 3) segments = 32;
     if (innerRadius >= outerRadius) return;
 
-    float deltaAngle = HP_TAU / (float)segments;
+    float deltaAngle = HP_TAU / segments;
     float cosDelta = cosf(deltaAngle);
     float sinDelta = sinf(deltaAngle);
 
@@ -1195,7 +1193,7 @@ void HP_DrawRingArc2D(HP_Vec2 center, float innerRadius, float outerRadius,
     angleDiff = HP_WrapRadians(angleDiff);
     if (angleDiff < 0.0f) angleDiff += HP_TAU;
 
-    float deltaAngle = angleDiff / (float)segments;
+    float deltaAngle = angleDiff / segments;
 
     float cosDelta = cosf(deltaAngle);
     float sinDelta = sinf(deltaAngle);
@@ -1253,7 +1251,7 @@ void HP_DrawRingArcBorder2D(HP_Vec2 center, float innerRadius, float outerRadius
     angleDiff = HP_WrapRadians(angleDiff);
     if (angleDiff < 0.0f) angleDiff += HP_TAU;
 
-    float deltaAngle = angleDiff / (float)segments;
+    float deltaAngle = angleDiff / segments;
     float cosDelta = cosf(deltaAngle);
     float sinDelta = sinf(deltaAngle);
 
@@ -1297,7 +1295,7 @@ void HP_DrawArc2D(HP_Vec2 center, float radius,
     angleDiff = HP_WrapRadians(angleDiff);
     if (angleDiff < 0.0f) angleDiff += HP_TAU;
 
-    float deltaAngle = angleDiff / (float)segments;
+    float deltaAngle = angleDiff / segments;
 
     float cosDelta = cosf(deltaAngle);
     float sinDelta = sinf(deltaAngle);
@@ -1328,7 +1326,7 @@ void HP_DrawBezierQuad2D(HP_Vec2 p0, HP_Vec2 p1, HP_Vec2 p2, int segments, float
 {
     if (segments < 1) segments = 20;
 
-    float dt = 1.0f / (float)segments;
+    float dt = 1.0f / segments;
     float dt2 = dt * dt;
 
     float x  = p0.x;
@@ -1362,7 +1360,7 @@ void HP_DrawBezierCubic2D(HP_Vec2 p0, HP_Vec2 p1, HP_Vec2 p2, HP_Vec2 p3, int se
 {
     if (segments < 1) segments = 30;
 
-    float dt  = 1.0f / (float)segments;
+    float dt  = 1.0f / segments;
     float dt2 = dt * dt;
     float dt3 = dt2 * dt;
 
@@ -1420,7 +1418,7 @@ void HP_DrawSpline2D(const HP_Vec2* points, int count, int segments, float thick
         float prevY = p1.y;
 
         for (int j = 1; j <= segments; j++) {
-            float t = (float)j / (float)segments;
+            float t = static_cast<float>(j) / segments;
             float t2 = t * t;
             float t3 = t2 * t;
 

@@ -20,6 +20,7 @@
 #ifndef HP_MATH_H
 #define HP_MATH_H
 
+#include "./HP_BitUtils.h"
 #include "./HP_Platform.h"
 #include "./HP_Macros.h"
 
@@ -97,142 +98,313 @@
         HP_VEC3_ONE             \
     }
 
+/* === Constructors Helpers === */
+
+/**
+ * @biref Create Integer 2D vector from single value
+ */
+#define HP_IVEC2_1(x)           \
+    HP_STRUCT_LITERAL(HP_IVec2, \
+        HP_CAST(int, (x)),      \
+        HP_CAST(int, (x))       \
+    )
+
+/**
+ * @biref Create Integer 2D vector from x, y values
+ */
+#define HP_IVEC2(x, y)          \
+    HP_STRUCT_LITERAL(HP_IVec2, \
+        HP_CAST(int, (x)),      \
+        HP_CAST(int, (y))       \
+    )
+
+/**
+ * @biref Create Integer 3D vector from single value
+ */
+#define HP_IVEC3_1(x)           \
+    HP_STRUCT_LITERAL(HP_IVec3, \
+        HP_CAST(int, (x)),      \
+        HP_CAST(int, (x)),      \
+        HP_CAST(int, (x))       \
+    )
+
+/**
+ * @biref Create Integer 3D vector from x, y, z values
+ */
+#define HP_IVEC3(x, y, z)       \
+    HP_STRUCT_LITERAL(HP_IVec3, \
+        HP_CAST(int, (x)),      \
+        HP_CAST(int, (y)),      \
+        HP_CAST(int, (z))       \
+    )
+
+/**
+ * @biref Create Integer 4D vector from single value
+ */
+#define HP_IVEC4_1(x)           \
+    HP_STRUCT_LITERAL(HP_IVec4, \
+        HP_CAST(int, (x)),      \
+        HP_CAST(int, (x)),      \
+        HP_CAST(int, (x)),      \
+        HP_CAST(int, (x))       \
+    )
+
+/**
+ * @biref Create Integer 4D vector from x, y, z, w values
+ */
+#define HP_IVEC4(x, y, z, w)    \
+    HP_STRUCT_LITERAL(HP_IVec4, \
+        HP_CAST(int, (x)),      \
+        HP_CAST(int, (y)),      \
+        HP_CAST(int, (z)),      \
+        HP_CAST(int, (w))       \
+    )
+
+/**
+ * @biref Create Float 2D vector from single value
+ */
+#define HP_VEC2_1(x)            \
+    HP_STRUCT_LITERAL(HP_Vec2,  \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (x))     \
+    )
+
+/**
+ * @biref Create Float 2D vector from x, y values
+ */
+#define HP_VEC2(x, y)           \
+    HP_STRUCT_LITERAL(HP_Vec2,  \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (y))     \
+    )
+
+/**
+ * @biref Create Float 3D vector from single value
+ */
+#define HP_VEC3_1(x)            \
+    HP_STRUCT_LITERAL(HP_Vec3,  \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (x))     \
+    )
+
+/**
+ * @biref Create Float 3D vector from x, y, z values
+ */
+#define HP_VEC3(x, y, z)        \
+    HP_STRUCT_LITERAL(HP_Vec3,  \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (y)),    \
+        HP_CAST(float, (z))     \
+    )
+
+/**
+ * @biref Create Float 4D vector from single value
+ */
+#define HP_VEC4_1(x)            \
+    HP_STRUCT_LITERAL(HP_Vec4,  \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (x))     \
+    )
+
+/**
+ * @biref Create Float 4D vector from x, y, z, w values
+ */
+#define HP_VEC4(x, y, z, w)     \
+    HP_STRUCT_LITERAL(HP_Vec4,  \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (y)),    \
+        HP_CAST(float, (z)),    \
+        HP_CAST(float, (w))     \
+    )
+
+/**
+ * @biref Create Color from single grayscale value (alpha = 1)
+ */
+#define HP_COLOR_1(x)           \
+    HP_STRUCT_LITERAL(HP_Color, \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (1))     \
+    )
+
+/**
+ * @biref Create Color from grayscale and alpha values
+ */
+#define HP_COLOR_RGB(r, g, b)   \
+    HP_STRUCT_LITERAL(HP_Color, \
+        HP_CAST(float, (r)),    \
+        HP_CAST(float, (g)),    \
+        HP_CAST(float, (b)),    \
+        HP_CAST(float, (1))     \
+    )
+
+/**
+ * @biref Create Color from existing color with new alpha value
+ */
+#define HP_COLOR_ALPHA(c, a)    \
+    HP_STRUCT_LITERAL(HP_Color, \
+        HP_CAST(float, (c).r),  \
+        HP_CAST(float, (c).g),  \
+        HP_CAST(float, (c).b),  \
+        HP_CAST(float, (a))     \
+    )
+
+/**
+ * @biref Create Color from r, g, b, a values
+ */
+#define HP_COLOR(r, g, b, a)    \
+    HP_STRUCT_LITERAL(HP_Color, \
+        HP_CAST(float, (r)),    \
+        HP_CAST(float, (g)),    \
+        HP_CAST(float, (b)),    \
+        HP_CAST(float, (a))     \
+    )
+
+/**
+ * @biref Create Quaternion from w, x, y, z values
+ */
+#define HP_QUAT(w, x, y, z)     \
+    HP_STRUCT_LITERAL(HP_Quat,  \
+        HP_CAST(float, (w)),    \
+        HP_CAST(float, (x)),    \
+        HP_CAST(float, (y)),    \
+        HP_CAST(float, (z))     \
+    )
+
+/**
+ * @biref Compound literal helper for 3x3 matrix (row-major)
+ */
+#define HP_MAT3_T HP_LITERAL(HP_Mat3)
+
+/**
+ * @biref Compound literal helper for 4x4 matrix (row-major)
+ */
+#define HP_MAT4_T HP_LITERAL(HP_Mat4)
+
+/**
+ * @biref Compound literal helper for Transform (translation, rotation, scale)
+ */
+#define HP_TRANSFORM_T HP_LITERAL(HP_Transform)
+
 /* === Macros === */
 
-#ifdef __cplusplus
-#define HP_IVEC2_1(x)                                       \
-    HP_IVec2 {                                              \
-        static_cast<int>((x)),                              \
-        static_cast<int>((x))                               \
-    }
-#define HP_IVEC2(x, y)                                      \
-    HP_IVec2 {                                              \
-        static_cast<int>((x)),                              \
-        static_cast<int>((y))                               \
-    }
-#define HP_IVEC3_1(x)                                       \
-    HP_IVec3 {                                              \
-        static_cast<int>((x)),                              \
-        static_cast<int>((x)),                              \
-        static_cast<int>((x))                               \
-    }
-#define HP_IVEC3(x, y, z)                                   \
-    HP_IVec3 {                                              \
-        static_cast<int>((x)),                              \
-        static_cast<int>((y)),                              \
-        static_cast<int>((z))                               \
-    }
-#define HP_IVEC4_1(x)                                       \
-    HP_IVec4 {                                              \
-        static_cast<int>((x)),                              \
-        static_cast<int>((x)),                              \
-        static_cast<int>((x)),                              \
-        static_cast<int>((x))                               \
-    }
-#define HP_IVEC4(x, y, z, w)                                \
-    HP_IVec4 {                                              \
-        static_cast<int>((x)),                              \
-        static_cast<int>((y)),                              \
-        static_cast<int>((z)),                              \
-        static_cast<int>((w))                               \
-    }
-#define HP_VEC2_1(x)                                        \
-    HP_Vec2 {                                               \
-        static_cast<float>((x)),                            \
-        static_cast<float>((x))                             \
-    }
-#define HP_VEC2(x, y)                                       \
-    HP_Vec2 {                                               \
-        static_cast<float>((x)),                            \
-        static_cast<float>((y))                             \
-    }
-#define HP_VEC3_1(x)                                        \
-    HP_Vec3 {                                               \
-        static_cast<float>((x)),                            \
-        static_cast<float>((x)),                            \
-        static_cast<float>((x))                             \
-    }
-#define HP_VEC3(x, y, z)                                    \
-    HP_Vec3 {                                               \
-        static_cast<float>((x)),                            \
-        static_cast<float>((y)),                            \
-        static_cast<float>((z))                             \
-    }
-#define HP_VEC4_1(x)                                        \
-    HP_Vec4 {                                               \
-        static_cast<float>((x)),                            \
-        static_cast<float>((x)),                            \
-        static_cast<float>((x)),                            \
-        static_cast<float>((x))                             \
-    }
-#define HP_VEC4(x, y, z, w)                                 \
-    HP_Vec4 {                                               \
-        static_cast<float>((x)),                            \
-        static_cast<float>((y)),                            \
-        static_cast<float>((z)),                            \
-        static_cast<float>((w))                             \
-    }
-#define HP_COLOR_1(x)                                       \
-    HP_Color {                                              \
-        static_cast<float>((x)),                            \
-        static_cast<float>((x)),                            \
-        static_cast<float>((x)),                            \
-        static_cast<float>((1))                             \
-    }
-#define HP_COLOR_RGB(r, g, b)                               \
-    HP_Color {                                              \
-        static_cast<float>((r)),                            \
-        static_cast<float>((g)),                            \
-        static_cast<float>((b)),                            \
-        static_cast<float>((1))                             \
-    }
-#define HP_COLOR_ALPHA(c, a)                                \
-    HP_Color {                                              \
-        static_cast<float>((c).r),                          \
-        static_cast<float>((c).g),                          \
-        static_cast<float>((c).b),                          \
-        static_cast<float>((a))                             \
-    }
-#define HP_COLOR(r, g, b, a)                                \
-    HP_Color {                                              \
-        static_cast<float>((r)),                            \
-        static_cast<float>((g)),                            \
-        static_cast<float>((b)),                            \
-        static_cast<float>((a))                             \
-    }
-#define HP_QUAT(w, x, y, z)                                 \
-    HP_Quat {                                               \
-        static_cast<float>((w)),                            \
-        static_cast<float>((x)),                            \
-        static_cast<float>((y)),                            \
-        static_cast<float>((z))                             \
-    }
-#define HP_MAT4_T HP_Mat4
-#define HP_TRANSFORM_T HP_Transform
-#else
-#define HP_IVEC2_1(x) (HP_IVec2) { (x), (x) }
-#define HP_IVEC2(x, y) (HP_IVec2) { (x), (y) }
-#define HP_IVEC3_1(x) (HP_IVec3) { (x), (x), (x)  }
-#define HP_IVEC3(x, y, z) (HP_IVec3) { (x), (y), (z)  }
-#define HP_IVEC4_1(x) (HP_IVec4) { (x), (x), (x), (x)  }
-#define HP_IVEC4(x, y, z, w) (HP_IVec4) { (x), (y), (z), (w)  }
-#define HP_VEC2_1(x) (HP_Vec2) { (x), (x) }
-#define HP_VEC2(x, y) (HP_Vec2) { (x), (y) }
-#define HP_VEC3_1(x) (HP_Vec3) { (x), (x), (x)  }
-#define HP_VEC3(x, y, z) (HP_Vec3) { (x), (y), (z)  }
-#define HP_VEC4_1(x) (HP_Vec4) { (x), (x), (x), (x)  }
-#define HP_VEC4(x, y, z, w) (HP_Vec4) { (x), (y), (z), (w)  }
-#define HP_COLOR_1(x) (HP_Color) { (x), (x), (x), (1.0f) }
-#define HP_COLOR_RGB(r, g, b) (HP_Color) { (r), (g), (b), (1.0f) }
-#define HP_COLOR_ALPHA(c, a) (HP_Color) { (c).r, (c).g, (c).b, (a) }
-#define HP_COLOR(r, g, b, a) (HP_Color) { (r), (g), (b), (a) }
-#define HP_QUAT(w, x, y, z) (HP_Quat) { (w), (x), (y), (z)  }
-#define HP_MAT4_T (HP_Mat4)
-#define HP_TRANSFORM_T (HP_Transform)
-#endif
+/**
+ * @brief Returns the minimum of two values
+ */
+#define HP_MIN(a, b) \
+    ((a) < (b) ? (a) : (b))
+
+/**
+ * @brief Returns the maximum of two values
+ */
+#define HP_MAX(a, b) \
+    ((a) > (b) ? (a) : (b))
+
+/**
+ * @brief Returns the minimum of three values
+ */
+#define HP_MIN3(a, b, c) \
+    HP_MIN(a, HP_MIN(b, c))
+
+/**
+ * @brief Returns the maximum of three values
+ */
+#define HP_MAX3(a, b, c) \
+    HP_MAX(a, HP_MAX(b, c))
+
+/**
+ * @brief Clamps a value between minimum and maximum bounds
+ */
+#define HP_CLAMP(v, min, max) \
+    HP_MIN(HP_MAX((v), (min)), (max))
+
+/**
+ * @brief Returns the absolute value of a number
+ */
+#define HP_ABS(x) \
+    ((x) < 0 ? -(x) : (x))
+
+/**
+ * @brief Returns the sign of a number (-1, 0, or 1)
+ */
+#define HP_SIGN(x) \
+    (((x) > 0) - ((x) < 0))
+
+/**
+ * @brief Returns the square of a number
+ */
+#define HP_POW2(x) \
+    ((x) * (x))
+
+/**
+ * @brief Returns the cube of a number
+ */
+#define HP_POW3(x) \
+    ((x) * (x) * (x))
+
+/**
+ * @brief The multiple of B after A
+ */
+#define HP_NEXT_MULTIPLE(a, b) \
+    ((b) * ((int)ceilf((float)(a) / (b))))
+
+/**
+ * @brief The multiple of B before A
+ */
+#define HP_PREV_MULTIPLE(a, b) \
+    ((b) * ((int)floorf((float)(a) / (b))))
+
+/**
+ * @brief The closest multiple of B to A
+ */
+#define HP_NEAR_MULTIPLE(a, b) \
+    ((b) * ((int)roundf((float)(a) / (b))))
+
+/**
+ * @brief Integer division with ceiling (round up)
+ */
+#define HP_DIV_CEIL(num, denom) \
+    (((num) + (denom) - 1) / (denom))
+
+/**
+ * @brief Checks if value is within inclusive range
+ */
+#define HP_IN_RANGE(x, low, high) \
+    ((x) >= (low) && (x) <= (high))
+
+/**
+ * @brief Rounds value up to the next alignment boundary
+ */
+#define HP_ALIGN_UP(value, alignment) \
+    (((value) + (alignment) - 1) & ~((alignment) - 1))
+
+/**
+ * @brief Rounds value down to the previous alignment boundary
+ */
+#define HP_ALIGN_DOWN(value, alignment) \
+    ((value) & ~((alignment) - 1))
+
+/**
+ * @brief Checks if addition would overflow
+ */
+#define HP_WOULD_OVERFLOW_ADD(a, b, max) \
+    ((a) > (max) - (b))
+
+/**
+ * @brief Checks if multiplication would overflow
+ */
+#define HP_WOULD_OVERFLOW_MUL(a, b, max) \
+    ((a) != 0 && (b) > (max) / (a))
 
 /* === Structures === */
 
+/**
+ * @biref Integer 2D vector (x, y)
+ */
 typedef struct HP_IVec2 {
     union {
         struct { int x, y; };
@@ -240,6 +412,9 @@ typedef struct HP_IVec2 {
     };
 } HP_IVec2;
 
+/**
+ * @biref Integer 3D vector (x, y, z)
+ */
 typedef struct HP_IVec3 {
     union {
         struct { int x, y, z; };
@@ -247,6 +422,9 @@ typedef struct HP_IVec3 {
     };
 } HP_IVec3;
 
+/**
+ * @biref Integer 4D vector (x, y, z, w)
+ */
 typedef struct HP_IVec4 {
     union {
         struct { int x, y, z, w; };
@@ -254,6 +432,9 @@ typedef struct HP_IVec4 {
     };
 } HP_IVec4;
 
+/**
+ * @biref Float 2D vector (x, y)
+ */
 typedef struct HP_Vec2 {
     union {
         struct { float x, y; };
@@ -261,6 +442,9 @@ typedef struct HP_Vec2 {
     };
 } HP_Vec2;
 
+/**
+ * @biref Float 3D vector (x, y, z)
+ */
 typedef struct HP_Vec3 {
     union {
         struct { float x, y, z; };
@@ -268,6 +452,9 @@ typedef struct HP_Vec3 {
     };
 } HP_Vec3;
 
+/**
+ * @biref Float 4D vector (x, y, z, w)
+ */
 typedef struct HP_Vec4 {
     union {
         struct { float x, y, z, w; };
@@ -275,10 +462,16 @@ typedef struct HP_Vec4 {
     };
 } HP_Vec4;
 
+/**
+ * @biref Floating-point RGBA color (r, g, b, a)
+ */
 typedef struct HP_Color {
     float r, g, b, a;
 } HP_Color;
 
+/**
+ * @biref Quaternion (w, x, y, z)
+ */
 typedef struct HP_Quat {
     union {
         struct { float w, x, y, z; };
@@ -286,6 +479,9 @@ typedef struct HP_Quat {
     };
 } HP_Quat;
 
+/**
+ * @biref 3x3 Matrix (row-major)
+ */
 typedef struct HP_Mat3 {
     union {
         struct {
@@ -298,6 +494,9 @@ typedef struct HP_Mat3 {
     };
 } HP_Mat3;
 
+/**
+ * @biref 4x4 Matrix (row-major)
+ */
 typedef struct HP_Mat4 {
     union {
         struct {
@@ -311,6 +510,9 @@ typedef struct HP_Mat4 {
     };
 } HP_Mat4;
 
+/**
+ * @biref Transform (translation, rotation, scale)
+ */
 typedef struct HP_Transform {
     HP_Vec3 translation;
     HP_Quat rotation;
@@ -327,6 +529,41 @@ extern "C" {
  *  Inline utility functions for general math operations.
  *  @{
  */
+
+/**
+ * @brief Says if a 32-bit integer is a power of two
+ */
+static inline bool HP_IsPowerOfTwo(uint64_t x)
+{
+    return (x != 0) && ((x & (x - 1)) == 0);
+}
+
+/**
+ * @brief Return the next highest power of two for a 64-bit integer
+ */
+static inline uint64_t HP_NextPowerOfTwo(uint64_t x)
+{
+    return (x <= 1) ? 1ULL : 1ULL << (64 - HP_Clz64(x - 1));
+}
+
+/**
+ * @brief Return the previous lowest power of two for a 64-bit integer
+ */
+static inline uint64_t HP_PrevPowerOfTwo(uint64_t x)
+{
+    return (x == 0) ? 0ULL : 1ULL << (63 - HP_Clz64(x));
+}
+
+/**
+ * @brief Return the nearest power of two for a 64-bit integer
+ */
+static inline uint64_t HP_NearPowerOfTwo(uint64_t x)
+{
+    if (x <= 1) return 1ULL;
+    uint64_t next = HP_NextPowerOfTwo(x);
+    uint64_t prev = HP_PrevPowerOfTwo(x);
+    return (x - prev < next - x) ? prev : next;
+}
 
 /**
  * @brief Clamp float to [0.0, 1.0]
@@ -2509,30 +2746,24 @@ static inline HP_Color HP_ColorFromHSL(float h, float s, float l, float a)
         return HP_COLOR(l, l, l, a);
     }
 
-    #define HSL_TO_RGB(p, q, t) ({ \
-        float _t = (t); \
-        if (_t < 0.0f) _t += 1.0f; \
-        if (_t > 1.0f) _t -= 1.0f; \
-        (_t < 1.0f/6.0f) ? (p) + ((q) - (p)) * 6.0f * _t : \
-        (_t < 1.0f/2.0f) ? (q) : \
-        (_t < 2.0f/3.0f) ? (p) + ((q) - (p)) * (2.0f/3.0f - _t) * 6.0f : \
-        (p); \
-    })
-
-    float h_norm = h / 360.0f;
+    float hNorm = h / 360.0f;
     float q = l < 0.5f ? l * (1.0f + s) : l + s - l * s;
     float p = 2.0f * l - q;
+    float diff = q - p;
 
-    HP_Color result = HP_COLOR(
-        HSL_TO_RGB(p, q, h_norm + 1.0f/3.0f),
-        HSL_TO_RGB(p, q, h_norm),
-        HSL_TO_RGB(p, q, h_norm - 1.0f/3.0f),
-        a
-    );
+    // cry with me...
+    #define HSL_TO_RGB(p, q, diff, t) \
+            (((t) < 0.0f ? (t) + 1.0f : ((t) > 1.0f ? (t) - 1.0f : (t))) < 1.0f/6.0f ? (p) + (diff) * 6.0f * ((t) < 0.0f ? (t) + 1.0f : ((t) > 1.0f ? (t) - 1.0f : (t))) : \
+            (((t) < 0.0f ? (t) + 1.0f : ((t) > 1.0f ? (t) - 1.0f : (t))) < 1.0f/2.0f ? (q) : \
+            (((t) < 0.0f ? (t) + 1.0f : ((t) > 1.0f ? (t) - 1.0f : (t))) < 2.0f/3.0f ? (p) + (diff) * (2.0f/3.0f - ((t) < 0.0f ? (t) + 1.0f : ((t) > 1.0f ? (t) - 1.0f : (t)))) * 6.0f : (p))))
+
+    float r = HSL_TO_RGB(p, q, diff, hNorm + 1.0f / 3.0f);
+    float g = HSL_TO_RGB(p, q, diff, hNorm);
+    float b = HSL_TO_RGB(p, q, diff, hNorm - 1.0f / 3.0f);
 
     #undef HSL_TO_RGB
 
-    return result;
+    return HP_COLOR(r, g, b, a);
 }
 
 /**

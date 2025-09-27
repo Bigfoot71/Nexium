@@ -3,7 +3,7 @@ project(hyperion VERSION 0.1.0 LANGUAGES C CXX)
 
 # Used language standards
 
-set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 

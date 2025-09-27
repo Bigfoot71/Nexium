@@ -375,8 +375,8 @@ bool HP_Font::generateFontAtlas(HP_Image* atlas, const uint8_t* fileData, int da
     int atlasSize = (int)roundf(sqrtf((float)estimatedArea));
 
     // Get next po2 if necessary
-    if (!HP_IS_PO2(atlasSize)) {
-        atlasSize = HP_NEXT_PO2(atlasSize);
+    if (!HP_IsPowerOfTwo(atlasSize)) {
+        atlasSize = HP_NextPowerOfTwo(atlasSize);
     }
 
     // Try rectangle first (wider than tall)

@@ -66,7 +66,7 @@ constexpr HP_Color assimp_cast<HP_Color, aiColor4D>(const aiColor4D& src)
 template<>
 constexpr HP_Mat4 assimp_cast<HP_Mat4, aiMatrix4x4>(const aiMatrix4x4& src)
 {
-    return (HP_Mat4){
+    return HP_MAT4_T {
         src.a1, src.b1, src.c1, src.d1,
         src.a2, src.b2, src.c2, src.d2,
         src.a3, src.b3, src.c3, src.d3,

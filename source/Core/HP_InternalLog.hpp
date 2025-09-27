@@ -23,7 +23,7 @@
 #include <Hyperion/HP_Core.h>
 
 #ifndef HP_NO_INTERNAL_LOGS
-#   define HP_INTERNAL_LOG(level, fmt, ...) HP_Log##level(fmt __VA_OPT__(,) __VA_ARGS__)
+#	define HP_INTERNAL_LOG(level, fmt, ...) HP_Log##level(fmt, ##__VA_ARGS__)
 #else
 #   define HP_INTERNAL_LOG(level, fmt, ...) do { } while (0)
 #endif

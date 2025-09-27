@@ -21,38 +21,33 @@
 #define HP_MACROS_H
 
 #include <stdbool.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <stddef.h>
 
 /**
- * @brief Returns the minimum of two values
+ * @brief Cast macro that works in both C and C++
  */
-#define HP_MIN(a, b) \
-    ((a) < (b) ? (a) : (b))
+#if defined(__cplusplus)
+#   define HP_CAST(t, x) static_cast<t>(x)
+#else
+#   define HP_CAST(t, x) (t)(x)
+#endif
 
 /**
- * @brief Returns the maximum of two values
+ * @brief Literal macro that works in both C and C++
  */
-#define HP_MAX(a, b) \
-    ((a) > (b) ? (a) : (b))
+#if defined(__cplusplus)
+#   define HP_LITERAL(type) type
+#else
+#   define HP_LITERAL(type) (type)
+#endif
 
 /**
- * @brief Clamps a value between minimum and maximum bounds
+ * @brief Struct literal macro that works in both C and C++
  */
-#define HP_CLAMP(v, min, max) \
-    HP_MIN(HP_MAX((v), (min)), (max))
-
-/**
- * @brief Returns the minimum of three values
- */
-#define HP_MIN3(a, b, c) \
-    HP_MIN(a, HP_MIN(b, c))
-
-/**
- * @brief Returns the maximum of three values
- */
-#define HP_MAX3(a, b, c) \
-    HP_MAX(a, HP_MAX(b, c))
+#define HP_STRUCT_LITERAL(type, ...) \
+    HP_LITERAL(type) {__VA_ARGS__}
 
 /**
  * @brief Swaps two variables of compatible types
@@ -63,104 +58,6 @@
         (a) = (b); \
         (b) = _temp; \
     } while(0)
-
-/**
- * @brief Returns the absolute value of a number
- */
-#define HP_ABS(x) \
-    ((x) < 0 ? -(x) : (x))
-
-/**
- * @brief Returns the sign of a number (-1, 0, or 1)
- */
-#define HP_SIGN(x) \
-    (((x) > 0) - ((x) < 0))
-
-/**
- * @brief Returns the square of a number
- */
-#define HP_POW2(x) \
-    ((x) * (x))
-
-/**
- * @brief Returns the cube of a number
- */
-#define HP_POW3(x) \
-    ((x) * (x) * (x))
-
-/**
- * @brief Count leading zeros in a 64-bit integer.
- */
-#if defined(__GNUC__) || defined(__clang__)
-#   define HP_CLZ64(x) ((x) ? __builtin_clzll(x) : 64)
-#elif defined(_MSC_VER)
-#   include <intrin.h>
-#   define HP_CLZ64(x) \
-    ((x) ? ({ unsigned long _i; _BitScanReverse64(&_i, (x)); 63 - _i; }) : 64)
-#else
-#   define HP_CLZ64(x) \
-    ((x) == 0 ? 64 : ({ \
-        uint64_t _v = (x); \
-        int _n = 0; \
-        while ((_v & (1ULL << 63)) == 0) { _n++; _v <<= 1; } \
-        _n; \
-    }))
-#endif
-
-/**
- * @brief Count trailing zeros in a 64-bit integer.
- */
-#if defined(__GNUC__) || defined(__clang__)
-#   define HP_CTZ64(x) ((x) ? __builtin_ctzll(x) : 64)
-#elif defined(_MSC_VER)
-#   include <intrin.h>
-#   define HP_CTZ64(x) \
-    ((x) ? ({ unsigned long _i; _BitScanForward64(&_i, (x)); (int)_i; }) : 64)
-#else
-#   define HP_CTZ64(x) \
-    ((x) == 0 ? 64 : ({ \
-        uint64_t _v = (x); \
-        int _n = 0; \
-        while ((_v & 1ULL) == 0) { _n++; _v >>= 1; } \
-        _n; \
-    }))
-#endif
-
-/**
- * @brief Sets a specific bit in a variable
- */
-#define HP_BIT_SET(var, bit) \
-    ((var) |= (1ULL << (bit)))
-
-/**
- * @brief Clears a specific bit in a variable
- */
-#define HP_BIT_CLEAR(var, bit) \
-    ((var) &= ~(1ULL << (bit)))
-
-/**
- * @brief Toggles a specific bit in a variable
- */
-#define HP_BIT_TOGGLE(var, bit) \
-    ((var) ^= (1ULL << (bit)))
-
-/**
- * @brief Checks if a specific bit is set
- */
-#define HP_BIT_CHECK(var, bit) \
-    (!!((var) & (1ULL << (bit))))
-
-/**
- * @brief Rounds value up to the next alignment boundary
- */
-#define HP_ALIGN_UP(value, alignment) \
-    (((value) + (alignment) - 1) & ~((alignment) - 1))
-
-/**
- * @brief Rounds value down to the previous alignment boundary
- */
-#define HP_ALIGN_DOWN(value, alignment) \
-    ((value) & ~((alignment) - 1))
 
 /**
  * @brief Checks if a pointer is aligned to a boundary
@@ -175,72 +72,16 @@
     (sizeof(arr) / sizeof((arr)[0]))
 
 /**
- * @brief Gets the offset of a member within a struct
+ * @brief Iterates over static array elements
  */
-#define HP_OFFSET_OF(type, member) \
-    offsetof(type, member)
+#define HP_FOR_EACH(item, array) \
+    for (size_t _i = 0; _i < HP_ARRAY_SIZE(array) && ((item) = (array)[_i], 1); ++_i)
 
 /**
  * @brief Gets container struct from member pointer
  */
 #define HP_CONTAINER_OF(ptr, type, member) \
-    ((type*)((char*)(ptr) - HP_OFFSET_OF(type, member)))
-
-/**
- * @brief Checks if value is within inclusive range
- */
-#define HP_IN_RANGE(x, low, high) \
-    ((x) >= (low) && (x) <= (high))
-
-/**
- * @brief Checks if value is a power of 2
- */
-#define HP_IS_PO2(x) \
-    ((x) > 0 && ((x) & ((x) - 1)) == 0)
-
-/**
- * @brief Compute the next power of 2 greater than or equal to a 64-bit integer
- */
-#define HP_NEXT_PO2(x) ({ \
-    uint64_t _x = (x); \
-    (_x <= 1) ? 1 : (1ULL << (64 - HP_CLZ64(_x - 1))); \
-})
-
-/**
- * @brief Compute the previous power of 2 less than or equal to a 64-bit integer
- */
-#define HP_PREV_PO2(x) ({ \
-    uint64_t _x = (x); \
-    (_x == 0) ? 0 : (1ULL << (63 - HP_CLZ64(_x))); \
-})
-
-/**
- * @brief Compute the nearest power of 2 to a 64-bit integer.
- */
-#define HP_NEAR_PO2(x) ({ \
-    uint64_t _x = (x); \
-    uint64_t _next = HP_NEXT_PO2(_x); \
-    uint64_t _prev = HP_PREV_PO2(_x); \
-    (_x - _prev < _next - _x) ? _prev : _next; \
-})
-
-/**
- * @brief The multiple of B after A
- */
-#define HP_NEXT_MULTIPLE(a, b) \
-    ((b) * ((int)ceilf((float)(a) / (b))))
-
-/**
- * @brief The multiple of B before A
- */
-#define HP_PREV_MULTIPLE(a, b) \
-    ((b) * ((int)floorf((float)(a) / (b))))
-
-/**
- * @brief The closest multiple of B to A
- */
-#define HP_NEAR_MULTIPLE(a, b) \
-    ((b) * ((int)roundf((float)(a) / (b))))
+    ((type*)((char*)(ptr) - offsetof(type, member)))
 
 /**
  * @brief Suppresses unused variable warnings
@@ -263,29 +104,5 @@
 #else
 #    define HP_ASSERT(cond) ((void)0)
 #endif
-
-/**
- * @brief Iterates over static array elements
- */
-#define HP_FOR_EACH(item, array) \
-    for (size_t _i = 0; _i < HP_ARRAY_SIZE(array) && ((item) = (array)[_i], 1); ++_i)
-
-/**
- * @brief Integer division with ceiling (round up)
- */
-#define HP_DIV_CEIL(num, denom) \
-    (((num) + (denom) - 1) / (denom))
-
-/**
- * @brief Checks if addition would overflow
- */
-#define HP_WOULD_OVERFLOW_ADD(a, b, max) \
-    ((a) > (max) - (b))
-
-/**
- * @brief Checks if multiplication would overflow
- */
-#define HP_WOULD_OVERFLOW_MUL(a, b, max) \
-    ((a) != 0 && (b) > (max) / (a))
 
 #endif // HP_MACROS_H

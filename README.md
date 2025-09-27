@@ -66,7 +66,7 @@ Here’s a checklist of the major features that are still missing:
 First, to run Hyperion you’ll need a GPU with **OpenGL 4.5** or **OpenGL ES 3.2** support.
 
 To build the project, make sure you have:
-- A C23/C++23 compiler
+- A C11/C++23 compiler
 - CMake 3.20+
 - Python 3.6+
 
