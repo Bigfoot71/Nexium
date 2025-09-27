@@ -30,9 +30,8 @@ endif()
 
 # Hyperion build config options
 
+option(HP_BUILD_DOCS "Build documentation with Doxygen" OFF)
 option(HP_BUILD_TESTS "Enable building tests" ${HP_IS_MAIN})
-option(HP_BUILD_DOCS "Build documentation with Doxygen" ${HP_IS_MAIN})
-
 option(HP_BUILD_SHARED "Build Hyperion as a shared library" OFF)
 option(HP_INSTALL "Enable installation of the Hyperion library" ${HP_IS_MAIN})
 
