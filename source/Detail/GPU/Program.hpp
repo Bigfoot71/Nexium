@@ -196,6 +196,9 @@ inline GLuint Program::id() const noexcept
 
 inline void Program::setUint1(int location, uint32_t value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(value));
         glUniform1ui(location, value);
@@ -204,6 +207,8 @@ inline void Program::setUint1(int location, uint32_t value) const noexcept
 
 inline void Program::setUint2(int location, const HP_IVec2& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
     SDL_assert(value.x > 0 && value.y > 0);
 
     uint32_t v[2] = {
@@ -219,6 +224,8 @@ inline void Program::setUint2(int location, const HP_IVec2& value) const noexcep
 
 inline void Program::setUint3(int location, const HP_IVec3& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
     SDL_assert(value.x >= 0 && value.y >= 0 && value.z >= 0);
 
     uint32_t v[3] = {
@@ -235,6 +242,8 @@ inline void Program::setUint3(int location, const HP_IVec3& value) const noexcep
 
 inline void Program::setUint4(int location, const HP_IVec4& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
     SDL_assert(value.x >= 0 && value.y >= 0 && value.z >= 0 && value.w >= 0);
 
     uint32_t v[4] = {
@@ -252,6 +261,9 @@ inline void Program::setUint4(int location, const HP_IVec4& value) const noexcep
 
 inline void Program::setInt1(int location, int value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(value));
         glUniform1i(location, value);
@@ -260,6 +272,9 @@ inline void Program::setInt1(int location, int value) const noexcept
 
 inline void Program::setInt2(int location, const HP_IVec2& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(value));
         glUniform2iv(location, 1, reinterpret_cast<const int*>(&value));
@@ -268,6 +283,9 @@ inline void Program::setInt2(int location, const HP_IVec2& value) const noexcept
 
 inline void Program::setInt3(int location, const HP_IVec3& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(value));
         glUniform3iv(location, 1, reinterpret_cast<const int*>(&value));
@@ -276,6 +294,9 @@ inline void Program::setInt3(int location, const HP_IVec3& value) const noexcept
 
 inline void Program::setInt4(int location, const HP_IVec4& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(value));
         glUniform4iv(location, 1, reinterpret_cast<const int*>(&value));
@@ -284,6 +305,9 @@ inline void Program::setInt4(int location, const HP_IVec4& value) const noexcept
 
 inline void Program::setFloat1(int location, float value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(value));
         glUniform1f(location, value);
@@ -292,6 +316,9 @@ inline void Program::setFloat1(int location, float value) const noexcept
 
 inline void Program::setFloat2(int location, const HP_Vec2& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(value));
         glUniform2fv(location, 1, reinterpret_cast<const float*>(&value));
@@ -300,6 +327,9 @@ inline void Program::setFloat2(int location, const HP_Vec2& value) const noexcep
 
 inline void Program::setFloat3(int location, const HP_Vec3& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(value));
         glUniform3fv(location, 1, reinterpret_cast<const float*>(&value));
@@ -308,6 +338,9 @@ inline void Program::setFloat3(int location, const HP_Vec3& value) const noexcep
 
 inline void Program::setFloat3(int location, const HP_Color& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(HP_Vec3));
         glUniform3fv(location, 1, reinterpret_cast<const float*>(&value));
@@ -316,6 +349,9 @@ inline void Program::setFloat3(int location, const HP_Color& value) const noexce
 
 inline void Program::setFloat4(int location, const HP_Vec4& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(value));
         glUniform4fv(location, 1, reinterpret_cast<const float*>(&value));
@@ -324,6 +360,9 @@ inline void Program::setFloat4(int location, const HP_Vec4& value) const noexcep
 
 inline void Program::setFloat4(int location, const HP_Quat& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     HP_Vec4 quat = { value.x, value.y, value.z, value.w };
     if (std::memcmp(mUniformCache[location].data(), &quat, sizeof(quat)) != 0) {
         std::memcpy(mUniformCache[location].data(), &quat, sizeof(quat));
@@ -333,6 +372,9 @@ inline void Program::setFloat4(int location, const HP_Quat& value) const noexcep
 
 inline void Program::setFloat4(int location, const HP_Color& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(HP_Vec4));
         glUniform4fv(location, 1, reinterpret_cast<const float*>(&value));
@@ -341,6 +383,9 @@ inline void Program::setFloat4(int location, const HP_Color& value) const noexce
 
 inline void Program::setMat3(int location, const HP_Mat3& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), value.a, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), value.a, sizeof(value));
         glUniformMatrix3fv(location, 1, GL_FALSE, value.a);
@@ -349,6 +394,9 @@ inline void Program::setMat3(int location, const HP_Mat3& value) const noexcept
 
 inline void Program::setMat3(int location, const HP_Mat4& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     union {
         float v[3][3];
         float a[9];
@@ -368,6 +416,9 @@ inline void Program::setMat3(int location, const HP_Mat4& value) const noexcept
 
 inline void Program::setMat4(int location, const HP_Mat4& value) const noexcept
 {
+    SDL_assert(mUniformCache.capacity() > 0);
+    SDL_assert(location < mUniformCache.size());
+
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
         std::memcpy(mUniformCache[location].data(), &value, sizeof(value));
         glUniformMatrix4fv(location, 1, GL_FALSE, reinterpret_cast<const float*>(&value));
@@ -401,16 +452,18 @@ inline bool Program::linkProgram() noexcept
 inline bool Program::createUniformCache() noexcept
 {
     GLint numUniforms = 0;
-
     glGetProgramInterfaceiv(mID, GL_UNIFORM, GL_ACTIVE_RESOURCES, &numUniforms);
 
-    GLenum props[] = {GL_TYPE};
-    int uniformCount = 0;
+    GLenum props[] = {GL_TYPE, GL_LOCATION};
+    GLint type = 0, location = 0;
+    GLint maxLocation = -1;
 
     for (GLint i = 0; i < numUniforms; ++i)
     {
-        GLenum type;
-        glGetProgramResourceiv(mID, GL_UNIFORM, i, 1, props, 1, nullptr, (GLint*)&type);
+        GLint values[2];
+        glGetProgramResourceiv(mID, GL_UNIFORM, i, 2, props, 2, nullptr, values);
+        type = values[0];
+        location = values[1];
 
         switch (type) {
         case GL_SAMPLER_2D:
@@ -428,18 +481,24 @@ inline bool Program::createUniformCache() noexcept
         case GL_IMAGE_CUBE:
         case GL_IMAGE_BUFFER:
         case GL_IMAGE_2D_ARRAY:
-            break;
-        default:
-            ++uniformCount;
-            break;
+            continue;
+        }
+
+        if(location > maxLocation) {
+            maxLocation = location;
         }
     }
 
+    if(maxLocation < 0) {
+        return true;
+    }
+
+    size_t cacheSize = maxLocation + 1;
     mUniformCache = decltype(mUniformCache)(
-        uniformCount, uniformCount
+        cacheSize, cacheSize
     );
 
-    return (mUniformCache.capacity() == uniformCount);
+    return (mUniformCache.capacity() == cacheSize);
 }
 
 } // namespace gpu
