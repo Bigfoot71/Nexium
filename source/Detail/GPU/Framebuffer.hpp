@@ -40,7 +40,7 @@ class Framebuffer {
 public:
     /** Constructors */
     Framebuffer() = default;
-    Framebuffer(std::initializer_list<Texture*> colorAttachments, Texture* depthStencilAttachment = nullptr) noexcept;
+    Framebuffer(std::initializer_list<const Texture*> colorAttachments, const Texture* depthStencilAttachment = nullptr) noexcept;
 
     /** Destructor and Move semantics */
     ~Framebuffer() noexcept;
@@ -97,10 +97,10 @@ private:
     /** Member variables */
     GLuint mResolveFramebuffer{0};                      //< Framebuffer with original textures
     GLuint mMultisampleFramebuffer{0};                  //< Framebuffer MSAA (optional)
-    util::DynamicArray<Texture*> mColorAttachments;
+    util::DynamicArray<const Texture*> mColorAttachments;
     util::DynamicArray<GLuint> mColorRenderbuffers;     //< MSAA color renderbuffers
     GLuint mDepthRenderbuffer{0};                       //< MSAA depth/stencil renderbuffer
-    Texture* mDepthStencilAttachment{nullptr};
+    const Texture* mDepthStencilAttachment{nullptr};
     int mSampleCount{0};
 
     /** Layer/face tracking */
@@ -125,7 +125,7 @@ private:
 
 /* === Public Implementation === */
 
-inline Framebuffer::Framebuffer(std::initializer_list<Texture*> colorAttachments, Texture* depthStencilAttachment) noexcept
+inline Framebuffer::Framebuffer(std::initializer_list<const Texture*> colorAttachments, const Texture* depthStencilAttachment) noexcept
     : mColorAttachments(colorAttachments), mDepthStencilAttachment(depthStencilAttachment)
 {
     if (mColorAttachments.empty()) {
