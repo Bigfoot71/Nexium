@@ -101,11 +101,15 @@ Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, HP_AppD
     /* --- Create swap buffers --- */
 
     mSwapPostProcess = gpu::SwapBuffer(
-        GL_RGB16F, desc.render3D.resolution.x, desc.render3D.resolution.y
+        desc.render3D.resolution.x,
+        desc.render3D.resolution.y,
+        GL_RGB16F
     );
 
     mSwapAuxiliary = gpu::SwapBuffer(
-        GL_RGB16F, desc.render3D.resolution.x / 2, desc.render3D.resolution.y / 2
+        desc.render3D.resolution.x / 2,
+        desc.render3D.resolution.y / 2,
+        GL_RGB16F
     );
 
     /* --- Reserve enough space for the draw calls array --- */

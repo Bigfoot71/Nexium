@@ -31,7 +31,7 @@ namespace gpu {
 class SwapBuffer {
 public:
     SwapBuffer() = default;
-    SwapBuffer(GLenum internalFormat, int w, int h) noexcept;
+    SwapBuffer(int w, int h, GLenum internalFormat) noexcept;
 
     SwapBuffer(const SwapBuffer&) = delete;
     SwapBuffer& operator=(const SwapBuffer&) = delete;
@@ -50,7 +50,7 @@ private:
 
 /* === Public Implementation === */
 
-inline SwapBuffer::SwapBuffer(GLenum internalFormat, int w, int h) noexcept
+inline SwapBuffer::SwapBuffer(int w, int h, GLenum internalFormat) noexcept
 {
     for (int i = 0; i < 2; i++) {
         mBuffers[i].second = gpu::Texture(
