@@ -22,13 +22,15 @@
 #include <shaders/cubemap_from_equirectangular.frag.h>
 #include <shaders/cubemap_irradiance.frag.h>
 #include <shaders/cubemap_prefilter.frag.h>
+#include <shaders/cubemap_skybox.frag.h>
 
 namespace render {
 
-PoolCubemap::PoolCubemap(const gpu::Shader& vertScreen, const gpu::Shader& cubeScreen)
+PoolCubemap::PoolCubemap(const gpu::Shader& vertScreen, const gpu::Shader& vertCube)
     : mProgramEquirectangular(vertScreen, gpu::Shader(GL_FRAGMENT_SHADER, CUBEMAP_FROM_EQUIRECTANGULAR_FRAG))
-    , mProgramIrradiance(cubeScreen, gpu::Shader(GL_FRAGMENT_SHADER, CUBEMAP_IRRADIANCE_FRAG))
-    , mProgramPrefilter(cubeScreen, gpu::Shader(GL_FRAGMENT_SHADER, CUBEMAP_PREFILTER_FRAG))
+    , mProgramIrradiance(vertCube, gpu::Shader(GL_FRAGMENT_SHADER, CUBEMAP_IRRADIANCE_FRAG))
+    , mProgramPrefilter(vertCube, gpu::Shader(GL_FRAGMENT_SHADER, CUBEMAP_PREFILTER_FRAG))
+    , mProgramSkyboxGen(vertCube, gpu::Shader(GL_FRAGMENT_SHADER, CUBEMAP_SKYBOX_FRAG))
 { }
 
 } // namespace render

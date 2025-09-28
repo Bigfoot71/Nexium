@@ -67,7 +67,7 @@ inline HP_Texture::HP_Texture(const HP_Image& image, HP_TextureFilter filter, HP
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_2D,
-            .internalFormat = render::getInternalFormat(image.format),
+            .internalFormat = render::getInternalFormat(image.format, false),
             .data = image.pixels,
             .width = image.w,
             .height = image.h,

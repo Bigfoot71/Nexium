@@ -325,6 +325,7 @@ embed_shaders(${PROJECT_NAME}
     "${HP_ROOT_PATH}/shaders/process/cubemap_from_equirectangular.frag"
     "${HP_ROOT_PATH}/shaders/process/cubemap_irradiance.frag"
     "${HP_ROOT_PATH}/shaders/process/cubemap_prefilter.frag"
+    "${HP_ROOT_PATH}/shaders/process/cubemap_skybox.frag"
     "${HP_ROOT_PATH}/shaders/process/bilateral_blur.frag"
     "${HP_ROOT_PATH}/shaders/process/ssao_pass.frag"
     "${HP_ROOT_PATH}/shaders/overlay/generic.vert"

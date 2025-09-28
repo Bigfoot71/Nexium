@@ -1735,18 +1735,20 @@ HP_Environment HP_GetDefaultEnvironment(void)
 
 /* === Skybox - Public API === */
 
-HP_Cubemap* HP_CreateCubemap(const HP_Image* image)
+HP_Cubemap* HP_CreateCubemap(int size, HP_PixelFormat format)
 {
-    if (image != nullptr) {
-        return gRender->cubemaps.createCubemap(*image);
-    }
-    return nullptr;
+    return gRender->cubemaps.createCubemap(size, format);
+}
+
+HP_Cubemap* HP_LoadCubemapFromMem(const HP_Image* image)
+{
+    return gRender->cubemaps.createCubemap(*image);
 }
 
 HP_Cubemap* HP_LoadCubemap(const char* filePath)
 {
     HP_Image image = HP_LoadImage(filePath);
-    HP_Cubemap* cubemap = HP_CreateCubemap(&image);
+    HP_Cubemap* cubemap = HP_LoadCubemapFromMem(&image);
     HP_DestroyImage(&image);
     return cubemap;
 }
@@ -1754,6 +1756,11 @@ HP_Cubemap* HP_LoadCubemap(const char* filePath)
 void HP_DestroyCubemap(HP_Cubemap* cubemap)
 {
     gRender->cubemaps.destroyCubemap(cubemap);
+}
+
+void HP_GenerateSkybox(HP_Cubemap* cubemap, const HP_Skybox* skybox)
+{
+    gRender->cubemaps.generateSkybox(cubemap, *skybox);
 }
 
 /* === ReflectionProbe - Public API === */

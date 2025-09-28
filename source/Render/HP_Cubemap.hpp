@@ -20,6 +20,7 @@
 #ifndef HP_CUBEMAP_HPP
 #define HP_CUBEMAP_HPP
 
+#include <Hyperion/HP_Render.h>
 #include <Hyperion/HP_Image.h>
 
 #include "../Detail/GPU/Framebuffer.hpp"
@@ -31,12 +32,17 @@
 
 class HP_Cubemap {
 public:
+    HP_Cubemap(int size, HP_PixelFormat format);
     HP_Cubemap(const HP_Image& image, gpu::Program& programEquirectangular);
 
+    /** Getters */
     bool isValid() const;
     int mipLevels() const;
     HP_IVec2 dimensions() const;
     const gpu::Texture& texture() const;
+
+    /** Update methods */
+    void generateSkybox(const HP_Skybox& skybox, gpu::Program& programSkyboxGen);
 
 private:
     void loadEquirectangular(const HP_Image& image, gpu::Program& programEquirectangular);
@@ -47,9 +53,35 @@ private:
 
 private:
     gpu::Texture mTexture;
+    gpu::Framebuffer mFramebuffer;  //< Invalid by default, created only if needed
 };
 
 /* === Public Implementation === */
+
+inline HP_Cubemap::HP_Cubemap(int size, HP_PixelFormat format)
+    : mTexture(
+        gpu::TextureConfig
+        {
+            .target = GL_TEXTURE_CUBE_MAP,
+            .internalFormat = render::getInternalFormat(format, true),
+            .data = nullptr,
+            .width = size,
+            .height = size
+        },
+        gpu::TextureParam
+        {
+            .minFilter = GL_LINEAR,
+            .magFilter = GL_LINEAR,
+            .sWrap = GL_CLAMP_TO_EDGE,
+            .tWrap = GL_CLAMP_TO_EDGE,
+            .rWrap = GL_CLAMP_TO_EDGE
+        }
+    )
+    , mFramebuffer(
+        {&mTexture},
+        nullptr
+    )
+{ }
 
 inline HP_Cubemap::HP_Cubemap(const HP_Image& image, gpu::Program& programEquirectangular)
 {

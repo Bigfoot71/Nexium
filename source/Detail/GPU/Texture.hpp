@@ -122,6 +122,7 @@ public:
 
     /** Public interface */
     bool isValid() const noexcept;
+    bool isHDR() const noexcept;
     GLuint id() const noexcept;
     GLenum target() const noexcept;
     GLenum internalFormat() const noexcept;
@@ -235,6 +236,24 @@ inline Texture& Texture::operator=(Texture&& other) noexcept
 inline bool Texture::isValid() const noexcept
 {
     return mID > 0;
+}
+
+inline bool Texture::isHDR() const noexcept
+{
+    switch (mInternalFormat) {
+    case GL_R16F:
+    case GL_RG16F:
+    case GL_RGB16F:
+    case GL_RGBA16F:
+    case GL_R32F:
+    case GL_RG32F:
+    case GL_RGB32F:
+    case GL_RGBA32F:
+        return true;
+    default:
+        break;
+    }
+    return false;
 }
 
 inline GLuint Texture::id() const noexcept

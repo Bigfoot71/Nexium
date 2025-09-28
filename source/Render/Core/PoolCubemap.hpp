@@ -31,15 +31,16 @@ namespace render {
 
 class PoolCubemap {
 public:
-    PoolCubemap(const gpu::Shader& vertScreen, const gpu::Shader& cubeScreen);
+    PoolCubemap(const gpu::Shader& vertScreen, const gpu::Shader& vertCube);
 
 public:
+    HP_Cubemap* createCubemap(int size, HP_PixelFormat format);
     HP_Cubemap* createCubemap(const HP_Image& image);
     void destroyCubemap(HP_Cubemap* cubemap);
+    void generateSkybox(HP_Cubemap* cubemap, const HP_Skybox& skybox);
 
     HP_ReflectionProbe* createReflectionProbe(const HP_Cubemap& cubemap);
     void destroyReflectionProbe(HP_ReflectionProbe* probe);
-
     void updateReflectionProbe(HP_ReflectionProbe* probe, const HP_Cubemap& cubemap);
 
 private:
@@ -48,9 +49,15 @@ private:
     gpu::Program mProgramEquirectangular;
     gpu::Program mProgramIrradiance;
     gpu::Program mProgramPrefilter;
+    gpu::Program mProgramSkyboxGen;
 };
 
 /* === Public Implementation === */
+
+inline HP_Cubemap* PoolCubemap::createCubemap(int size, HP_PixelFormat format)
+{
+    return mPoolCubemaps.create(size, format);
+}
 
 inline HP_Cubemap* PoolCubemap::createCubemap(const HP_Image& image)
 {
@@ -74,6 +81,11 @@ inline void PoolCubemap::destroyCubemap(HP_Cubemap* cubemap)
     if (cubemap != nullptr) {
         mPoolCubemaps.destroy(cubemap);
     }
+}
+
+inline void PoolCubemap::generateSkybox(HP_Cubemap* cubemap, const HP_Skybox& skybox)
+{
+    cubemap->generateSkybox(skybox, mProgramSkyboxGen);
 }
 
 inline HP_ReflectionProbe* PoolCubemap::createReflectionProbe(const HP_Cubemap& cubemap)

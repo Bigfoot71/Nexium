@@ -20,6 +20,8 @@
 #ifndef HP_RENDER_HELPER_HPP
 #define HP_RENDER_HELPER_HPP
 
+#include "../../Core/HP_CoreState.hpp"
+
 #include <Hyperion/HP_Image.h>
 #include <Hyperion/HP_Math.h>
 #include <glad/gles2.h>
@@ -28,25 +30,50 @@ namespace render {
 
 /* === Format Helpers === */
 
-inline GLenum getInternalFormat(HP_PixelFormat format)
+inline GLenum getInternalFormat(HP_PixelFormat format, bool framebuffer)
 {
+    GLenum internalFormat = GL_RGBA8;
+
     switch (format) {
-    case HP_PIXEL_FORMAT_R8:        return GL_R8;
-    case HP_PIXEL_FORMAT_RG8:       return GL_RG8;
-    case HP_PIXEL_FORMAT_RGB8:      return GL_RGB8;
-    case HP_PIXEL_FORMAT_RGBA8:     return GL_RGBA8;
-    case HP_PIXEL_FORMAT_R16F:      return GL_R16F;
-    case HP_PIXEL_FORMAT_RG16F:     return GL_RG16F;
-    case HP_PIXEL_FORMAT_RGB16F:    return GL_RGB16F;
-    case HP_PIXEL_FORMAT_RGBA16F:   return GL_RGBA16F;
-    case HP_PIXEL_FORMAT_R32F:      return GL_R32F;
-    case HP_PIXEL_FORMAT_RG32F:     return GL_RG32F;
-    case HP_PIXEL_FORMAT_RGB32F:    return GL_RGB32F;
-    case HP_PIXEL_FORMAT_RGBA32F:   return GL_RGBA32F;
+    case HP_PIXEL_FORMAT_R8: internalFormat = GL_R8; break;
+    case HP_PIXEL_FORMAT_RG8: internalFormat = GL_RG8; break;
+    case HP_PIXEL_FORMAT_RGB8: internalFormat = GL_RGB8; break;
+    case HP_PIXEL_FORMAT_RGBA8: internalFormat = GL_RGBA8; break;
+    case HP_PIXEL_FORMAT_R16F: internalFormat = GL_R16F; break;
+    case HP_PIXEL_FORMAT_RG16F: internalFormat = GL_RG16F; break;
+    case HP_PIXEL_FORMAT_RGB16F: internalFormat = GL_RGB16F; break;
+    case HP_PIXEL_FORMAT_RGBA16F: internalFormat = GL_RGBA16F; break;
+    case HP_PIXEL_FORMAT_R32F: internalFormat = GL_R32F; break;
+    case HP_PIXEL_FORMAT_RG32F: internalFormat = GL_RG32F; break;
+    case HP_PIXEL_FORMAT_RGB32F: internalFormat = GL_RGB32F; break;
+    case HP_PIXEL_FORMAT_RGBA32F: internalFormat = GL_RGBA32F; break;
     default: break;
     }
 
-    return GL_RGBA8;
+    if (!framebuffer) {
+        return internalFormat;
+    }
+
+    // REVIEW: On some emulated GLES 3.2 contexts (e.g. NVIDIA desktop drivers),
+    // the extension GL_EXT_color_buffer_float may be reported as supported,
+    // but attempting to use 32-bit float color attachments (GL_RGBA32F, etc.)
+    // can result in incomplete framebuffers...
+    //
+    // For maximum compatibility across all GLES 3.2 implementations,
+    // we currently force 16-bit float formats (GL_RGBA16F, etc.) for FBO color attachments.
+    // This behavior may need to be revisited later.
+
+    if (gCore->glProfile() == SDL_GL_CONTEXT_PROFILE_ES /*&& !GLAD_GL_EXT_color_buffer_float*/) {
+        switch (format) {
+        case HP_PIXEL_FORMAT_R32F: internalFormat = GL_R16F; break;
+        case HP_PIXEL_FORMAT_RG32F: internalFormat = GL_RG16F; break;
+        case HP_PIXEL_FORMAT_RGB32F: internalFormat = GL_RGB16F; break;
+        case HP_PIXEL_FORMAT_RGBA32F: internalFormat = GL_RGBA16F; break;
+        default: break;
+        }
+    }
+
+    return internalFormat;
 }
 
 /* === Cubemap Helpers === */

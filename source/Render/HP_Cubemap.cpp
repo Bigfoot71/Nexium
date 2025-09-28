@@ -19,7 +19,38 @@
 
 #include "./HP_Cubemap.hpp"
 #include "./Core/Helper.hpp"
-#include "Hyperion/HP_Image.h"
+
+/* === Public Implementation === */
+
+void HP_Cubemap::generateSkybox(const HP_Skybox& skybox, gpu::Program& programSkyboxGen)
+{
+    if (!mFramebuffer.isValid()) {
+        mFramebuffer = gpu::Framebuffer({&mTexture}, nullptr);
+    }
+
+    gpu::Pipeline pipeline;
+
+    pipeline.bindFramebuffer(mFramebuffer);
+    pipeline.setViewport(mFramebuffer);
+
+    pipeline.useProgram(programSkyboxGen);
+
+    pipeline.setUniformFloat3(1, HP_Vec3Normalize(-skybox.sunDirection));
+    pipeline.setUniformFloat3(2, skybox.skyColorTop);
+    pipeline.setUniformFloat3(3, skybox.skyColorHorizon);
+    pipeline.setUniformFloat3(4, skybox.sunColor);
+    pipeline.setUniformFloat3(5, skybox.groundColor);
+    pipeline.setUniformFloat1(6, skybox.sunSize);
+    pipeline.setUniformFloat1(7, skybox.haze);
+    pipeline.setUniformFloat1(8, skybox.energy);
+    pipeline.setUniformInt1(9, mTexture.isHDR());
+
+    for (int i = 0; i < 6; i++) {
+        mFramebuffer.setColorAttachmentTarget(0, 0, i);
+        pipeline.setUniformMat4(0, render::getCubeView(i) * render::getCubeProj());
+        pipeline.draw(GL_TRIANGLES, 36);
+    }
+}
 
 /* === Private Implementation === */
 
@@ -27,27 +58,8 @@ void HP_Cubemap::loadEquirectangular(const HP_Image& image, gpu::Program& progra
 {
     /* --- Determines the internal source and destination formats --- */
 
-    GLenum srcInternalFormat = render::getInternalFormat(image.format);
-    GLenum dstInternalFormat = srcInternalFormat;
-
-    // REVIEW: On some emulated GLES 3.2 contexts (e.g. NVIDIA desktop drivers),
-    // the extension GL_EXT_color_buffer_float may be reported as supported,
-    // but attempting to use 32-bit float color attachments (GL_RGBA32F, etc.)
-    // can result in incomplete framebuffers...
-    //
-    // For maximum compatibility across all GLES 3.2 implementations,
-    // we currently force 16-bit float formats (GL_RGBA16F, etc.) for FBO color attachments.
-    // This behavior may need to be revisited later.
-
-    if (gCore->glProfile() == SDL_GL_CONTEXT_PROFILE_ES /*&& !GLAD_GL_EXT_color_buffer_float*/) {
-        switch (image.format) {
-        case HP_PIXEL_FORMAT_R32F: dstInternalFormat = GL_R16F; break;
-        case HP_PIXEL_FORMAT_RG32F: dstInternalFormat = GL_RG16F; break;
-        case HP_PIXEL_FORMAT_RGB32F: dstInternalFormat = GL_RGB16F; break;
-        case HP_PIXEL_FORMAT_RGBA32F: dstInternalFormat = GL_RGBA16F; break;
-        default: break;
-        }
-    }
+    GLenum srcInternalFormat = render::getInternalFormat(image.format, false);
+    GLenum dstInternalFormat = render::getInternalFormat(image.format, true);
 
     /* --- Allocate cubemap texture --- */
 
@@ -121,7 +133,7 @@ void HP_Cubemap::loadLineHorizontal(const HP_Image& image)
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = render::getInternalFormat(image.format),
+            .internalFormat = render::getInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
             .height = cubeFaceSize
@@ -175,7 +187,7 @@ void HP_Cubemap::loadLineVertical(const HP_Image& image)
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = render::getInternalFormat(image.format),
+            .internalFormat = render::getInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
             .height = cubeFaceSize
@@ -223,7 +235,7 @@ void HP_Cubemap::loadCrossThreeByFour(const HP_Image& image)
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = render::getInternalFormat(image.format),
+            .internalFormat = render::getInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
             .height = cubeFaceSize
@@ -295,7 +307,7 @@ void HP_Cubemap::loadCrossFourByThree(const HP_Image& image)
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = render::getInternalFormat(image.format),
+            .internalFormat = render::getInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
             .height = cubeFaceSize
