@@ -48,9 +48,9 @@ public:
 
 private:
     void renderScene();
-    void postSSAO(bool firstPass);
-    void postBloom(bool firstPass);
-    void postFinal(bool firstPass);
+    const gpu::Texture& postSSAO(const gpu::Texture& source);
+    const gpu::Texture& postBloom(const gpu::Texture& source);
+    void postFinal(const gpu::Texture& source);
 
 private:
     struct TargetInfo {
@@ -175,19 +175,17 @@ inline void Scene::end()
 
     renderScene();
 
-    bool firstPass = true;
+    const gpu::Texture* source = &mTargetSceneColor;
 
     if (mEnvironment.ssao.enabled) {
-        postSSAO(firstPass);
-        firstPass = false;
+        source = &postSSAO(*source);
     }
 
     if (mEnvironment.bloom.mode != HP_BLOOM_DISABLED) {
-        postBloom(firstPass);
-        firstPass = false;
+        source = &postBloom(*source);
     }
 
-    postFinal(firstPass);
+    postFinal(*source);
 
     /* --- Reset state --- */
 

@@ -306,7 +306,7 @@ void Scene::renderScene()
     mFramebufferScene.resolve();
 }
 
-void Scene::postSSAO(bool firstPass)
+const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
 {
     // Right now SSAO is done in a simple way by directly darkening
     // the rendered scene, instead of being physically correct.
@@ -372,7 +372,7 @@ void Scene::postSSAO(bool firstPass)
         pipeline.setViewport(mSwapPostProcess.target());
         pipeline.useProgram(mPrograms.ssaoPost());
 
-        pipeline.bindTexture(0, firstPass ? mTargetSceneColor : mSwapPostProcess.source());
+        pipeline.bindTexture(0, source);
         pipeline.bindTexture(1, mSwapAuxiliary.source());
 
         pipeline.setUniformFloat1(0, mEnvironment.ssao.intensity);
@@ -381,9 +381,11 @@ void Scene::postSSAO(bool firstPass)
         pipeline.draw(GL_TRIANGLES, 3);
     }
     mSwapPostProcess.swap();
+
+    return mSwapPostProcess.source();
 }
 
-void Scene::postBloom(bool firstPass)
+const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
 {
     // TODO: Add control over the number of levels used for bloom calculation
 
@@ -402,7 +404,7 @@ void Scene::postBloom(bool firstPass)
     /* --- Downsampling of the source --- */
 
     pipeline.useProgram(mPrograms.downsampling());
-    pipeline.bindTexture(0, firstPass ? mTargetSceneColor : mSwapPostProcess.source());
+    pipeline.bindTexture(0, source);
 
     pipeline.setUniformFloat2(0, HP_IVec2Rcp(mTargetSceneColor.dimensions()));
     pipeline.setUniformFloat4(1, prefilter);
@@ -446,15 +448,17 @@ void Scene::postBloom(bool firstPass)
     pipeline.useProgram(mPrograms.bloomPost(mEnvironment.bloom.mode));
     pipeline.setUniformFloat1(0, mEnvironment.bloom.strength);
 
-    pipeline.bindTexture(0, firstPass ? mTargetSceneColor : mSwapPostProcess.source());
+    pipeline.bindTexture(0, source);
     pipeline.bindTexture(1, mMipChain.texture());
 
     pipeline.draw(GL_TRIANGLES, 3);
 
     mSwapPostProcess.swap();
+
+    return mSwapPostProcess.source();
 }
 
-void Scene::postFinal(bool firstPass)
+void Scene::postFinal(const gpu::Texture& source)
 {
     gpu::Pipeline pipeline;
 
@@ -464,7 +468,7 @@ void Scene::postFinal(bool firstPass)
     pipeline.setViewport(mTargetInfo.resolution);
 
     pipeline.useProgram(mPrograms.output(mEnvironment.tonemap.mode));
-    pipeline.bindTexture(0, firstPass ? mTargetSceneColor : mSwapPostProcess.source());
+    pipeline.bindTexture(0, source);
 
     pipeline.setUniformFloat1(0, mEnvironment.tonemap.exposure);
     pipeline.setUniformFloat1(1, mEnvironment.tonemap.white);
