@@ -27,8 +27,10 @@
 #include "../../Detail/GPU/VertexArray.hpp"
 #include "../../Detail/GPU/Pipeline.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
-#include "../Core/SharedAssets.hpp"
+
 #include "../Core/ProgramCache.hpp"
+#include "../Core/AssetCache.hpp"
+
 #include "../HP_RenderTexture.hpp"
 #include "../HP_Texture.hpp"
 
@@ -41,7 +43,7 @@ public:
     static constexpr int MaxIndices = 6144;
 
 public:
-    Overlay(const render::SharedAssets& assets, render::ProgramCache& programs, HP_AppDesc& desc);
+    Overlay(render::ProgramCache& programs, render::AssetCache& assets, HP_AppDesc& desc);
     ~Overlay() = default;
 
     Overlay(const Overlay&) = delete;
@@ -94,8 +96,8 @@ private:
     const HP_RenderTexture* mCurrentTarget = nullptr;
 
 private:
-    const render::SharedAssets& mAssets;
     render::ProgramCache& mPrograms;
+    render::AssetCache& mAssets;
 };
 
 /* === Public Implementation === */

@@ -17,31 +17,69 @@
  *   3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef HP_RENDER_SCENE_SHARED_ASSETS_HPP
-#define HP_RENDER_SCENE_SHARED_ASSETS_HPP
+#ifndef HP_RENDER_ASSET_CACHE_HPP
+#define HP_RENDER_ASSET_CACHE_HPP
 
-#include "../../Detail/GPU/Shader.hpp"
 #include "../HP_Texture.hpp"
 #include "../HP_Font.hpp"
 
-namespace scene {
+namespace render {
 
-class SharedAssets {
+/* === Declaration === */
+
+class AssetCache {
 public:
-    SharedAssets() = default;
+    AssetCache();
 
+    /** Pre-loaded */
+    const HP_Texture& textureWhite() const;
+    const HP_Font& font() const;
+
+    /** Textures */
     const gpu::Texture& textureSsaoKernel();
     const gpu::Texture& textureSsaoNoise();
     const gpu::Texture& textureBrdfLut();
     const gpu::Texture& textureNormal();
+    
+    /** Helpers */
+    const gpu::Texture& textureOrWhite(const HP_Texture* texture) const;
+    const gpu::Texture& textureOrNormal(const HP_Texture* texture);
 
 private:
+    /** Pre-loaded */
+    HP_Texture mTextureWhite;
+    HP_Font mFont;
+
+    /** Textures */
     gpu::Texture mTextureSsaoKernel;
     gpu::Texture mTextureSsaoNoise;
     gpu::Texture mTextureBrdfLut;
     gpu::Texture mTextureNormal;
 };
 
-} // namespace scene
+/* === Public Implementation === */
 
-#endif // HP_RENDER_SCENE_SHARED_ASSETS_HPP
+inline const HP_Texture& AssetCache::textureWhite() const
+{
+    return mTextureWhite;
+}
+
+inline const HP_Font& AssetCache::font() const
+{
+    return mFont;
+}
+
+inline const gpu::Texture& AssetCache::textureOrWhite(const HP_Texture* texture) const
+{
+    return (texture != nullptr) ? texture->gpuTexture() : mTextureWhite.gpuTexture();
+}
+
+inline const gpu::Texture& AssetCache::textureOrNormal(const HP_Texture* texture)
+{
+    // Returns the default by calling 'textureNormal()' to load it if needed
+    return (texture != nullptr) ? texture->gpuTexture() : textureNormal();
+}
+
+} // namespace render
+
+#endif // HP_RENDER_ASSET_CACHE_HPP

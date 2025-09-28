@@ -26,12 +26,12 @@
 #include "../../Detail/GPU/Framebuffer.hpp"
 #include "../../Detail/GPU/SwapBuffer.hpp"
 #include "../../Detail/GPU/Texture.hpp"
-#include "../Core/SharedAssets.hpp"
-#include "../Core/ProgramCache.hpp"
-#include "../HP_RenderTexture.hpp"
 
+#include "../Core/ProgramCache.hpp"
+#include "../Core/AssetCache.hpp"
+
+#include "../HP_RenderTexture.hpp"
 #include "./BoneBufferManager.hpp"
-#include "./SharedAssets.hpp"
 #include "./LightManager.hpp"
 #include "./ViewFrustum.hpp"
 #include "./DrawCall.hpp"
@@ -43,7 +43,7 @@ namespace scene {
 
 class Scene {
 public:
-    Scene(const render::SharedAssets& assets, render::ProgramCache& programs, HP_AppDesc& desc);
+    Scene(render::ProgramCache& programs, render::AssetCache& assets, HP_AppDesc& desc);
 
     /** Begin/End 3D mode functions */
     void begin(const HP_Camera& camera, const HP_Environment& env, const HP_RenderTexture* target);
@@ -70,9 +70,8 @@ private:
 
 private:
     /** Shared assets */
-    const render::SharedAssets& mAssetsCommon;
-    scene::SharedAssets mAssetsScene;
     render::ProgramCache& mPrograms;
+    render::AssetCache& mAssets;
 
     /** Scene data */
     HP_Environment mEnvironment{};
@@ -171,9 +170,7 @@ inline void Scene::end()
     /* --- Process lights --- */
 
     mLights.process({
-        .programs = mPrograms,
         .viewFrustum = mFrustum,
-        .textureWhite = mAssetsCommon.textureWhite().gpuTexture(),
         .environement = mEnvironment,
         .boneBuffer = mBoneBuffer,
         .drawCalls = mDrawCalls,

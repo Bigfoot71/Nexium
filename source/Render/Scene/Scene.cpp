@@ -38,11 +38,10 @@ namespace scene {
 
 /* === Public Implementation === */
 
-Scene::Scene(const render::SharedAssets& assets, render::ProgramCache& programs, HP_AppDesc& desc)
-    : mAssetsCommon(assets)
-    , mAssetsScene()
-    , mLights(getResolution(desc.render3D.resolution), desc.render3D.shadowRes)
-    , mPrograms(programs)
+Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, HP_AppDesc& desc)
+    : mPrograms(programs)
+    , mAssets(assets)
+    , mLights(programs, assets, getResolution(desc.render3D.resolution), desc.render3D.shadowRes)
     , mFrustum()
 {
     /* --- Tweak description --- */
@@ -196,7 +195,7 @@ void Scene::renderScene()
 
     /* --- Bind constant textures --- */
 
-    pipeline.bindTexture(4, mAssetsScene.textureBrdfLut());
+    pipeline.bindTexture(4, mAssets.textureBrdfLut());
     pipeline.bindTexture(7, mLights.shadowCube());
     pipeline.bindTexture(8, mLights.shadow2D());
 
@@ -259,14 +258,10 @@ void Scene::renderScene()
 
         /* --- Bind textures --- */
 
-        auto texOr = [](const HP_Texture* tex, const gpu::Texture& def) -> const gpu::Texture& {
-            return tex ? tex->gpuTexture() : def;
-        };
-
-        pipeline.bindTexture(0, texOr(mat.albedo.texture,   mAssetsCommon.textureWhite().gpuTexture()));
-        pipeline.bindTexture(1, texOr(mat.emission.texture, mAssetsCommon.textureWhite().gpuTexture()));
-        pipeline.bindTexture(2, texOr(mat.orm.texture,      mAssetsCommon.textureWhite().gpuTexture()));
-        pipeline.bindTexture(3, texOr(mat.normal.texture,   mAssetsScene.textureNormal()));
+        pipeline.bindTexture(0, mAssets.textureOrWhite(mat.albedo.texture));
+        pipeline.bindTexture(1, mAssets.textureOrWhite(mat.emission.texture));
+        pipeline.bindTexture(2, mAssets.textureOrWhite(mat.orm.texture));
+        pipeline.bindTexture(3, mAssets.textureOrNormal(mat.normal.texture));
 
         /* --- Send matrices --- */
 
@@ -335,8 +330,8 @@ void Scene::postSSAO(bool firstPass)
 
         pipeline.bindTexture(0, mTargetSceneDepth);
         pipeline.bindTexture(1, mTargetSceneNormal);
-        pipeline.bindTexture(2, mAssetsScene.textureSsaoKernel());
-        pipeline.bindTexture(3, mAssetsScene.textureSsaoNoise());
+        pipeline.bindTexture(2, mAssets.textureSsaoKernel());
+        pipeline.bindTexture(3, mAssets.textureSsaoNoise());
 
         pipeline.setUniformFloat1(0, mEnvironment.ssao.radius);
         pipeline.setUniformFloat1(1, mEnvironment.ssao.bias);

@@ -21,8 +21,9 @@
 
 namespace overlay {
 
-Overlay::Overlay(const render::SharedAssets& assets, render::ProgramCache& programs, HP_AppDesc& desc)
-    : mAssets(assets), mPrograms(programs)
+Overlay::Overlay(render::ProgramCache& programs, render::AssetCache& assets, HP_AppDesc& desc)
+    : mPrograms(programs)
+    , mAssets(assets)
 {
     /* --- Tweak description --- */
 

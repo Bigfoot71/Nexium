@@ -32,8 +32,8 @@ namespace scene {
 
 /* === Public Implementation === */
 
-LightManager::LightManager(HP_IVec2 resolution, int shadowRes)
-    : mShadowResolution{shadowRes > 0 ? shadowRes : 2048}
+LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& assets, HP_IVec2 resolution, int shadowRes)
+    : mPrograms(programs), mAssets(assets), mShadowResolution{shadowRes > 0 ? shadowRes : 2048}
 {
     /* --- Calculation of the number of clusters according to the target size --- */
 
@@ -282,7 +282,7 @@ void LightManager::computeClusters(const ProcessParams& params)
     /* --- Obtaining the lights affecting each tile --- */
 
     gpu::Pipeline pipeline;
-    pipeline.useProgram(params.programs.lightCulling());
+    pipeline.useProgram(mPrograms.lightCulling());
 
     pipeline.bindUniform(0, params.viewFrustum.buffer());
     pipeline.bindStorage(0, mStorageLights);
@@ -314,10 +314,10 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     /* --- Lambda for drawing calls --- */
 
-    const auto draw = [&params](const gpu::Pipeline& pipeline, const DrawCall& call, const DrawData& data)
+    const auto draw = [this, &params](const gpu::Pipeline& pipeline, const DrawCall& call, const DrawData& data)
     {
         const HP_Texture* texture = call.material().albedo.texture;
-        pipeline.bindTexture(0, texture ? texture->gpuTexture() : params.textureWhite);
+        pipeline.bindTexture(0, mAssets.textureOrWhite(texture));
 
         pipeline.setUniformMat4(1, data.matrix());
         pipeline.setUniformFloat2(2, call.material().texOffset);
@@ -365,7 +365,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
     pipeline.setCullMode(gpu::CullMode::Back);
 
     pipeline.setViewport(0, 0, mShadowResolution, mShadowResolution);
-    pipeline.useProgram(params.programs.shadow());
+    pipeline.useProgram(mPrograms.shadow());
 
     /* --- Bind UBOs and SSBOs --- */
 

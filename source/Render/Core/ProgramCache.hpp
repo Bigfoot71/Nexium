@@ -24,7 +24,6 @@
 
 #include "../../Detail/GPU/Program.hpp"
 #include "../../Detail/GPU/Shader.hpp"
-#include "../Core/SharedAssets.hpp"
 
 namespace render {
 

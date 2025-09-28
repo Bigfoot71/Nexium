@@ -24,7 +24,8 @@
 #include <Hyperion/HP_Init.h>
 
 #include "./Core/ProgramCache.hpp"
-#include "./Core/SharedAssets.hpp"
+#include "./Core/AssetCache.hpp"
+
 #include "./Core/PoolTexture.hpp"
 #include "./Core/PoolCubemap.hpp"
 #include "./Core/PoolModel.hpp"
@@ -46,7 +47,7 @@ extern std::unique_ptr<class HP_RenderState> gRender;
 class HP_RenderState {
 public:
     /** Resource Managers */
-    render::SharedAssets assets;
+    render::AssetCache assets;
     render::ProgramCache programs;
     render::PoolTexture textures;
     render::PoolCubemap cubemaps;
@@ -74,8 +75,8 @@ inline HP_RenderState::HP_RenderState(HP_AppDesc& desc)
     , meshes()
     , fonts()
     , models(textures, meshes)
-    , overlay(assets, programs, desc)
-    , scene(assets, programs, desc)
+    , overlay(programs, assets, desc)
+    , scene(programs, assets, desc)
 { }
 
 #endif // HP_RENDER_STATE_HP

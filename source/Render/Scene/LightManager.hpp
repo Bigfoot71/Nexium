@@ -25,7 +25,10 @@
 #include "../../Detail/Util/ObjectPool.hpp"
 #include "../../Detail/GPU/Texture.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
+
 #include "../Core/ProgramCache.hpp"
+#include "../Core/AssetCache.hpp"
+
 #include "./BoneBufferManager.hpp"
 #include "./ViewFrustum.hpp"
 #include "../HP_Light.hpp"
@@ -38,9 +41,7 @@ namespace scene {
 class LightManager {
 public:
     struct ProcessParams {
-        render::ProgramCache& programs;
         const ViewFrustum& viewFrustum;
-        const gpu::Texture& textureWhite;
         const HP_Environment& environement;
         const BoneBufferManager& boneBuffer;
         const BucketDrawCalls& drawCalls;
@@ -48,7 +49,7 @@ public:
     };
 
 public:
-    LightManager(HP_IVec2 resolution, int shadowRes);
+    LightManager(render::ProgramCache& programs, render::AssetCache& assets, HP_IVec2 resolution, int shadowRes);
 
     /** Light life-cycle management */
     HP_Light* create(HP_LightType type);
@@ -90,28 +91,28 @@ private:
     static constexpr int MaxLightsPerCluster = 32;          ///< Maximum number of lights in a single cluster
 
 private:
-    /* --- Object Pools --- */
-
+    /** Object Pools */
     util::ObjectPool<HP_Light, 32> mLights{};
 
-    /* --- Shadow Framebuffers and Targets --- */
+    /** Shared assets */
+    render::ProgramCache& mPrograms;
+    render::AssetCache& mAssets;
 
+    /** Shadow Framebuffers and Targets */
     gpu::Framebuffer mFramebufferShadowCube{};
     gpu::Framebuffer mFramebufferShadow2D{};
     gpu::Texture mShadowMapCubeArray{};         ///< Contains world distances in cubemaps
     gpu::Texture mShadowMap2DArray{};           ///< Contains world distances in 2D textures
     gpu::Texture mShadowDepth{};                ///< Common depth buffer for depth testing (TODO: Make it a renderbuffer)
 
-    /* --- Storage Buffers --- */
-
+    /** Storage Buffers */
     gpu::Buffer mStorageLights{};               ///< Storage containing the lights
     gpu::Buffer mStorageShadow{};               ///< Storage containing the shadow map layer indices for each light
     gpu::Buffer mStorageClusters{};             ///< Storage containing the tiles (number of lights per tile)
     gpu::Buffer mStorageIndex{};                ///< Storage containing the light indices for each tile
     gpu::Buffer mStorageClusterAABB{};          ///< Storage containing the cluster AABBs (computed during GPU light culling, could be useful later)
 
-    /* --- Additionnal Data --- */
-
+    /** Additionnal Data */
     int mShadowResolution{};
 
     HP_IVec3 mClusterCount{};                   ///< Number of clusters X/Y/Z
