@@ -54,7 +54,9 @@ Here’s a checklist of the major features that are still missing:
 - [x] Rendering to custom render targets
 - [x] Procedural skybox cubemap generation
 - [ ] Dynamic reflection probes
-- [ ] Post-processing effects: fog, bloom, SSAO, SSR
+- [x] Screen space ambient occlusion
+- [x] Bloom in post process
+- [ ] Fog effect
 - [ ] Custom post-processing shaders
 - [ ] Custom material shaders
 - [ ] More flexible 2D rendering
