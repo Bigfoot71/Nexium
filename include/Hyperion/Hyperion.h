@@ -25,8 +25,10 @@
 #include "./HP_Math.h"
 #include "./HP_Rand.h"
 #include "./HP_Audio.h"
+#include "./HP_Image.h"
 #include "./HP_Render.h"
 #include "./HP_Macros.h"
 #include "./HP_Platform.h"
+#include "./HP_BitUtils.h"
 
 #endif // HYPERION_H

@@ -1,3 +1,11 @@
+/* StaticArray.hpp -- STL-like static array with noexcept operations
+ *
+ * Copyright (c) 2025 Le Juez Victor
+ *
+ * This software is provided 'as-is', without any express or implied warranty.
+ * For conditions of distribution and use, see accompanying LICENSE file.
+ */
+
 #ifndef HP_UTIL_STATIC_ARRAY_HPP
 #define HP_UTIL_STATIC_ARRAY_HPP
 

@@ -1,7 +1,15 @@
+/* BucketArray.hpp -- Category-based container with bucketed indices
+ *
+ * Copyright (c) 2025 Le Juez Victor
+ *
+ * This software is provided 'as-is', without any express or implied warranty.
+ * For conditions of distribution and use, see accompanying LICENSE file.
+ */
+
 #ifndef HP_UTIL_BUCKET_ARRAY_HPP
 #define HP_UTIL_BUCKET_ARRAY_HPP
 
-#include <Hyperion/HP_Macros.h>
+#include <Hyperion/HP_Math.h>
 #include <SDL3/SDL_assert.h>
 
 #include "./DynamicArray.hpp"
