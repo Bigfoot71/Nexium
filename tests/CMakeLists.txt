@@ -11,6 +11,7 @@ function(add_hyperion_test test_name source_file)
     endif()
 endfunction()
 
+add_hyperion_test("hp-skybox-procedural" "${HP_ROOT_PATH}/tests/skybox_procedural.c")
 add_hyperion_test("hp-render-texture" "${HP_ROOT_PATH}/tests/render_texture.c")
 add_hyperion_test("hp-animation" "${HP_ROOT_PATH}/tests/animation.c")
 add_hyperion_test("hp-instanced" "${HP_ROOT_PATH}/tests/instanced.c")
