@@ -21,6 +21,7 @@
 
 #include <Hyperion/HP_Render.h>
 
+#include "../../Detail/BuildInfo.hpp"
 #include "../HP_ReflectionProbe.hpp"
 #include "../HP_Cubemap.hpp"
 #include "../HP_Texture.hpp"
@@ -97,6 +98,14 @@ Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, HP_AppD
     if (desc.render3D.sampleCount > 1) {
         mFramebufferScene.setSampleCount(desc.render3D.sampleCount);
     }
+
+    /* --- Create mip chain --- */
+
+    mMipChain = gpu::MipBuffer(
+        desc.render3D.resolution.x / 2,
+        desc.render3D.resolution.y / 2,
+        GL_RGB16F
+    );
 
     /* --- Create swap buffers --- */
 
@@ -190,7 +199,7 @@ void Scene::renderScene()
     if (mEnvironment.sky.probe != nullptr) {
         pipeline.setUniformInt1(17, true);
         pipeline.setUniformFloat4(18, mEnvironment.sky.rotation);
-        pipeline.setUniformInt1(21, mEnvironment.sky.probe->prefilter().mipLevels());
+        pipeline.setUniformInt1(21, mEnvironment.sky.probe->prefilter().numLevels());
     }
     else {
         pipeline.setUniformFloat3(16, mEnvironment.ambient);
@@ -241,7 +250,7 @@ void Scene::renderScene()
             pipeline.setBlendMode(gpu::BlendMode::Alpha);
             break;
         case HP_BLEND_ADD:
-            pipeline.setBlendMode(gpu::BlendMode::Additive);
+            pipeline.setBlendMode(gpu::BlendMode::AddAlpha);
             break;
         case HP_BLEND_MUL:
             pipeline.setBlendMode(gpu::BlendMode::Multiply);
@@ -382,6 +391,77 @@ void Scene::postSSAO(bool firstPass)
 
         pipeline.draw(GL_TRIANGLES, 3);
     }
+    mSwapPostProcess.swap();
+}
+
+void Scene::postBloom(bool firstPass)
+{
+    // TODO: Add control over the number of levels used for bloom calculation
+
+    gpu::Pipeline pipeline;
+
+    /* --- Calculation of bloom parameters --- */
+
+    float knee = mEnvironment.bloom.threshold * mEnvironment.bloom.softThreshold;
+
+    HP_Vec4 prefilter;
+    prefilter.x = mEnvironment.bloom.threshold;
+    prefilter.y = mEnvironment.bloom.threshold - knee;
+    prefilter.z = 2.0f * knee;
+    prefilter.w = 0.25f / (knee + 1e-6f);
+
+    /* --- Downsampling of the source --- */
+
+    pipeline.useProgram(mPrograms.downsampling());
+    pipeline.bindTexture(0, firstPass ? mTargetSceneColor : mSwapPostProcess.source());
+
+    pipeline.setUniformFloat2(0, HP_IVec2Rcp(mTargetSceneColor.dimensions()));
+    pipeline.setUniformFloat4(1, prefilter);
+
+    mMipChain.downsample(pipeline, 0, [&](uint32_t targetLevel, uint32_t sourceLevel) {
+        pipeline.setUniformInt1(2, targetLevel);
+        if (targetLevel > 0) {
+            mMipChain.setMipLevelRange(sourceLevel, sourceLevel);
+        }
+        pipeline.draw(GL_TRIANGLES, 3);
+        pipeline.setUniformFloat2(0, HP_IVec2Rcp(mMipChain.dimensions(targetLevel)));
+        if (targetLevel == 0) {
+            pipeline.bindTexture(0, mMipChain.texture());
+        }
+    });
+
+    /* --- Upsampling of the source --- */
+
+    pipeline.useProgram(mPrograms.upsampling());
+    pipeline.setBlendMode(gpu::BlendMode::Additive);
+
+    mMipChain.upsample(pipeline, [&](uint32_t targetLevel, uint32_t sourceLevel) {
+        pipeline.setUniformFloat2(0, mEnvironment.bloom.filterRadius * HP_IVec2Rcp(mMipChain.dimensions(sourceLevel)));
+        mMipChain.setMipLevelRange(sourceLevel, sourceLevel);
+        pipeline.draw(GL_TRIANGLES, 3);
+    });
+
+    pipeline.setBlendMode(gpu::BlendMode::Disabled);
+
+    /* --- Reset mipmap sampling levels for debugging with RenderDoc */
+
+    if constexpr (detail::BuildInfo::debug) {
+        mMipChain.setMipLevelRange(0, mMipChain.numLevels() - 1);
+    }
+
+    /* --- Applying bloom to the scene --- */
+
+    pipeline.bindFramebuffer(mSwapPostProcess.target());
+    pipeline.setViewport(mSwapPostProcess.target());
+
+    pipeline.useProgram(mPrograms.bloomPost(mEnvironment.bloom.mode));
+    pipeline.setUniformFloat1(0, mEnvironment.bloom.strength);
+
+    pipeline.bindTexture(0, firstPass ? mTargetSceneColor : mSwapPostProcess.source());
+    pipeline.bindTexture(1, mMipChain.texture());
+
+    pipeline.draw(GL_TRIANGLES, 3);
+
     mSwapPostProcess.swap();
 }
 

@@ -18,6 +18,7 @@
  */
 
 #include "./ProgramCache.hpp"
+#include "Hyperion/HP_Render.h"
 
 #include <shaders/screen.vert.h>
 #include <shaders/cube.vert.h>
@@ -36,6 +37,9 @@
 #include <shaders/shadow.frag.h>
 
 #include <shaders/bilateral_blur.frag.h>
+#include <shaders/downsampling.frag.h>
+#include <shaders/upsampling.frag.h>
+#include <shaders/bloom_post.frag.h>
 #include <shaders/ssao_pass.frag.h>
 #include <shaders/ssao_post.frag.h>
 #include <shaders/output.frag.h>
@@ -220,6 +224,66 @@ gpu::Program& ProgramCache::bilateralBlur()
     );
 
     return mBilateralBlur;
+}
+
+gpu::Program& ProgramCache::downsampling()
+{
+    if (mDownsampling.isValid()) {
+        return mDownsampling;
+    }
+
+    mDownsampling = gpu::Program(
+        mVertexShaderScreen,
+        gpu::Shader(GL_FRAGMENT_SHADER, DOWNSAMPLING_FRAG)
+    );
+
+    return mDownsampling;
+}
+
+gpu::Program& ProgramCache::upsampling()
+{
+    if (mUpsampling.isValid()) {
+        return mUpsampling;
+    }
+
+    mUpsampling = gpu::Program(
+        mVertexShaderScreen,
+        gpu::Shader(GL_FRAGMENT_SHADER, UPSAMPLING_FRAG)
+    );
+
+    return mUpsampling;
+}
+
+gpu::Program& ProgramCache::bloomPost(HP_BloomMode mode)
+{
+    SDL_assert(mode != HP_BLOOM_DISABLED);
+
+    if (mBloomPost[mode].isValid()) {
+        return mBloomPost[mode];
+    }
+
+    const char* bloomMode = "BLOOM_MIX";
+
+    switch (mode) {
+    case HP_BLOOM_MIX:
+        break;
+    case HP_BLOOM_ADDITIVE:
+        bloomMode = "BLOOM_ADDITIVE";
+        break;
+    case HP_BLOOM_SCREEN:
+        bloomMode = "BLOOM_SCREEN";
+        break;
+    default:
+        HP_INTERNAL_LOG(W, "RENDER: Unknown bloom mode (%i); Mix will be used", mode);
+        break;
+    }
+
+    mBloomPost[mode] = gpu::Program(
+        mVertexShaderScreen,
+        gpu::Shader(GL_FRAGMENT_SHADER, BLOOM_POST_FRAG, {bloomMode})
+    );
+
+    return mBloomPost[mode];
 }
 
 gpu::Program& ProgramCache::ssaoPass()

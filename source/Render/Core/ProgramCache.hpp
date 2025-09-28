@@ -44,8 +44,11 @@ public:
     gpu::Program& shadow();
 
     /** Scene post process programs */
+    gpu::Program& bloomPost(HP_BloomMode mode);
     gpu::Program& output(HP_Tonemap tonemap);
     gpu::Program& bilateralBlur();
+    gpu::Program& downsampling();
+    gpu::Program& upsampling();
     gpu::Program& ssaoPass();
     gpu::Program& ssaoPost();
 
@@ -70,8 +73,11 @@ private:
     gpu::Program mShadow{};
 
     /** Scene post process programs */
+    std::array<gpu::Program, HP_BLOOM_COUNT> mBloomPost{};
     std::array<gpu::Program, HP_TONEMAP_COUNT> mOutput{};
     gpu::Program mBilateralBlur{};
+    gpu::Program mDownsampling{};
+    gpu::Program mUpsampling{};
     gpu::Program mSsaoPass{};
     gpu::Program mSsaoPost{};
 

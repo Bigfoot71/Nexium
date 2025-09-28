@@ -326,11 +326,10 @@ inline void Framebuffer::setColorAttachmentTarget(int attachmentIndex, int layer
     const TextureView& texture = mColorAttachments[attachmentIndex];
 
     // Validate mipmap level
-    SDL_assert(level >= 0 && level < texture.mipLevels());
+    SDL_assert(level >= 0 && level < texture.numLevels());
 
     // Validate target
     GLenum target = texture.target();
-    SDL_assert(target != GL_TEXTURE_2D);
 
     // Validate layer and face parameters
     if (target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY) {
@@ -360,7 +359,7 @@ inline void Framebuffer::setDepthAttachmentTarget(int layer, int face, int level
     }
 
     // Validate mipmap level
-    SDL_assert(level >= 0 && level < mDepthStencilAttachment.mipLevels());
+    SDL_assert(level >= 0 && level < mDepthStencilAttachment.numLevels());
 
     // Validate target
     GLenum target = mDepthStencilAttachment.target();

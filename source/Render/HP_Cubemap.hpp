@@ -37,7 +37,7 @@ public:
 
     /** Getters */
     bool isValid() const;
-    int mipLevels() const;
+    int numLevels() const;
     HP_IVec2 dimensions() const;
     const gpu::Texture& texture() const;
 
@@ -123,9 +123,9 @@ inline bool HP_Cubemap::isValid() const
     return mTexture.isValid();
 }
 
-inline int HP_Cubemap::mipLevels() const
+inline int HP_Cubemap::numLevels() const
 {
-    return mTexture.mipLevels();
+    return mTexture.numLevels();
 }
 
 inline HP_IVec2 HP_Cubemap::dimensions() const

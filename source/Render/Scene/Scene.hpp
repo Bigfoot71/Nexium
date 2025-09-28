@@ -25,6 +25,7 @@
 #include "../../Detail/Util/BucketArray.hpp"
 #include "../../Detail/GPU/Framebuffer.hpp"
 #include "../../Detail/GPU/SwapBuffer.hpp"
+#include "../../Detail/GPU/MipBuffer.hpp"
 #include "../../Detail/GPU/Texture.hpp"
 
 #include "../Core/ProgramCache.hpp"
@@ -59,6 +60,7 @@ public:
 private:
     void renderScene();
     void postSSAO(bool firstPass);
+    void postBloom(bool firstPass);
     void postFinal(bool firstPass);
 
 private:
@@ -88,6 +90,9 @@ private:
     gpu::Texture mTargetSceneNormal{};
     gpu::Texture mTargetSceneDepth{};
     gpu::Framebuffer mFramebufferScene{};
+
+    /** Mip chain */
+    gpu::MipBuffer mMipChain{};
 
     /** Swap buffers */
     gpu::SwapBuffer mSwapPostProcess{};     //< Ping-pong buffer used during scene post process
@@ -185,6 +190,11 @@ inline void Scene::end()
 
     if (mEnvironment.ssao.enabled) {
         postSSAO(firstPass);
+        firstPass = false;
+    }
+
+    if (mEnvironment.bloom.mode != HP_BLOOM_DISABLED) {
+        postBloom(firstPass);
         firstPass = false;
     }
 

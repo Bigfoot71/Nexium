@@ -127,7 +127,7 @@ public:
     GLenum target() const noexcept;
     GLenum internalFormat() const noexcept;
     bool hasMipmap() const noexcept;
-    int mipLevels() const noexcept;
+    int numLevels() const noexcept;
     HP_IVec2 dimensions() const noexcept;
     int width() const noexcept;
     int height() const noexcept;
@@ -146,6 +146,7 @@ public:
     void uploadCube(const void* const* data, int level = 0) noexcept;
 
     /** Texture parameters */
+    void setMipLevelRange(int baseLevel, int maxLevel) noexcept;
     void setParameters(const TextureParam& parameters) noexcept;
     void setWrap(GLenum sWrap, GLenum tWrap, GLenum rWrap = GL_CLAMP_TO_EDGE) noexcept;
     void setFilter(GLenum minFilter, GLenum magFilter) noexcept;
@@ -183,6 +184,7 @@ private:
     void uploadData_Bound(const void* data, const UploadRegion& region) noexcept;
     void setWrap_Bound(GLenum sWrap, GLenum tWrap, GLenum rWrap) noexcept;
     void setFilter_Bound(GLenum minFilter, GLenum magFilter) noexcept;
+    void setMipLevelRange_Bound(int baseLevel, int maxLevel) noexcept;
     void setAnisotropy_Bound(float anisotropy) noexcept;
     void generateMipmap_Bound() noexcept;
 
@@ -276,7 +278,7 @@ inline bool Texture::hasMipmap() const noexcept
     return mMipLevels > 1;
 }
 
-inline int Texture::mipLevels() const noexcept
+inline int Texture::numLevels() const noexcept
 {
     return mMipLevels;
 }

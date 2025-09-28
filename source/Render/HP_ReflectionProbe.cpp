@@ -99,13 +99,13 @@ void HP_ReflectionProbe::genPrefilter(const HP_Cubemap& cubemap, gpu::Program& p
     pipeline.useProgram(programPrefilter);
 
     pipeline.setUniformFloat1(1, cubemap.dimensions().x);
-    pipeline.setUniformInt1(2, cubemap.mipLevels());
+    pipeline.setUniformInt1(2, cubemap.numLevels());
 
     int baseSize = mFBPrefilter.width();
-    for (int mip = 0; mip < mPrefilter.mipLevels(); mip++) {
+    for (int mip = 0; mip < mPrefilter.numLevels(); mip++) {
         int mipSize = std::max(1, baseSize >> mip);
         pipeline.setViewport(0, 0, mipSize, mipSize);
-        pipeline.setUniformFloat1(3, static_cast<float>(mip) / (mPrefilter.mipLevels() - 1));
+        pipeline.setUniformFloat1(3, static_cast<float>(mip) / (mPrefilter.numLevels() - 1));
         for (int i = 0; i < 6; i++) {
             mFBPrefilter.setColorAttachmentTarget(0, 0, i, mip);
             pipeline.setUniformMat4(0, render::getCubeView(i) * render::getCubeProj());

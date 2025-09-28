@@ -1720,6 +1720,13 @@ HP_Environment HP_GetDefaultEnvironment(void)
             .bias = 0.025f,
             .enabled = false
         },
+        .bloom {
+            .threshold = 0.0f,
+            .softThreshold = 0.5f,
+            .filterRadius = 0,
+            .strength = 0.05f,
+            .mode = HP_BLOOM_DISABLED
+        },
         .adjustment = {
             .brightness = 1.0f,
             .contrast = 1.0f,

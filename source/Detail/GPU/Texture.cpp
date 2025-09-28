@@ -95,6 +95,15 @@ void Texture::uploadCube(const void* const* data, int level) noexcept
     });
 }
 
+void Texture::setMipLevelRange(int baseLevel, int maxLevel) noexcept
+{
+    SDL_assert(isValid() && "Cannot set sampling levels on invalid texture");
+
+    Pipeline::withTextureBind(mTarget, mID, [&]() {
+        setMipLevelRange_Bound(baseLevel, maxLevel);
+    });
+}
+
 void Texture::setParameters(const TextureParam& parameters) noexcept
 {
     SDL_assert(isValid() && "Cannot set parameters on invalid texture");
@@ -333,6 +342,12 @@ void Texture::setFilter_Bound(GLenum minFilter, GLenum magFilter) noexcept
 {
     glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, magFilter);
     glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, minFilter);
+}
+
+void Texture::setMipLevelRange_Bound(int baseLevel, int maxLevel) noexcept
+{
+    glTexParameteri(mTarget, GL_TEXTURE_BASE_LEVEL, baseLevel);
+    glTexParameteri(mTarget, GL_TEXTURE_MAX_LEVEL, maxLevel);
 }
 
 void Texture::setAnisotropy_Bound(float anisotropy) noexcept

@@ -52,7 +52,7 @@ public:
     int width() const noexcept;
     int height() const noexcept;
     int depth() const noexcept;
-    int mipLevels() const noexcept;
+    int numLevels() const noexcept;
 
 private:
     GLuint mID{0};
@@ -71,7 +71,7 @@ inline TextureView::TextureView(const Texture& texture) noexcept
     , mWidth(texture.width())
     , mHeight(texture.height())
     , mDepth(texture.depth())
-    , mMipLevels(texture.mipLevels())
+    , mMipLevels(texture.numLevels())
 { }
 
 inline bool TextureView::isValid() const noexcept
@@ -114,7 +114,7 @@ inline int TextureView::depth() const noexcept
     return mDepth;
 }
 
-inline int TextureView::mipLevels() const noexcept
+inline int TextureView::numLevels() const noexcept
 {
     return mMipLevels;
 }

@@ -206,6 +206,19 @@ typedef enum HP_ShadowUpdateMode {
 } HP_ShadowUpdateMode;
 
 /**
+ * @brief Modes for applying bloom effect.
+ *
+ * Determines how the bloom effect is blended with the scene.
+ */
+typedef enum HP_BloomMode {
+    HP_BLOOM_DISABLED,      ///< Bloom effect is disabled.
+    HP_BLOOM_MIX,           ///< Interpolates between the scene and the pre-multiplied bloom based on intensity.
+    HP_BLOOM_ADDITIVE,      ///< Adds the bloom to the scene, scaled by intensity.
+    HP_BLOOM_SCREEN,        ///< Blends the scene with bloom using screen blend mode.
+    HP_BLOOM_COUNT          ///< Number of bloom modes (used internally).
+} HP_BloomMode;
+
+/**
  * @brief Tone mapping modes.
  *
  * Controls how high dynamic range (HDR) colors are mapped to low dynamic range (LDR) for display.
@@ -370,6 +383,14 @@ typedef struct HP_Environment {
         float bias;                 ///< Small depth offset to reduce self-occlusion artifacts on flat surfaces.
         bool enabled;               ///< Enables or disables the SSAO pass.
     } ssao;
+
+    struct {
+        float threshold;        ///< HDR threshold used for bloom extraction.
+        float softThreshold;    ///< Softening factor applied during prefiltering.
+        float filterRadius;     ///< Radius of the blur filter used for bloom spreading.
+        float strength;         ///< Intensity of the bloom effect when blended with the scene.
+        HP_BloomMode mode;      ///< Mode used to combine the bloom effect with the scene.
+    } bloom;
 
     struct {
         float brightness;           ///< Global brightness adjustment.
@@ -1277,6 +1298,12 @@ HPAPI void HP_ApplyCameraTransform(HP_Camera* camera, HP_Mat4 transform, HP_Vec3
  *   - power: 1.0
  *   - bias: 0.025
  *   - enabled: false
+ * - bloom:
+ *   - threshold: 0.0
+ *   - softThreshold: 0.5
+ *   - filterRadius: 0.0
+ *   - strength: 0.05
+ *   - mode: disabled
  * - global adjustments:
  *   - brightness: 1.0
  *   - contrast: 1.0

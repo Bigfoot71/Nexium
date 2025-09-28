@@ -66,7 +66,8 @@ enum class BlendMode {
     Disabled,        // No blending - glDisable(GL_BLEND)
     Alpha,           // Standard alpha blending - GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA + GL_FUNC_ADD
     Premultiplied,   // Premultiplied alpha blending - GL_ONE, GL_ONE_MINUS_SRC_ALPHA + GL_FUNC_ADD
-    Additive,        // Additive blending - GL_SRC_ALPHA, GL_ONE + GL_FUNC_ADD
+    AddAlpha,        // AddAlpha blending - GL_SRC_ALPHA, GL_ONE + GL_FUNC_ADD
+    Additive,        // Additive blending - GL_ONE, GL_ONE + GL_FUNC_ADD
     Multiply,        // Multiply blending - GL_DST_COLOR, GL_ZERO + GL_FUNC_ADD
     Subtract,        // Subtractive blending - GL_SRC_ALPHA, GL_ONE + GL_FUNC_REVERSE_SUBTRACT
     Minimum,         // Minimum blending - GL_ONE, GL_ONE + GL_MIN
@@ -878,9 +879,14 @@ inline void Pipeline::setBlendMode_Internal(BlendMode mode) const noexcept
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
         glBlendEquation(GL_FUNC_ADD);
         break;
-    case BlendMode::Additive:
+    case BlendMode::AddAlpha:
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        glBlendEquation(GL_FUNC_ADD);
+        break;
+    case BlendMode::Additive:
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE);
         glBlendEquation(GL_FUNC_ADD);
         break;
     case BlendMode::Multiply:
