@@ -27,11 +27,11 @@
 #include "../../Detail/GPU/SwapBuffer.hpp"
 #include "../../Detail/GPU/Texture.hpp"
 #include "../Core/SharedAssets.hpp"
+#include "../Core/ProgramCache.hpp"
 #include "../HP_RenderTexture.hpp"
 
 #include "./BoneBufferManager.hpp"
 #include "./SharedAssets.hpp"
-#include "./ProgramCache.hpp"
 #include "./LightManager.hpp"
 #include "./ViewFrustum.hpp"
 #include "./DrawCall.hpp"
@@ -43,7 +43,7 @@ namespace scene {
 
 class Scene {
 public:
-    Scene(const render::SharedAssets& assets, HP_AppDesc& desc);
+    Scene(const render::SharedAssets& assets, render::ProgramCache& programs, HP_AppDesc& desc);
 
     /** Begin/End 3D mode functions */
     void begin(const HP_Camera& camera, const HP_Environment& env, const HP_RenderTexture* target);
@@ -53,7 +53,6 @@ public:
     void drawMesh(const HP_Mesh& mesh, const HP_InstanceBuffer* instances, int instanceCount, const HP_Material& material, const HP_Transform& transform);
     void drawModel(const HP_Model& model, const HP_InstanceBuffer* instances, int instanceCount, const HP_Transform& transform);
 
-    ProgramCache& programs();
     const LightManager& lights() const;
     LightManager& lights();
 
@@ -73,6 +72,7 @@ private:
     /** Shared assets */
     const render::SharedAssets& mAssetsCommon;
     scene::SharedAssets mAssetsScene;
+    render::ProgramCache& mPrograms;
 
     /** Scene data */
     HP_Environment mEnvironment{};
@@ -82,7 +82,6 @@ private:
 
     /** Managers */
     BoneBufferManager mBoneBuffer;
-    ProgramCache mPrograms;
     LightManager mLights;
 
     /** Scene render targets */
@@ -199,11 +198,6 @@ inline void Scene::end()
     mBoneBuffer.clear();
     mDrawCalls.clear();
     mDrawData.clear();
-}
-
-inline ProgramCache& Scene::programs()
-{
-    return mPrograms;
 }
 
 inline const LightManager& Scene::lights() const

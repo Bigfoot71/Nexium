@@ -78,15 +78,7 @@ constexpr uint8_t WHITE[] = {
 namespace render {
 
 SharedAssets::SharedAssets()
-    : mVertexShaderScreen(
-        GL_VERTEX_SHADER,
-        SCREEN_VERT
-    )
-    , mVertexShaderCube(
-        GL_VERTEX_SHADER,
-        CUBE_VERT
-    )
-    , mTextureWhite(
+    : mTextureWhite(
         { .pixels = (void*)WHITE, .w = 1, .h = 1, .format = HP_PIXEL_FORMAT_RGB8 },
         HP_TEXTURE_FILTER_POINT, HP_TEXTURE_WRAP_CLAMP, 1.0f
     )

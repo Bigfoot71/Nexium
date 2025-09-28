@@ -22,6 +22,8 @@
 
 #include "../../Detail/Util/ObjectPool.hpp"
 #include "../../Detail/GPU/Program.hpp"
+#include "./ProgramCache.hpp"
+
 #include "../HP_ReflectionProbe.hpp"
 #include "../HP_Cubemap.hpp"
 
@@ -31,7 +33,7 @@ namespace render {
 
 class PoolCubemap {
 public:
-    PoolCubemap(const gpu::Shader& vertScreen, const gpu::Shader& vertCube);
+    PoolCubemap(render::ProgramCache& programs);
 
 public:
     HP_Cubemap* createCubemap(int size, HP_PixelFormat format);
@@ -46,13 +48,16 @@ public:
 private:
     util::ObjectPool<HP_ReflectionProbe, 64> mPoolProbes{};
     util::ObjectPool<HP_Cubemap, 64> mPoolCubemaps{};
-    gpu::Program mProgramEquirectangular;
-    gpu::Program mProgramIrradiance;
-    gpu::Program mProgramPrefilter;
-    gpu::Program mProgramSkyboxGen;
+
+private:
+    render::ProgramCache& mPrograms;
 };
 
 /* === Public Implementation === */
+
+inline PoolCubemap::PoolCubemap(render::ProgramCache& programs)
+    : mPrograms(programs)
+{ }
 
 inline HP_Cubemap* PoolCubemap::createCubemap(int size, HP_PixelFormat format)
 {
@@ -61,7 +66,7 @@ inline HP_Cubemap* PoolCubemap::createCubemap(int size, HP_PixelFormat format)
 
 inline HP_Cubemap* PoolCubemap::createCubemap(const HP_Image& image)
 {
-    HP_Cubemap* cubemap = mPoolCubemaps.create(image, mProgramEquirectangular);
+    HP_Cubemap* cubemap = mPoolCubemaps.create(image, mPrograms.cubemapFromEquirectangular());
 
     if (cubemap == nullptr) {
         HP_INTERNAL_LOG(E, "RENDER: Failed to load cubemap; Object pool issue");
@@ -85,12 +90,12 @@ inline void PoolCubemap::destroyCubemap(HP_Cubemap* cubemap)
 
 inline void PoolCubemap::generateSkybox(HP_Cubemap* cubemap, const HP_Skybox& skybox)
 {
-    cubemap->generateSkybox(skybox, mProgramSkyboxGen);
+    cubemap->generateSkybox(skybox, mPrograms.cubemapSkybox());
 }
 
 inline HP_ReflectionProbe* PoolCubemap::createReflectionProbe(const HP_Cubemap& cubemap)
 {
-    HP_ReflectionProbe* probe = mPoolProbes.create(cubemap, mProgramIrradiance, mProgramPrefilter);
+    HP_ReflectionProbe* probe = mPoolProbes.create(cubemap, mPrograms.cubemapIrradiance(), mPrograms.cubemapPrefilter());
 
     if (probe == nullptr) {
         HP_INTERNAL_LOG(E, "RENDER: Failed to load reflection probe; Object pool issue");
@@ -112,7 +117,7 @@ inline void PoolCubemap::destroyReflectionProbe(HP_ReflectionProbe* probe)
 
 inline void PoolCubemap::updateReflectionProbe(HP_ReflectionProbe* probe, const HP_Cubemap& cubemap)
 {
-    probe->update(cubemap, mProgramIrradiance, mProgramPrefilter);
+    probe->update(cubemap, mPrograms.cubemapIrradiance(), mPrograms.cubemapPrefilter());
 }
 
 } // namespace render

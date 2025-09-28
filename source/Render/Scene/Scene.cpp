@@ -38,11 +38,11 @@ namespace scene {
 
 /* === Public Implementation === */
 
-Scene::Scene(const render::SharedAssets& assets, HP_AppDesc& desc)
+Scene::Scene(const render::SharedAssets& assets, render::ProgramCache& programs, HP_AppDesc& desc)
     : mAssetsCommon(assets)
     , mAssetsScene()
     , mLights(getResolution(desc.render3D.resolution), desc.render3D.shadowRes)
-    , mPrograms(mAssetsCommon.vertexShaderScreen())
+    , mPrograms(programs)
     , mFrustum()
 {
     /* --- Tweak description --- */

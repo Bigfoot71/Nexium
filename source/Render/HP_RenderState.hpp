@@ -23,6 +23,7 @@
 #include <Hyperion/HP_Render.h>
 #include <Hyperion/HP_Init.h>
 
+#include "./Core/ProgramCache.hpp"
 #include "./Core/SharedAssets.hpp"
 #include "./Core/PoolTexture.hpp"
 #include "./Core/PoolCubemap.hpp"
@@ -46,6 +47,7 @@ class HP_RenderState {
 public:
     /** Resource Managers */
     render::SharedAssets assets;
+    render::ProgramCache programs;
     render::PoolTexture textures;
     render::PoolCubemap cubemaps;
     render::PoolMesh meshes;
@@ -66,13 +68,14 @@ public:
 
 inline HP_RenderState::HP_RenderState(HP_AppDesc& desc)
     : assets() //< Shared assets must be loaded first
+    , programs()
     , textures()
-    , cubemaps(assets.vertexShaderScreen(), assets.vertexShaderCube())
+    , cubemaps(programs)
     , meshes()
     , fonts()
     , models(textures, meshes)
-    , overlay(assets, desc)
-    , scene(assets, desc)
+    , overlay(assets, programs, desc)
+    , scene(assets, programs, desc)
 { }
 
 #endif // HP_RENDER_STATE_HP

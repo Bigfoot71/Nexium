@@ -250,13 +250,12 @@ set(HP_SOURCES
     "${HP_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelMesh.cpp"
     "${HP_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelBone.cpp"
     "${HP_ROOT_PATH}/source/Render/Core/SharedAssets.cpp"
-    "${HP_ROOT_PATH}/source/Render/Core/PoolCubemap.cpp"
+    "${HP_ROOT_PATH}/source/Render/Core/ProgramCache.cpp"
     "${HP_ROOT_PATH}/source/Render/Core/PoolModel.cpp"
 
     "${HP_ROOT_PATH}/source/Render/Overlay/Overlay.cpp"
 
     "${HP_ROOT_PATH}/source/Render/Scene/SharedAssets.cpp"
-    "${HP_ROOT_PATH}/source/Render/Scene/ProgramCache.cpp"
     "${HP_ROOT_PATH}/source/Render/Scene/LightManager.cpp"
     "${HP_ROOT_PATH}/source/Render/Scene/Scene.cpp"
 

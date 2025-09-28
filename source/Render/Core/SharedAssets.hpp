@@ -20,7 +20,6 @@
 #ifndef HP_RENDER_SHARED_ASSETS_HPP
 #define HP_RENDER_SHARED_ASSETS_HPP
 
-#include "../../Detail/GPU/Shader.hpp"
 #include "../HP_Texture.hpp"
 #include "../HP_Font.hpp"
 
@@ -32,29 +31,15 @@ class SharedAssets {
 public:
     SharedAssets();
 
-    const gpu::Shader& vertexShaderScreen() const;
-    const gpu::Shader& vertexShaderCube() const;
     const HP_Texture& textureWhite() const;
     const HP_Font& font() const;
 
 private:
-    gpu::Shader mVertexShaderScreen;
-    gpu::Shader mVertexShaderCube;
     HP_Texture mTextureWhite;
     HP_Font mFont;
 };
 
 /* === Public Implementation === */
-
-inline const gpu::Shader& SharedAssets::vertexShaderScreen() const
-{
-    return mVertexShaderScreen;
-}
-
-inline const gpu::Shader& SharedAssets::vertexShaderCube() const
-{
-    return mVertexShaderCube;
-}
 
 inline const HP_Texture& SharedAssets::textureWhite() const
 {

@@ -25,8 +25,8 @@
 #include "../../Detail/Util/ObjectPool.hpp"
 #include "../../Detail/GPU/Texture.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
+#include "../Core/ProgramCache.hpp"
 #include "./BoneBufferManager.hpp"
-#include "./ProgramCache.hpp"
 #include "./ViewFrustum.hpp"
 #include "../HP_Light.hpp"
 #include "./DrawCall.hpp"
@@ -38,7 +38,7 @@ namespace scene {
 class LightManager {
 public:
     struct ProcessParams {
-        ProgramCache& programs;
+        render::ProgramCache& programs;
         const ViewFrustum& viewFrustum;
         const gpu::Texture& textureWhite;
         const HP_Environment& environement;

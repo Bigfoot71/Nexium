@@ -17,8 +17,8 @@
  *   3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef HP_SCENE_PROGRAM_CACHE_HPP
-#define HP_SCENE_PROGRAM_CACHE_HPP
+#ifndef HP_RENDER_PROGRAM_CACHE_HPP
+#define HP_RENDER_PROGRAM_CACHE_HPP
 
 #include <Hyperion/HP_Render.h>
 
@@ -26,13 +26,17 @@
 #include "../../Detail/GPU/Shader.hpp"
 #include "../Core/SharedAssets.hpp"
 
-namespace scene {
-
-/* === Declaration === */
+namespace render {
 
 class ProgramCache {
 public:
-    ProgramCache(const gpu::Shader& vertScreen);
+    ProgramCache();
+
+    /** Cubemap generation */
+    gpu::Program& cubemapFromEquirectangular();
+    gpu::Program& cubemapIrradiance();
+    gpu::Program& cubemapPrefilter();
+    gpu::Program& cubemapSkybox();
 
     /** Scene programs */
     gpu::Program& lightCulling();
@@ -40,46 +44,51 @@ public:
     gpu::Program& skybox();
     gpu::Program& shadow();
 
-    /** Post process programs */
+    /** Scene post process programs */
     gpu::Program& output(HP_Tonemap tonemap);
     gpu::Program& bilateralBlur();
     gpu::Program& ssaoPass();
     gpu::Program& ssaoPost();
 
+    /** Overlay programs */
+    gpu::Program& overlayFontBitmap();
+    gpu::Program& overlayFontSDF();
+    gpu::Program& overlayTexture();
+    gpu::Program& overlayColor();
+    gpu::Program& overlay();
+
 private:
+    /** Cubemap generation */
+    gpu::Program mCubemapFromEquirectangular;
+    gpu::Program mCubemapIrradiance;
+    gpu::Program mCubemapPrefilter;
+    gpu::Program mCubemapSkybox;
+
     /** Scene programs */
     gpu::Program mLightCulling{};
     gpu::Program mForward{};
     gpu::Program mSkybox{};
     gpu::Program mShadow{};
 
-    /** Post process programs */
+    /** Scene post process programs */
     std::array<gpu::Program, HP_TONEMAP_COUNT> mOutput{};
     gpu::Program mBilateralBlur{};
     gpu::Program mSsaoPass{};
     gpu::Program mSsaoPost{};
 
+    /** Overlay programs */
+    gpu::Program mOverlayFontBitmap{};
+    gpu::Program mOverlayFontSDF{};
+    gpu::Program mOverlayTexture{};
+    gpu::Program mOverlayColor{};
+    gpu::Program mOverlay{};
+
 private:
-    const gpu::Shader& mVertexShaderScreen;
+    gpu::Shader mVertexShaderOverlayGeneric;
+    gpu::Shader mVertexShaderScreen;
+    gpu::Shader mVertexShaderCube;
 };
 
-/* === Public Implementation === */
+} // namespace render
 
-inline gpu::Program& ProgramCache::lightCulling()
-{
-    return mLightCulling;
-}
-
-inline gpu::Program& ProgramCache::forward()
-{
-    return mForward;
-}
-
-inline gpu::Program& ProgramCache::shadow()
-{
-    return mShadow;
-}
-
-} // namespace scene
-
-#endif // HP_SCENE_PROGRAM_CACHE_HPP
+#endif // HP_RENDER_PROGRAM_CACHE_HPP

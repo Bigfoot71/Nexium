@@ -19,15 +19,10 @@
 
 #include "./Overlay.hpp"
 
-#include <shaders/generic.vert.h>
-#include <shaders/generic.frag.h>
-#include <shaders/overlay.frag.h>
-#include <assets/font.ttf.h>
-
 namespace overlay {
 
-Overlay::Overlay(const render::SharedAssets& assets, HP_AppDesc& desc)
-    : mAssets(assets)
+Overlay::Overlay(const render::SharedAssets& assets, render::ProgramCache& programs, HP_AppDesc& desc)
+    : mAssets(assets), mPrograms(programs)
 {
     /* --- Tweak description --- */
 
@@ -36,16 +31,6 @@ Overlay::Overlay(const render::SharedAssets& assets, HP_AppDesc& desc)
     }
 
     desc.render2D.sampleCount = HP_MAX(desc.render2D.sampleCount, 1);
-
-    /* --- Compile shaders --- */
-
-    gpu::Shader vertShader(GL_VERTEX_SHADER, GENERIC_VERT);
-    mProgramFontBitmap = gpu::Program(vertShader, gpu::Shader(GL_FRAGMENT_SHADER, GENERIC_FRAG, {"FONT_BITMAP"}));
-    mProgramFontSDF = gpu::Program(vertShader, gpu::Shader(GL_FRAGMENT_SHADER, GENERIC_FRAG, {"FONT_SDF"}));
-    mProgramTexture = gpu::Program(vertShader, gpu::Shader(GL_FRAGMENT_SHADER, GENERIC_FRAG, {"TEXTURE"}));
-    mProgramColor = gpu::Program(vertShader, gpu::Shader(GL_FRAGMENT_SHADER, GENERIC_FRAG, {"COLOR"}));
-
-    mProgramOverlay = gpu::Program(assets.vertexShaderScreen(), gpu::Shader(GL_FRAGMENT_SHADER, OVERLAY_FRAG));
 
     /* --- Create GPU Buffers --- */
 
@@ -154,16 +139,16 @@ void Overlay::flush()
         switch (call.mode) {
         case DrawCall::SHAPE:
             if (call.texture != nullptr) {
-                pipeline.useProgram(mProgramTexture);
+                pipeline.useProgram(mPrograms.overlayTexture());
                 pipeline.bindTexture(0, call.texture->gpuTexture());
             }
             else {
-                pipeline.useProgram(mProgramColor);
+                pipeline.useProgram(mPrograms.overlayColor());
             }
             break;
         case DrawCall::TEXT:
             const HP_Font& font = call.font ? *call.font : mAssets.font();
-            pipeline.useProgram(font.type() == HP_FONT_SDF ? mProgramFontSDF : mProgramFontBitmap);
+            pipeline.useProgram(font.type() == HP_FONT_SDF ? mPrograms.overlayFontSDF() : mPrograms.overlayFontBitmap());
             pipeline.bindTexture(0, font.gpuTexture());
             break;
         }
@@ -191,7 +176,7 @@ void Overlay::blit()
         pipeline.setViewport(HP_GetWindowSize());
     }
 
-    pipeline.useProgram(mProgramOverlay);
+    pipeline.useProgram(mPrograms.overlay());
 
     pipeline.setBlendMode(gpu::BlendMode::Premultiplied);
     pipeline.bindTexture(0, mTargetColor);
