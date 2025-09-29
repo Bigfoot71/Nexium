@@ -131,7 +131,7 @@ void main()
             vec3 sampleViewPos = DepthToViewPosition(sampleDepth);
 
             // Range and depth checks
-            float rangeCheck = smoothstep(0.0, 1.0, uRadius / abs(position.z - sampleViewPos.z));
+            float rangeCheck = 1.0 - smoothstep(0.0, uRadius, abs(position.z - sampleViewPos.z));
             occlusion += (sampleViewPos.z >= samplePos.z + uBias) ? rangeCheck : 0.0;
         }
     }
