@@ -2687,8 +2687,14 @@ HP_Model* HP_LoadModel(const char* filePath)
 {
     size_t fileSize = 0;
     void* fileData = HP_LoadFile(filePath, &fileSize);
+    if (fileData == nullptr || fileSize == 0) {
+        HP_INTERNAL_LOG(E, "RENDER: Failed to load model data: %s", filePath);
+        return nullptr;
+    }
+
     HP_Model* model = gRender->models.loadModel(fileData, fileSize, helper::getFileExt(filePath));
     SDL_free(fileData);
+
     return model;
 }
 
