@@ -21,6 +21,7 @@ add_hyperion_test("hp-overlay" "${HP_ROOT_PATH}/tests/overlay.c")
 add_hyperion_test("hp-skybox" "${HP_ROOT_PATH}/tests/skybox.c")
 add_hyperion_test("hp-bloom" "${HP_ROOT_PATH}/tests/bloom.c")
 add_hyperion_test("hp-ssao" "${HP_ROOT_PATH}/tests/ssao.c")
+add_hyperion_test("hp-fog" "${HP_ROOT_PATH}/tests/fog.c")
 add_hyperion_test("hp-pbr" "${HP_ROOT_PATH}/tests/pbr.c")
 
 if(WIN32)

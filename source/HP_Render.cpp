@@ -1702,6 +1702,14 @@ HP_Environment HP_GetDefaultEnvironment(void)
             .specular = 1.0f,
             .diffuse = 1.0f
         },
+        .fog = {
+            .density = 0.01f,
+            .start = 5.0f,
+            .end = 50.0f,
+            .skyAffect = 0.5f,
+            .color = HP_GRAY,
+            .mode = HP_FOG_DISABLED,
+        },
         .ssao = {
             .intensity = 1.0f,
             .radius = 0.5f,

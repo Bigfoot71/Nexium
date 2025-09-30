@@ -23,6 +23,8 @@ layout(binding = 0) uniform samplerCube uTexSkybox;
 /* === Uniforms === */
 
 layout(location = 1) uniform float uIntensity;
+layout(location = 2) uniform float uFogAffect;
+layout(location = 3) uniform vec3 uFogColor;
 
 /* === Fragments === */
 
@@ -32,6 +34,6 @@ layout(location = 0) out vec4 FragColor;
 
 void main()
 {
-    FragColor = vec4(texture(uTexSkybox, vPosition).rgb, 1.0);
-    FragColor.rgb *= uIntensity;
+    vec3 color = texture(uTexSkybox, vPosition).rgb * uIntensity;
+    FragColor = vec4(mix(color, uFogColor, uFogAffect), 1.0);
 }

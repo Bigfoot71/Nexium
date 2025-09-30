@@ -243,7 +243,7 @@ gpu::Program& ProgramCache::upsampling()
     return mUpsampling;
 }
 
-gpu::Program& ProgramCache::bloomPost(HP_BloomMode mode)
+gpu::Program& ProgramCache::bloomPost(HP_Bloom mode)
 {
     SDL_assert(mode != HP_BLOOM_DISABLED);
 

@@ -127,6 +127,19 @@ void Scene::renderScene()
 {
     gpu::Pipeline pipeline;
 
+    /* --- Calculate background color --- */
+
+    bool hasFog = (mEnvironment.fog.mode != HP_FOG_DISABLED);
+    HP_Color background = mEnvironment.background;
+
+    if (hasFog) {
+        background = HP_ColorLerp(
+            background,
+            mEnvironment.fog.color,
+            mEnvironment.fog.skyAffect
+        );
+    }
+
     /* --- Bind scene framebuffer, setup viewport, and clear --- */
 
     pipeline.bindFramebuffer(mFramebufferScene);
@@ -135,7 +148,7 @@ void Scene::renderScene()
     pipeline.setDepthMode(gpu::DepthMode::WriteOnly);
 
     pipeline.clearDepth(1.0f);
-    pipeline.clearColor(0, mEnvironment.background);
+    pipeline.clearColor(0, background);
     pipeline.clearColor(1, HP_COLOR(0.25f, 0.25f, 1.0f, 1.0f));
 
     /* --- Bind common UBOs --- */
@@ -154,6 +167,8 @@ void Scene::renderScene()
         pipeline.bindTexture(0, mEnvironment.sky.cubemap->texture());
         pipeline.setUniformFloat4(0, mEnvironment.sky.rotation);
         pipeline.setUniformFloat1(1, mEnvironment.sky.intensity);
+        pipeline.setUniformFloat1(2, hasFog ? mEnvironment.fog.skyAffect : 0.0f);
+        pipeline.setUniformFloat3(3, mEnvironment.fog.color);
 
         pipeline.draw(GL_TRIANGLES, 36);
 
@@ -194,6 +209,21 @@ void Scene::renderScene()
         pipeline.setUniformFloat3(16, mEnvironment.ambient);
         pipeline.setUniformInt1(17, false);
     }
+
+    if (hasFog) {
+        pipeline.setUniformFloat1(22, mEnvironment.fog.skyAffect);
+        pipeline.setUniformFloat1(23, mEnvironment.fog.density);
+        if (mEnvironment.fog.mode == HP_FOG_LINEAR) {
+            pipeline.setUniformFloat1(24, mEnvironment.fog.start);
+            pipeline.setUniformFloat1(25, mEnvironment.fog.end);
+        }
+        pipeline.setUniformFloat3(26, mEnvironment.fog.color);
+    }
+    else {
+        pipeline.setUniformFloat1(22, 0.0f);
+    }
+
+    pipeline.setUniformInt1(27, mEnvironment.fog.mode);
 
     /* --- Bind constant textures --- */
 
@@ -286,15 +316,15 @@ void Scene::renderScene()
         pipeline.setUniformFloat2(4, mat.texScale);
         pipeline.setUniformUint1(8, mat.billboard);
 
-        pipeline.setUniformFloat3(22, mat.emission.color);
-        pipeline.setUniformFloat1(23, mat.emission.energy);
-        pipeline.setUniformFloat1(24, mat.orm.aoLightAffect);
-        pipeline.setUniformFloat1(25, mat.orm.occlusion);
-        pipeline.setUniformFloat1(26, mat.orm.roughness);
-        pipeline.setUniformFloat1(27, mat.orm.metalness);
-        pipeline.setUniformFloat1(28, mat.normal.scale);
-        pipeline.setUniformFloat1(29, mat.alphaCutOff);
-        pipeline.setUniformUint1(30, call.mesh().layerMask);
+        pipeline.setUniformFloat3(28, mat.emission.color);
+        pipeline.setUniformFloat1(29, mat.emission.energy);
+        pipeline.setUniformFloat1(30, mat.orm.aoLightAffect);
+        pipeline.setUniformFloat1(31, mat.orm.occlusion);
+        pipeline.setUniformFloat1(32, mat.orm.roughness);
+        pipeline.setUniformFloat1(33, mat.orm.metalness);
+        pipeline.setUniformFloat1(34, mat.normal.scale);
+        pipeline.setUniformFloat1(35, mat.alphaCutOff);
+        pipeline.setUniformUint1(36, call.mesh().layerMask);
 
         /* --- Draw! --- */
 

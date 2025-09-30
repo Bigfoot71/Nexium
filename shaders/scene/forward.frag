@@ -18,6 +18,7 @@ precision highp float;
 #include "../include/utils.glsl"
 #include "../include/math.glsl"
 #include "../include/pbr.glsl"
+#include "../include/fog.glsl"
 
 /* === Constants === */
 
@@ -114,15 +115,22 @@ layout(location = 19) uniform float uProbeDiffuseFactor;
 layout(location = 20) uniform float uProbeSpecularFactor;
 layout(location = 21) uniform int uProbePrefilterMipCount;
 
-layout(location = 22) uniform vec3 uEmissionColor;
-layout(location = 23) uniform float uEmissionEnergy;
-layout(location = 24) uniform float uAoLightAffect;
-layout(location = 25) uniform float uOcclusion;
-layout(location = 26) uniform float uRoughness;
-layout(location = 27) uniform float uMetalness;
-layout(location = 28) uniform float uNormalScale;
-layout(location = 29) uniform float uAlphaCutOff;
-layout(location = 30) uniform uint uLayerMask;
+layout(location = 22) uniform float uFogSkyAffect;
+layout(location = 23) uniform float uFogDensity;
+layout(location = 24) uniform float uFogStart;
+layout(location = 25) uniform float uFogEnd;
+layout(location = 26) uniform vec3 uFogColor;
+layout(location = 27) uniform int uFogMode;
+
+layout(location = 28) uniform vec3 uEmissionColor;
+layout(location = 29) uniform float uEmissionEnergy;
+layout(location = 30) uniform float uAoLightAffect;
+layout(location = 31) uniform float uOcclusion;
+layout(location = 32) uniform float uRoughness;
+layout(location = 33) uniform float uMetalness;
+layout(location = 34) uniform float uNormalScale;
+layout(location = 35) uniform float uAlphaCutOff;
+layout(location = 36) uniform uint uLayerMask;
 
 /* === Fragments === */
 
@@ -358,6 +366,10 @@ void main()
     float roughness = uRoughness * orm.y;
     float metalness = uMetalness * orm.z;
 
+    /* Calculation of the distance from the fragment to the camera in scene units */
+
+    float zLinear = U_LinearizeDepth(gl_FragCoord.z, uFrustum.near, uFrustum.far);
+
     /* Compute F0 (reflectance at normal incidence) based on the metallic factor */
 
     vec3 F0 = PBR_ComputeF0(metalness, 0.5, albedo.rgb);
@@ -375,8 +387,7 @@ void main()
     /* Getting the cluster index and the number of lights in the cluster */
 
     uvec3 clusterCoord = L_ClusterFromScreen(gl_FragCoord.xy / vec2(uScreenSize),
-        -U_LinearizeDepth(gl_FragCoord.z, uFrustum.near, uFrustum.far),
-        uClusterCount, uClusterSliceScale, uClusterSliceBias);
+        -zLinear, uClusterCount, uClusterSliceScale, uClusterSliceBias);
 
     uint clusterIndex = L_ClusterIndex(clusterCoord, uClusterCount);
     uint lightCount = sClusters[clusterIndex];
@@ -498,16 +509,39 @@ void main()
         skySpecular = textureLod(uTexProbePrefilter, R, mipLevel).rgb;
     }
 
+    // Applies fog according to skyAffect to the source prefilter or ambient color
+    skySpecular = mix(skySpecular, uFogColor, uFogSkyAffect);
+
     float specOcclusion = IBL_GetSpecularOcclusion(cNdotV, occlusion, roughness);
     vec3 specBRDF = IBL_GetMultiScatterBRDF(cNdotV, roughness, F0, metalness);
     skySpecular *= specBRDF * uProbeSpecularFactor * specOcclusion;
 
-    /* Compute the final fragment color by combining albedo and lighting contributions */
+    /* Calculate and apply fog factor */
 
-    FragColor.rgb = albedo.rgb * (skyDiffuse + diffuse);
-    FragColor.rgb += skySpecular + specular;
-    FragColor.rgb += emission;
-    FragColor.a = albedo.a;
+    float fogFactor = 1.0;
+
+    switch (uFogMode) {
+    case FOG_LINEAR:
+        fogFactor = FogLinear(zLinear, uFogDensity, uFogStart, uFogEnd);
+        break;
+    case FOG_EXP2:
+        fogFactor = FogExp2(zLinear, uFogDensity);
+        break;
+    case FOG_EXP:
+        fogFactor = FogExp(zLinear, uFogDensity);
+        break;
+    default:
+        break;
+    }
+
+    /* Compute the final fragment color by combining albedo, lighting contributions and fog */
+
+    vec3 litColor = albedo.rgb * (skyDiffuse + diffuse);
+    litColor += skySpecular + specular;
+    litColor += emission;
+
+    FragColor.rgb = mix(uFogColor, litColor, fogFactor);
+    FragColor.a   = albedo.a;
 
     /* Store normals */
 

@@ -33,7 +33,7 @@ public:
     gpu::Program& shadow();
 
     /** Scene post process programs */
-    gpu::Program& bloomPost(HP_BloomMode mode);
+    gpu::Program& bloomPost(HP_Bloom mode);
     gpu::Program& output(HP_Tonemap tonemap);
     gpu::Program& bilateralBlur();
     gpu::Program& downsampling();

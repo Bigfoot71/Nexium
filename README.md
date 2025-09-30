@@ -56,7 +56,7 @@ Here’s a checklist of the major features that are still missing:
 - [ ] Dynamic reflection probes
 - [x] Screen space ambient occlusion
 - [x] Bloom in post process
-- [ ] Fog effect
+- [x] Fog effect
 - [ ] Custom post-processing shaders
 - [ ] Custom material shaders
 - [ ] More flexible 2D rendering

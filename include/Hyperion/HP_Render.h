@@ -199,13 +199,25 @@ typedef enum HP_ShadowUpdateMode {
  *
  * Determines how the bloom effect is blended with the scene.
  */
-typedef enum HP_BloomMode {
+typedef enum HP_Bloom {
     HP_BLOOM_DISABLED,      ///< Bloom effect is disabled.
     HP_BLOOM_MIX,           ///< Interpolates between the scene and the pre-multiplied bloom based on intensity.
     HP_BLOOM_ADDITIVE,      ///< Adds the bloom to the scene, scaled by intensity.
     HP_BLOOM_SCREEN,        ///< Blends the scene with bloom using screen blend mode.
     HP_BLOOM_COUNT          ///< Number of bloom modes (used internally).
-} HP_BloomMode;
+} HP_Bloom;
+
+/**
+ * @brief Fog effect modes.
+ *
+ * Determines how fog is applied to the scene, affecting depth perception and atmosphere.
+ */
+typedef enum HP_Fog {
+    HP_FOG_DISABLED,        ///< Fog effect is disabled.
+    HP_FOG_LINEAR,          ///< Fog density increases linearly with distance from the camera.
+    HP_FOG_EXP2,            ///< Exponential fog (exp2), where density increases exponentially with distance.
+    HP_FOG_EXP              ///< Exponential fog, similar to EXP2 but with a different rate of increase.
+} HP_Fog;
 
 /**
  * @brief Tone mapping modes.
@@ -366,6 +378,15 @@ typedef struct HP_Environment {
     } sky;
 
     struct {
+        float density;              ///< fog density
+        float start;                ///< fog start distance (linear only)
+        float end;                  ///< fog end distance (linear only)
+        float skyAffect;            ///< influence of sky color on the fog
+        HP_Color color;             ///< fog color
+        HP_Fog mode;                ///< fog mode
+    } fog;
+
+    struct {
         float intensity;            ///< Overall strength of the SSAO effect (scales the occlusion).
         float radius;               ///< Sampling radius in view-space units; larger values capture broader occlusion.
         float power;                ///< Exponent applied to the SSAO term; higher values darken occlusion and sharpen falloff.
@@ -378,7 +399,7 @@ typedef struct HP_Environment {
         float softThreshold;    ///< Softening factor applied during prefiltering.
         float filterRadius;     ///< Radius of the blur filter used for bloom spreading.
         float strength;         ///< Intensity of the bloom effect when blended with the scene.
-        HP_BloomMode mode;      ///< Mode used to combine the bloom effect with the scene.
+        HP_Bloom mode;          ///< Mode used to combine the bloom effect with the scene.
     } bloom;
 
     struct {
@@ -1281,6 +1302,13 @@ HPAPI void HP_ApplyCameraTransform(HP_Camera* camera, HP_Mat4 transform, HP_Vec3
  *   - intensity: 1.0
  *   - specular contribution: 1.0
  *   - diffuse contribution: 1.0
+ * - fog:
+ *   - density: 0.01
+ *   - start: 5.0
+ *   - end: 50.0
+ *   - skyAffect 0.5
+ *   - color: HP_GRAY
+ *   - mode: HP_FOG_DISABLED
  * - ssao:
  *   - intensity: 1.0
  *   - radius: 0.5

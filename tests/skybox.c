@@ -22,6 +22,10 @@ int main(void)
     env.sky.cubemap = skybox;
     env.sky.probe = skyprobe;
 
+    env.fog.mode = HP_FOG_LINEAR;
+    env.fog.start = 3.0f;
+    env.fog.end = 30.0f;
+
     while (HP_FrameStep())
     {
         CMN_UpdateCamera(&camera, HP_VEC3_ZERO, 16.0f, 0.0f);
