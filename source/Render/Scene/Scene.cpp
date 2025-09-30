@@ -121,6 +121,61 @@ Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, HP_AppD
     }
 }
 
+void Scene::begin(const HP_Camera& camera, const HP_Environment& env, const HP_RenderTexture* target)
+{
+    mTargetInfo.target = target;
+    mTargetInfo.resolution = (target) ? target->framebuffer().dimensions() : HP_GetWindowSize();
+    mTargetInfo.aspect = static_cast<float>(mTargetInfo.resolution.x) / mTargetInfo.resolution.y;
+
+    mFrustum.update(camera, mTargetInfo.aspect);
+    mEnvironment = env;
+}
+
+void Scene::end()
+{
+    /* --- Sort draw calls --- */
+
+    mDrawCalls.sort(DrawCall::Category::TRANSPARENT,
+        [this](const DrawCall& a, const DrawCall& b) {
+            float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.mesh().aabb, mDrawData[a.dataIndex()].matrix());
+            float maxDistB = mFrustum.getDistanceSquaredToFarthestPoint(b.mesh().aabb, mDrawData[b.dataIndex()].matrix());
+            return maxDistA > maxDistB;
+        }
+    );
+
+    /* --- Process lights --- */
+
+    mLights.process({
+        .viewFrustum = mFrustum,
+        .environement = mEnvironment,
+        .boneBuffer = mBoneBuffer,
+        .drawCalls = mDrawCalls,
+        .drawData = mDrawData
+    });
+
+    /* --- Render scene --- */
+
+    renderScene();
+
+    const gpu::Texture* source = &mTargetSceneColor;
+
+    if (mEnvironment.ssao.enabled) {
+        source = &postSSAO(*source);
+    }
+
+    if (mEnvironment.bloom.mode != HP_BLOOM_DISABLED) {
+        source = &postBloom(*source);
+    }
+
+    postFinal(*source);
+
+    /* --- Reset state --- */
+
+    mBoneBuffer.clear();
+    mDrawCalls.clear();
+    mDrawData.clear();
+}
+
 /* === Private Implementation === */
 
 void Scene::renderScene()
