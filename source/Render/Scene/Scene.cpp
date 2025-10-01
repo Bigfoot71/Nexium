@@ -128,7 +128,7 @@ void Scene::begin(const HP_Camera& camera, const HP_Environment& env, const HP_R
     mTargetInfo.aspect = static_cast<float>(mTargetInfo.resolution.x) / mTargetInfo.resolution.y;
 
     mFrustum.update(camera, mTargetInfo.aspect);
-    mEnvironment = env;
+    mEnvironment.update(env);
 }
 
 void Scene::end()
@@ -147,7 +147,7 @@ void Scene::end()
 
     mLights.process({
         .viewFrustum = mFrustum,
-        .environement = mEnvironment,
+        .sceneBounds = mEnvironment.bounds(),
         .boneBuffer = mBoneBuffer,
         .drawCalls = mDrawCalls,
         .drawData = mDrawData
@@ -159,11 +159,11 @@ void Scene::end()
 
     const gpu::Texture* source = &mTargetSceneColor;
 
-    if (mEnvironment.ssao.enabled) {
+    if (mEnvironment.isSsaoEnabled()) {
         source = &postSSAO(*source);
     }
 
-    if (mEnvironment.bloom.mode != HP_BLOOM_DISABLED) {
+    if (mEnvironment.bloomMode() != HP_BLOOM_DISABLED) {
         source = &postBloom(*source);
     }
 
@@ -182,19 +182,6 @@ void Scene::renderScene()
 {
     gpu::Pipeline pipeline;
 
-    /* --- Calculate background color --- */
-
-    bool hasFog = (mEnvironment.fog.mode != HP_FOG_DISABLED);
-    HP_Color background = mEnvironment.background;
-
-    if (hasFog) {
-        background = HP_ColorLerp(
-            background,
-            mEnvironment.fog.color,
-            mEnvironment.fog.skyAffect
-        );
-    }
-
     /* --- Bind scene framebuffer, setup viewport, and clear --- */
 
     pipeline.bindFramebuffer(mFramebufferScene);
@@ -203,30 +190,22 @@ void Scene::renderScene()
     pipeline.setDepthMode(gpu::DepthMode::WriteOnly);
 
     pipeline.clearDepth(1.0f);
-    pipeline.clearColor(0, background);
+    pipeline.clearColor(0, mEnvironment.background());
     pipeline.clearColor(1, HP_COLOR(0.25f, 0.25f, 1.0f, 1.0f));
 
     /* --- Bind common UBOs --- */
 
     pipeline.bindUniform(0, mFrustum.buffer());
+    pipeline.bindUniform(1, mEnvironment.buffer());
 
     /* --- Render skybox --- */
 
-    if (mEnvironment.sky.cubemap != nullptr)
-    {
+    if (mEnvironment.skyCubemap() != nullptr) {
         mFramebufferScene.setDrawBuffers({0});
-
         pipeline.setDepthMode(gpu::DepthMode::Disabled);
         pipeline.useProgram(mPrograms.skybox());
-
-        pipeline.bindTexture(0, mEnvironment.sky.cubemap->texture());
-        pipeline.setUniformFloat4(0, mEnvironment.sky.rotation);
-        pipeline.setUniformFloat1(1, mEnvironment.sky.intensity);
-        pipeline.setUniformFloat1(2, hasFog ? mEnvironment.fog.skyAffect : 0.0f);
-        pipeline.setUniformFloat3(3, mEnvironment.fog.color);
-
+        pipeline.bindTexture(0, mEnvironment.skyCubemap()->texture());
         pipeline.draw(GL_TRIANGLES, 36);
-
         mFramebufferScene.enableAllDrawBuffers();
     }
 
@@ -252,33 +231,13 @@ void Scene::renderScene()
     pipeline.setUniformFloat1(14, mLights.clusterSliceScale());
     pipeline.setUniformFloat1(15, mLights.clusterSliceBias());
 
-    pipeline.setUniformFloat1(19, mEnvironment.sky.diffuse * mEnvironment.sky.intensity);
-    pipeline.setUniformFloat1(20, mEnvironment.sky.specular * mEnvironment.sky.intensity);
-
-    if (mEnvironment.sky.probe != nullptr) {
+    if (mEnvironment.skyProbe() != nullptr) {
         pipeline.setUniformInt1(17, true);
-        pipeline.setUniformFloat4(18, mEnvironment.sky.rotation);
-        pipeline.setUniformInt1(21, mEnvironment.sky.probe->prefilter().numLevels());
+        pipeline.setUniformInt1(21, mEnvironment.skyProbe()->prefilter().numLevels());
     }
     else {
-        pipeline.setUniformFloat3(16, mEnvironment.ambient);
         pipeline.setUniformInt1(17, false);
     }
-
-    if (hasFog) {
-        pipeline.setUniformFloat1(22, mEnvironment.fog.skyAffect);
-        pipeline.setUniformFloat1(23, mEnvironment.fog.density);
-        if (mEnvironment.fog.mode == HP_FOG_LINEAR) {
-            pipeline.setUniformFloat1(24, mEnvironment.fog.start);
-            pipeline.setUniformFloat1(25, mEnvironment.fog.end);
-        }
-        pipeline.setUniformFloat3(26, mEnvironment.fog.color);
-    }
-    else {
-        pipeline.setUniformFloat1(22, 0.0f);
-    }
-
-    pipeline.setUniformInt1(27, mEnvironment.fog.mode);
 
     /* --- Bind constant textures --- */
 
@@ -286,9 +245,9 @@ void Scene::renderScene()
     pipeline.bindTexture(7, mLights.shadowCube());
     pipeline.bindTexture(8, mLights.shadow2D());
 
-    if (mEnvironment.sky.probe != nullptr) {
-        pipeline.bindTexture(5, mEnvironment.sky.probe->irradiance());
-        pipeline.bindTexture(6, mEnvironment.sky.probe->prefilter());
+    if (mEnvironment.skyProbe() != nullptr) {
+        pipeline.bindTexture(5, mEnvironment.skyProbe()->irradiance());
+        pipeline.bindTexture(6, mEnvironment.skyProbe()->prefilter());
     }
 
     /* --- Ensures SSBOs are ready (especially clusters) --- */
@@ -407,6 +366,7 @@ const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
     /* --- Bind common stuff --- */
 
     pipeline.bindUniform(0, mFrustum.buffer());
+    pipeline.bindUniform(1, mEnvironment.buffer());
 
     /* --- Generate ambient occlusion --- */
 
@@ -420,9 +380,6 @@ const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
         pipeline.bindTexture(2, mAssets.textureSsaoKernel());
         pipeline.bindTexture(3, mAssets.textureSsaoNoise());
 
-        pipeline.setUniformFloat1(0, mEnvironment.ssao.radius);
-        pipeline.setUniformFloat1(1, mEnvironment.ssao.bias);
-
         pipeline.draw(GL_TRIANGLES, 3);
     }
     mSwapAuxiliary.swap();
@@ -432,7 +389,6 @@ const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
     pipeline.useProgram(mPrograms.bilateralBlur());
 
     pipeline.bindTexture(1, mTargetSceneDepth);
-    pipeline.setUniformFloat1(1, mEnvironment.ssao.radius);
 
     pipeline.bindFramebuffer(mSwapAuxiliary.target());
     {
@@ -460,9 +416,6 @@ const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
         pipeline.bindTexture(0, source);
         pipeline.bindTexture(1, mSwapAuxiliary.source());
 
-        pipeline.setUniformFloat1(0, mEnvironment.ssao.intensity);
-        pipeline.setUniformFloat1(1, mEnvironment.ssao.power);
-
         pipeline.draw(GL_TRIANGLES, 3);
     }
     mSwapPostProcess.swap();
@@ -476,15 +429,9 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
 
     gpu::Pipeline pipeline;
 
-    /* --- Calculation of bloom parameters --- */
+    /* --- Bind common stuff --- */
 
-    float knee = mEnvironment.bloom.threshold * mEnvironment.bloom.softThreshold;
-
-    HP_Vec4 prefilter;
-    prefilter.x = mEnvironment.bloom.threshold;
-    prefilter.y = mEnvironment.bloom.threshold - knee;
-    prefilter.z = 2.0f * knee;
-    prefilter.w = 0.25f / (knee + 1e-6f);
+    pipeline.bindUniform(0, mEnvironment.buffer());
 
     /* --- Downsampling of the source --- */
 
@@ -492,7 +439,6 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
     pipeline.bindTexture(0, source);
 
     pipeline.setUniformFloat2(0, HP_IVec2Rcp(mTargetSceneColor.dimensions()));
-    pipeline.setUniformFloat4(1, prefilter);
 
     mMipChain.downsample(pipeline, 0, [&](uint32_t targetLevel, uint32_t sourceLevel) {
         pipeline.setUniformInt1(2, targetLevel);
@@ -512,7 +458,6 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
     pipeline.setBlendMode(gpu::BlendMode::Additive);
 
     mMipChain.upsample(pipeline, [&](uint32_t targetLevel, uint32_t sourceLevel) {
-        pipeline.setUniformFloat2(0, mEnvironment.bloom.filterRadius * HP_IVec2Rcp(mMipChain.dimensions(sourceLevel)));
         mMipChain.setMipLevelRange(sourceLevel, sourceLevel);
         pipeline.draw(GL_TRIANGLES, 3);
     });
@@ -530,8 +475,7 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
     pipeline.bindFramebuffer(mSwapPostProcess.target());
     pipeline.setViewport(mSwapPostProcess.target());
 
-    pipeline.useProgram(mPrograms.bloomPost(mEnvironment.bloom.mode));
-    pipeline.setUniformFloat1(0, mEnvironment.bloom.strength);
+    pipeline.useProgram(mPrograms.bloomPost(mEnvironment.bloomMode()));
 
     pipeline.bindTexture(0, source);
     pipeline.bindTexture(1, mMipChain.texture());
@@ -552,14 +496,9 @@ void Scene::postFinal(const gpu::Texture& source)
     }
     pipeline.setViewport(mTargetInfo.resolution);
 
-    pipeline.useProgram(mPrograms.output(mEnvironment.tonemap.mode));
+    pipeline.useProgram(mPrograms.output(mEnvironment.tonemapMode()));
+    pipeline.bindUniform(0, mEnvironment.buffer());
     pipeline.bindTexture(0, source);
-
-    pipeline.setUniformFloat1(0, mEnvironment.tonemap.exposure);
-    pipeline.setUniformFloat1(1, mEnvironment.tonemap.white);
-    pipeline.setUniformFloat1(2, mEnvironment.adjustment.brightness);
-    pipeline.setUniformFloat1(3, mEnvironment.adjustment.contrast);
-    pipeline.setUniformFloat1(4, mEnvironment.adjustment.saturation);
 
     pipeline.draw(GL_TRIANGLES, 3);
 }

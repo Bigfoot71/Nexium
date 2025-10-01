@@ -182,7 +182,7 @@ void LightManager::updateState(const ProcessParams& params)
             }
         }
 
-        light.updateState(params.environement.bounds, lightIndex, shadowIndex, shadowMapIndex);
+        light.updateState(params.sceneBounds, lightIndex, shadowIndex, shadowMapIndex);
     }
 }
 

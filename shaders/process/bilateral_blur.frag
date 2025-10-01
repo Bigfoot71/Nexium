@@ -43,10 +43,38 @@ layout(std140, binding = 0) uniform ViewFrustum {
     float far;
 } uFrustum;
 
+layout(std140, binding = 1) uniform Environment {
+    vec3 ambientColor;
+    vec4 skyRotation;
+    vec3 fogColor;
+    vec4 bloomPrefilter;
+    float skyIntensity;
+    float skySpecular;
+    float skyDiffuse;
+    float fogDensity;
+    float fogStart;
+    float fogEnd;
+    float fogSkyAffect;
+    int fogMode;
+    float ssaoIntensity;
+    float ssaoRadius;
+    float ssaoPower;
+    float ssaoBias;
+    int ssaoEnabled;
+    float bloomFilterRadius;
+    float bloomStrength;
+    int bloomMode;
+    float adjustBrightness;
+    float adjustContrast;
+    float adjustSaturation;
+    float tonemapExposure;
+    float tonemapWhite;
+    int tonemapMode;
+} uEnv;
+
 /* === Uniforms === */
 
 layout(location = 0) uniform vec2 uTexelDir;
-layout(location = 1) uniform float uRadius;
 
 /* === Fragments === */
 
@@ -96,11 +124,11 @@ void main()
 
         // Modulate the Gaussian weight based on depth similarity:
         // - When diff = 0 (same depth): depthWeight = 1.0 (full blur)
-        // - When diff >= uRadius (depth discontinuity): depthWeight = 0.1 (minimal blur)
+        // - When diff >= uEnv.ssaoRadius (depth discontinuity): depthWeight = 0.1 (minimal blur)
         // The smoothstep provides a smooth transition, and the 0.1 minimum ensures we
         // always blur at least slightly to remove SSAO noise, even at edges.
 
-        float depthWeight = mix(0.1, 1.0, smoothstep(uRadius, 0.0, diff));
+        float depthWeight = mix(0.1, 1.0, smoothstep(uEnv.ssaoRadius, 0.0, diff));
         float weight = WEIGHTS[i] * depthWeight;
 
         result += texture(uTexColor, sampleUV) * weight;

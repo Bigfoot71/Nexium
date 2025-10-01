@@ -31,7 +31,7 @@ class LightManager {
 public:
     struct ProcessParams {
         const ViewFrustum& viewFrustum;
-        const HP_Environment& environement;
+        const HP_BoundingBox& sceneBounds;
         const BoneBufferManager& boneBuffer;
         const BucketDrawCalls& drawCalls;
         const ArrayDrawData& drawData;

@@ -28,13 +28,36 @@ layout(location = 0) in vec2 vTexCoord;
 
 layout(binding = 0) uniform sampler2D uTexScene;
 
-/* === Uniforms === */
+/* === Uniform Buffers === */
 
-layout(location = 0) uniform float uExposure;       //< Tonemap exposure
-layout(location = 1) uniform float uWhitePoint;     //< Tonemap white point, not used with AGX
-layout(location = 2) uniform float uBrightness;     //< Brightness adjustment
-layout(location = 3) uniform float uContrast;       //< Contrast adjustment
-layout(location = 4) uniform float uSaturation;     //< Saturation adjustment
+layout(std140, binding = 0) uniform Environment {
+    vec3 ambientColor;
+    vec4 skyRotation;
+    vec3 fogColor;
+    vec4 bloomPrefilter;
+    float skyIntensity;
+    float skySpecular;
+    float skyDiffuse;
+    float fogDensity;
+    float fogStart;
+    float fogEnd;
+    float fogSkyAffect;
+    int fogMode;
+    float ssaoIntensity;
+    float ssaoRadius;
+    float ssaoPower;
+    float ssaoBias;
+    int ssaoEnabled;
+    float bloomFilterRadius;
+    float bloomStrength;
+    int bloomMode;
+    float adjustBrightness;
+    float adjustContrast;
+    float adjustSaturation;
+    float tonemapExposure;
+    float tonemapWhite;
+    int tonemapMode;
+} uEnv;
 
 /* === Fragments === */
 
@@ -228,8 +251,8 @@ void main()
 {
     vec3 color = texture(uTexScene, vTexCoord).rgb;
 
-    color = Tonemapping(color, uExposure, uWhitePoint);
-    color = Adjustments(color, uBrightness, uContrast, uSaturation);
+    color = Tonemapping(color, uEnv.tonemapExposure, uEnv.tonemapWhite);
+    color = Adjustments(color, uEnv.adjustBrightness, uEnv.adjustContrast, uEnv.adjustSaturation);
     color = Debanding(color);
 
     FragColor = vec4(LinearToSRGB(color), 1.0);

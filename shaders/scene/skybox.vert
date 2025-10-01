@@ -55,9 +55,34 @@ layout(std140, binding = 0) uniform ViewFrustum {
     float far;
 } uFrustum;
 
-/* === Uniforms === */
-
-layout(location = 0) uniform vec4 uRotation;
+layout(std140, binding = 1) uniform Environment {
+    vec3 ambientColor;
+    vec4 skyRotation;
+    vec3 fogColor;
+    vec4 bloomPrefilter;
+    float skyIntensity;
+    float skySpecular;
+    float skyDiffuse;
+    float fogDensity;
+    float fogStart;
+    float fogEnd;
+    float fogSkyAffect;
+    int fogMode;
+    float ssaoIntensity;
+    float ssaoRadius;
+    float ssaoPower;
+    float ssaoBias;
+    int ssaoEnabled;
+    float bloomFilterRadius;
+    float bloomStrength;
+    int bloomMode;
+    float adjustBrightness;
+    float adjustContrast;
+    float adjustSaturation;
+    float tonemapExposure;
+    float tonemapWhite;
+    int tonemapMode;
+} uEnv;
 
 /* === Varyings === */
 
@@ -70,6 +95,6 @@ void main()
     int vertexIndex = cubeIndices[gl_VertexID];
     vec3 position = cubePositions[vertexIndex];
 
-    vPosition = M_Rotate3D(position, uRotation);
+    vPosition = M_Rotate3D(position, uEnv.skyRotation);
     gl_Position = uFrustum.proj * mat4(mat3(uFrustum.view)) * vec4(vPosition, 1.0);
 }

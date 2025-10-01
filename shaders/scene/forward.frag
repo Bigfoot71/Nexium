@@ -98,6 +98,35 @@ layout(std140, binding = 0) uniform ViewFrustum {
     float far;
 } uFrustum;
 
+layout(std140, binding = 1) uniform Environment {
+    vec3 ambientColor;
+    vec4 skyRotation;
+    vec3 fogColor;
+    vec4 bloomPrefilter;
+    float skyIntensity;
+    float skySpecular;
+    float skyDiffuse;
+    float fogDensity;
+    float fogStart;
+    float fogEnd;
+    float fogSkyAffect;
+    int fogMode;
+    float ssaoIntensity;
+    float ssaoRadius;
+    float ssaoPower;
+    float ssaoBias;
+    int ssaoEnabled;
+    float bloomFilterRadius;
+    float bloomStrength;
+    int bloomMode;
+    float adjustBrightness;
+    float adjustContrast;
+    float adjustSaturation;
+    float tonemapExposure;
+    float tonemapWhite;
+    int tonemapMode;
+} uEnv;
+
 /* === Uniforms === */
 
 layout(location = 10) uniform bool uHasActiveLights;
@@ -108,20 +137,8 @@ layout(location = 13) uniform uint uMaxLightsPerCluster;
 layout(location = 14) uniform float uClusterSliceScale;
 layout(location = 15) uniform float uClusterSliceBias;
 
-layout(location = 16) uniform vec3 uAmbientColor;
-
 layout(location = 17) uniform bool uHasProbe;
-layout(location = 18) uniform vec4 uQuatProbe;
-layout(location = 19) uniform float uProbeDiffuseFactor;
-layout(location = 20) uniform float uProbeSpecularFactor;
 layout(location = 21) uniform int uProbePrefilterMipCount;
-
-layout(location = 22) uniform float uFogSkyAffect;
-layout(location = 23) uniform float uFogDensity;
-layout(location = 24) uniform float uFogStart;
-layout(location = 25) uniform float uFogEnd;
-layout(location = 26) uniform vec3 uFogColor;
-layout(location = 27) uniform int uFogMode;
 
 layout(location = 28) uniform vec3 uEmissionColor;
 layout(location = 29) uniform float uEmissionEnergy;
@@ -501,48 +518,48 @@ void main()
 
     /* --- Ambient diffuse from sky --- */
 
-    vec3 skyDiffuse = uAmbientColor;
+    vec3 skyDiffuse = uEnv.ambientColor;
 
     if (uHasProbe) {
-        vec3 Nr = M_Rotate3D(N, uQuatProbe);
+        vec3 Nr = M_Rotate3D(N, uEnv.skyRotation);
         skyDiffuse = texture(uTexProbeIrradiance, Nr).rgb;
     }
 
     vec3 kS = IBL_FresnelSchlickRoughness(cNdotV, F0, roughness);
     vec3 kD = (1.0 - kS) * oneMinusMetalness;
 
-    skyDiffuse *= kD * uProbeDiffuseFactor * occlusion;
+    skyDiffuse *= kD * uEnv.skyDiffuse * occlusion;
 
     /* --- Ambient specular from sky --- */
 
-    vec3 skySpecular = uAmbientColor;
+    vec3 skySpecular = uEnv.ambientColor;
 
     if (uHasProbe) {
-        vec3 R = M_Rotate3D(reflect(-V, N), uQuatProbe);
+        vec3 R = M_Rotate3D(reflect(-V, N), uEnv.skyRotation);
         float mipLevel = roughness * (float(uProbePrefilterMipCount) - 1.0);
         skySpecular = textureLod(uTexProbePrefilter, R, mipLevel).rgb;
     }
 
     // Applies fog according to skyAffect to the source prefilter or ambient color
-    skySpecular = mix(skySpecular, uFogColor, uFogSkyAffect);
+    skySpecular = mix(skySpecular, uEnv.fogColor, uEnv.fogSkyAffect);
 
     float specOcclusion = IBL_GetSpecularOcclusion(cNdotV, occlusion, roughness);
     vec3 specBRDF = IBL_GetMultiScatterBRDF(cNdotV, roughness, F0, metalness);
-    skySpecular *= specBRDF * uProbeSpecularFactor * specOcclusion;
+    skySpecular *= specBRDF * uEnv.skySpecular * specOcclusion;
 
     /* --- Calculate and apply fog factor --- */
 
     float fogFactor = 1.0;
 
-    switch (uFogMode) {
+    switch (uEnv.fogMode) {
     case FOG_LINEAR:
-        fogFactor = FogLinear(zLinear, uFogDensity, uFogStart, uFogEnd);
+        fogFactor = FogLinear(zLinear, uEnv.fogDensity, uEnv.fogStart, uEnv.fogEnd);
         break;
     case FOG_EXP2:
-        fogFactor = FogExp2(zLinear, uFogDensity);
+        fogFactor = FogExp2(zLinear, uEnv.fogDensity);
         break;
     case FOG_EXP:
-        fogFactor = FogExp(zLinear, uFogDensity);
+        fogFactor = FogExp(zLinear, uEnv.fogDensity);
         break;
     default:
         break;
@@ -554,7 +571,7 @@ void main()
     litColor += skySpecular + specular;
     litColor += emission;
 
-    FragColor.rgb = mix(uFogColor, litColor, fogFactor);
+    FragColor.rgb = mix(uEnv.fogColor, litColor, fogFactor);
     FragColor.a   = albedo.a;
 
     /* --- Store normals --- */

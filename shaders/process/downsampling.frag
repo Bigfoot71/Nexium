@@ -29,10 +29,40 @@ layout(location = 0) in vec2 vTexCoord;
 
 layout(binding = 0) uniform sampler2D uTexture;
 
+/* === Uniform Buffers === */
+
+layout(std140, binding = 0) uniform Environment {
+    vec3 ambientColor;
+    vec4 skyRotation;
+    vec3 fogColor;
+    vec4 bloomPrefilter;
+    float skyIntensity;
+    float skySpecular;
+    float skyDiffuse;
+    float fogDensity;
+    float fogStart;
+    float fogEnd;
+    float fogSkyAffect;
+    int fogMode;
+    float ssaoIntensity;
+    float ssaoRadius;
+    float ssaoPower;
+    float ssaoBias;
+    int ssaoEnabled;
+    float bloomFilterRadius;
+    float bloomStrength;
+    int bloomMode;
+    float adjustBrightness;
+    float adjustContrast;
+    float adjustSaturation;
+    float tonemapExposure;
+    float tonemapWhite;
+    int tonemapMode;
+} uEnv;
+
 /* === Uniforms === */
 
 layout(location = 0) uniform vec2 uTexelSize;        //< Reciprocal of the resolution of the source being sampled
-layout(location = 1) uniform vec4 uPrefilter;
 layout(location = 2) uniform int uMipLevel;          //< Which mip we are writing to, used for Karis average
 
 /* === Fragments === */
@@ -66,10 +96,10 @@ float KarisAverage(vec3 col)
 vec3 Prefilter(vec3 col)
 {
 	float brightness = max(col.r, max(col.g, col.b));
-	float soft = brightness - uPrefilter.y;
-	soft = clamp(soft, 0, uPrefilter.z);
-	soft = soft * soft * uPrefilter.w;
-	float contribution = max(soft, brightness - uPrefilter.x);
+	float soft = brightness - uEnv.bloomPrefilter.y;
+	soft = clamp(soft, 0, uEnv.bloomPrefilter.z);
+	soft = soft * soft * uEnv.bloomPrefilter.w;
+	float contribution = max(soft, brightness - uEnv.bloomPrefilter.x);
 	contribution /= max(brightness, 0.00001);
 	return col * contribution;
 }

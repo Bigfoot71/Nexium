@@ -42,10 +42,34 @@ layout(std140, binding = 0) uniform ViewFrustum {
     float far;
 } uFrustum;
 
-/* === Uniforms === */
-
-layout(location = 0) uniform float uRadius;
-layout(location = 1) uniform float uBias;
+layout(std140, binding = 1) uniform Environment {
+    vec3 ambientColor;
+    vec4 skyRotation;
+    vec3 fogColor;
+    vec4 bloomPrefilter;
+    float skyIntensity;
+    float skySpecular;
+    float skyDiffuse;
+    float fogDensity;
+    float fogStart;
+    float fogEnd;
+    float fogSkyAffect;
+    int fogMode;
+    float ssaoIntensity;
+    float ssaoRadius;
+    float ssaoPower;
+    float ssaoBias;
+    int ssaoEnabled;
+    float bloomFilterRadius;
+    float bloomStrength;
+    int bloomMode;
+    float adjustBrightness;
+    float adjustContrast;
+    float adjustSaturation;
+    float tonemapExposure;
+    float tonemapWhite;
+    int tonemapMode;
+} uEnv;
 
 /* === Constants === */
 
@@ -116,7 +140,7 @@ void main()
         /* --- Get sample position --- */
 
         vec3 samplePos = SampleKernel(i, KERNEL_SIZE);
-        samplePos = position + (TBN * samplePos) * uRadius;
+        samplePos = position + (TBN * samplePos) * uEnv.ssaoRadius;
 
         /* --- Project sample position to screen space --- */
 
@@ -131,8 +155,8 @@ void main()
             vec3 sampleViewPos = DepthToViewPosition(sampleDepth);
 
             // Range and depth checks
-            float rangeCheck = 1.0 - smoothstep(0.0, uRadius, abs(position.z - sampleViewPos.z));
-            occlusion += (sampleViewPos.z >= samplePos.z + uBias) ? rangeCheck : 0.0;
+            float rangeCheck = 1.0 - smoothstep(0.0, uEnv.ssaoRadius, abs(position.z - sampleViewPos.z));
+            occlusion += (sampleViewPos.z >= samplePos.z + uEnv.ssaoBias) ? rangeCheck : 0.0;
         }
     }
 

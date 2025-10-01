@@ -26,6 +26,7 @@
 #include "./ViewFrustum.hpp"
 #include "./DrawCall.hpp"
 #include "./DrawData.hpp"
+#include "Environment.hpp"
 
 namespace scene {
 
@@ -64,10 +65,12 @@ private:
     render::ProgramCache& mPrograms;
     render::AssetCache& mAssets;
 
-    /** Scene data */
-    HP_Environment mEnvironment{};
+    /** Draw calls */
     BucketDrawCalls mDrawCalls{};
     ArrayDrawData mDrawData{};
+
+    /** Scene data */
+    Environment mEnvironment{};
     ViewFrustum mFrustum{};
 
     /** Managers */

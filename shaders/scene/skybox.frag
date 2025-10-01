@@ -20,11 +20,36 @@ layout(location = 0) in vec3 vPosition;
 
 layout(binding = 0) uniform samplerCube uTexSkybox;
 
-/* === Uniforms === */
+/* === Uniform Buffers === */
 
-layout(location = 1) uniform float uIntensity;
-layout(location = 2) uniform float uFogAffect;
-layout(location = 3) uniform vec3 uFogColor;
+layout(std140, binding = 1) uniform Environment {
+    vec3 ambientColor;
+    vec4 skyRotation;
+    vec3 fogColor;
+    vec4 bloomPrefilter;
+    float skyIntensity;
+    float skySpecular;
+    float skyDiffuse;
+    float fogDensity;
+    float fogStart;
+    float fogEnd;
+    float fogSkyAffect;
+    int fogMode;
+    float ssaoIntensity;
+    float ssaoRadius;
+    float ssaoPower;
+    float ssaoBias;
+    int ssaoEnabled;
+    float bloomFilterRadius;
+    float bloomStrength;
+    int bloomMode;
+    float adjustBrightness;
+    float adjustContrast;
+    float adjustSaturation;
+    float tonemapExposure;
+    float tonemapWhite;
+    int tonemapMode;
+} uEnv;
 
 /* === Fragments === */
 
@@ -34,6 +59,6 @@ layout(location = 0) out vec4 FragColor;
 
 void main()
 {
-    vec3 color = texture(uTexSkybox, vPosition).rgb * uIntensity;
-    FragColor = vec4(mix(color, uFogColor, uFogAffect), 1.0);
+    vec3 color = texture(uTexSkybox, vPosition).rgb * uEnv.skyIntensity;
+    FragColor = vec4(mix(color, uEnv.fogColor, uEnv.fogSkyAffect), 1.0);
 }

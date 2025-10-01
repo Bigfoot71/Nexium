@@ -27,9 +27,36 @@ layout(location = 0) in vec2 vTexCoord;
 
 layout(binding = 0) uniform sampler2D uTexture;
 
-/* === Uniforms === */
+/* === Uniform Buffers === */
 
-layout(location = 0) uniform vec2 uFilterRadius;
+layout(std140, binding = 0) uniform Environment {
+    vec3 ambientColor;
+    vec4 skyRotation;
+    vec3 fogColor;
+    vec4 bloomPrefilter;
+    float skyIntensity;
+    float skySpecular;
+    float skyDiffuse;
+    float fogDensity;
+    float fogStart;
+    float fogEnd;
+    float fogSkyAffect;
+    int fogMode;
+    float ssaoIntensity;
+    float ssaoRadius;
+    float ssaoPower;
+    float ssaoBias;
+    int ssaoEnabled;
+    float bloomFilterRadius;
+    float bloomStrength;
+    int bloomMode;
+    float adjustBrightness;
+    float adjustContrast;
+    float adjustSaturation;
+    float tonemapExposure;
+    float tonemapWhite;
+    int tonemapMode;
+} uEnv;
 
 /* === Fragments === */
 
@@ -39,10 +66,14 @@ layout (location = 0) out vec3 FragColor;
 
 void main()
 {
+    // NOTE: Base level should be set to the current
+    //       level to sample in texture parameters.
+    vec2 mipSize = textureSize(uTexture, 0);
+
     // The filter kernel is applied with a radius, specified in texture
     // coordinates, so that the radius will vary across mip resolutions.
-    float x = uFilterRadius.x;
-    float y = uFilterRadius.y;
+    float x = uEnv.bloomFilterRadius / mipSize.x;
+    float y = uEnv.bloomFilterRadius / mipSize.y;
 
     // Take 9 samples around current texel:
     // a - b - c
