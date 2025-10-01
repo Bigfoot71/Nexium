@@ -222,6 +222,17 @@ void Scene::renderScene()
     pipeline.bindStorage(3, mLights.indexBuffer());
     pipeline.bindStorage(4, mBoneBuffer.buffer());
 
+    /* --- Bind constant textures --- */
+
+    pipeline.bindTexture(4, mAssets.textureBrdfLut());
+    pipeline.bindTexture(7, mLights.shadowCube());
+    pipeline.bindTexture(8, mLights.shadow2D());
+
+    if (mEnvironment.skyProbe() != nullptr) {
+        pipeline.bindTexture(5, mEnvironment.skyProbe()->irradiance());
+        pipeline.bindTexture(6, mEnvironment.skyProbe()->prefilter());
+    }
+
     /* --- Send constant uniforms --- */
 
     pipeline.setUniformInt1(10, mLights.activeCount() > 0);
@@ -237,17 +248,6 @@ void Scene::renderScene()
     }
     else {
         pipeline.setUniformInt1(17, false);
-    }
-
-    /* --- Bind constant textures --- */
-
-    pipeline.bindTexture(4, mAssets.textureBrdfLut());
-    pipeline.bindTexture(7, mLights.shadowCube());
-    pipeline.bindTexture(8, mLights.shadow2D());
-
-    if (mEnvironment.skyProbe() != nullptr) {
-        pipeline.bindTexture(5, mEnvironment.skyProbe()->irradiance());
-        pipeline.bindTexture(6, mEnvironment.skyProbe()->prefilter());
     }
 
     /* --- Ensures SSBOs are ready (especially clusters) --- */
