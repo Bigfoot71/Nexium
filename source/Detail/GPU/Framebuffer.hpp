@@ -10,7 +10,7 @@
 #define HP_GPU_FRAMEBUFFER_HPP
 
 #include "../../Core/HP_InternalLog.hpp"
-#include "../Util/DynamicArray.hpp"
+#include "../Util/FixedArray.hpp"
 #include "./TextureView.hpp"
 #include "../BuildInfo.hpp"
 #include "./Texture.hpp"
@@ -106,14 +106,14 @@ private:
     /** Member variables */
     GLuint mResolveFramebuffer{0};                      //< Framebuffer with original textures
     GLuint mMultisampleFramebuffer{0};                  //< Framebuffer MSAA (optional)
-    util::DynamicArray<TextureView> mColorAttachments;
-    util::DynamicArray<GLuint> mColorRenderbuffers;     //< MSAA color renderbuffers
+    util::FixedArray<TextureView> mColorAttachments;
+    util::FixedArray<GLuint> mColorRenderbuffers;     //< MSAA color renderbuffers
     GLuint mDepthRenderbuffer{0};                       //< MSAA depth/stencil renderbuffer
     TextureView mDepthStencilAttachment{};
     int mSampleCount{0};
 
     /** Layer/face tracking */
-    util::DynamicArray<AttachmentTarget> mColorTargets;
+    util::FixedArray<AttachmentTarget> mColorTargets;
     AttachmentTarget mDepthTarget;
 
     /** Utility functions */
@@ -141,7 +141,8 @@ inline Framebuffer::Framebuffer(std::initializer_list<const Texture*> colorAttac
         return;
     }
 
-    // Validate texture attachments
+    /* --- Validate texture attachments (debug only) --- */
+
     if constexpr (detail::BuildInfo::debug) {
         HP_IVec2 expectedDims{};
         bool first = true;
@@ -155,21 +156,24 @@ inline Framebuffer::Framebuffer(std::initializer_list<const Texture*> colorAttac
         }
     }
 
-    // Allocate space for color attachments
-    if (!mColorAttachments.reserve(colorAttachments.size())) {
+    /* --- Push all color attachments --- */
+
+    if (!mColorAttachments.reset(colorAttachments.size())) {
         HP_INTERNAL_LOG(E, "GPU: Failed to allocate space to store color attachments IDs");
         return;
     }
 
-    // Validate and push color attachments
     for (size_t i = 0; i < colorAttachments.size(); ++i) {
         mColorAttachments.emplace_back(*colorAttachments.begin()[i]);
     }
 
-    // Initialize color targets array
-    mColorTargets.resize(mColorAttachments.size());
+    /* --- Create color targets array --- */
 
-    // Validate depth/stencil attachment if provided and keep its ID
+    mColorTargets.reset(colorAttachments.size());
+    mColorTargets.resize(colorAttachments.size());
+
+    /* --- Validate depth/stencil attachment if provided and keep its ID --- */
+
     if (depthStencilAttachment) {
         if (!depthStencilAttachment->isValid()) {
             HP_INTERNAL_LOG(E, "GPU: Invalid depth/stencil attachment");

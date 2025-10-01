@@ -229,17 +229,14 @@ void Framebuffer::createAndAttachMultisampleRenderbuffers() noexcept
     int fbWidth = width();
     int fbHeight = height();
 
-    /* --- Resize renderbuffer arrays if needed --- */
+    /* --- Generates renderbuffers if they haven't already been generated --- */
 
-    if (mColorRenderbuffers.size() != mColorAttachments.size()) {
-        if (!mColorRenderbuffers.empty()) {
-            glDeleteRenderbuffers(static_cast<GLsizei>(mColorRenderbuffers.size()), mColorRenderbuffers.data());
-        }
+    if (mColorRenderbuffers.empty()) {
         mColorRenderbuffers.resize(mColorAttachments.size());
         glGenRenderbuffers(static_cast<GLsizei>(mColorRenderbuffers.size()), mColorRenderbuffers.data());
     }
 
-    /* --- Create depth renderbuffer if needed --- */
+    /* --- Generates depth renderbuffer if needed --- */
 
     if (mDepthStencilAttachment.isValid() && mDepthRenderbuffer == 0) {
         glGenRenderbuffers(1, &mDepthRenderbuffer);
