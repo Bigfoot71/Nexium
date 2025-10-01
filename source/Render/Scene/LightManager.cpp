@@ -96,9 +96,9 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
         shadowFormat = GL_RG16F;
     }
 
-    // NOTE: Trilinear filtering can be enabled for shadow maps when using EVSM,
+    // NOTE: Trilinear filtering can be enabled for shadow maps when using (E)VSM,
     //       as long as mipmaps are generated after rendering the shadows.
-    //       However, for Hyperion's current use cases, EVSM with simple
+    //       However, for Hyperion's current use cases, VSM with simple
     //       bilinear filtering is already perfectly acceptable.
 
     mShadowMapCubeArray = gpu::Texture(
@@ -107,7 +107,7 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
             .internalFormat = shadowFormat,
             .width = mShadowResolution,
             .height = mShadowResolution,
-            .depth = 2,
+            .depth = 1,
             .mipmap = false,
         },
         gpu::TextureParam
@@ -124,7 +124,7 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
             .internalFormat = shadowFormat,
             .width = mShadowResolution,
             .height = mShadowResolution,
-            .depth = 4,
+            .depth = 1,
             .mipmap = false,
         },
         gpu::TextureParam
