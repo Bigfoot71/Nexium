@@ -2473,6 +2473,26 @@ static inline unsigned int HP_ColorToHex(HP_Color color)
 }
 
 /**
+ * @brief Converts an HP_Color to a 3-component vector (RGB).
+ * @param color HP_Color to convert.
+ * @return HP_Vec3 containing the red, green, and blue components.
+ */
+static inline HP_Vec3 HP_ColorToVec3(HP_Color color)
+{
+    return HP_VEC3(color.r, color.g, color.b);
+}
+
+/**
+ * @brief Converts an HP_Color to a 4-component vector (RGBA).
+ * @param color HP_Color to convert.
+ * @return HP_Vec4 containing the red, green, blue, and alpha components.
+ */
+static inline HP_Vec4 HP_ColorToVec4(HP_Color color)
+{
+    return HP_VEC4(color.r, color.g, color.b, color.a);
+}
+
+/**
  * @brief Checks if a color has components out of the [0.0, 1.0] range.
  * @param color HP_Color to check.
  * @return true if any component (r, g, b) is out of range, false otherwise.
