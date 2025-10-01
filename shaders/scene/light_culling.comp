@@ -14,6 +14,7 @@ precision highp float;
 
 /* === Includes === */
 
+#include "../include/frustum.glsl"
 #include "../include/lights.glsl"
 
 /* === Storage Buffers === */
@@ -36,18 +37,9 @@ layout(std430, binding = 3) buffer ClusterAABBBuffer {
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform ViewFrustum {
-    mat4 viewProj;
-    mat4 view;
-    mat4 proj;
-    mat4 invViewProj;
-    mat4 invView;
-    mat4 invProj;
-    vec3 position;
-    uint cullMask;
-    float near;
-    float far;
-} uFrustum;
+layout(std140, binding = 0) uniform U_ViewFrustum {
+    Frustum uFrustum;
+};
 
 /* === Uniforms === */
 

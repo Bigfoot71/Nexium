@@ -12,6 +12,10 @@
 precision highp float;
 #endif
 
+/* === Includes === */
+
+#include "../include/frustum.glsl"
+
 /* === Attributes === */
 
 layout(location = 0) in vec3 aPosition;
@@ -20,18 +24,9 @@ layout(location = 4) in vec4 aColor;
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform ViewFrustum {
-    mat4 viewProj;
-    mat4 view;
-    mat4 proj;
-    mat4 invViewProj;
-    mat4 invView;
-    mat4 invProj;
-    vec3 position;
-    uint cullMask;
-    float near;
-    float far;
-} uFrustum;
+layout(std140, binding = 0) uniform U_ViewFrustum {
+    Frustum uFrustum;
+};
 
 /* === Uniforms === */
 

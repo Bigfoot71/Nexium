@@ -15,6 +15,7 @@ precision highp float;
 /* === Includes === */
 
 #include "../include/billboard.glsl"
+#include "../include/frustum.glsl"
 
 /* === Attributes === */
 
@@ -37,18 +38,9 @@ layout(std430, binding = 4) buffer BoneBuffer {
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform ViewFrustum {
-    mat4 viewProj;
-    mat4 view;
-    mat4 proj;
-    mat4 invViewProj;
-    mat4 invView;
-    mat4 invProj;
-    vec3 position;
-    uint cullMask;
-    float near;
-    float far;
-} uFrustum;
+layout(std140, binding = 0) uniform U_ViewFrustum {
+    Frustum uFrustum;
+};
 
 /* === Uniforms === */
 

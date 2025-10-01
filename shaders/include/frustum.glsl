@@ -6,15 +6,30 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
+/* === Structures === */
+
+struct Frustum {
+    mat4 viewProj;
+    mat4 view;
+    mat4 proj;
+    mat4 invViewProj;
+    mat4 invView;
+    mat4 invProj;
+    vec3 position;
+    uint cullMask;
+    float near;
+    float far;
+};
+
 /* === Functions === */
 
-float U_LinearizeDepth(float depth, float near, float far)
+float F_LinearizeDepth(float depth, float near, float far)
 {
     return (2.0 * near * far) / (far + near - (depth * 2.0 - 1.0) * (far - near));
 }
 
-float U_LinearizeDepth01(float depth, float near, float far)
+float F_LinearizeDepth01(float depth, float near, float far)
 {
-    float z = U_LinearizeDepth(depth, near, far);
+    float z = F_LinearizeDepth(depth, near, far);
     return (z - near) / (far - near);
 }

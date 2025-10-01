@@ -12,6 +12,10 @@
 precision highp float;
 #endif
 
+/* === Includes === */
+
+#include "../include/environment.glsl"
+
 /* === Varyings === */
 
 layout(location = 0) in vec2 vTexCoord;
@@ -23,34 +27,9 @@ layout(binding = 1) uniform sampler2D uTexBloom;
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform Environment {
-    vec3 ambientColor;
-    vec4 skyRotation;
-    vec3 fogColor;
-    vec4 bloomPrefilter;
-    float skyIntensity;
-    float skySpecular;
-    float skyDiffuse;
-    float fogDensity;
-    float fogStart;
-    float fogEnd;
-    float fogSkyAffect;
-    int fogMode;
-    float ssaoIntensity;
-    float ssaoRadius;
-    float ssaoPower;
-    float ssaoBias;
-    int ssaoEnabled;
-    float bloomFilterRadius;
-    float bloomStrength;
-    int bloomMode;
-    float adjustBrightness;
-    float adjustContrast;
-    float adjustSaturation;
-    float tonemapExposure;
-    float tonemapWhite;
-    int tonemapMode;
-} uEnv;
+layout(std140, binding = 0) uniform U_Environment {
+    Environment uEnv;
+};
 
 /* === Fragments === */
 

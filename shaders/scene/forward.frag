@@ -14,8 +14,9 @@ precision highp float;
 
 /* === Includes === */
 
+#include "../include/environment.glsl"
+#include "../include/frustum.glsl"
 #include "../include/lights.glsl"
-#include "../include/utils.glsl"
 #include "../include/math.glsl"
 #include "../include/pbr.glsl"
 #include "../include/fog.glsl"
@@ -85,47 +86,13 @@ layout(binding = 8) uniform highp sampler2DArray uTexShadow2D;
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform ViewFrustum {
-    mat4 viewProj;
-    mat4 view;
-    mat4 proj;
-    mat4 invViewProj;
-    mat4 invView;
-    mat4 invProj;
-    vec3 position;
-    uint cullMask;
-    float near;
-    float far;
-} uFrustum;
+layout(std140, binding = 0) uniform U_ViewFrustum {
+    Frustum uFrustum;
+};
 
-layout(std140, binding = 1) uniform Environment {
-    vec3 ambientColor;
-    vec4 skyRotation;
-    vec3 fogColor;
-    vec4 bloomPrefilter;
-    float skyIntensity;
-    float skySpecular;
-    float skyDiffuse;
-    float fogDensity;
-    float fogStart;
-    float fogEnd;
-    float fogSkyAffect;
-    int fogMode;
-    float ssaoIntensity;
-    float ssaoRadius;
-    float ssaoPower;
-    float ssaoBias;
-    int ssaoEnabled;
-    float bloomFilterRadius;
-    float bloomStrength;
-    int bloomMode;
-    float adjustBrightness;
-    float adjustContrast;
-    float adjustSaturation;
-    float tonemapExposure;
-    float tonemapWhite;
-    int tonemapMode;
-} uEnv;
+layout(std140, binding = 1) uniform U_Environment {
+    Environment uEnv;
+};
 
 /* === Uniforms === */
 
@@ -398,7 +365,7 @@ void main()
 
     /* --- Calculation of the distance from the fragment to the camera in scene units --- */
 
-    float zLinear = U_LinearizeDepth(gl_FragCoord.z, uFrustum.near, uFrustum.far);
+    float zLinear = F_LinearizeDepth(gl_FragCoord.z, uFrustum.near, uFrustum.far);
 
     /* --- Compute F0 (reflectance at normal incidence) based on the metallic factor --- */
 

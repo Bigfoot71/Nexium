@@ -17,7 +17,8 @@ precision highp float;
 
 /* === Includes === */
 
-#include "../include/utils.glsl"
+#include "../include/environment.glsl"
+#include "../include/frustum.glsl"
 
 /* === Varyings === */
 
@@ -30,47 +31,13 @@ layout(binding = 1) uniform sampler2D uTexDepth;
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform ViewFrustum {
-    mat4 viewProj;
-    mat4 view;
-    mat4 proj;
-    mat4 invViewProj;
-    mat4 invView;
-    mat4 invProj;
-    vec3 position;
-    uint cullMask;
-    float near;
-    float far;
-} uFrustum;
+layout(std140, binding = 0) uniform U_ViewFrustum {
+    Frustum uFrustum;
+};
 
-layout(std140, binding = 1) uniform Environment {
-    vec3 ambientColor;
-    vec4 skyRotation;
-    vec3 fogColor;
-    vec4 bloomPrefilter;
-    float skyIntensity;
-    float skySpecular;
-    float skyDiffuse;
-    float fogDensity;
-    float fogStart;
-    float fogEnd;
-    float fogSkyAffect;
-    int fogMode;
-    float ssaoIntensity;
-    float ssaoRadius;
-    float ssaoPower;
-    float ssaoBias;
-    int ssaoEnabled;
-    float bloomFilterRadius;
-    float bloomStrength;
-    int bloomMode;
-    float adjustBrightness;
-    float adjustContrast;
-    float adjustSaturation;
-    float tonemapExposure;
-    float tonemapWhite;
-    int tonemapMode;
-} uEnv;
+layout(std140, binding = 1) uniform U_Environment {
+    Environment uEnv;
+};
 
 /* === Uniforms === */
 
@@ -111,7 +78,7 @@ void main()
     // creating bright halos around objects. By reducing blur strength at depth edges, we
     // maintain sharp occlusion boundaries while still removing noise on flat surfaces.
 
-    float centerDepth = U_LinearizeDepth(texture(uTexDepth, vTexCoord).r, uFrustum.near, uFrustum.far);
+    float centerDepth = F_LinearizeDepth(texture(uTexDepth, vTexCoord).r, uFrustum.near, uFrustum.far);
 
     vec4 result = vec4(0.0);
     float totalWeight = 0.0;
@@ -119,7 +86,7 @@ void main()
     for (int i = 0; i < SAMPLE_COUNT; ++i)
     {
         vec2 sampleUV = vTexCoord + uTexelDir * OFFSETS[i];
-        float sampleDepth = U_LinearizeDepth(texture(uTexDepth, sampleUV).r, uFrustum.near, uFrustum.far);
+        float sampleDepth = F_LinearizeDepth(texture(uTexDepth, sampleUV).r, uFrustum.near, uFrustum.far);
         float diff = abs(centerDepth - sampleDepth);
 
         // Modulate the Gaussian weight based on depth similarity:
