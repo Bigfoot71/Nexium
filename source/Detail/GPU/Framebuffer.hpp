@@ -449,6 +449,8 @@ inline void Framebuffer::createMultisampleFramebuffer() noexcept
         destroyMultisampleFramebuffer();
         mSampleCount = 0;
     }
+
+    enableAllDrawBuffers();
 }
 
 inline void Framebuffer::destroyMultisampleFramebuffer() noexcept
