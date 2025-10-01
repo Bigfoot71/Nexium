@@ -21,6 +21,7 @@
 #include "../Core/AssetCache.hpp"
 
 #include "../HP_RenderTexture.hpp"
+#include "./RenderableBuffer.hpp"
 #include "./MaterialBuffer.hpp"
 #include "./LightManager.hpp"
 #include "./Environment.hpp"
@@ -75,6 +76,7 @@ private:
     ViewFrustum mFrustum{};
 
     /** Managers */
+    RenderableBuffer mRenderableBuffer;
     MaterialBuffer mMaterialBuffer;
     BoneBuffer mBoneBuffer;
     LightManager mLights;

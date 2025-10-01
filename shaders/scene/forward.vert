@@ -42,7 +42,16 @@ layout(std140, binding = 0) uniform U_ViewFrustum {
     Frustum uFrustum;
 };
 
-layout(std140, binding = 2) uniform U_Material {
+layout(std140, binding = 2) uniform U_Renderable {
+    mat4 matModel;
+    mat4 matNormal;
+    int boneOffset;
+    uint layerMask;
+    bool instancing;
+    bool skinning;
+} uRender;
+
+layout(std140, binding = 3) uniform U_Material {
     vec4 albedoColor;
     vec3 emissionColor;
     float emissionEnergy;
@@ -56,14 +65,6 @@ layout(std140, binding = 2) uniform U_Material {
     vec2 texScale;
     int billboard;
 } uMat;
-
-/* === Uniforms === */
-
-layout(location = 0) uniform mat4 uMatModel;
-layout(location = 1) uniform mat3 uMatNormal;
-layout(location = 5) uniform bool uSkinning;
-layout(location = 6) uniform int uBoneOffset;
-layout(location = 7) uniform bool uInstancing;
 
 /* === Varyings === */
 
@@ -86,16 +87,16 @@ mat4 SkinMatrix(ivec4 boneIDs, vec4 weights, int offset)
 
 void main()
 {
-    mat4 matModel = uMatModel;
-    mat3 matNormal = uMatNormal;
+    mat4 matModel = uRender.matModel;
+    mat3 matNormal = mat3(uRender.matNormal);
 
-    if (uSkinning) {
-        mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, uBoneOffset);
+    if (uRender.skinning) {
+        mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, uRender.boneOffset);
         matModel = sMatModel * matModel;
         matNormal = mat3(transpose(inverse(sMatModel))) * matNormal;
     }
 
-    if (uInstancing) {
+    if (uRender.instancing) {
         matModel = iMatModel * matModel;
         matNormal = mat3(transpose(inverse(iMatModel))) * matNormal;
     }

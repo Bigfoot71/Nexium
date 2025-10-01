@@ -321,7 +321,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         pipeline.setUniformFloat2(2, call.material().texOffset);
         pipeline.setUniformFloat2(3, call.material().texScale);
         pipeline.setUniformFloat1(4, call.material().albedo.color.a);
-        pipeline.setUniformInt1(5, data.isAnimated());
+        pipeline.setUniformInt1(5, data.useSkinning());
         pipeline.setUniformInt1(6, data.boneMatrixOffset());
         pipeline.setUniformInt1(7, data.useInstancing());
         pipeline.setUniformUint1(8, call.material().billboard);

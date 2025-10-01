@@ -19,7 +19,6 @@ precision highp float;
 #include "../include/lights.glsl"
 #include "../include/math.glsl"
 #include "../include/pbr.glsl"
-#include "../include/fog.glsl"
 
 /* === Constants === */
 
@@ -94,7 +93,16 @@ layout(std140, binding = 1) uniform U_Environment {
     Environment uEnv;
 };
 
-layout(std140, binding = 2) uniform U_Material {
+layout(std140, binding = 2) uniform U_Renderable {
+    mat4 matModel;
+    mat4 matNormal;
+    int boneOffset;
+    uint layerMask;
+    bool instancing;
+    bool skinning;
+} uRender;
+
+layout(std140, binding = 3) uniform U_Material {
     vec4 albedoColor;
     vec3 emissionColor;
     float emissionEnergy;
@@ -121,8 +129,6 @@ layout(location = 15) uniform float uClusterSliceBias;
 
 layout(location = 17) uniform bool uHasProbe;
 layout(location = 21) uniform int uProbePrefilterMipCount;
-
-layout(location = 36) uniform uint uLayerMask;
 
 /* === Fragments === */
 
@@ -477,7 +483,7 @@ void main()
 
         /* --- Accumulate the diffuse and specular lighting contributions --- */
 
-        bool validLayer = ((light.cullMask & uLayerMask) != 0u);
+        bool validLayer = ((light.cullMask & uRender.layerMask) != 0u);
         float contribution = shadow * float(validLayer);
 
         diffuse += diffLight * contribution;

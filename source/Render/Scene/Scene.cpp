@@ -309,19 +309,15 @@ void Scene::renderScene()
         pipeline.bindTexture(2, mAssets.textureOrWhite(mat.orm.texture));
         pipeline.bindTexture(3, mAssets.textureOrNormal(mat.normal.texture));
 
-        /* --- Send draw data --- */
+        /* --- Send and bind renderable data --- */
 
-        pipeline.setUniformMat4(0, data.matrix());
-        pipeline.setUniformMat3(1, data.normal());
-        pipeline.setUniformInt1(5, data.isAnimated());
-        pipeline.setUniformInt1(6, data.boneMatrixOffset());
-        pipeline.setUniformInt1(7, useInstancing);
-        pipeline.setUniformUint1(36, call.mesh().layerMask);
+        mRenderableBuffer.upload(data, call);
+        pipeline.bindUniform(2, mRenderableBuffer.buffer());
 
         /* --- Send and bind material data --- */
 
         mMaterialBuffer.upload(mat);
-        pipeline.bindUniform(2, mMaterialBuffer.buffer());
+        pipeline.bindUniform(3, mMaterialBuffer.buffer());
 
         /* --- Draw! --- */
 

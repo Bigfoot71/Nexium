@@ -38,7 +38,7 @@ public:
 
     /** Animations */
     int boneMatrixOffset() const;
-    bool isAnimated() const;
+    bool useSkinning() const;
 
 private:
     /** Transform */
@@ -104,7 +104,7 @@ inline int DrawData::boneMatrixOffset() const
     return mBoneMatrixOffset;
 }
 
-inline bool DrawData::isAnimated() const
+inline bool DrawData::useSkinning() const
 {
     return (mBoneMatrixOffset >= 0);
 }
