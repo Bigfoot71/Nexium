@@ -19,7 +19,7 @@ namespace scene {
 
 class BoneBuffer {
 public:
-    BoneBuffer() = default;
+    BoneBuffer();
     int upload(const HP_Mat4* offsets, const HP_Mat4* matrices, int count);
     const gpu::Buffer& buffer() const;
     void clear();
@@ -32,18 +32,16 @@ private:
 
 /* === Public Implementation === */
 
+inline BoneBuffer::BoneBuffer()
+    : mBuffer(GL_SHADER_STORAGE_BUFFER, 1024 * sizeof(HP_Mat4), nullptr, GL_DYNAMIC_DRAW)
+{
+    if (!mTemp.reserve(256)) {
+        HP_INTERNAL_LOG(W, "RENDER: Failed to pre-allocate the bone matrix computing buffer");
+    }
+}
+
 inline int BoneBuffer::upload(const HP_Mat4* offsets, const HP_Mat4* matrices, int count)
 {
-    /* --- Creation of the buffer if needed --- */
-
-    if (!mBuffer.isValid()) {
-        size_t reserve = HP_MAX(1024, 2 * count);
-        mBuffer = gpu::Buffer(GL_SHADER_STORAGE_BUFFER, reserve * sizeof(HP_Mat4), nullptr, GL_DYNAMIC_DRAW);
-        if (!mTemp.reserve(reserve)) {
-            HP_INTERNAL_LOG(W, "RENDER: Failed to pre-allocate the bone matrix computing buffer");
-        }
-    }
-
     /* --- Compute matrices --- */
 
     mTemp.clear();
