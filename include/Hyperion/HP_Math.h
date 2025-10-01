@@ -3001,7 +3001,7 @@ static inline HP_Mat4 HP_Mat3ToMat4(const HP_Mat3* mat3)
     result.m00 = mat3->m00; result.m01 = mat3->m01; result.m02 = mat3->m02; result.m03 = 0.0f;
     result.m10 = mat3->m10; result.m11 = mat3->m11; result.m12 = mat3->m12; result.m13 = 0.0f;
     result.m20 = mat3->m20; result.m21 = mat3->m21; result.m22 = mat3->m22; result.m23 = 0.0f;
-    result.m30 = 0.0f;      result.m31 = 0.0f;      result.m32 = 0.0f;      result.m23 = 1.0f;
+    result.m30 = 0.0f;      result.m31 = 0.0f;      result.m32 = 0.0f;      result.m33 = 1.0f;
     return result;
 }
 
