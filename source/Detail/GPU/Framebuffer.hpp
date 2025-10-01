@@ -36,14 +36,17 @@ namespace gpu {
  * and must be performed explicitly via the provided resolve method.
  *
  * Warning points:
- *  - Attachments (color and depth/stencil) are immutable after construction. They cannot
- *    be replaced or resized.
+ *  - Attachments (color and depth/stencil) are mostly immutable after construction.
  *  - The framebuffer stores TextureViews of the attached textures. These TextureViews
  *    capture the state of the textures at the time of attachment.
  *  - It is strictly forbidden to modify the storage of any attached texture after
- *    framebuffer creation. Changing width, height, depth, mip levels, or reallocating
- *    the texture will break the internal logic for multisampling and renderbuffer
- *    management, and can also invalidate internal safety/debug checks.
+ *    framebuffer creation (width, height, target), as it can break the internal
+ *    logic for multisampling and renderbuffer management, and can also invalidate
+ *    internal safety/debug checks.
+ *  - Exception, updating the depth aspect (and so the mip level count) of the attached
+ *    textures is allowed via `updateColorTextureView` (for color attachments) and 
+ *    `updateDepthTextureView` (for depth/stencil attachments). Only changes to
+ *    depth is safe, other modifications remain forbidden.
  */
 class Framebuffer {
 public:
@@ -86,6 +89,10 @@ public:
     /** Layered rendering support */
     void setColorAttachmentTarget(int attachmentIndex, int layer = 0, int face = 0, int level = 0) noexcept;
     void setDepthAttachmentTarget(int layer = 0, int face = 0, int level = 0) noexcept;
+
+    /** @warning These methods only accept depth and mip level changes */
+    void updateColorTextureView(int attachmentIndex, const gpu::Texture& texture) noexcept;
+    void updateDepthTextureView(const gpu::Texture& texture) noexcept;
 
     /** Get current layer/face targets */
     int getColorAttachmentLayer(int attachmentIndex) const noexcept;
@@ -376,6 +383,30 @@ inline void Framebuffer::setDepthAttachmentTarget(int layer, int face, int level
     mDepthTarget.level = level;
 
     updateDepthAttachment(true);
+}
+
+inline void Framebuffer::updateColorTextureView(int attachmentIndex, const gpu::Texture& texture) noexcept
+{
+    // Only depth and mip count changes are accepted
+
+    SDL_assert(texture.id() == mColorAttachments[attachmentIndex].id());
+    SDL_assert(texture.target() == mColorAttachments[attachmentIndex].target());
+    SDL_assert(texture.dimensions() == mColorAttachments[attachmentIndex].dimensions());
+    SDL_assert(texture.internalFormat() == mColorAttachments[attachmentIndex].internalFormat());
+
+    mColorAttachments[attachmentIndex] = gpu::TextureView(texture);
+}
+
+inline void Framebuffer::updateDepthTextureView(const gpu::Texture& texture) noexcept
+{
+    // Only depth and mip count changes are accepted
+
+    SDL_assert(texture.id() == mDepthStencilAttachment.id());
+    SDL_assert(texture.target() == mDepthStencilAttachment.target());
+    SDL_assert(texture.dimensions() == mDepthStencilAttachment.dimensions());
+    SDL_assert(texture.internalFormat() == mDepthStencilAttachment.internalFormat());
+
+    mDepthStencilAttachment = gpu::TextureView(texture);
 }
 
 inline int Framebuffer::getColorAttachmentLayer(int attachmentIndex) const noexcept

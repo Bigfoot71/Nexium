@@ -206,11 +206,20 @@ void LightManager::uploadActive(const ProcessParams& params)
         mappedLights = mStorageLights.mapRange<HP_Light::LightGPU>(0, mActiveLightCount * sizeof(HP_Light::LightGPU));
     }
 
-    if (mShadowDirty && shadowCount > 0) {
-        mShadowMapCubeArray.reserve(mShadowMapCubeArray.width(), mShadowMapCubeArray.height(), mActiveShadowCubeCount);
-        mShadowMap2DArray.reserve(mShadowMap2DArray.width(), mShadowMap2DArray.height(), mActiveShadow2DCount);
+    if (mShadowDirty && shadowCount > 0)
+    {
         mStorageShadow.reserve(shadowCount * sizeof(HP_Light::ShadowGPU), false);
         mappedShadows = mStorageShadow.mapRange<HP_Light::ShadowGPU>(0, shadowCount * sizeof(HP_Light::ShadowGPU));
+
+        if (mActiveShadowCubeCount > mShadowMapCubeArray.depth()) {
+            mShadowMapCubeArray.realloc(mShadowMapCubeArray.width(), mShadowMapCubeArray.height(), mActiveShadowCubeCount);
+            mFramebufferShadowCube.updateColorTextureView(0, mShadowMapCubeArray);
+        }
+
+        if (mActiveShadow2DCount > mShadowMap2DArray.depth()) {
+            mShadowMap2DArray.reserve(mShadowMap2DArray.width(), mShadowMap2DArray.height(), mActiveShadow2DCount);
+            mFramebufferShadow2D.updateColorTextureView(0, mShadowMap2DArray);
+        }
     }
 
     /* --- Light and shadow processing loop --- */
