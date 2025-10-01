@@ -395,11 +395,11 @@ typedef struct HP_Environment {
     } ssao;
 
     struct {
-        float threshold;        ///< HDR threshold used for bloom extraction.
-        float softThreshold;    ///< Softening factor applied during prefiltering.
-        float filterRadius;     ///< Radius of the blur filter used for bloom spreading.
-        float strength;         ///< Intensity of the bloom effect when blended with the scene.
-        HP_Bloom mode;          ///< Mode used to combine the bloom effect with the scene.
+        float threshold;            ///< HDR threshold used for bloom extraction.
+        float softThreshold;        ///< Softening factor applied during prefiltering.
+        float filterRadius;         ///< Radius of the blur filter used for bloom spreading.
+        float strength;             ///< Intensity of the bloom effect when blended with the scene.
+        HP_Bloom mode;              ///< Mode used to combine the bloom effect with the scene.
     } bloom;
 
     struct {
