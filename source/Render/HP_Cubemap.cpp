@@ -7,6 +7,8 @@
  */
 
 #include "./HP_Cubemap.hpp"
+
+#include "../Detail/Util/DynamicArray.hpp"
 #include "./Core/Helper.hpp"
 
 /* === Public Implementation === */
