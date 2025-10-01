@@ -197,15 +197,6 @@ HP_Quat HP_QuatSLerp(HP_Quat a, HP_Quat b, float t)
 
 /* === Matrix 3x3 Functions === */
 
-HP_Mat3 HP_Mat3FromMat4(const HP_Mat4* mat4)
-{
-    HP_Mat3 result;
-    result.m00 = mat4->m00; result.m01 = mat4->m01; result.m02 = mat4->m02;
-    result.m10 = mat4->m10; result.m11 = mat4->m11; result.m12 = mat4->m12;
-    result.m20 = mat4->m20; result.m21 = mat4->m21; result.m22 = mat4->m22;
-    return result;
-}
-
 HP_Mat3 HP_Mat3Transform2D(HP_Vec2 translation, float rotation, HP_Vec2 scale)
 {
     float c = cosf(rotation);

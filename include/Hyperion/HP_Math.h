@@ -2983,7 +2983,27 @@ HPAPI HP_Quat HP_QuatSLerp(HP_Quat a, HP_Quat b, float t);
 /**
  * @brief Extract upper-left 3x3 from a 4x4 matrix
  */
-HPAPI HP_Mat3 HP_Mat3FromMat4(const HP_Mat4* mat4);
+static inline HP_Mat3 HP_Mat3FromMat4(const HP_Mat4* mat4)
+{
+    HP_Mat3 result;
+    result.m00 = mat4->m00; result.m01 = mat4->m01; result.m02 = mat4->m02;
+    result.m10 = mat4->m10; result.m11 = mat4->m11; result.m12 = mat4->m12;
+    result.m20 = mat4->m20; result.m21 = mat4->m21; result.m22 = mat4->m22;
+    return result;
+}
+
+/**
+ * @brief Convert a 3x3 matrix to a 4x4 matrix
+ */
+static inline HP_Mat4 HP_Mat3ToMat4(const HP_Mat3* mat3)
+{
+    HP_Mat4 result;
+    result.m00 = mat3->m00; result.m01 = mat3->m01; result.m02 = mat3->m02; result.m03 = 0.0f;
+    result.m10 = mat3->m10; result.m11 = mat3->m11; result.m12 = mat3->m12; result.m13 = 0.0f;
+    result.m20 = mat3->m20; result.m21 = mat3->m21; result.m22 = mat3->m22; result.m23 = 0.0f;
+    result.m30 = 0.0f;      result.m31 = 0.0f;      result.m32 = 0.0f;      result.m23 = 1.0f;
+    return result;
+}
 
 /**
  * @brief Create 2D transformation matrix (TRS)
