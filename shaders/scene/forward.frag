@@ -22,7 +22,8 @@ precision highp float;
 
 /* === Constants === */
 
-#define SHADOW_SAMPLES 16
+#define SHADOW_SAMPLES_NEAR 16
+#define SHADOW_SAMPLES_FAR  4
 
 const vec2 POISSON_DISK[16] = vec2[](
     vec2(-0.94201624, -0.39906216),
@@ -148,11 +149,8 @@ float Diffuse(float cLdotH, float cNdotV, float cNdotL, float roughness)
     return (1.0 / M_PI) * (FdV * FdL * cNdotL); // Diffuse BRDF (Burley)
 }
 
-vec3 Specular(vec3 F0, float cLdotH, float cNdotH, float cNdotV, float cNdotL, float roughness)
+vec3 Specular(vec3 F0, float cLdotH, float cNdotH, float cNdotV, float cNdotL, float alphaGGX)
 {
-    roughness = max(roughness, 1e-3);
-
-    float alphaGGX = roughness * roughness;
     float D = PBR_DistributionGGX(cNdotH, alphaGGX);
     float G = PBR_GeometryGGX(cNdotL, cNdotV, alphaGGX);
 
@@ -197,19 +195,25 @@ float ShadowCube(in Light light, float cNdotL)
     /* --- Generate an additional debanding rotation for the poisson disk --- */
 
     float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
-    float sr = sin(r);
-    float cr = cos(r);
+    float sr = sin(r), cr = cos(r);
+
     mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
 
     /* --- Approximation of the size of the penumbra --- */
 
     float penumbraSize = shadow.softness * (1.0 + d01 * 2.0);
 
+    /* --- Calculating the number of samples to do --- */
+
+    int samples = int(mix(float(SHADOW_SAMPLES_NEAR), float(SHADOW_SAMPLES_FAR), clamp(d01, 0.0, 1.0)));
+    int sStep = SHADOW_SAMPLES_NEAR / samples;
+
     /* --- Poisson Disk blur --- */
 
     float factor = 0.0;
-    for(int i = 0; i < SHADOW_SAMPLES; i++)
+    for(int i = 0; i < samples; i++)
     {
+        int index = (i * sStep) % SHADOW_SAMPLES_NEAR;
         vec2 diskOffset = diskRot * POISSON_DISK[i] * penumbraSize;
         vec3 sampleDir = normalize(TBN * vec3(diskOffset.xy, 1.0));
 
@@ -228,7 +232,7 @@ float ShadowCube(in Light light, float cNdotL)
     #endif
     }
 
-    return factor / float(SHADOW_SAMPLES);
+    return factor / float(samples);
 }
 
 float Shadow2D(in Light light, float cNdotL)
@@ -254,20 +258,26 @@ float Shadow2D(in Light light, float cNdotL)
     /* --- Generate an additional debanding rotation for the poisson disk --- */
 
     float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
-    float sr = sin(r);
-    float cr = cos(r);
+    float sr = sin(r), cr = cos(r);
+
     mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
 
     /* --- Approximation of the size of the penumbra --- */
 
     float penumbraSize = shadow.softness * (1.0 + d01 * 2.0);
 
+    /* --- Calculating the number of samples to do --- */
+
+    int samples = int(mix(float(SHADOW_SAMPLES_NEAR), float(SHADOW_SAMPLES_FAR), clamp(d01, 0.0, 1.0)));
+    int sStep = SHADOW_SAMPLES_NEAR / samples;
+
     /* --- Poisson Disk blur --- */
 
     float factor = 0.0;
-    for(int i = 0; i < SHADOW_SAMPLES; i++)
+    for(int i = 0; i < samples; i++)
     {
-        vec2 offset = diskRot * POISSON_DISK[i] * penumbraSize;
+        int index = (i * sStep) % SHADOW_SAMPLES_NEAR;
+        vec2 offset = diskRot * POISSON_DISK[index] * penumbraSize;
         vec2 sampleUV = projCoords.xy + offset;
 
         vec2 m = texture(uTexShadow2D, vec3(sampleUV, float(shadow.mapIndex))).rg;
@@ -285,7 +295,7 @@ float Shadow2D(in Light light, float cNdotL)
     #endif
     }
 
-    return factor / float(SHADOW_SAMPLES);
+    return factor / float(samples);
 }
 
 /* === IBL Functions === */
@@ -346,19 +356,17 @@ vec3 NormalScale(vec3 normal, float scale)
 
 void main()
 {
-    /* Sample albedo texture */
+    /* --- Sample albedo texture --- */
 
     vec4 albedo = vColor * texture(uTexAlbedo, vTexCoord);
-
-    // TODO: Alpha scissor is unnecessary after a depth pre-pass
     if (albedo.a < uAlphaCutOff) discard;
 
-    /* Sample emission texture */
+    /* --- Sample emission texture --- */
 
     vec3 emission = uEmissionColor * texture(uTexEmission, vTexCoord).rgb;
     emission *= uEmissionEnergy;
 
-    /* Sample ORM texture and extract values */
+    /* --- Sampling and calculation of ORM values --- */
 
     vec3 orm = texture(uTexORM, vTexCoord).rgb;
 
@@ -366,25 +374,30 @@ void main()
     float roughness = uRoughness * orm.y;
     float metalness = uMetalness * orm.z;
 
-    /* Calculation of the distance from the fragment to the camera in scene units */
+    /* --- Pre-calculation of ORM related data --- */ 
+
+    float alphaGGX = max(roughness * roughness, 1e-6);
+    float oneMinusMetalness = 1.0 - metalness;
+
+    /* --- Calculation of the distance from the fragment to the camera in scene units --- */
 
     float zLinear = U_LinearizeDepth(gl_FragCoord.z, uFrustum.near, uFrustum.far);
 
-    /* Compute F0 (reflectance at normal incidence) based on the metallic factor */
+    /* --- Compute F0 (reflectance at normal incidence) based on the metallic factor --- */
 
     vec3 F0 = PBR_ComputeF0(metalness, 0.5, albedo.rgb);
 
-    /* Sample normal and compute view direction vector */
+    /* --- Sample normal and compute view direction vector --- */
 
     vec3 N = normalize(vTBN * NormalScale(texture(uTexNormal, vTexCoord).rgb * 2.0 - 1.0, uNormalScale));
     vec3 V = normalize(uFrustum.position - vPosition);
 
-    /* Compute the dot product of the normal and view direction */
+    /* --- Compute the dot product of the normal and view direction --- */
 
     float NdotV = dot(N, V);
     float cNdotV = max(NdotV, 1e-4); // Clamped to avoid division by zero
 
-    /* Getting the cluster index and the number of lights in the cluster */
+    /* --- Getting the cluster index and the number of lights in the cluster --- */
 
     uvec3 clusterCoord = L_ClusterFromScreen(gl_FragCoord.xy / vec2(uScreenSize),
         -zLinear, uClusterCount, uClusterSliceScale, uClusterSliceBias);
@@ -396,29 +409,30 @@ void main()
     // sClusters may contain stale/garbage values otherwise.
     lightCount *= uint(uHasActiveLights);
 
-    /* Loop through all light sources accumulating diffuse and specular light */
+    /* --- Loop through all light sources accumulating diffuse and specular light --- */
 
     vec3 diffuse = vec3(0.0);
     vec3 specular = vec3(0.0);
 
     for (uint i = 0u; i < lightCount; i++)
     {
-        /* Calculate light index and get light */
+        /* --- Calculate light index and get light --- */
 
         uint lightIndex = sIndices[clusterIndex * uMaxLightsPerCluster + i];
         Light light = sLights[lightIndex];
 
-        /* Compute light direction */
+        /* --- Compute light direction --- */
 
         vec3 L = (light.type != LIGHT_DIR)
-            ? normalize(light.position - vPosition) : -light.direction;
+            ? normalize(light.position - vPosition)
+            : -light.direction;
 
-        /* Compute the dot product of the normal and light direction */
+        /* --- Compute the dot product of the normal and light direction --- */
 
         float NdotL = max(dot(N, L), 0.0);
         float cNdotL = min(NdotL, 1.0); // clamped NdotL
 
-        /* Compute the halfway vector between the view and light directions */
+        /* --- Compute the halfway vector between the view and light directions --- */
 
         vec3 H = normalize(V + L);
 
@@ -428,21 +442,21 @@ void main()
         float NdotH = max(dot(N, H), 0.0);
         float cNdotH = min(NdotH, 1.0);
 
-        /* Compute light color energy */
+        /* --- Compute light color energy --- */
 
         vec3 lightColE = light.color * light.energy;
 
-        /* Compute diffuse lighting */
+        /* --- Compute diffuse lighting --- */
 
-        float diffuseStrength = 1.0 - metalness;  // 0.0 for pure metal, 1.0 for dielectric
-        vec3 diffLight = lightColE * Diffuse(cLdotH, cNdotV, cNdotL, roughness) * diffuseStrength;
+        vec3 diffLight = vec3(Diffuse(cLdotH, cNdotV, cNdotL, roughness));
+        diffLight *= lightColE * oneMinusMetalness; // 0.0 for pure metal, 1.0 for dielectric
 
-        /* Compute specular lighting */
+        /* --- Compute specular lighting --- */
 
-        vec3 specLight =  Specular(F0, cLdotH, cNdotH, cNdotV, cNdotL, roughness);
+        vec3 specLight = Specular(F0, cLdotH, cNdotH, cNdotV, cNdotL, alphaGGX);
         specLight *= lightColE * light.specular;
 
-        /* Apply shadow factor if the light casts shadows */
+        /* --- Apply shadow factor if the light casts shadows --- */
 
         float shadow = 1.0;
         if (light.shadowIndex >= 0) {
@@ -454,7 +468,7 @@ void main()
             }
         }
 
-        /* Apply attenuation based on the distance from the light */
+        /* --- Apply attenuation based on the distance from the light --- */
 
         if (light.type != LIGHT_DIR) {
             float dist = length(light.position - vPosition);
@@ -462,7 +476,7 @@ void main()
             shadow *= atten * light.attenuation;
         }
 
-        /* Apply spotlight effect if the light is a spotlight */
+        /* --- Apply spotlight effect if the light is a spotlight --- */
 
         if (light.type == LIGHT_SPOT) {
             float theta = dot(L, -light.direction);
@@ -470,7 +484,7 @@ void main()
             shadow *= smoothstep(0.0, 1.0, (theta - light.outerCutOff) / epsilon);
         }
 
-        /* Accumulate the diffuse and specular lighting contributions */
+        /* --- Accumulate the diffuse and specular lighting contributions --- */
 
         bool validLayer = ((light.cullMask & uLayerMask) != 0u);
         float contribution = shadow * float(validLayer);
@@ -479,13 +493,13 @@ void main()
         specular += specLight * contribution;
     }
 
-    /* Compute AO light affect */
+    /* --- Compute AO light affect --- */
 
     float aoLightAffect = mix(1.0, occlusion, uAoLightAffect);
     specular *= aoLightAffect;
     diffuse *= aoLightAffect;
 
-    /* Ambient diffuse from sky */
+    /* --- Ambient diffuse from sky --- */
 
     vec3 skyDiffuse = uAmbientColor;
 
@@ -495,11 +509,11 @@ void main()
     }
 
     vec3 kS = IBL_FresnelSchlickRoughness(cNdotV, F0, roughness);
-    vec3 kD = (1.0 - kS) * (1.0 - metalness);
+    vec3 kD = (1.0 - kS) * oneMinusMetalness;
 
     skyDiffuse *= kD * uProbeDiffuseFactor * occlusion;
 
-    /* Ambient specular from sky */
+    /* --- Ambient specular from sky --- */
 
     vec3 skySpecular = uAmbientColor;
 
@@ -516,7 +530,7 @@ void main()
     vec3 specBRDF = IBL_GetMultiScatterBRDF(cNdotV, roughness, F0, metalness);
     skySpecular *= specBRDF * uProbeSpecularFactor * specOcclusion;
 
-    /* Calculate and apply fog factor */
+    /* --- Calculate and apply fog factor --- */
 
     float fogFactor = 1.0;
 
@@ -534,7 +548,7 @@ void main()
         break;
     }
 
-    /* Compute the final fragment color by combining albedo, lighting contributions and fog */
+    /* --- Compute the final fragment color by combining albedo, lighting contributions and fog --- */
 
     vec3 litColor = albedo.rgb * (skyDiffuse + diffuse);
     litColor += skySpecular + specular;
@@ -543,7 +557,7 @@ void main()
     FragColor.rgb = mix(uFogColor, litColor, fogFactor);
     FragColor.a   = albedo.a;
 
-    /* Store normals */
+    /* --- Store normals --- */
 
     FragNormal = vec4(vec2(M_EncodeOctahedral(N)), vec2(1.0));
 
