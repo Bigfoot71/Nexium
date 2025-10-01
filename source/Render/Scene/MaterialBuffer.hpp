@@ -1,4 +1,4 @@
-/* MaterialBuffer.hpp -- 
+/* MaterialBuffer.hpp -- GPU material upload management class
  *
  * Copyright (c) 2025 Le Juez Victor
  *
