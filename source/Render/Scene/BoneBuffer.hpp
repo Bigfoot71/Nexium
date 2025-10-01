@@ -20,34 +20,31 @@ namespace scene {
 
 class BoneBuffer {
 public:
-    BoneBuffer();
-
+    BoneBuffer() = default;
     int upload(const HP_Mat4* offsets, const HP_Mat4* matrices, int count);
     const gpu::Buffer& buffer() const;
     void clear();
 
 private:
-    std::array<gpu::Buffer, 3> mBuffers{};
     util::DynamicArray<HP_Mat4> mTemp{};
+    gpu::Buffer mBuffer{};
     int mCurrentOffset{};
-    int mBufferIndex{};
 };
 
 /* === Public Implementation === */
 
-inline BoneBuffer::BoneBuffer()
-{
-    for (auto& buffer : mBuffers) {
-        buffer = gpu::Buffer(GL_SHADER_STORAGE_BUFFER, 1024 * sizeof(HP_Mat4), nullptr, GL_DYNAMIC_DRAW);
-    }
-
-    if (!mTemp.reserve(256)) {
-        HP_INTERNAL_LOG(W, "RENDER: Failed to pre-allocate the bone matrix computing buffer");
-    }
-}
-
 inline int BoneBuffer::upload(const HP_Mat4* offsets, const HP_Mat4* matrices, int count)
 {
+    /* --- Creation of the buffer if needed --- */
+
+    if (!mBuffer.isValid()) {
+        size_t reserve = HP_MAX(1024, 2 * count);
+        mBuffer = gpu::Buffer(GL_SHADER_STORAGE_BUFFER, reserve * sizeof(HP_Mat4), nullptr, GL_DYNAMIC_DRAW);
+        if (!mTemp.reserve(reserve)) {
+            HP_INTERNAL_LOG(W, "RENDER: Failed to pre-allocate the bone matrix computing buffer");
+        }
+    }
+
     /* --- Compute matrices --- */
 
     mTemp.clear();
@@ -56,10 +53,9 @@ inline int BoneBuffer::upload(const HP_Mat4* offsets, const HP_Mat4* matrices, i
 
     /* --- Upload matrices --- */
 
-    gpu::Buffer& buffer = mBuffers[mBufferIndex];
     size_t byteOffset = (size_t)mCurrentOffset * sizeof(HP_Mat4);
-    buffer.reserve((mCurrentOffset + count) * sizeof(HP_Mat4), true);
-    buffer.upload(byteOffset, sizeof(HP_Mat4) * count, mTemp.data());
+    mBuffer.reserve((mCurrentOffset + count) * sizeof(HP_Mat4), true);
+    mBuffer.upload(byteOffset, sizeof(HP_Mat4) * count, mTemp.data());
 
     /* --- Update and return offset --- */
 
@@ -70,12 +66,11 @@ inline int BoneBuffer::upload(const HP_Mat4* offsets, const HP_Mat4* matrices, i
 
 inline const gpu::Buffer& BoneBuffer::buffer() const
 {
-    return mBuffers[mBufferIndex];
+    return mBuffer;
 }
 
 inline void BoneBuffer::clear()
 {
-    mBufferIndex = (mBufferIndex + 1) % mBuffers.size();
     mCurrentOffset = 0;
 }
 
