@@ -107,7 +107,7 @@ private:
     GLuint mResolveFramebuffer{0};                      //< Framebuffer with original textures
     GLuint mMultisampleFramebuffer{0};                  //< Framebuffer MSAA (optional)
     util::FixedArray<TextureView> mColorAttachments;
-    util::FixedArray<GLuint> mColorRenderbuffers;     //< MSAA color renderbuffers
+    util::FixedArray<GLuint> mColorRenderbuffers;       //< MSAA color renderbuffers
     GLuint mDepthRenderbuffer{0};                       //< MSAA depth/stencil renderbuffer
     TextureView mDepthStencilAttachment{};
     int mSampleCount{0};

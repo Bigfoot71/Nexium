@@ -232,6 +232,7 @@ void Framebuffer::createAndAttachMultisampleRenderbuffers() noexcept
     /* --- Generates renderbuffers if they haven't already been generated --- */
 
     if (mColorRenderbuffers.empty()) {
+        mColorRenderbuffers.reset(mColorAttachments.size());
         mColorRenderbuffers.resize(mColorAttachments.size());
         glGenRenderbuffers(static_cast<GLsizei>(mColorRenderbuffers.size()), mColorRenderbuffers.data());
     }
