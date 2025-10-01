@@ -78,6 +78,11 @@ const float WEIGHTS[6] = float[6](
 
 void main()
 {
+    // This is a depth aware bilateral blur for SSAO that smooths noise while keeping edges intact.
+    // A standard Gaussian blur would cause occlusion to "bleed" across depth discontinuities,
+    // creating bright halos around objects. By reducing blur strength at depth edges, we
+    // maintain sharp occlusion boundaries while still removing noise on flat surfaces.
+
     float centerDepth = U_LinearizeDepth(texture(uTexDepth, vTexCoord).r, uFrustum.near, uFrustum.far);
 
     vec4 result = vec4(0.0);
@@ -85,13 +90,19 @@ void main()
 
     for (int i = 0; i < SAMPLE_COUNT; ++i)
     {
-        vec2 sampleUV = clamp(vTexCoord + uTexelDir * OFFSETS[i], vec2(0.0), vec2(1.0));
+        vec2 sampleUV = vTexCoord + uTexelDir * OFFSETS[i];
         float sampleDepth = U_LinearizeDepth(texture(uTexDepth, sampleUV).r, uFrustum.near, uFrustum.far);
-
         float diff = abs(centerDepth - sampleDepth);
-        float depthWeight = clamp(1.0 - diff / uRadius, 0.0, 1.0);
 
+        // Modulate the Gaussian weight based on depth similarity:
+        // - When diff = 0 (same depth): depthWeight = 1.0 (full blur)
+        // - When diff >= uRadius (depth discontinuity): depthWeight = 0.1 (minimal blur)
+        // The smoothstep provides a smooth transition, and the 0.1 minimum ensures we
+        // always blur at least slightly to remove SSAO noise, even at edges.
+
+        float depthWeight = mix(0.1, 1.0, smoothstep(uRadius, 0.0, diff));
         float weight = WEIGHTS[i] * depthWeight;
+
         result += texture(uTexColor, sampleUV) * weight;
         totalWeight += weight;
     }
