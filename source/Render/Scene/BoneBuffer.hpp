@@ -11,8 +11,7 @@
 
 #include "../../Detail/Util/DynamicArray.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
-#include "Hyperion/HP_Math.h"
-#include <array>
+#include <Hyperion/HP_Math.h>
 
 namespace scene {
 
