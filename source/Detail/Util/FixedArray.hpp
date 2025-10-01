@@ -516,9 +516,12 @@ bool FixedArray<T>::reset(size_t size) noexcept
     }
 
     mData = static_cast<T*>(SDL_malloc(size * sizeof(T)));
-    if (mData) {
-        mCapacity = size;
+    if (mData == nullptr) {
+        return false;
     }
+
+    mCapacity = size;
+    return true;
 }
 
 /* === Private Implementation === */
