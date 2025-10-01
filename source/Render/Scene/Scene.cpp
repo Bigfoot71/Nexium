@@ -309,36 +309,19 @@ void Scene::renderScene()
         pipeline.bindTexture(2, mAssets.textureOrWhite(mat.orm.texture));
         pipeline.bindTexture(3, mAssets.textureOrNormal(mat.normal.texture));
 
-        /* --- Send matrices --- */
+        /* --- Send draw data --- */
 
         pipeline.setUniformMat4(0, data.matrix());
         pipeline.setUniformMat3(1, data.normal());
-
-        /* --- Send animation data --- */
-
         pipeline.setUniformInt1(5, data.isAnimated());
         pipeline.setUniformInt1(6, data.boneMatrixOffset());
-
-        /* --- Send instance data --- */
-
         pipeline.setUniformInt1(7, useInstancing);
-
-        /* --- Send material data --- */
-
-        pipeline.setUniformFloat4(2, mat.albedo.color);
-        pipeline.setUniformFloat2(3, mat.texOffset);
-        pipeline.setUniformFloat2(4, mat.texScale);
-        pipeline.setUniformUint1(8, mat.billboard);
-
-        pipeline.setUniformFloat3(28, mat.emission.color);
-        pipeline.setUniformFloat1(29, mat.emission.energy);
-        pipeline.setUniformFloat1(30, mat.orm.aoLightAffect);
-        pipeline.setUniformFloat1(31, mat.orm.occlusion);
-        pipeline.setUniformFloat1(32, mat.orm.roughness);
-        pipeline.setUniformFloat1(33, mat.orm.metalness);
-        pipeline.setUniformFloat1(34, mat.normal.scale);
-        pipeline.setUniformFloat1(35, mat.alphaCutOff);
         pipeline.setUniformUint1(36, call.mesh().layerMask);
+
+        /* --- Send and bind material data --- */
+
+        mMaterialBuffer.upload(mat);
+        pipeline.bindUniform(2, mMaterialBuffer.buffer());
 
         /* --- Draw! --- */
 

@@ -94,6 +94,21 @@ layout(std140, binding = 1) uniform U_Environment {
     Environment uEnv;
 };
 
+layout(std140, binding = 2) uniform U_Material {
+    vec4 albedoColor;
+    vec3 emissionColor;
+    float emissionEnergy;
+    float aoLightAffect;
+    float occlusion;
+    float roughness;
+    float metalness;
+    float normalScale;
+    float alphaCutOff;
+    vec2 texOffset;
+    vec2 texScale;
+    int billboard;
+} uMat;
+
 /* === Uniforms === */
 
 layout(location = 10) uniform bool uHasActiveLights;
@@ -107,14 +122,6 @@ layout(location = 15) uniform float uClusterSliceBias;
 layout(location = 17) uniform bool uHasProbe;
 layout(location = 21) uniform int uProbePrefilterMipCount;
 
-layout(location = 28) uniform vec3 uEmissionColor;
-layout(location = 29) uniform float uEmissionEnergy;
-layout(location = 30) uniform float uAoLightAffect;
-layout(location = 31) uniform float uOcclusion;
-layout(location = 32) uniform float uRoughness;
-layout(location = 33) uniform float uMetalness;
-layout(location = 34) uniform float uNormalScale;
-layout(location = 35) uniform float uAlphaCutOff;
 layout(location = 36) uniform uint uLayerMask;
 
 /* === Fragments === */
@@ -343,20 +350,20 @@ void main()
     /* --- Sample albedo texture --- */
 
     vec4 albedo = vColor * texture(uTexAlbedo, vTexCoord);
-    if (albedo.a < uAlphaCutOff) discard;
+    if (albedo.a < uMat.alphaCutOff) discard;
 
     /* --- Sample emission texture --- */
 
-    vec3 emission = uEmissionColor * texture(uTexEmission, vTexCoord).rgb;
-    emission *= uEmissionEnergy;
+    vec3 emission = uMat.emissionColor * texture(uTexEmission, vTexCoord).rgb;
+    emission *= uMat.emissionEnergy;
 
     /* --- Sampling and calculation of ORM values --- */
 
     vec3 orm = texture(uTexORM, vTexCoord).rgb;
 
-    float occlusion = uOcclusion * orm.x;
-    float roughness = uRoughness * orm.y;
-    float metalness = uMetalness * orm.z;
+    float occlusion = uMat.occlusion * orm.x;
+    float roughness = uMat.roughness * orm.y;
+    float metalness = uMat.metalness * orm.z;
 
     /* --- Pre-calculation of ORM related data --- */ 
 
@@ -373,7 +380,7 @@ void main()
 
     /* --- Sample normal and compute view direction vector --- */
 
-    vec3 N = normalize(vTBN * NormalScale(texture(uTexNormal, vTexCoord).rgb * 2.0 - 1.0, uNormalScale));
+    vec3 N = normalize(vTBN * NormalScale(texture(uTexNormal, vTexCoord).rgb * 2.0 - 1.0, uMat.normalScale));
     vec3 V = normalize(uFrustum.position - vPosition);
 
     /* --- Compute the dot product of the normal and view direction --- */
@@ -479,7 +486,7 @@ void main()
 
     /* --- Compute AO light affect --- */
 
-    float aoLightAffect = mix(1.0, occlusion, uAoLightAffect);
+    float aoLightAffect = mix(1.0, occlusion, uMat.aoLightAffect);
     specular *= aoLightAffect;
     diffuse *= aoLightAffect;
 

@@ -21,12 +21,13 @@
 #include "../Core/AssetCache.hpp"
 
 #include "../HP_RenderTexture.hpp"
+#include "./MaterialBuffer.hpp"
 #include "./LightManager.hpp"
+#include "./Environment.hpp"
 #include "./ViewFrustum.hpp"
 #include "./BoneBuffer.hpp"
 #include "./DrawCall.hpp"
 #include "./DrawData.hpp"
-#include "Environment.hpp"
 
 namespace scene {
 
@@ -74,6 +75,7 @@ private:
     ViewFrustum mFrustum{};
 
     /** Managers */
+    MaterialBuffer mMaterialBuffer;
     BoneBuffer mBoneBuffer;
     LightManager mLights;
 

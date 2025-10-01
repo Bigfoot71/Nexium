@@ -42,17 +42,28 @@ layout(std140, binding = 0) uniform U_ViewFrustum {
     Frustum uFrustum;
 };
 
+layout(std140, binding = 2) uniform U_Material {
+    vec4 albedoColor;
+    vec3 emissionColor;
+    float emissionEnergy;
+    float aoLightAffect;
+    float occlusion;
+    float roughness;
+    float metalness;
+    float normalScale;
+    float alphaCutOff;
+    vec2 texOffset;
+    vec2 texScale;
+    int billboard;
+} uMat;
+
 /* === Uniforms === */
 
 layout(location = 0) uniform mat4 uMatModel;
 layout(location = 1) uniform mat3 uMatNormal;
-layout(location = 2) uniform vec4 uColAlbedo;
-layout(location = 3) uniform vec2 uTCOffset;
-layout(location = 4) uniform vec2 uTCScale;
 layout(location = 5) uniform bool uSkinning;
 layout(location = 6) uniform int uBoneOffset;
 layout(location = 7) uniform bool uInstancing;
-layout(location = 8) uniform uint uBillboard;
 
 /* === Varyings === */
 
@@ -89,7 +100,7 @@ void main()
         matNormal = mat3(transpose(inverse(iMatModel))) * matNormal;
     }
 
-    switch(uBillboard) {
+    switch(uMat.billboard) {
     case BILLBOARD_NONE:
         break;
     case BILLBOARD_FRONT:
@@ -105,8 +116,8 @@ void main()
     vec3 B = normalize(cross(N, T) * aTangent.w);
 
     vPosition = vec3(matModel * vec4(aPosition, 1.0));
-    vTexCoord = uTCOffset + aTexCoord * uTCScale;
-    vColor = aColor * iColor * uColAlbedo;
+    vTexCoord = uMat.texOffset + aTexCoord * uMat.texScale;
+    vColor = aColor * iColor * uMat.albedoColor;
     vTBN = mat3(T, B, N);
 
     gl_Position = uFrustum.viewProj * vec4(vPosition, 1.0);
