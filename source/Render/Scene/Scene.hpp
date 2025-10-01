@@ -21,9 +21,9 @@
 #include "../Core/AssetCache.hpp"
 
 #include "../HP_RenderTexture.hpp"
-#include "./BoneBufferManager.hpp"
 #include "./LightManager.hpp"
 #include "./ViewFrustum.hpp"
+#include "./BoneBuffer.hpp"
 #include "./DrawCall.hpp"
 #include "./DrawData.hpp"
 #include "Environment.hpp"
@@ -74,7 +74,7 @@ private:
     ViewFrustum mFrustum{};
 
     /** Managers */
-    BoneBufferManager mBoneBuffer;
+    BoneBuffer mBoneBuffer;
     LightManager mLights;
 
     /** Scene render targets */

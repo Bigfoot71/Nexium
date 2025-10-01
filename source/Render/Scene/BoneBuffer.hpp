@@ -1,4 +1,4 @@
-/* BoneBufferManager.hpp -- Bone calculation and upload management class for GPU skinning
+/* BoneBuffer.hpp -- Bone calculation and upload management class for GPU skinning
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_SCENE_BONE_MATRIX_CACHE_HPP
-#define HP_SCENE_BONE_MATRIX_CACHE_HPP
+#ifndef HP_SCENE_BONE_BUFFER_HPP
+#define HP_SCENE_BONE_BUFFER_HPP
 
 #include "../../Detail/Util/DynamicArray.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
@@ -18,9 +18,9 @@ namespace scene {
 
 /* === Declaration === */
 
-class BoneBufferManager {
+class BoneBuffer {
 public:
-    BoneBufferManager();
+    BoneBuffer();
 
     int upload(const HP_Mat4* offsets, const HP_Mat4* matrices, int count);
     const gpu::Buffer& buffer() const;
@@ -35,7 +35,7 @@ private:
 
 /* === Public Implementation === */
 
-inline BoneBufferManager::BoneBufferManager()
+inline BoneBuffer::BoneBuffer()
 {
     for (auto& buffer : mBuffers) {
         buffer = gpu::Buffer(GL_SHADER_STORAGE_BUFFER, 1024 * sizeof(HP_Mat4), nullptr, GL_DYNAMIC_DRAW);
@@ -46,7 +46,7 @@ inline BoneBufferManager::BoneBufferManager()
     }
 }
 
-inline int BoneBufferManager::upload(const HP_Mat4* offsets, const HP_Mat4* matrices, int count)
+inline int BoneBuffer::upload(const HP_Mat4* offsets, const HP_Mat4* matrices, int count)
 {
     /* --- Compute matrices --- */
 
@@ -68,12 +68,12 @@ inline int BoneBufferManager::upload(const HP_Mat4* offsets, const HP_Mat4* matr
     return offset;
 }
 
-inline const gpu::Buffer& BoneBufferManager::buffer() const
+inline const gpu::Buffer& BoneBuffer::buffer() const
 {
     return mBuffers[mBufferIndex];
 }
 
-inline void BoneBufferManager::clear()
+inline void BoneBuffer::clear()
 {
     mBufferIndex = (mBufferIndex + 1) % mBuffers.size();
     mCurrentOffset = 0;
@@ -81,4 +81,4 @@ inline void BoneBufferManager::clear()
 
 } // namespace scene
 
-#endif // HP_SCENE_BONE_MATRIX_CACHE_HPP
+#endif // HP_SCENE_BONE_BUFFER_HPP

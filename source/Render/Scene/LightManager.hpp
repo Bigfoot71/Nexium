@@ -18,8 +18,8 @@
 #include "../Core/ProgramCache.hpp"
 #include "../Core/AssetCache.hpp"
 
-#include "./BoneBufferManager.hpp"
 #include "./ViewFrustum.hpp"
+#include "./BoneBuffer.hpp"
 #include "../HP_Light.hpp"
 #include "./DrawCall.hpp"
 
@@ -32,7 +32,7 @@ public:
     struct ProcessParams {
         const ViewFrustum& viewFrustum;
         const HP_BoundingBox& sceneBounds;
-        const BoneBufferManager& boneBuffer;
+        const BoneBuffer& boneBuffer;
         const BucketDrawCalls& drawCalls;
         const ArrayDrawData& drawData;
     };
