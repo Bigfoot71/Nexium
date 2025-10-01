@@ -10,6 +10,7 @@
 #define HP_UTIL_FIXED_ARRAY_HPP
 
 #include <SDL3/SDL_stdinc.h>
+#include <SDL3/SDL_assert.h>
 #include <type_traits>
 #include <algorithm>
 #include <iterator>
@@ -117,6 +118,9 @@ public:
     bool resize(size_type count) noexcept;
     bool resize(size_type count, const T& value) noexcept;
     void swap(FixedArray& other) noexcept;
+
+    /** @warning This function recreates the array and discards existing data */
+    bool reset(size_t size) noexcept;
 
 private:
     /** Helpers for construction/destruction */
@@ -498,6 +502,23 @@ void FixedArray<T>::swap(FixedArray& other) noexcept
     std::swap(mData, other.mData);
     std::swap(mSize, other.mSize);
     std::swap(mCapacity, other.mCapacity);
+}
+
+template<typename T>
+bool FixedArray<T>::reset(size_t size) noexcept
+{
+    SDL_assert(size > 0);
+
+    if (mData != nullptr) {
+        SDL_free(mData);
+        mCapacity = 0;
+        mSize = 0;
+    }
+
+    mData = static_cast<T*>(SDL_malloc(size * sizeof(T)));
+    if (mData) {
+        mCapacity = size;
+    }
 }
 
 /* === Private Implementation === */
