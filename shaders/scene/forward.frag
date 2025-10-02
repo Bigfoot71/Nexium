@@ -172,7 +172,7 @@ float ReduceLightBleeding(float pMax, float amount)
     return clamp((pMax - amount) / (1.0 - amount), 0.0, 1.0);
 }
 
-float ShadowCube(in Light light, float cNdotL)
+float ShadowCube(in Light light, float cNdotL, float zLinear)
 {
     Shadow shadow = sShadows[light.shadowIndex];
 
@@ -202,7 +202,13 @@ float ShadowCube(in Light light, float cNdotL)
 
     /* --- Calculating the number of samples to do --- */
 
-    int samples = int(mix(float(SHADOW_SAMPLES_NEAR), float(SHADOW_SAMPLES_FAR), clamp(d01, 0.0, 1.0)));
+    // Compute a sampling factor based on the view-to-fragment distance.
+    // The value is remapped to [0..1] within [near, light.range].
+    // Beyond light.range, the sampling count reaches its minimum.
+
+    float zRange01 = smoothstep(uFrustum.near, light.range, zLinear);
+
+    int samples = int(mix(float(SHADOW_SAMPLES_NEAR), float(SHADOW_SAMPLES_FAR), zRange01));
     int sStep = SHADOW_SAMPLES_NEAR / samples;
 
     /* --- Poisson Disk blur --- */
@@ -232,7 +238,7 @@ float ShadowCube(in Light light, float cNdotL)
     return factor / float(samples);
 }
 
-float Shadow2D(in Light light, float cNdotL)
+float Shadow2D(in Light light, float cNdotL, float zLinear)
 {
     Shadow shadow = sShadows[light.shadowIndex];
 
@@ -265,7 +271,13 @@ float Shadow2D(in Light light, float cNdotL)
 
     /* --- Calculating the number of samples to do --- */
 
-    int samples = int(mix(float(SHADOW_SAMPLES_NEAR), float(SHADOW_SAMPLES_FAR), clamp(d01, 0.0, 1.0)));
+    // Compute a sampling factor based on the view-to-fragment distance.
+    // The value is remapped to [0..1] within [near, light.range].
+    // Beyond light.range, the sampling count reaches its minimum.
+
+    float zRange01 = smoothstep(uFrustum.near, light.range, zLinear);
+
+    int samples = int(mix(float(SHADOW_SAMPLES_NEAR), float(SHADOW_SAMPLES_FAR), zRange01));
     int sStep = SHADOW_SAMPLES_NEAR / samples;
 
     /* --- Poisson Disk blur --- */
@@ -458,10 +470,10 @@ void main()
         float shadow = 1.0;
         if (light.shadowIndex >= 0) {
             if (light.type == LIGHT_OMNI) {
-                shadow = ShadowCube(light, cNdotL);
+                shadow = ShadowCube(light, cNdotL, zLinear);
             }
             else {
-                shadow = Shadow2D(light, cNdotL);
+                shadow = Shadow2D(light, cNdotL, zLinear);
             }
         }
 
