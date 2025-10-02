@@ -238,7 +238,6 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
 
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::Disabled);
-    pipeline.setDepthFunc(gpu::DepthFunc::Less);
 
     pipeline.useProgram(mPrograms.prepass());
 
@@ -251,6 +250,18 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
     {
         const DrawData& data = mDrawData[call.dataIndex()];
         const HP_Material& mat = call.material();
+
+        switch (mat.depth.test) {
+        case HP_DEPTH_TEST_LESS:
+            pipeline.setDepthFunc(gpu::DepthFunc::Less);
+            break;
+        case HP_DEPTH_TEST_GREATER:
+            pipeline.setDepthFunc(gpu::DepthFunc::Greater);
+            break;
+        case HP_DEPTH_TEST_ALWAYS:
+            pipeline.setDepthFunc(gpu::DepthFunc::Always);
+            break;
+        }
 
         switch (mat.cull) {
         case HP_CULL_NONE:
@@ -323,11 +334,21 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         const DrawData& data = mDrawData[call.dataIndex()];
         const HP_Material& mat = call.material();
 
-        if (mat.depthPrePass) {
+        if (mat.depth.prePass) {
             pipeline.setDepthFunc(gpu::DepthFunc::Equal);
         }
         else {
-            pipeline.setDepthFunc(gpu::DepthFunc::Less);
+            switch (mat.depth.test) {
+            case HP_DEPTH_TEST_LESS:
+                pipeline.setDepthFunc(gpu::DepthFunc::Less);
+                break;
+            case HP_DEPTH_TEST_GREATER:
+                pipeline.setDepthFunc(gpu::DepthFunc::Greater);
+                break;
+            case HP_DEPTH_TEST_ALWAYS:
+                pipeline.setDepthFunc(gpu::DepthFunc::Always);
+                break;
+            }
         }
 
         switch (mat.blend) {

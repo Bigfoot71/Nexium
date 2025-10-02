@@ -154,6 +154,17 @@ typedef enum HP_CullMode {
 } HP_CullMode;
 
 /**
+ * @brief Defines depth testing modes.
+ *
+ * Determines whether a fragment is drawn based on its depth value.
+ */
+typedef enum HP_DepthTest {
+    HP_DEPTH_TEST_LESS,         ///< Pass if fragment is closer. Default.
+    HP_DEPTH_TEST_GREATER,      ///< Pass if fragment is farther.
+    HP_DEPTH_TEST_ALWAYS        ///< Always pass, ignore depth.
+} HP_DepthTest;
+
+/**
  * @brief Defines shadow casting behavior for meshes.
  */
 typedef enum HP_ShadowCastMode {
@@ -502,6 +513,11 @@ typedef struct HP_Material {
         float scale;                ///< Normal map intensity. Default: 1.0f
     } normal;
 
+    struct {
+        HP_DepthTest test;          ///< Controls whether a fragment is visible compared to others. Default: HP_DEPTH_TEST_LESS
+        bool prePass;               ///< Enable depth pre-pass to reduce overdraw or support alpha cutoff; may be costly with heavy vertex shaders. Default: false
+    } depth;
+
     float alphaCutOff;              ///< Fragments with alpha below this value are discarded (only with depth pre-pass). Default: 1e-6f.
     HP_Vec2 texOffset;              ///< Texture coordinate offset. Default: vec2(0,0)
     HP_Vec2 texScale;               ///< Texture coordinate scaling. Default: vec2(1,1)
@@ -509,8 +525,6 @@ typedef struct HP_Material {
     HP_BillboardMode billboard;     ///< Billboard mode applied to the object
     HP_BlendMode blend;             ///< Blending mode for rendering. Default: Opaque
     HP_CullMode cull;               ///< Face culling mode. Default: Back face
-
-    bool depthPrePass;              ///< Enable depth pre-pass to reduce overdraw or support alpha cutoff; may be costly with heavy vertex shaders. Default: false
 
 } HP_Material;
 
@@ -1475,12 +1489,14 @@ HPAPI void HP_UpdateReflectionProbe(HP_ReflectionProbe* probe, const HP_Cubemap*
  * - Normal map:
  *   - texture: nullptr
  *   - scale: 1.0
+ * - Depth:
+ *   - test: HP_DEPTH_TEST_LESS
+ *   - prePass: false
  * - alphaCutOff: 1e-6 (disables discard by default)
  * - texOffset: (0, 0)
  * - texScale: (1, 1)
  * - blend mode: HP_BLEND_OPAQUE
  * - cull mode: HP_CULL_BACK
- * - depth pre-pass: false
  */
 HPAPI HP_Material HP_GetDefaultMaterial(void);
 

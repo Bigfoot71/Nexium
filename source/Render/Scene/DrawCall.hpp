@@ -62,7 +62,7 @@ inline DrawCall::DrawCall(int dataIndex, const HP_Mesh& mesh, const HP_Material&
 
 inline DrawCall::Category DrawCall::category(const HP_Material& material)
 {
-    if (material.depthPrePass) {
+    if (material.depth.prePass) {
         return PREPASS;
     }
 

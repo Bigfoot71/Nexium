@@ -391,7 +391,7 @@ bool PoolModel::processMaterials(HP_Model* model, const aiScene* scene)
         if (material->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == AI_SUCCESS) {
             if (SDL_strcmp(alphaMode.data, "MASK") == 0) {
                 // This means alphaCutOff should be used
-                modelMaterial.depthPrePass = true;
+                modelMaterial.depth.prePass = true;
             }
             else if (strcmp(alphaMode.C_Str(), "BLEND") == 0) {
                 modelMaterial.blend = HP_BLEND_ALPHA;

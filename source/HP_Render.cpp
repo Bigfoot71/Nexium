@@ -1825,13 +1825,16 @@ HP_Material HP_GetDefaultMaterial(void)
             .texture = nullptr,
             .scale = 1.0f,
         },
+        .depth = {
+            .test = HP_DEPTH_TEST_LESS,
+            .prePass = false
+        },
         .alphaCutOff = 1e-6f,
         .texOffset = HP_VEC2_ZERO,
         .texScale = HP_VEC2_ONE,
         .billboard = HP_BILLBOARD_DISABLED,
         .blend = HP_BLEND_OPAQUE,
         .cull = HP_CULL_BACK,
-        .depthPrePass = false
     };
 }
 
