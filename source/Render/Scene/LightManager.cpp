@@ -180,7 +180,7 @@ void LightManager::updateState(const ProcessParams& params)
             }
         }
 
-        light.updateState(params.sceneBounds, lightIndex, shadowIndex, shadowMapIndex);
+        light.updateState(params.environment.bounds(), lightIndex, shadowIndex, shadowMapIndex);
     }
 }
 
@@ -370,6 +370,8 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     /* --- Iterates through all lights with shadows active --- */
 
+    const bool frustumCulling = params.environment.hasFlags(HP_ENV_SHADOW_FRUSTUM_CULLING);
+
     int updatedCubeCount = 0;
     int updated2DCount = 0;
 
@@ -392,12 +394,13 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
             pipeline.clear(mFramebufferShadow2D, HP_COLOR_1(FLT_MAX));
             pipeline.setUniformMat4(0, light.viewProj());
-            for (const DrawCall& call : params.drawCalls.categories(DrawCall::OPAQUE, DrawCall::TRANSPARENT))
+            for (const DrawCall& call : params.drawCalls.categories(
+                DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
             {
                 if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
                 if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
-                if (light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()])) {
+                if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()])) {
                     draw(pipeline, call, params.drawData[call.dataIndex()]);
                 }
             }
@@ -408,12 +411,13 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
             pipeline.clear(mFramebufferShadow2D, HP_COLOR_1(FLT_MAX));
             pipeline.setUniformMat4(0, light.viewProj());
-            for (const DrawCall& call : params.drawCalls.categories(DrawCall::OPAQUE, DrawCall::TRANSPARENT))
+            for (const DrawCall& call : params.drawCalls.categories(
+                DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
             {
                 if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
                 if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
-                if (light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()])) {
+                if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()])) {
                     draw(pipeline, call, params.drawData[call.dataIndex()]);
                 }
             }
@@ -425,12 +429,13 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                 mFramebufferShadowCube.setColorAttachmentTarget(0, light.shadowIndex(), iFace);
                 pipeline.clear(mFramebufferShadowCube, HP_COLOR_1(FLT_MAX));
                 pipeline.setUniformMat4(0, light.viewProj(iFace));
-                for (const DrawCall& call : params.drawCalls.categories(DrawCall::OPAQUE, DrawCall::TRANSPARENT))
+                for (const DrawCall& call : params.drawCalls.categories(
+                    DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
                 {
                     if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
                     if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
-                    if (light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()], iFace)) {
+                    if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()], iFace)) {
                         draw(pipeline, call, params.drawData[call.dataIndex()]);
                     }
                 }

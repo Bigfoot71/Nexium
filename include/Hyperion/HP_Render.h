@@ -76,8 +76,10 @@ typedef uint8_t HP_InstanceData;
  */
 typedef uint32_t HP_EnvironmentFlag;
 
-#define HP_ENV_SORT_TRANSPARENT     (1 << 0)    ///< Sort transparent objects back-to-front
-#define HP_ENV_SORT_OPAQUE          (1 << 1)    ///< Sort opaque objects front-to-back
+#define HP_ENV_SORT_OPAQUE              (1 << 0)    ///< Sort opaque objects front-to-back
+#define HP_ENV_SORT_TRANSPARENT         (1 << 1)    ///< Sort transparent objects back-to-front
+#define HP_ENV_VIEW_FRUSTUM_CULLING     (1 << 2)    ///< Enable view frustum culling (camera)
+#define HP_ENV_SHADOW_FRUSTUM_CULLING   (1 << 3)    ///< Enable shadow frustum culling
 
 /**
  * @brief Defines the type of projection used by a camera.
@@ -500,13 +502,15 @@ typedef struct HP_Material {
         float scale;                ///< Normal map intensity. Default: 1.0f
     } normal;
 
-    float alphaCutOff;              ///< Fragments with alpha below this value are discarded (0 disables discard). Default: 1e-6f.
+    float alphaCutOff;              ///< Fragments with alpha below this value are discarded (only with depth pre-pass). Default: 1e-6f.
     HP_Vec2 texOffset;              ///< Texture coordinate offset. Default: vec2(0,0)
     HP_Vec2 texScale;               ///< Texture coordinate scaling. Default: vec2(1,1)
 
     HP_BillboardMode billboard;     ///< Billboard mode applied to the object
     HP_BlendMode blend;             ///< Blending mode for rendering. Default: Opaque
     HP_CullMode cull;               ///< Face culling mode. Default: Back face
+
+    bool depthPrePass;              ///< Enable depth pre-pass to reduce overdraw or support alpha cutoff; may be costly with heavy vertex shaders. Default: false
 
 } HP_Material;
 
@@ -1476,6 +1480,7 @@ HPAPI void HP_UpdateReflectionProbe(HP_ReflectionProbe* probe, const HP_Cubemap*
  * - texScale: (1, 1)
  * - blend mode: HP_BLEND_OPAQUE
  * - cull mode: HP_CULL_BACK
+ * - depth pre-pass: false
  */
 HPAPI HP_Material HP_GetDefaultMaterial(void);
 

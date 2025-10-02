@@ -81,6 +81,11 @@ private:
 
 public:
     Pipeline() noexcept;
+
+    template<typename F>
+        requires std::invocable<F, const Pipeline&>
+    Pipeline(F&& func) noexcept;
+
     ~Pipeline() noexcept;
 
     void setColorWrite(ColorWrite mode) const noexcept;
@@ -246,6 +251,14 @@ inline Pipeline::Pipeline() noexcept
             glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
         }
     }
+}
+
+template<typename F>
+    requires std::invocable<F, const Pipeline&>
+Pipeline::Pipeline(F&& func) noexcept
+    : Pipeline()
+{
+    func(*this);
 }
 
 inline Pipeline::~Pipeline() noexcept

@@ -1830,7 +1830,8 @@ HP_Material HP_GetDefaultMaterial(void)
         .texScale = HP_VEC2_ONE,
         .billboard = HP_BILLBOARD_DISABLED,
         .blend = HP_BLEND_OPAQUE,
-        .cull = HP_CULL_BACK
+        .cull = HP_CULL_BACK,
+        .depthPrePass = false
     };
 }
 

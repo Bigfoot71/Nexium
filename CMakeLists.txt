@@ -334,6 +334,8 @@ embed_shaders(${PROJECT_NAME}
     "${HP_ROOT_PATH}/shaders/scene/light_culling.comp"
     "${HP_ROOT_PATH}/shaders/scene/skybox.vert"
     "${HP_ROOT_PATH}/shaders/scene/skybox.frag"
+    "${HP_ROOT_PATH}/shaders/scene/prepass.vert"
+    "${HP_ROOT_PATH}/shaders/scene/prepass.frag"
     "${HP_ROOT_PATH}/shaders/scene/forward.vert"
     "${HP_ROOT_PATH}/shaders/scene/forward.frag"
     "${HP_ROOT_PATH}/shaders/scene/shadow.vert"

@@ -14,6 +14,7 @@
 
 #include "./DynamicArray.hpp"
 
+#include <type_traits>
 #include <algorithm>
 #include <utility>
 #include <cstddef>
@@ -58,7 +59,7 @@ public:
         bool operator!=(const CategoryIterator& other) const noexcept;
 
     private:
-        const DynamicArray<T>& mData;
+        const DynamicArray<T>& mObjects;
         const DynamicArray<size_t>& mIndices;
         size_t mPos;
     };
@@ -107,7 +108,7 @@ public:
         const T& operator[](size_t idx) const noexcept;
 
     private:
-        const DynamicArray<T>& mData;
+        const DynamicArray<T>& mObjects;
         const DynamicArray<size_t>& mIndices;
     };
 
@@ -140,19 +141,26 @@ public:
     template<typename... Args>
     size_t emplace(Category cat, Args&&... args) noexcept;
 
-    // Sort elements within a category using custom comparator
+    /** Sort elements within a category using custom comparator */
     template<typename Compare>
     void sort(Category cat, Compare&& comp) noexcept;
 
+    /** 
+     * Removes all objects for which the given condition returns true.
+     * Updates both the object storage and the category buckets.
+     */
+    template<typename Condition>
+    void remove_if(Condition&& cond) noexcept;
+
     /* --- Data Access --- */
 
-    // Get direct access to underlying data array
+    /** Get direct access to underlying data array */
     const DynamicArray<T>& all() const noexcept;
 
-    // Get view for iterating over single category
+    /** Get view for iterating over single category */
     CategoryView category(Category cat) const noexcept;
 
-    // Get view for iterating over multiple categories in specified order
+    /** Get view for iterating over multiple categories in specified order */
     template<typename... Categories>
     auto categories(Categories... cats) const noexcept -> MultiCategoryView<sizeof...(Categories)>;
 
@@ -170,8 +178,9 @@ public:
     T& operator[](size_t idx) noexcept;
 
 private:
-    DynamicArray<T> mData;                          // Global data storage
-    std::array<DynamicArray<size_t>, N> mBuckets;   // Index buckets per category
+    DynamicArray<T> mObjects;                                       // Object storage
+    DynamicArray<std::pair<Category, size_t>> mObjectCategoryMap;   // Object to bucket map
+    std::array<DynamicArray<size_t>, N> mBuckets;                   // Index buckets per category
 };
 
 /* === Public Implementation === */
@@ -182,13 +191,14 @@ void BucketArray<T, Category, N>::clear() noexcept
     for (auto& bucket : mBuckets) {
         bucket.clear();
     }
-    mData.clear();
+    mObjectCategoryMap.clear();
+    mObjects.clear();
 }
 
 template<typename T, typename Category, size_t N>
 bool BucketArray<T, Category, N>::reserve(size_t cap) noexcept
 {
-    if (!mData.reserve(cap)) {
+    if (!mObjects.reserve(cap) || !mObjectCategoryMap.reserve(cap)) {
         return false;
     }
 
@@ -206,10 +216,12 @@ size_t BucketArray<T, Category, N>::push(Category cat, const T& value) noexcept
 {
     SDL_assert(static_cast<size_t>(cat) < N);
 
-    const size_t idx = mData.size();
+    auto& bucket = mBuckets[static_cast<size_t>(cat)];
+    const size_t idx = mObjects.size();
 
-    mData.push_back(value);
-    mBuckets[static_cast<size_t>(cat)].push_back(idx);
+    mObjectCategoryMap.emplace_back(cat, bucket.size());
+    mObjects.push_back(value);
+    bucket.emplace_back(idx);
 
     return idx;
 }
@@ -220,10 +232,12 @@ size_t BucketArray<T, Category, N>::emplace(Category cat, Args&&... args) noexce
 {
     SDL_assert(static_cast<size_t>(cat) < N);
 
-    const size_t idx = mData.size();
+    auto& bucket = mBuckets[static_cast<size_t>(cat)];
+    const size_t idx = mObjects.size();
 
-    mData.emplace_back(std::forward<Args>(args)...);
-    mBuckets[static_cast<size_t>(cat)].push_back(idx);
+    mObjectCategoryMap.emplace_back(cat, bucket.size());
+    mObjects.emplace_back(std::forward<Args>(args)...);
+    bucket.emplace_back(idx);
 
     return idx;
 }
@@ -234,21 +248,62 @@ void BucketArray<T, Category, N>::sort(Category cat, Compare&& comp) noexcept
 {
     auto& bucket = mBuckets[static_cast<size_t>(cat)];
     std::sort(bucket.begin(), bucket.end(), [this, &comp](size_t idx1, size_t idx2) {
-        return comp(mData[idx1], mData[idx2]);
+        return comp(mObjects[idx1], mObjects[idx2]);
     });
+}
+
+template<typename T, typename Category, size_t N>
+template<typename Condition>
+void BucketArray<T, Category, N>::remove_if(Condition&& cond) noexcept
+{
+    for (int64_t idx = mObjects.size() - 1; idx >= 0; --idx)
+    {
+        // Keep the elements that do NOT satisfy the condition
+        if (!cond(mObjects[idx])) continue;
+
+        size_t lastIdx = mObjects.size() - 1;
+
+        if (idx != lastIdx)
+        {
+            // Move the last object to the position of the one being removed
+            if constexpr (std::is_move_assignable_v<T>) {
+                mObjects[idx] = std::move(mObjects[lastIdx]);
+            } else {
+                mObjects[idx].~T();
+                new (&mObjects[idx]) T(std::move(mObjects[lastIdx]));
+            }
+
+            // Update the bucket of the last element
+            auto [lastCat, lastPos] = mObjectCategoryMap[lastIdx];
+            auto& lastBucket = mBuckets[lastCat];
+            lastBucket[lastPos] = idx;                          // update the index in the bucket
+            mObjectCategoryMap[idx] = { lastCat, lastPos };     // update the pair
+        }
+
+        // Remove the last element
+        mObjects.pop_back();
+        mObjectCategoryMap.pop_back();
+
+        // Remove the object's index from its bucket
+        auto [cat, pos] = mObjectCategoryMap[idx];
+        auto& bucket = mBuckets[cat];
+        bucket[pos] = *bucket.back();                       // move the last index of the bucket here
+        mObjectCategoryMap[bucket[pos]].second = pos;       // update the index_in_bucket of the moved object
+        bucket.pop_back();
+    }
 }
 
 template<typename T, typename Category, size_t N>
 const DynamicArray<T>& BucketArray<T, Category, N>::all() const noexcept
 {
-    return mData;
+    return mObjects;
 }
 
 template<typename T, typename Category, size_t N>
 typename BucketArray<T, Category, N>::CategoryView 
 BucketArray<T, Category, N>::category(Category cat) const noexcept
 {
-    return CategoryView(mData, mBuckets[static_cast<size_t>(cat)]);
+    return CategoryView(mObjects, mBuckets[static_cast<size_t>(cat)]);
 }
 
 template<typename T, typename Category, size_t N>
@@ -262,7 +317,7 @@ auto BucketArray<T, Category, N>::categories(Categories... cats) const noexcept 
 template<typename T, typename Category, size_t N>
 size_t BucketArray<T, Category, N>::size() const noexcept
 {
-    return mData.size();
+    return mObjects.size();
 }
 
 template<typename T, typename Category, size_t N>
@@ -274,7 +329,7 @@ size_t BucketArray<T, Category, N>::size(Category cat) const noexcept
 template<typename T, typename Category, size_t N>
 bool BucketArray<T, Category, N>::empty() const noexcept
 {
-    return mData.empty();
+    return mObjects.empty();
 }
 
 template<typename T, typename Category, size_t N>
@@ -286,13 +341,13 @@ bool BucketArray<T, Category, N>::empty(Category cat) const noexcept
 template<typename T, typename Category, size_t N>
 const T& BucketArray<T, Category, N>::operator[](size_t idx) const noexcept
 {
-    return mData[idx];
+    return mObjects[idx];
 }
 
 template<typename T, typename Category, size_t N>
 T& BucketArray<T, Category, N>::operator[](size_t idx) noexcept
 {
-    return mData[idx];
+    return mObjects[idx];
 }
 
 /* === Category Iterator Implementation === */
@@ -300,19 +355,19 @@ T& BucketArray<T, Category, N>::operator[](size_t idx) noexcept
 template<typename T, typename Category, size_t N>
 BucketArray<T, Category, N>::CategoryIterator::CategoryIterator(
     const DynamicArray<T>& data, const DynamicArray<size_t>& indices, size_t pos) noexcept
-    : mData(data), mIndices(indices), mPos(pos)
+    : mObjects(data), mIndices(indices), mPos(pos)
 { }
 
 template<typename T, typename Category, size_t N>
 const T& BucketArray<T, Category, N>::CategoryIterator::operator*() const noexcept
 {
-    return mData[mIndices[mPos]];
+    return mObjects[mIndices[mPos]];
 }
 
 template<typename T, typename Category, size_t N>
 const T* BucketArray<T, Category, N>::CategoryIterator::operator->() const noexcept
 {
-    return &mData[mIndices[mPos]];
+    return &mObjects[mIndices[mPos]];
 }
 
 template<typename T, typename Category, size_t N>
@@ -394,7 +449,7 @@ const T& BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::operator*
     const size_t bucketIdx = static_cast<size_t>(mCategories[mCatIdx]);
     const auto& bucket = mParent.mBuckets[bucketIdx];
     const size_t dataIdx = bucket[mElemIdx];
-    return mParent.mData[dataIdx];
+    return mParent.mObjects[dataIdx];
 }
 
 template<typename T, typename Category, size_t N>
@@ -448,21 +503,21 @@ bool BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::operator!=(co
 template<typename T, typename Category, size_t N>
 BucketArray<T, Category, N>::CategoryView::CategoryView(
     const DynamicArray<T>& data, const DynamicArray<size_t>& indices) noexcept
-    : mData(data), mIndices(indices)
+    : mObjects(data), mIndices(indices)
 { }
 
 template<typename T, typename Category, size_t N>
 typename BucketArray<T, Category, N>::CategoryIterator 
 BucketArray<T, Category, N>::CategoryView::begin() const noexcept
 {
-    return CategoryIterator(mData, mIndices, 0);
+    return CategoryIterator(mObjects, mIndices, 0);
 }
 
 template<typename T, typename Category, size_t N>
 typename BucketArray<T, Category, N>::CategoryIterator 
 BucketArray<T, Category, N>::CategoryView::end() const noexcept
 {
-    return CategoryIterator(mData, mIndices, mIndices.size());
+    return CategoryIterator(mObjects, mIndices, mIndices.size());
 }
 
 template<typename T, typename Category, size_t N>
@@ -480,7 +535,7 @@ bool BucketArray<T, Category, N>::CategoryView::empty() const noexcept
 template<typename T, typename Category, size_t N>
 const T& BucketArray<T, Category, N>::CategoryView::operator[](size_t idx) const noexcept
 {
-    return mData[mIndices[idx]];
+    return mObjects[mIndices[idx]];
 }
 
 /* === Multi Category View Implementation === */

@@ -124,6 +124,29 @@ void Scene::begin(const HP_Camera& camera, const HP_Environment& env, const HP_R
 
 void Scene::end()
 {
+    /* --- Process lights --- */
+
+    mLights.process({
+        .viewFrustum = mFrustum,
+        .environment = mEnvironment,
+        .boneBuffer = mBoneBuffer,
+        .drawCalls = mDrawCalls,
+        .drawData = mDrawData
+    });
+
+    /* --- View layer/furstum culling --- */
+
+    mDrawCalls.remove_if([this](const DrawCall& call) {
+        if ((mFrustum.cullMask() & call.mesh().layerMask) == 0) {
+            return true;
+        }
+        const DrawData& data = mDrawData[call.dataIndex()];
+        if (!data.useInstancing() && mEnvironment.hasFlags(HP_ENV_VIEW_FRUSTUM_CULLING)) {
+            return !mFrustum.containsObb(call.mesh().aabb, data.transform());
+        }
+        return false;
+    });
+
     /* --- Sort draw calls --- */
 
     if (mEnvironment.hasFlags(HP_ENV_SORT_OPAQUE)) {
@@ -146,19 +169,17 @@ void Scene::end()
         );
     }
 
-    /* --- Process lights --- */
-
-    mLights.process({
-        .viewFrustum = mFrustum,
-        .sceneBounds = mEnvironment.bounds(),
-        .boneBuffer = mBoneBuffer,
-        .drawCalls = mDrawCalls,
-        .drawData = mDrawData
-    });
-
     /* --- Render scene --- */
 
-    renderScene();
+    gpu::Pipeline([this](const gpu::Pipeline& pipeline) { // NOLINT(bugprone-unused-raii)
+        renderBackground(pipeline);
+        renderPrePass(pipeline);
+        renderScene(pipeline);
+    });
+
+    mFramebufferScene.resolve();
+
+    /* --- Post process --- */
 
     const gpu::Texture* source = &mTargetSceneColor;
 
@@ -181,43 +202,84 @@ void Scene::end()
 
 /* === Private Implementation === */
 
-void Scene::renderScene()
+void Scene::renderBackground(const gpu::Pipeline& pipeline)
 {
-    gpu::Pipeline pipeline;
-
-    /* --- Bind scene framebuffer, setup viewport, and clear --- */
-
     pipeline.bindFramebuffer(mFramebufferScene);
-    pipeline.setViewport(mFramebufferScene);
-
     pipeline.setDepthMode(gpu::DepthMode::WriteOnly);
+    pipeline.setViewport(mFramebufferScene);
 
     pipeline.clearDepth(1.0f);
     pipeline.clearColor(0, mEnvironment.background());
     pipeline.clearColor(1, HP_COLOR(0.25f, 0.25f, 1.0f, 1.0f));
 
-    /* --- Bind common UBOs --- */
+    if (mEnvironment.skyCubemap() == nullptr) {
+        return;
+    }
+
+    mFramebufferScene.setDrawBuffers({0});
 
     pipeline.bindUniform(0, mFrustum.buffer());
     pipeline.bindUniform(1, mEnvironment.buffer());
 
-    /* --- Render skybox --- */
+    pipeline.setDepthMode(gpu::DepthMode::Disabled);
+    pipeline.useProgram(mPrograms.skybox());
 
-    if (mEnvironment.skyCubemap() != nullptr) {
-        mFramebufferScene.setDrawBuffers({0});
-        pipeline.setDepthMode(gpu::DepthMode::Disabled);
-        pipeline.useProgram(mPrograms.skybox());
-        pipeline.bindTexture(0, mEnvironment.skyCubemap()->texture());
-        pipeline.draw(GL_TRIANGLES, 36);
-        mFramebufferScene.enableAllDrawBuffers();
+    pipeline.bindTexture(0, mEnvironment.skyCubemap()->texture());
+    pipeline.draw(GL_TRIANGLES, 36);
+
+    mFramebufferScene.enableAllDrawBuffers();
+}
+
+void Scene::renderPrePass(const gpu::Pipeline& pipeline)
+{
+    if (mDrawCalls.category(DrawCall::PREPASS).empty()) {
+        return;
     }
 
-    /* --- Setup forward pipeline --- */
-
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
-    pipeline.useProgram(mPrograms.forward());
+    pipeline.setColorWrite(gpu::ColorWrite::Disabled);
+    pipeline.setDepthFunc(gpu::DepthFunc::Less);
 
-    /* --- Bind lighting related SSBOs --- */
+    pipeline.useProgram(mPrograms.prepass());
+
+    pipeline.bindStorage(4, mBoneBuffer.buffer());
+
+    pipeline.bindUniform(0, mFrustum.buffer());
+    pipeline.bindUniform(1, mEnvironment.buffer());
+
+    for (const DrawCall& call : mDrawCalls.category(DrawCall::PREPASS))
+    {
+        const DrawData& data = mDrawData[call.dataIndex()];
+        const HP_Material& mat = call.material();
+
+        switch (mat.cull) {
+        case HP_CULL_NONE:
+            pipeline.setCullMode(gpu::CullMode::Disabled);
+            break;
+        case HP_CULL_BACK:
+            pipeline.setCullMode(gpu::CullMode::Back);
+            break;
+        case HP_CULL_FRONT:
+            pipeline.setCullMode(gpu::CullMode::Front);
+            break;
+        }
+    
+        mMaterialBuffer.upload(mat);
+        mRenderableBuffer.upload(data, call);
+
+        pipeline.bindTexture(0, mAssets.textureOrWhite(mat.albedo.texture));
+        pipeline.bindUniform(2, mRenderableBuffer.buffer());
+        pipeline.bindUniform(3, mMaterialBuffer.buffer());
+
+        call.draw(pipeline, data.instances(), data.instanceCount());
+    }
+}
+
+void Scene::renderScene(const gpu::Pipeline& pipeline)
+{
+    pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
+    pipeline.setColorWrite(gpu::ColorWrite::RGBA);
+    pipeline.useProgram(mPrograms.forward());
 
     pipeline.bindStorage(0, mLights.lightsBuffer());
     pipeline.bindStorage(1, mLights.shadowBuffer());
@@ -225,18 +287,17 @@ void Scene::renderScene()
     pipeline.bindStorage(3, mLights.indexBuffer());
     pipeline.bindStorage(4, mBoneBuffer.buffer());
 
-    /* --- Bind constant textures --- */
-
     pipeline.bindTexture(4, mAssets.textureBrdfLut());
     pipeline.bindTexture(7, mLights.shadowCube());
     pipeline.bindTexture(8, mLights.shadow2D());
+
+    pipeline.bindUniform(0, mFrustum.buffer());
+    pipeline.bindUniform(1, mEnvironment.buffer());
 
     if (mEnvironment.skyProbe() != nullptr) {
         pipeline.bindTexture(5, mEnvironment.skyProbe()->irradiance());
         pipeline.bindTexture(6, mEnvironment.skyProbe()->prefilter());
     }
-
-    /* --- Send constant uniforms --- */
 
     pipeline.setUniformInt1(10, mLights.activeCount() > 0);
     pipeline.setUniformUint2(11, mFramebufferScene.dimensions());
@@ -253,30 +314,21 @@ void Scene::renderScene()
         pipeline.setUniformInt1(17, false);
     }
 
-    /* --- Ensures SSBOs are ready (especially clusters) --- */
-
+    // Ensures SSBOs are ready (especially clusters)
     pipeline.memoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    /* --- Render objects --- */
-
-    for (const DrawCall& call : mDrawCalls.categories(DrawCall::OPAQUE, DrawCall::TRANSPARENT))
+    for (const DrawCall& call : mDrawCalls.categories(
+        DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
     {
-        /* --- Apply layer and frustum culling --- */
-
-        if ((mFrustum.cullMask() & call.mesh().layerMask) == 0) {
-            continue;
-        }
-
         const DrawData& data = mDrawData[call.dataIndex()];
-        bool useInstancing = data.useInstancing();
-
-        if (!useInstancing && !mFrustum.containsObb(call.mesh().aabb, data.transform())) {
-            continue;
-        }
-
-        /* --- Set pipeline state --- */
-
         const HP_Material& mat = call.material();
+
+        if (mat.depthPrePass) {
+            pipeline.setDepthFunc(gpu::DepthFunc::Equal);
+        }
+        else {
+            pipeline.setDepthFunc(gpu::DepthFunc::Less);
+        }
 
         switch (mat.blend) {
         case HP_BLEND_OPAQUE:
@@ -305,31 +357,19 @@ void Scene::renderScene()
             break;
         }
 
-        /* --- Bind textures --- */
+        mMaterialBuffer.upload(mat);
+        mRenderableBuffer.upload(data, call);
 
         pipeline.bindTexture(0, mAssets.textureOrWhite(mat.albedo.texture));
         pipeline.bindTexture(1, mAssets.textureOrWhite(mat.emission.texture));
         pipeline.bindTexture(2, mAssets.textureOrWhite(mat.orm.texture));
         pipeline.bindTexture(3, mAssets.textureOrNormal(mat.normal.texture));
 
-        /* --- Send and bind renderable data --- */
-
-        mRenderableBuffer.upload(data, call);
         pipeline.bindUniform(2, mRenderableBuffer.buffer());
-
-        /* --- Send and bind material data --- */
-
-        mMaterialBuffer.upload(mat);
         pipeline.bindUniform(3, mMaterialBuffer.buffer());
-
-        /* --- Draw! --- */
 
         call.draw(pipeline, data.instances(), data.instanceCount());
     }
-
-    /* --- Resolve in case of multi sampled scene --- */
-
-    mFramebufferScene.resolve();
 }
 
 const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)

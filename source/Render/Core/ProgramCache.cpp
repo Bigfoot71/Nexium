@@ -18,6 +18,8 @@
 #include <shaders/cubemap_skybox.frag.h>
 
 #include <shaders/light_culling.comp.h>
+#include <shaders/prepass.vert.h>
+#include <shaders/prepass.frag.h>
 #include <shaders/forward.vert.h>
 #include <shaders/forward.frag.h>
 #include <shaders/skybox.vert.h>
@@ -114,6 +116,20 @@ gpu::Program& ProgramCache::lightCulling()
     );
 
     return mLightCulling;
+}
+
+gpu::Program& ProgramCache::prepass()
+{
+    if (mPrepass.isValid()) {
+        return mPrepass;
+    }
+
+    mPrepass = gpu::Program(
+        gpu::Shader(GL_VERTEX_SHADER, PREPASS_VERT),
+        gpu::Shader(GL_FRAGMENT_SHADER, PREPASS_FRAG)
+    );
+
+    return mPrepass;
 }
 
 gpu::Program& ProgramCache::forward()

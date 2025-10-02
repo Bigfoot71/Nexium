@@ -28,6 +28,7 @@ public:
 
     /** Scene programs */
     gpu::Program& lightCulling();
+    gpu::Program& prepass();
     gpu::Program& forward();
     gpu::Program& skybox();
     gpu::Program& shadow();
@@ -57,6 +58,7 @@ private:
 
     /** Scene programs */
     gpu::Program mLightCulling{};
+    gpu::Program mPrepass{};
     gpu::Program mForward{};
     gpu::Program mSkybox{};
     gpu::Program mShadow{};

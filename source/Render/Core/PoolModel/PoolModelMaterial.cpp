@@ -378,11 +378,24 @@ bool PoolModel::processMaterials(HP_Model* model, const aiScene* scene)
             if (twoSided) modelMaterial.cull = HP_CULL_NONE;
         }
 
-        /* --- Handle the alpha cutoff for glTF models --- */
+        /* --- Handle glTF alpha cutoff --- */
 
         float alphaCutOff;
         if (material->Get(AI_MATKEY_GLTF_ALPHACUTOFF, alphaCutOff) == AI_SUCCESS) {
             modelMaterial.alphaCutOff = alphaCutOff;
+        }
+
+        /* --- Handle glTF alpha mode --- */
+
+        aiString alphaMode;
+        if (material->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == AI_SUCCESS) {
+            if (SDL_strcmp(alphaMode.data, "MASK") == 0) {
+                // This means alphaCutOff should be used
+                modelMaterial.depthPrePass = true;
+            }
+            else if (strcmp(alphaMode.C_Str(), "BLEND") == 0) {
+                modelMaterial.blend = HP_BLEND_ALPHA;
+            }
         }
 
         /* --- Handle blend function override --- */

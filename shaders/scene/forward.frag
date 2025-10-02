@@ -356,7 +356,6 @@ void main()
     /* --- Sample albedo texture --- */
 
     vec4 albedo = vColor * texture(uTexAlbedo, vTexCoord);
-    if (albedo.a < uMat.alphaCutOff) discard;
 
     /* --- Sample emission texture --- */
 

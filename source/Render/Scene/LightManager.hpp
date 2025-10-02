@@ -22,6 +22,7 @@
 #include "./BoneBuffer.hpp"
 #include "../HP_Light.hpp"
 #include "./DrawCall.hpp"
+#include "Environment.hpp"
 
 namespace scene {
 
@@ -31,7 +32,7 @@ class LightManager {
 public:
     struct ProcessParams {
         const ViewFrustum& viewFrustum;
-        const HP_BoundingBox& sceneBounds;
+        const Environment& environment;
         const BoneBuffer& boneBuffer;
         const BucketDrawCalls& drawCalls;
         const ArrayDrawData& drawData;

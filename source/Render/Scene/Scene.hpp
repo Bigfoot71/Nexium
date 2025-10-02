@@ -50,7 +50,12 @@ public:
     LightManager& lights();
 
 private:
-    void renderScene();
+    /** Scene rendering functions */
+    void renderBackground(const gpu::Pipeline& pipeline);
+    void renderPrePass(const gpu::Pipeline& pipeline);
+    void renderScene(const gpu::Pipeline& pipeline);
+
+    /** Post process functions */
     const gpu::Texture& postSSAO(const gpu::Texture& source);
     const gpu::Texture& postBloom(const gpu::Texture& source);
     void postFinal(const gpu::Texture& source);

@@ -23,8 +23,10 @@ namespace scene {
 class DrawCall {
 public:
     enum Category {
-        OPAQUE = 0,
-        TRANSPARENT = 1
+        OPAQUE = 0,         ///< Represents all purely opaque objects
+        PREPASS = 1,        ///< Represents objects rendered with a depth pre-pass (can be opaque or transparent)
+        TRANSPARENT = 2,    ///< Represents all transparent objects
+        CATEGORY_COUNT
     };
 
 public:
@@ -50,7 +52,7 @@ private:
 
 /* === Container === */
 
-using BucketDrawCalls = util::BucketArray<DrawCall, DrawCall::Category, 2>;
+using BucketDrawCalls = util::BucketArray<DrawCall, DrawCall::Category, DrawCall::CATEGORY_COUNT>;
 
 /* === Public Implementation === */
 
@@ -60,7 +62,15 @@ inline DrawCall::DrawCall(int dataIndex, const HP_Mesh& mesh, const HP_Material&
 
 inline DrawCall::Category DrawCall::category(const HP_Material& material)
 {
-    return (material.blend == HP_BLEND_OPAQUE) ? OPAQUE : TRANSPARENT;
+    if (material.depthPrePass) {
+        return PREPASS;
+    }
+
+    if (material.blend != HP_BLEND_OPAQUE) {
+        return TRANSPARENT;
+    }
+
+    return OPAQUE;
 }
 
 inline DrawCall::Category DrawCall::category() const
