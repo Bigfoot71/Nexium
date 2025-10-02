@@ -18,6 +18,7 @@ public:
     const HP_ReflectionProbe* skyProbe() const;
 
     /** CPU data */
+    bool hasFlags(HP_EnvironmentFlag flags) const;
     const HP_BoundingBox& bounds() const;
     const HP_Color& background() const;
     HP_Tonemap tonemapMode() const;
@@ -66,6 +67,7 @@ private:
     HP_ReflectionProbe* mSkyProbe;
 
     /** CPU data */
+    HP_EnvironmentFlag mFlags;
     HP_BoundingBox mBounds;
     HP_Color mBackground;
     HP_Tonemap mTonemapMode;
@@ -91,6 +93,7 @@ inline void Environment::update(const HP_Environment& env)
 
     /* --- Store CPU data */
 
+    mFlags = env.flags;
     mBounds = env.bounds;
     mBackground = env.background;
 
@@ -151,6 +154,11 @@ inline const HP_Cubemap* Environment::skyCubemap() const
 inline const HP_ReflectionProbe* Environment::skyProbe() const
 {
     return mSkyProbe;
+}
+
+inline bool Environment::hasFlags(HP_EnvironmentFlag flags) const
+{
+    return (mFlags & flags) == flags;
 }
 
 inline const HP_BoundingBox& Environment::bounds() const

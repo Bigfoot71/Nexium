@@ -126,13 +126,25 @@ void Scene::end()
 {
     /* --- Sort draw calls --- */
 
-    mDrawCalls.sort(DrawCall::Category::TRANSPARENT,
-        [this](const DrawCall& a, const DrawCall& b) {
-            float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.mesh().aabb, mDrawData[a.dataIndex()].matrix());
-            float maxDistB = mFrustum.getDistanceSquaredToFarthestPoint(b.mesh().aabb, mDrawData[b.dataIndex()].matrix());
-            return maxDistA > maxDistB;
-        }
-    );
+    if (mEnvironment.hasFlags(HP_ENV_SORT_OPAQUE)) {
+        mDrawCalls.sort(DrawCall::Category::OPAQUE,
+            [this](const DrawCall& a, const DrawCall& b) {
+                float maxDistA = mFrustum.getDistanceSquaredToCenterPoint(a.mesh().aabb, mDrawData[a.dataIndex()].matrix());
+                float maxDistB = mFrustum.getDistanceSquaredToCenterPoint(b.mesh().aabb, mDrawData[b.dataIndex()].matrix());
+                return maxDistA < maxDistB;
+            }
+        );
+    }
+
+    if (mEnvironment.hasFlags(HP_ENV_SORT_TRANSPARENT)) {
+        mDrawCalls.sort(DrawCall::Category::TRANSPARENT,
+            [this](const DrawCall& a, const DrawCall& b) {
+                float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.mesh().aabb, mDrawData[a.dataIndex()].matrix());
+                float maxDistB = mFrustum.getDistanceSquaredToFarthestPoint(b.mesh().aabb, mDrawData[b.dataIndex()].matrix());
+                return maxDistA > maxDistB;
+            }
+        );
+    }
 
     /* --- Process lights --- */
 

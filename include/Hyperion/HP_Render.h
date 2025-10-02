@@ -70,6 +70,16 @@ typedef uint8_t HP_InstanceData;
                                                   */
 
 /**
+ * @brief Extra flags for HP_Environment specifying rendering behaviors.
+ *
+ * These flags control optional rendering features that Hyperion can enable per-environment.
+ */
+typedef uint32_t HP_EnvironmentFlag;
+
+#define HP_ENV_SORT_TRANSPARENT     (1 << 0)    ///< Sort transparent objects back-to-front
+#define HP_ENV_SORT_OPAQUE          (1 << 1)    ///< Sort opaque objects front-to-back
+
+/**
  * @brief Defines the type of projection used by a camera.
  */
 typedef enum HP_Projection {
@@ -413,6 +423,8 @@ typedef struct HP_Environment {
         float exposure;             ///< Exposure compensation.
         float white;                ///< White point reference (unused with AGX).
     } tonemap;
+
+    HP_EnvironmentFlag flags;       ///< Extra flags about rendering behavior.
 
 } HP_Environment;
 

@@ -31,6 +31,7 @@ public:
 
     /** Distance to view */
     float getDistanceSquaredTo(const HP_Vec3& point) const;
+    float getDistanceSquaredToCenterPoint(const HP_BoundingBox& box, const HP_Mat4& transform) const;
     float getDistanceSquaredToFarthestPoint(const HP_BoundingBox& box, const HP_Mat4& transform) const;
 
     /** Matrices */
@@ -136,6 +137,11 @@ inline HP_Layer ViewFrustum::cullMask() const
 inline float ViewFrustum::getDistanceSquaredTo(const HP_Vec3& point) const
 {
     return HP_Vec3DistanceSq(mData.position, point);
+}
+
+inline float ViewFrustum::getDistanceSquaredToCenterPoint(const HP_BoundingBox& box, const HP_Mat4& transform) const
+{
+    return HP_Vec3DistanceSq(mData.position, (box.min + box.max) * transform);
 }
 
 inline float ViewFrustum::getDistanceSquaredToFarthestPoint(const HP_BoundingBox& box, const HP_Mat4& transform) const
