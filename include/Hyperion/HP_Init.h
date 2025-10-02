@@ -69,6 +69,8 @@ typedef struct HP_AppDesc {
         HP_IVec2 resolution;    ///< Internal framebuffer dimensions, if component <= 0 uses primary monitor resolution
         int sampleCount;        ///< MSAA sample count for 3D rendering, if <= 1 disables MSAA
         int shadowRes;          ///< Shadow map resolution, if <= 0 defaults to 2048x2048
+        bool shadowCubeMip;     ///< Indicates whether to generate mipmaps for shadow maps (omni lights)
+        bool shadow2DMip;       ///< Indicates whether to generate mipmaps for shadow maps (dir/spot lights)
     } render3D;
 
     struct {

@@ -38,7 +38,7 @@ public:
     };
 
 public:
-    LightManager(render::ProgramCache& programs, render::AssetCache& assets, HP_IVec2 resolution, int shadowRes);
+    LightManager(render::ProgramCache& programs, render::AssetCache& assets, const HP_AppDesc& desc);
 
     /** Light life-cycle management */
     HP_Light* create(HP_LightType type);

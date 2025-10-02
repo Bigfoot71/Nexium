@@ -15,15 +15,6 @@
 #include "../HP_Cubemap.hpp"
 #include "../HP_Texture.hpp"
 
-/* === Helper Functions === */
-
-namespace {
-// TODO: Review the lights init which needs the res before it is defined...
-HP_IVec2 getResolution(HP_IVec2 res) {
-    return (res > HP_IVEC2_ZERO) ? res : HP_GetDisplaySize();
-}
-} // namespace
-
 namespace scene {
 
 /* === Public Implementation === */
@@ -31,7 +22,7 @@ namespace scene {
 Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, HP_AppDesc& desc)
     : mPrograms(programs)
     , mAssets(assets)
-    , mLights(programs, assets, getResolution(desc.render3D.resolution), desc.render3D.shadowRes)
+    , mLights(programs, assets, desc)
     , mFrustum()
 {
     /* --- Tweak description --- */

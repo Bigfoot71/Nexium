@@ -21,14 +21,17 @@ namespace scene {
 
 /* === Public Implementation === */
 
-LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& assets, HP_IVec2 resolution, int shadowRes)
-    : mPrograms(programs), mAssets(assets), mShadowResolution{shadowRes > 0 ? shadowRes : 2048}
+LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& assets, const HP_AppDesc& desc)
+    : mPrograms(programs), mAssets(assets), mShadowResolution{desc.render3D.shadowRes > 0 ? desc.render3D.shadowRes : 2048}
 {
     /* --- Calculation of the number of clusters according to the target size --- */
 
     // NOTE: The Z dimension defined here is the minimum number of slices allocated initially.
     //       During rendering, the actual Z slices are dynamic and calculated per-frame based on
     //       the camera's near and far planes using a logarithmic distribution.
+
+    HP_IVec2 resolution = (desc.render3D.resolution > HP_IVEC2_ONE)
+        ? desc.render3D.resolution : HP_GetDisplaySize();
 
     mClusterSize.x = std::max(16, resolution.x / 80); // 80 px per target cluster
     mClusterSize.y = std::max(9, resolution.y / 50);  // 50 px per target cluster
@@ -96,11 +99,6 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
         shadowFormat = GL_RG16F;
     }
 
-    // NOTE: Trilinear filtering can be enabled for shadow maps when using (E)VSM,
-    //       as long as mipmaps are generated after rendering the shadows.
-    //       However, for Hyperion's current use cases, VSM with simple
-    //       bilinear filtering is already perfectly acceptable.
-
     mShadowMapCubeArray = gpu::Texture(
         gpu::TextureConfig {
             .target = GL_TEXTURE_CUBE_MAP_ARRAY,
@@ -108,11 +106,11 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
             .width = mShadowResolution,
             .height = mShadowResolution,
             .depth = 1,
-            .mipmap = false,
+            .mipmap = desc.render3D.shadowCubeMip,
         },
         gpu::TextureParam
         {
-            .minFilter = GL_LINEAR,
+            .minFilter = static_cast<GLenum>(desc.render3D.shadowCubeMip ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR),
             .magFilter = GL_LINEAR
         }
     );
@@ -125,11 +123,11 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
             .width = mShadowResolution,
             .height = mShadowResolution,
             .depth = 1,
-            .mipmap = false,
+            .mipmap = desc.render3D.shadow2DMip,
         },
         gpu::TextureParam
         {
-            .minFilter = GL_LINEAR,
+            .minFilter = static_cast<GLenum>(desc.render3D.shadow2DMip ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR),
             .magFilter = GL_LINEAR
         }
     );
@@ -372,6 +370,9 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     /* --- Iterates through all lights with shadows active --- */
 
+    int updatedCubeCount = 0;
+    int updated2DCount = 0;
+
     for (HP_Light& light : mLights)
     {
         if (!light.isActive() || !light.isShadowActive() || !light.needsShadowMapUpdate()) {
@@ -386,6 +387,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
         switch (light.type()) {
         case HP_LIGHT_DIR:
+            updated2DCount++;
             pipeline.bindFramebuffer(mFramebufferShadow2D);
             mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
             pipeline.clear(mFramebufferShadow2D, HP_COLOR_1(FLT_MAX));
@@ -401,6 +403,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             }
             break;
         case HP_LIGHT_SPOT:
+            updated2DCount++;
             pipeline.bindFramebuffer(mFramebufferShadow2D);
             mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
             pipeline.clear(mFramebufferShadow2D, HP_COLOR_1(FLT_MAX));
@@ -416,6 +419,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             }
             break;
         case HP_LIGHT_OMNI:
+            updatedCubeCount++;
             pipeline.bindFramebuffer(mFramebufferShadowCube);
             for (int iFace = 0; iFace < 6; iFace++) {
                 mFramebufferShadowCube.setColorAttachmentTarget(0, light.shadowIndex(), iFace);
@@ -433,6 +437,16 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             }
             break;
         }
+    }
+
+    /* --- Update mipmaps if necessary --- */
+
+    if (mShadowMapCubeArray.numLevels() > 1 && updatedCubeCount > 0) {
+        mShadowMapCubeArray.generateMipmap();
+    }
+
+    if (mShadowMap2DArray.numLevels() > 1 && updated2DCount > 0) {
+        mShadowMap2DArray.generateMipmap();
     }
 }
 
