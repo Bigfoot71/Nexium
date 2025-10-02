@@ -175,14 +175,20 @@ float ShadowCube(in Light light, float cNdotL)
 {
     Shadow shadow = sShadows[light.shadowIndex];
 
-    /* --- Light vector and direction --- */
+    /* --- Calculate direction and distance --- */
 
     vec3 lightToFrag = vPosition - light.position;
-    vec3 direction = normalize(lightToFrag);
+    float dist = length(lightToFrag);
 
-    /* --- Normalized distance --- */
+    vec3 direction = lightToFrag / dist;
+    float d01 = dist / light.range;
 
-    float d01 = length(lightToFrag) / light.range;
+    /* --- Pre-compute EVSM exponents --- */
+
+#ifndef GL_ES
+    float nExp = exp(-shadow.lambda * d01);
+    float pExp = exp(+shadow.lambda * d01);
+#endif
 
     /* --- Build orthonormal basis for perturbation --- */
 
@@ -211,14 +217,14 @@ float ShadowCube(in Light light, float cNdotL)
 
     #ifdef GL_ES
         // VSM
-        float v = max(m.y - m.x * m.x, 1e-4);
-        float p = v / (v + (d01 - m.x) * (d01 - m.x));
+        float dx = d01 - m.x;
+        float v  = max(m.y - m.x * m.x, 1e-4);
+        float p  = v / (v + dx * dx);
         factor += ReduceLightBleeding(p, shadow.bleedingBias);
     #else
         // EVSM
-        float pT = m.x * exp(-shadow.lambda * d01);
-        float nT = m.y * exp(+shadow.lambda * d01);
-        factor += ReduceLightBleeding(min(pT, nT), shadow.bleedingBias);
+        float p = min(m.x * nExp, m.y * pExp);
+        factor += ReduceLightBleeding(p, shadow.bleedingBias);
     #endif
     }
 
@@ -245,6 +251,13 @@ float Shadow2D(in Light light, float cNdotL)
 
     float d01 = length(vPosition - light.position) / light.range;
 
+    /* --- Pre-compute EVSM exponents --- */
+
+#ifndef GL_ES
+    float nExp = exp(-shadow.lambda * d01);
+    float pExp = exp(+shadow.lambda * d01);
+#endif
+
     /* --- Generate an additional debanding rotation for the poisson disk --- */
 
     float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
@@ -268,14 +281,14 @@ float Shadow2D(in Light light, float cNdotL)
 
     #ifdef GL_ES
         // VSM
-        float v = max(m.y - m.x * m.x, 1e-4);
-        float p = v / (v + (d01 - m.x) * (d01 - m.x));
+        float dx = d01 - m.x;
+        float v  = max(m.y - m.x * m.x, 1e-4);
+        float p  = v / (v + dx * dx);
         factor += ReduceLightBleeding(p, shadow.bleedingBias);
     #else
         // EVSM
-        float pT = m.x * exp(-shadow.lambda * d01);
-        float nT = m.y * exp(+shadow.lambda * d01);
-        factor += ReduceLightBleeding(min(pT, nT), shadow.bleedingBias);
+        float p = min(m.x * nExp, m.y * pExp);
+        factor += ReduceLightBleeding(p, shadow.bleedingBias);
     #endif
     }
 
