@@ -22,8 +22,7 @@ precision highp float;
 
 /* === Constants === */
 
-#define SHADOW_SAMPLES_NEAR 16
-#define SHADOW_SAMPLES_FAR  4
+#define SHADOW_SAMPLES 16
 
 const vec2 POISSON_DISK[16] = vec2[](
     vec2(-0.94201624, -0.39906216),
@@ -172,7 +171,7 @@ float ReduceLightBleeding(float pMax, float amount)
     return clamp((pMax - amount) / (1.0 - amount), 0.0, 1.0);
 }
 
-float ShadowCube(in Light light, float cNdotL, float zLinear)
+float ShadowCube(in Light light, float cNdotL)
 {
     Shadow shadow = sShadows[light.shadowIndex];
 
@@ -200,23 +199,11 @@ float ShadowCube(in Light light, float cNdotL, float zLinear)
 
     float penumbraSize = shadow.softness * (1.0 + d01 * 2.0);
 
-    /* --- Calculating the number of samples to do --- */
-
-    // Compute a sampling factor based on the view-to-fragment distance.
-    // The value is remapped to [0..1] within [near, light.range].
-    // Beyond light.range, the sampling count reaches its minimum.
-
-    float zRange01 = smoothstep(uFrustum.near, light.range, zLinear);
-
-    int samples = int(mix(float(SHADOW_SAMPLES_NEAR), float(SHADOW_SAMPLES_FAR), zRange01));
-    int sStep = SHADOW_SAMPLES_NEAR / samples;
-
     /* --- Poisson Disk blur --- */
 
     float factor = 0.0;
-    for(int i = 0; i < samples; i++)
+    for(int i = 0; i < SHADOW_SAMPLES; i++)
     {
-        int index = (i * sStep) % SHADOW_SAMPLES_NEAR;
         vec2 diskOffset = diskRot * POISSON_DISK[i] * penumbraSize;
         vec3 sampleDir = normalize(TBN * vec3(diskOffset.xy, 1.0));
 
@@ -235,10 +222,10 @@ float ShadowCube(in Light light, float cNdotL, float zLinear)
     #endif
     }
 
-    return factor / float(samples);
+    return factor / float(SHADOW_SAMPLES);
 }
 
-float Shadow2D(in Light light, float cNdotL, float zLinear)
+float Shadow2D(in Light light, float cNdotL)
 {
     Shadow shadow = sShadows[light.shadowIndex];
 
@@ -269,24 +256,12 @@ float Shadow2D(in Light light, float cNdotL, float zLinear)
 
     float penumbraSize = shadow.softness * (1.0 + d01 * 2.0);
 
-    /* --- Calculating the number of samples to do --- */
-
-    // Compute a sampling factor based on the view-to-fragment distance.
-    // The value is remapped to [0..1] within [near, light.range].
-    // Beyond light.range, the sampling count reaches its minimum.
-
-    float zRange01 = smoothstep(uFrustum.near, light.range, zLinear);
-
-    int samples = int(mix(float(SHADOW_SAMPLES_NEAR), float(SHADOW_SAMPLES_FAR), zRange01));
-    int sStep = SHADOW_SAMPLES_NEAR / samples;
-
     /* --- Poisson Disk blur --- */
 
     float factor = 0.0;
-    for(int i = 0; i < samples; i++)
+    for(int i = 0; i < SHADOW_SAMPLES; i++)
     {
-        int index = (i * sStep) % SHADOW_SAMPLES_NEAR;
-        vec2 offset = diskRot * POISSON_DISK[index] * penumbraSize;
+        vec2 offset = diskRot * POISSON_DISK[i] * penumbraSize;
         vec2 sampleUV = projCoords.xy + offset;
 
         vec2 m = texture(uTexShadow2D, vec3(sampleUV, float(shadow.mapIndex))).rg;
@@ -304,7 +279,7 @@ float Shadow2D(in Light light, float cNdotL, float zLinear)
     #endif
     }
 
-    return factor / float(samples);
+    return factor / float(SHADOW_SAMPLES);
 }
 
 /* === IBL Functions === */
@@ -470,10 +445,10 @@ void main()
         float shadow = 1.0;
         if (light.shadowIndex >= 0) {
             if (light.type == LIGHT_OMNI) {
-                shadow = ShadowCube(light, cNdotL, zLinear);
+                shadow = ShadowCube(light, cNdotL);
             }
             else {
-                shadow = Shadow2D(light, cNdotL, zLinear);
+                shadow = Shadow2D(light, cNdotL);
             }
         }
 
