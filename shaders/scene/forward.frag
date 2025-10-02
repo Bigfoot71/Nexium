@@ -458,12 +458,9 @@ void main()
 
         float shadow = 1.0;
         if (light.shadowIndex >= 0) {
-            if (light.type == LIGHT_OMNI) {
-                shadow = ShadowCube(light, cNdotL);
-            }
-            else {
-                shadow = Shadow2D(light, cNdotL);
-            }
+            shadow = (light.type == LIGHT_OMNI)
+                ? ShadowCube(light, cNdotL)
+                : Shadow2D(light, cNdotL);
         }
 
         /* --- Apply attenuation based on the distance from the light --- */
