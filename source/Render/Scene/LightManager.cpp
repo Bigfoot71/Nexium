@@ -357,10 +357,8 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     gpu::Pipeline pipeline;
 
-    pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
-    pipeline.setCullMode(gpu::CullMode::Back);
-
     pipeline.setViewport(0, 0, mShadowResolution, mShadowResolution);
+    pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.useProgram(mPrograms.shadow());
 
     /* --- Bind UBOs and SSBOs --- */
