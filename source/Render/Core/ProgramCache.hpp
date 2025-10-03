@@ -11,15 +11,22 @@
 
 #include <Hyperion/HP_Render.h>
 
+#include "../../Detail/Util/ObjectPool.hpp"
 #include "../../Detail/GPU/Program.hpp"
 #include "../../Detail/GPU/Shader.hpp"
 #include "../HP_MaterialShader.hpp"
 
 namespace render {
 
+/* === Declaration === */
+
 class ProgramCache {
 public:
     ProgramCache();
+
+    /** Material shaders */
+    HP_MaterialShader* createMaterialShader(const char* vert, const char* frag);
+    void destroyMaterialShader(HP_MaterialShader* shader);
 
     /** Cubemap generation */
     gpu::Program& cubemapFromEquirectangular();
@@ -28,11 +35,11 @@ public:
     gpu::Program& cubemapSkybox();
 
     /** Scene programs */
+    gpu::Program& forward(HP_MaterialShader* shader);
+    gpu::Program& prepass(HP_MaterialShader* shader);
+    gpu::Program& shadow(HP_MaterialShader* shader);
     gpu::Program& lightCulling();
-    gpu::Program& prepass();
-    gpu::Program& forward();
     gpu::Program& skybox();
-    gpu::Program& shadow();
 
     /** Scene post process programs */
     gpu::Program& bloomPost(HP_Bloom mode);
@@ -51,6 +58,9 @@ public:
     gpu::Program& overlay();
 
 private:
+    /** Shader pools */
+    util::ObjectPool<HP_MaterialShader, 32> mMaterialShaders;
+
     /** Cubemap generation */
     gpu::Program mCubemapFromEquirectangular;
     gpu::Program mCubemapIrradiance;
@@ -83,6 +93,33 @@ private:
     gpu::Shader mVertexShaderScreen;
     gpu::Shader mVertexShaderCube;
 };
+
+/* === Public Implementation === */
+
+inline HP_MaterialShader* ProgramCache::createMaterialShader(const char* vert, const char* frag)
+{
+    return mMaterialShaders.create(vert, frag);
+}
+
+inline void ProgramCache::destroyMaterialShader(HP_MaterialShader* shader)
+{
+    mMaterialShaders.destroy(shader);
+}
+
+inline gpu::Program& ProgramCache::forward(HP_MaterialShader* shader)
+{
+    return shader ? shader->forward() : mMaterialShader.forward();
+}
+
+inline gpu::Program& ProgramCache::prepass(HP_MaterialShader* shader)
+{
+    return shader ? shader->prepass() : mMaterialShader.prepass();
+}
+
+inline gpu::Program& ProgramCache::shadow(HP_MaterialShader* shader)
+{
+    return shader ? shader->shadow() : mMaterialShader.shadow();
+}
 
 } // namespace render
 

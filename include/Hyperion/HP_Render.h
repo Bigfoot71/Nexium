@@ -319,6 +319,14 @@ typedef struct HP_Light HP_Light;
  */
 typedef struct HP_Font HP_Font;
 
+/**
+ * @brief Opaque handle to a material shader.
+ *
+ * Represents a customizable shader used by a material.
+ * Provides overrideable vertex/fragment entry points.
+ */
+typedef struct HP_MaterialShader HP_MaterialShader;
+
 /* === Structures === */
 
 /**
@@ -525,6 +533,8 @@ typedef struct HP_Material {
     HP_BillboardMode billboard;     ///< Billboard mode applied to the object
     HP_BlendMode blend;             ///< Blending mode for rendering. Default: Opaque
     HP_CullMode cull;               ///< Face culling mode. Default: Back face
+
+    HP_MaterialShader* shader;      ///< Pointer to an optional material shader. Default: NULL
 
 } HP_Material;
 
@@ -1497,6 +1507,7 @@ HPAPI void HP_UpdateReflectionProbe(HP_ReflectionProbe* probe, const HP_Cubemap*
  * - texScale: (1, 1)
  * - blend mode: HP_BLEND_OPAQUE
  * - cull mode: HP_CULL_BACK
+ * - shader: NULL
  */
 HPAPI HP_Material HP_GetDefaultMaterial(void);
 
@@ -1507,6 +1518,35 @@ HPAPI HP_Material HP_GetDefaultMaterial(void);
  * @note Do not call this if the resources are shared between multiple materials.
  */
 HPAPI void HP_DestroyMaterialResources(HP_Material* material);
+
+/** @} */ // end of Material
+
+/**
+ * @defgroup Material Material Functions
+ * @{
+ */
+
+/**
+ * @brief Create a material shader from source code.
+ * @param vertCode Vertex shader source code.
+ * @param fragCode Fragment shader source code.
+ * @return Pointer to the created HP_MaterialShader, or NULL on failure.
+ */
+HPAPI HP_MaterialShader* HP_CreateMaterialShader(const char* vertCode, const char* fragCode);
+
+/**
+ * @brief Load a material shader from GLSL source files.
+ * @param vertFile Path to the vertex shader source file.
+ * @param fragFile Path to the fragment shader source file.
+ * @return Pointer to the created HP_MaterialShader, or NULL on failure.
+ */
+HPAPI HP_MaterialShader* HP_LoadMaterialShader(const char* vertFile, const char* fragFile);
+
+/**
+ * @brief Destroy a material shader.
+ * @param shader Pointer to the HP_MaterialShader to destroy.
+ */
+void HP_DestroyMaterialShader(HP_MaterialShader* shader);
 
 /** @} */ // end of Material
 

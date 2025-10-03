@@ -17,6 +17,7 @@
 #include "./Render/HP_Texture.hpp"
 #include "./Render/HP_Font.hpp"
 #include "./Detail/Helper.hpp"
+#include "Hyperion/HP_Core.h"
 
 /* === Texture - Public API === */
 
@@ -1835,6 +1836,7 @@ HP_Material HP_GetDefaultMaterial(void)
         .billboard = HP_BILLBOARD_DISABLED,
         .blend = HP_BLEND_OPAQUE,
         .cull = HP_CULL_BACK,
+        .shader = nullptr
     };
 }
 
@@ -1844,6 +1846,31 @@ void HP_DestroyMaterialResources(HP_Material* material)
     HP_DestroyTexture(material->emission.texture);
     HP_DestroyTexture(material->orm.texture);
     HP_DestroyTexture(material->normal.texture);
+}
+
+/* === MaterialShader - Public API === */
+
+HP_MaterialShader* HP_CreateMaterialShader(const char* vertCode, const char* fragCode)
+{
+    return gRender->programs.createMaterialShader(vertCode, fragCode);
+}
+
+HP_MaterialShader* HP_LoadMaterialShader(const char* vertFile, const char* fragFile)
+{
+    char* vertCode = vertFile ? HP_LoadFileText(vertFile) : nullptr;
+    char* fragCode = fragFile ? HP_LoadFileText(fragFile) : nullptr;
+
+    HP_MaterialShader* shader = gRender->programs.createMaterialShader(vertCode, fragCode);
+
+    SDL_free(vertCode);
+    SDL_free(fragCode);
+
+    return shader;
+}
+
+void HP_DestroyMaterialShader(HP_MaterialShader* shader)
+{
+    gRender->programs.destroyMaterialShader(shader);
 }
 
 /* === Mesh - Public API === */

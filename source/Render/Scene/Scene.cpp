@@ -241,8 +241,6 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::Disabled);
 
-    pipeline.useProgram(mPrograms.prepass());
-
     pipeline.bindStorage(4, mBoneBuffer.buffer());
 
     pipeline.bindUniform(0, mFrustum.buffer());
@@ -252,6 +250,8 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
     {
         const DrawData& data = mDrawData[call.dataIndex()];
         const HP_Material& mat = call.material();
+
+        pipeline.useProgram(mPrograms.prepass(mat.shader));
 
         switch (mat.depth.test) {
         case HP_DEPTH_TEST_LESS:
@@ -292,7 +292,6 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
 {
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::RGBA);
-    pipeline.useProgram(mPrograms.forward());
 
     pipeline.bindStorage(0, mLights.lightsBuffer());
     pipeline.bindStorage(1, mLights.shadowBuffer());
@@ -312,21 +311,6 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         pipeline.bindTexture(6, mEnvironment.skyProbe()->prefilter());
     }
 
-    pipeline.setUniformInt1(10, mLights.activeCount() > 0);
-    pipeline.setUniformUint2(11, mFramebufferScene.dimensions());
-    pipeline.setUniformUint3(12, mLights.clusterCount());
-    pipeline.setUniformUint1(13, mLights.maxLightsPerCluster());
-    pipeline.setUniformFloat1(14, mLights.clusterSliceScale());
-    pipeline.setUniformFloat1(15, mLights.clusterSliceBias());
-
-    if (mEnvironment.skyProbe() != nullptr) {
-        pipeline.setUniformInt1(17, true);
-        pipeline.setUniformInt1(21, mEnvironment.skyProbe()->prefilter().numLevels());
-    }
-    else {
-        pipeline.setUniformInt1(17, false);
-    }
-
     // Ensures SSBOs are ready (especially clusters)
     pipeline.memoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
@@ -335,6 +319,23 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
     {
         const DrawData& data = mDrawData[call.dataIndex()];
         const HP_Material& mat = call.material();
+
+        pipeline.useProgram(mPrograms.forward(mat.shader));
+
+        // TODO: Make a UBO for these values, in order to avoid re-uploading them by shader
+        pipeline.setUniformInt1(10, mLights.activeCount() > 0);
+        pipeline.setUniformUint2(11, mFramebufferScene.dimensions());
+        pipeline.setUniformUint3(12, mLights.clusterCount());
+        pipeline.setUniformUint1(13, mLights.maxLightsPerCluster());
+        pipeline.setUniformFloat1(14, mLights.clusterSliceScale());
+        pipeline.setUniformFloat1(15, mLights.clusterSliceBias());
+        if (mEnvironment.skyProbe() != nullptr) {
+            pipeline.setUniformInt1(17, true);
+            pipeline.setUniformInt1(21, mEnvironment.skyProbe()->prefilter().numLevels());
+        }
+        else {
+            pipeline.setUniformInt1(17, false);
+        }
 
         if (mat.depth.prePass) {
             pipeline.setDepthFunc(gpu::DepthFunc::Equal);

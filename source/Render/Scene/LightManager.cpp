@@ -310,6 +310,17 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     /* --- Lambda for drawing calls --- */
 
+    const auto useProgram = [this](const gpu::Pipeline& pipeline, HP_Light& light, int face, const DrawCall& call)
+    {
+        pipeline.useProgram(mPrograms.shadow(call.material().shader));
+
+        // TODO: Make a UBO for these values, in order to avoid re-uploading them by shader
+        pipeline.setUniformMat4(0, light.viewProj(face));
+        pipeline.setUniformFloat3(1, light.position());
+        pipeline.setUniformFloat1(2, light.shadowLambda());
+        pipeline.setUniformFloat1(3, light.range());
+    };
+
     const auto draw = [this, &params](const gpu::Pipeline& pipeline, const DrawCall& call, const DrawData& data)
     {
         const HP_Texture* texture = call.material().albedo.texture;
@@ -355,7 +366,6 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     pipeline.setViewport(0, 0, mShadowResolution, mShadowResolution);
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
-    pipeline.useProgram(mPrograms.shadow());
 
     /* --- Bind UBOs and SSBOs --- */
 
@@ -375,10 +385,6 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             continue;
         }
 
-        pipeline.setUniformFloat3(1, light.position());
-        pipeline.setUniformFloat1(2, light.shadowLambda());
-        pipeline.setUniformFloat1(3, light.range());
-
         float rangeSq = HP_POW2(light.range());
 
         switch (light.type()) {
@@ -387,7 +393,6 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             pipeline.bindFramebuffer(mFramebufferShadow2D);
             mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
             pipeline.clear(mFramebufferShadow2D, HP_COLOR_1(FLT_MAX));
-            pipeline.setUniformMat4(0, light.viewProj());
             for (const DrawCall& call : params.drawCalls.categories(
                 DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
             {
@@ -395,6 +400,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                 if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
                 if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()])) {
+                    useProgram(pipeline, light, 0, call);
                     draw(pipeline, call, params.drawData[call.dataIndex()]);
                 }
             }
@@ -404,7 +410,6 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             pipeline.bindFramebuffer(mFramebufferShadow2D);
             mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
             pipeline.clear(mFramebufferShadow2D, HP_COLOR_1(FLT_MAX));
-            pipeline.setUniformMat4(0, light.viewProj());
             for (const DrawCall& call : params.drawCalls.categories(
                 DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
             {
@@ -412,6 +417,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                 if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
                 if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()])) {
+                    useProgram(pipeline, light, 0, call);
                     draw(pipeline, call, params.drawData[call.dataIndex()]);
                 }
             }
@@ -422,7 +428,6 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             for (int iFace = 0; iFace < 6; iFace++) {
                 mFramebufferShadowCube.setColorAttachmentTarget(0, light.shadowIndex(), iFace);
                 pipeline.clear(mFramebufferShadowCube, HP_COLOR_1(FLT_MAX));
-                pipeline.setUniformMat4(0, light.viewProj(iFace));
                 for (const DrawCall& call : params.drawCalls.categories(
                     DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
                 {
@@ -430,6 +435,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
                     if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()], iFace)) {
+                        useProgram(pipeline, light, iFace, call);
                         draw(pipeline, call, params.drawData[call.dataIndex()]);
                     }
                 }
