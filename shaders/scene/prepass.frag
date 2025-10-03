@@ -36,12 +36,12 @@ layout(std140, binding = 3) uniform U_Material {
     vec2 texOffset;
     vec2 texScale;
     int billboard;
-} uMat;
+} uMaterial;
 
 /* === Program === */
 
 void main()
 {
     float alpha = vAlpha * texture(uTexAlbedo, vTexCoord).a;
-    if (alpha < uMat.alphaCutOff) discard;
+    if (alpha < uMaterial.alphaCutOff) discard;
 }

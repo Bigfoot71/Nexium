@@ -64,7 +64,7 @@ layout(std140, binding = 3) uniform U_Material {
     vec2 texOffset;
     vec2 texScale;
     int billboard;
-} uMat;
+} uMaterial;
 
 /* === Varyings === */
 
@@ -72,6 +72,10 @@ layout(location = 0) out vec3 vPosition;
 layout(location = 1) out vec2 vTexCoord;
 layout(location = 2) out vec4 vColor;
 layout(location = 3) out mat3 vTBN;
+
+/* === Vertex Override === */
+
+#include "../include/template/scene.vert"
 
 /* === Helper Functions === */
 
@@ -87,6 +91,8 @@ mat4 SkinMatrix(ivec4 boneIDs, vec4 weights, int offset)
 
 void main()
 {
+    /* --- Calculation of matrices --- */
+
     mat4 matModel = uRender.matModel;
     mat3 matNormal = mat3(uRender.matNormal);
 
@@ -101,7 +107,7 @@ void main()
         matNormal = mat3(transpose(inverse(iMatModel))) * matNormal;
     }
 
-    switch(uMat.billboard) {
+    switch(uMaterial.billboard) {
     case BILLBOARD_NONE:
         break;
     case BILLBOARD_FRONT:
@@ -112,13 +118,17 @@ void main()
         break;
     }
 
-    vec3 T = normalize(matNormal * aTangent.xyz);
-    vec3 N = normalize(matNormal * aNormal);
-    vec3 B = normalize(cross(N, T) * aTangent.w);
+    /* --- Call vertex override and final vertex calculation --- */
 
-    vPosition = vec3(matModel * vec4(aPosition, 1.0));
-    vTexCoord = uMat.texOffset + aTexCoord * uMat.texScale;
-    vColor = aColor * iColor * uMat.albedoColor;
+    VertexOverride();
+
+    vec3 T = normalize(matNormal * TANGENT.xyz);
+    vec3 N = normalize(matNormal * NORMAL);
+    vec3 B = normalize(cross(N, T) * TANGENT.w);
+
+    vPosition = vec3(matModel * vec4(POSITION, 1.0));
+    vTexCoord = TEXCOORD;
+    vColor = COLOR;
     vTBN = mat3(T, B, N);
 
     gl_Position = uFrustum.viewProj * vec4(vPosition, 1.0);

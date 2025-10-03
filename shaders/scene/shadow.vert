@@ -21,11 +21,14 @@ precision highp float;
 
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec2 aTexCoord;
+layout(location = 2) in vec3 aNormal;
+layout(location = 3) in vec4 aTangent;
 layout(location = 4) in vec4 aColor;
 layout(location = 5) in ivec4 aBoneIDs;
 layout(location = 6) in vec4 aWeights;
 layout(location = 7) in mat4 iMatModel;
 layout(location = 11) in vec4 iColor;
+layout(location = 12) in vec4 iCustom;
 
 /* === Storage Buffers === */
 
@@ -61,7 +64,7 @@ layout(std140, binding = 3) uniform U_Material {
     vec2 texOffset;
     vec2 texScale;
     int billboard;
-} uMat;
+} uMaterial;
 
 /* === Uniforms === */
 
@@ -72,6 +75,10 @@ layout(location = 0) uniform mat4 uLightViewProj;
 layout(location = 0) out vec3 vPosition;
 layout(location = 1) out vec2 vTexCoord;
 layout(location = 2) out float vAlpha;
+
+/* === Vertex Override === */
+
+#include "../include/template/scene.vert"
 
 /* === Helper Functions === */
 
@@ -87,6 +94,8 @@ mat4 SkinMatrix(ivec4 boneIDs, vec4 weights, int offset)
 
 void main()
 {
+    /* --- Calculation of matrices --- */
+
     mat4 matModel = uRender.matModel;
 
     if (uRender.skinning) {
@@ -98,7 +107,7 @@ void main()
         matModel = iMatModel * matModel;
     }
 
-    switch(uMat.billboard) {
+    switch(uMaterial.billboard) {
     case BILLBOARD_NONE:
         break;
     case BILLBOARD_FRONT:
@@ -109,9 +118,13 @@ void main()
         break;
     }
 
-    vPosition = vec3(matModel * vec4(aPosition, 1.0));
-    vTexCoord = uMat.texOffset + aTexCoord * uMat.texScale;
-    vAlpha = aColor.a * iColor.a * uMat.albedoColor.a;
+    /* --- Call vertex override and final vertex calculation --- */
+
+    VertexOverride();
+
+    vPosition = vec3(matModel * vec4(POSITION, 1.0));
+    vTexCoord = TEXCOORD;
+    vAlpha = COLOR.a;
 
     gl_Position = uLightViewProj * vec4(vPosition, 1.0);
 }
