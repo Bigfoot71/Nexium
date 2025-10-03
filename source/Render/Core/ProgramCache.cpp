@@ -120,30 +120,12 @@ gpu::Program& ProgramCache::lightCulling()
 
 gpu::Program& ProgramCache::prepass()
 {
-    if (mPrepass.isValid()) {
-        return mPrepass;
-    }
-
-    mPrepass = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, PREPASS_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, PREPASS_FRAG)
-    );
-
-    return mPrepass;
+    return mMaterialShader.prepass();
 }
 
 gpu::Program& ProgramCache::forward()
 {
-    if (mForward.isValid()) {
-        return mForward;
-    }
-
-    mForward = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, FORWARD_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, FORWARD_FRAG)
-    );
-
-    return mForward;
+    return mMaterialShader.forward();
 }
 
 gpu::Program& ProgramCache::skybox()
@@ -168,16 +150,7 @@ gpu::Program& ProgramCache::skybox()
 
 gpu::Program& ProgramCache::shadow()
 {
-    if (mShadow.isValid()) {
-        return mShadow;
-    }
-
-    mShadow = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, SHADOW_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, SHADOW_FRAG)
-    );
-
-    return mShadow;
+    return mMaterialShader.shadow();
 }
 
 gpu::Program& ProgramCache::output(HP_Tonemap tonemap)

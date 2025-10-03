@@ -13,6 +13,7 @@
 
 #include "../../Detail/GPU/Program.hpp"
 #include "../../Detail/GPU/Shader.hpp"
+#include "../HP_MaterialShader.hpp"
 
 namespace render {
 
@@ -57,11 +58,9 @@ private:
     gpu::Program mCubemapSkybox;
 
     /** Scene programs */
+    HP_MaterialShader mMaterialShader{};
     gpu::Program mLightCulling{};
-    gpu::Program mPrepass{};
-    gpu::Program mForward{};
     gpu::Program mSkybox{};
-    gpu::Program mShadow{};
 
     /** Scene post process programs */
     std::array<gpu::Program, HP_BLOOM_COUNT> mBloomPost{};

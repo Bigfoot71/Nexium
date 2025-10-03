@@ -259,6 +259,7 @@ set(HP_SOURCES
     "${HP_ROOT_PATH}/source/Render/Scene/Scene.cpp"
 
     "${HP_ROOT_PATH}/source/Render/HP_ReflectionProbe.cpp"
+    "${HP_ROOT_PATH}/source/Render/HP_MaterialShader.cpp"
     "${HP_ROOT_PATH}/source/Render/HP_Cubemap.cpp"
     "${HP_ROOT_PATH}/source/Render/HP_Light.cpp"
     "${HP_ROOT_PATH}/source/Render/HP_Font.cpp"
