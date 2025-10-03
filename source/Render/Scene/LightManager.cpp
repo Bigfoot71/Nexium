@@ -315,15 +315,11 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         const HP_Texture* texture = call.material().albedo.texture;
         pipeline.bindTexture(0, mAssets.textureOrWhite(texture));
 
-        pipeline.setUniformMat4(1, data.matrix());
-        pipeline.setUniformFloat2(2, call.material().texOffset);
-        pipeline.setUniformFloat2(3, call.material().texScale);
-        pipeline.setUniformFloat1(4, call.material().albedo.color.a);
-        pipeline.setUniformInt1(5, data.useSkinning());
-        pipeline.setUniformInt1(6, data.boneMatrixOffset());
-        pipeline.setUniformInt1(7, data.useInstancing());
-        pipeline.setUniformUint1(8, call.material().billboard);
-        pipeline.setUniformFloat1(11, call.material().alphaCutOff);
+        params.renderableBuffer.upload(data, call);
+        params.materialBuffer.upload(call.material());
+
+        pipeline.bindUniform(2, params.renderableBuffer.buffer());
+        pipeline.bindUniform(3, params.materialBuffer.buffer());
 
         switch (call.mesh().shadowFaceMode) {
         case HP_SHADOW_FACE_AUTO:
@@ -379,9 +375,9 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             continue;
         }
 
-        pipeline.setUniformFloat3(10, light.position());
-        pipeline.setUniformFloat1(12, light.shadowLambda());
-        pipeline.setUniformFloat1(13, light.range());
+        pipeline.setUniformFloat3(1, light.position());
+        pipeline.setUniformFloat1(2, light.shadowLambda());
+        pipeline.setUniformFloat1(3, light.range());
 
         float rangeSq = HP_POW2(light.range());
 

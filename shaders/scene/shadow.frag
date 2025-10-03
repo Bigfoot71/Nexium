@@ -22,12 +22,28 @@ layout(location = 2) in float vAlpha;
 
 layout(binding = 0) uniform sampler2D uTexAlbedo;
 
+/* === Uniform Buffers === */
+
+layout(std140, binding = 3) uniform U_Material {
+    vec4 albedoColor;
+    vec3 emissionColor;
+    float emissionEnergy;
+    float aoLightAffect;
+    float occlusion;
+    float roughness;
+    float metalness;
+    float normalScale;
+    float alphaCutOff;
+    vec2 texOffset;
+    vec2 texScale;
+    int billboard;
+} uMat;
+
 /* === Uniforms === */
 
-layout(location = 10) uniform vec3 uLightPosition;
-layout(location = 11) uniform float uAlphaCutOff;
-layout(location = 12) uniform float uLambda;
-layout(location = 13) uniform float uFar;
+layout(location = 1) uniform vec3 uLightPosition;
+layout(location = 2) uniform float uLambda;
+layout(location = 3) uniform float uFar;
 
 /* === Fragments === */
 
@@ -38,7 +54,7 @@ layout(location = 0) out vec4 FragDistance;
 void main()
 {
     float alpha = vAlpha * texture(uTexAlbedo, vTexCoord).a;
-    if (alpha < uAlphaCutOff) discard;
+    if (alpha < uMat.alphaCutOff) discard;
 
     // Normalized linear distance in [0,1]
     float d01 = length(vPosition - uLightPosition) / uFar;

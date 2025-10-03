@@ -18,11 +18,13 @@
 #include "../Core/ProgramCache.hpp"
 #include "../Core/AssetCache.hpp"
 
+#include "./RenderableBuffer.hpp"
+#include "./MaterialBuffer.hpp"
 #include "./ViewFrustum.hpp"
+#include "./Environment.hpp"
 #include "./BoneBuffer.hpp"
 #include "../HP_Light.hpp"
 #include "./DrawCall.hpp"
-#include "Environment.hpp"
 
 namespace scene {
 
@@ -33,6 +35,8 @@ public:
     struct ProcessParams {
         const ViewFrustum& viewFrustum;
         const Environment& environment;
+        RenderableBuffer& renderableBuffer;
+        MaterialBuffer& materialBuffer;
         const BoneBuffer& boneBuffer;
         const BucketDrawCalls& drawCalls;
         const ArrayDrawData& drawData;

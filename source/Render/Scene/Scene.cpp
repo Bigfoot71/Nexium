@@ -129,6 +129,8 @@ void Scene::end()
     mLights.process({
         .viewFrustum = mFrustum,
         .environment = mEnvironment,
+        .renderableBuffer = mRenderableBuffer,
+        .materialBuffer = mMaterialBuffer,
         .boneBuffer = mBoneBuffer,
         .drawCalls = mDrawCalls,
         .drawData = mDrawData

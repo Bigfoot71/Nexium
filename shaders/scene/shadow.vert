@@ -39,17 +39,33 @@ layout(std140, binding = 0) uniform U_ViewFrustum {
     Frustum uFrustum;
 };
 
+layout(std140, binding = 2) uniform U_Renderable {
+    mat4 matModel;
+    mat4 matNormal;
+    int boneOffset;
+    uint layerMask;
+    bool instancing;
+    bool skinning;
+} uRender;
+
+layout(std140, binding = 3) uniform U_Material {
+    vec4 albedoColor;
+    vec3 emissionColor;
+    float emissionEnergy;
+    float aoLightAffect;
+    float occlusion;
+    float roughness;
+    float metalness;
+    float normalScale;
+    float alphaCutOff;
+    vec2 texOffset;
+    vec2 texScale;
+    int billboard;
+} uMat;
+
 /* === Uniforms === */
 
 layout(location = 0) uniform mat4 uLightViewProj;
-layout(location = 1) uniform mat4 uMatModel;
-layout(location = 2) uniform vec2 uTCOffset;
-layout(location = 3) uniform vec2 uTCScale;
-layout(location = 4) uniform float uAlpha;
-layout(location = 5) uniform bool uSkinning;
-layout(location = 6) uniform int uBoneOffset;
-layout(location = 7) uniform bool uInstancing;
-layout(location = 8) uniform uint uBillboard;
 
 /* === Varyings === */
 
@@ -71,18 +87,18 @@ mat4 SkinMatrix(ivec4 boneIDs, vec4 weights, int offset)
 
 void main()
 {
-    mat4 matModel = uMatModel;
+    mat4 matModel = uRender.matModel;
 
-    if (uSkinning) {
-        mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, uBoneOffset);
+    if (uRender.skinning) {
+        mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, uRender.boneOffset);
         matModel = sMatModel * matModel;
     }
 
-    if (uInstancing) {
+    if (uRender.instancing) {
         matModel = iMatModel * matModel;
     }
 
-    switch(uBillboard) {
+    switch(uMat.billboard) {
     case BILLBOARD_NONE:
         break;
     case BILLBOARD_FRONT:
@@ -94,8 +110,8 @@ void main()
     }
 
     vPosition = vec3(matModel * vec4(aPosition, 1.0));
-    vTexCoord = uTCOffset + aTexCoord * uTCScale;
-    vAlpha = aColor.a * iColor.a * uAlpha;
+    vTexCoord = uMat.texOffset + aTexCoord * uMat.texScale;
+    vAlpha = aColor.a * iColor.a * uMat.albedoColor.a;
 
     gl_Position = uLightViewProj * vec4(vPosition, 1.0);
 }
