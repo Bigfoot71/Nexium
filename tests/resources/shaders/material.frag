@@ -1,40 +1,58 @@
 // Material fragment shader test
 
-float fade(float t)
-{
-    return t * t * (3.0 - 2.0 * t);
-}
-
-vec2 fade(vec2 t)
-{
-    return vec2(fade(t.x), fade(t.y));
-}
+in flat uint vEffectIndex;
 
 float hash(vec2 p)
 {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
 }
 
-float noise(vec2 p)
+float sinPattern(vec2 p, float frequency)
 {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
+    return 0.5 + 0.5 * sin((p.x + p.y) * frequency);
+}
 
-    float a = hash(i);
-    float b = hash(i + vec2(1.0, 0.0));
-    float c = hash(i + vec2(0.0, 1.0));
-    float d = hash(i + vec2(1.0, 1.0));
+float checker(vec2 p, float size)
+{
+    vec2 q = floor(p / size);
+    return mod(q.x + q.y, 2.0);
+}
 
-    vec2 u = fade(f);
+float radial(vec2 p)
+{
+    vec2 c = vec2(0.5);
+    float d = distance(p, c);
+    return 1.0 - smoothstep(0.0, 0.5, d);
+}
 
-    return mix(
-        mix(a, b, u.x),
-        mix(c, d, u.x),
-        u.y
-    );
+float effect(vec2 p)
+{
+    switch (vEffectIndex) {
+    case 0: {
+        const float pixelSize = 4.0;
+        vec2 pp = floor(p * 100.0 / pixelSize) * pixelSize;
+        return hash(pp + 0.0001 * TIME);
+    }
+    case 1: {
+        return hash(p + 0.0001 * TIME);
+    }
+    case 2: {
+        return sinPattern(p, 20.0);
+    }
+    case 3: {
+        return checker(p * 100.0, 8.0);
+    }
+    case 4: {
+        return radial(p);
+    }
+    default:
+        break;
+    }
+
+    return 1.0;
 }
 
 void fragment()
 {
-    EMISSION *= noise(100.0 * vTexCoord + 10.0 * vec2(TIME, -TIME));
+    EMISSION *= ALBEDO.rgb * effect(vTexCoord);
 }
