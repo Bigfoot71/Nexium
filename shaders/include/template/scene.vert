@@ -8,6 +8,7 @@
 
 /* === Inputs === */
 
+#define TIME            uRender.time
 #define INSTANCE_DATA   iCustom
 
 /* === Outputs === */

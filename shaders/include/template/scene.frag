@@ -6,6 +6,10 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
+/* === Inputs === */
+
+#define TIME            uRender.time
+
 /* === Outputs === */
 
 vec4 ALBEDO             = vec4(1.0);

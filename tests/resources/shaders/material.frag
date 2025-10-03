@@ -36,5 +36,5 @@ float noise(vec2 p)
 
 void fragment()
 {
-    EMISSION *= 0.1 * noise(100.0 * vTexCoord);
+    EMISSION *= noise(100.0 * vTexCoord + 10.0 * vec2(TIME, -TIME));
 }

@@ -49,6 +49,7 @@ layout(std140, binding = 2) uniform U_Renderable {
     uint layerMask;
     bool instancing;
     bool skinning;
+    float time;
 } uRender;
 
 layout(std140, binding = 3) uniform U_Material {
