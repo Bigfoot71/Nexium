@@ -6,7 +6,11 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-/* === Inputs === */
+/* === Includes === */
+
+#include "../math.glsl"
+
+/* === Constants === */
 
 #define TIME            uRender.time
 #define INSTANCE_DATA   iCustom
