@@ -13,6 +13,9 @@
 /* === Constants === */
 
 #define TIME            uRender.time
+#define POSITION        vPosition
+#define TEXCOORD        vTexCoord
+#define NORMAL          vTBN[3]
 
 /* === Outputs === */
 
