@@ -1,8 +1,5 @@
 #include <Hyperion/Hyperion.h>
 #include "./common.h"
-#include "Hyperion/HP_Math.h"
-#include "Hyperion/HP_Rand.h"
-#include "Hyperion/HP_Render.h"
 
 #define X_INSTANCES 100
 #define Z_INSTANCES 100

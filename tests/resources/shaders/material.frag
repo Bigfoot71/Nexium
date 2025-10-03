@@ -43,7 +43,9 @@ float effect(vec2 p)
         return checker(p * 100.0, 8.0);
     }
     case 4: {
-        return radial(p);
+        float v = radial(p);
+        v = max(v, 1.0 - v);
+        return v * v;
     }
     default:
         break;
@@ -54,5 +56,5 @@ float effect(vec2 p)
 
 void fragment()
 {
-    EMISSION *= ALBEDO.rgb * effect(vTexCoord);
+    EMISSION *= ALBEDO.rgb * effect(TEXCOORD);
 }
