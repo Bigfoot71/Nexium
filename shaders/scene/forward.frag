@@ -17,6 +17,7 @@ precision highp float;
 #include "../include/environment.glsl"
 #include "../include/frustum.glsl"
 #include "../include/lights.glsl"
+#include "../include/frame.glsl"
 #include "../include/math.glsl"
 #include "../include/pbr.glsl"
 
@@ -84,25 +85,28 @@ layout(binding = 8) uniform highp sampler2DArray uTexShadow2D;
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform U_ViewFrustum {
+layout(std140, binding = 0) uniform U_Frame {
+    Frame uFrame;
+};
+
+layout(std140, binding = 1) uniform U_ViewFrustum {
     Frustum uFrustum;
 };
 
-layout(std140, binding = 1) uniform U_Environment {
+layout(std140, binding = 2) uniform U_Environment {
     Environment uEnv;
 };
 
-layout(std140, binding = 2) uniform U_Renderable {
+layout(std140, binding = 3) uniform U_Renderable {
     mat4 matModel;
     mat4 matNormal;
     int boneOffset;
     uint layerMask;
     bool instancing;
     bool skinning;
-    float time;
 } uRender;
 
-layout(std140, binding = 3) uniform U_Material {
+layout(std140, binding = 4) uniform U_Material {
     vec4 albedoColor;
     vec3 emissionColor;
     float emissionEnergy;
@@ -116,19 +120,6 @@ layout(std140, binding = 3) uniform U_Material {
     vec2 texScale;
     int billboard;
 } uMaterial;
-
-/* === Uniforms === */
-
-layout(location = 10) uniform bool uHasActiveLights;
-
-layout(location = 11) uniform uvec2 uScreenSize;             //< Must match the dimensions of the render target
-layout(location = 12) uniform uvec3 uClusterCount;
-layout(location = 13) uniform uint uMaxLightsPerCluster;
-layout(location = 14) uniform float uClusterSliceScale;
-layout(location = 15) uniform float uClusterSliceBias;
-
-layout(location = 17) uniform bool uHasProbe;
-layout(location = 21) uniform int uProbePrefilterMipCount;
 
 /* === Fragments === */
 
@@ -387,15 +378,15 @@ void main()
 
     /* --- Getting the cluster index and the number of lights in the cluster --- */
 
-    uvec3 clusterCoord = L_ClusterFromScreen(gl_FragCoord.xy / vec2(uScreenSize),
-        -zLinear, uClusterCount, uClusterSliceScale, uClusterSliceBias);
+    uvec3 clusterCoord = L_ClusterFromScreen(gl_FragCoord.xy / vec2(uFrame.screenSize),
+        -zLinear, uFrame.clusterCount, uFrame.clusterSliceScale, uFrame.clusterSliceBias);
 
-    uint clusterIndex = L_ClusterIndex(clusterCoord, uClusterCount);
+    uint clusterIndex = L_ClusterIndex(clusterCoord, uFrame.clusterCount);
     uint lightCount = sClusters[clusterIndex];
 
     // Mask light count if there are no active lights,
     // sClusters may contain stale/garbage values otherwise.
-    lightCount *= uint(uHasActiveLights);
+    lightCount *= uint(uFrame.hasActiveLights);
 
     /* --- Loop through all light sources accumulating diffuse and specular light --- */
 
@@ -406,7 +397,7 @@ void main()
     {
         /* --- Calculate light index and get light --- */
 
-        uint lightIndex = sIndices[clusterIndex * uMaxLightsPerCluster + i];
+        uint lightIndex = sIndices[clusterIndex * uFrame.maxLightsPerCluster + i];
         Light light = sLights[lightIndex];
 
         /* --- Compute light direction --- */
@@ -487,7 +478,7 @@ void main()
 
     vec3 skyDiffuse = uEnv.ambientColor;
 
-    if (uHasProbe) {
+    if (uFrame.hasProbe) {
         vec3 Nr = M_Rotate3D(N, uEnv.skyRotation);
         skyDiffuse = texture(uTexProbeIrradiance, Nr).rgb;
     }
@@ -501,9 +492,9 @@ void main()
 
     vec3 skySpecular = uEnv.ambientColor;
 
-    if (uHasProbe) {
+    if (uFrame.hasProbe) {
         vec3 R = M_Rotate3D(reflect(-V, N), uEnv.skyRotation);
-        float mipLevel = ROUGHNESS * (float(uProbePrefilterMipCount) - 1.0);
+        float mipLevel = ROUGHNESS * (float(textureQueryLevels(uTexProbePrefilter)) - 1.0);
         skySpecular = textureLod(uTexProbePrefilter, R, mipLevel).rgb;
     }
 

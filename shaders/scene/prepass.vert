@@ -14,8 +14,10 @@ precision highp float;
 
 /* === Includes === */
 
+#include "../include/environment.glsl"
 #include "../include/billboard.glsl"
 #include "../include/frustum.glsl"
+#include "../include/frame.glsl"
 
 /* === Attributes === */
 
@@ -38,21 +40,28 @@ layout(std430, binding = 4) buffer BoneBuffer {
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform U_ViewFrustum {
+layout(std140, binding = 0) uniform U_Frame {
+    Frame uFrame;
+};
+
+layout(std140, binding = 1) uniform U_ViewFrustum {
     Frustum uFrustum;
 };
 
-layout(std140, binding = 2) uniform U_Renderable {
+layout(std140, binding = 2) uniform U_Environment {
+    Environment uEnv;
+};
+
+layout(std140, binding = 3) uniform U_Renderable {
     mat4 matModel;
     mat4 matNormal;
     int boneOffset;
     uint layerMask;
     bool instancing;
     bool skinning;
-    float time;
 } uRender;
 
-layout(std140, binding = 3) uniform U_Material {
+layout(std140, binding = 4) uniform U_Material {
     vec4 albedoColor;
     vec3 emissionColor;
     float emissionEnergy;

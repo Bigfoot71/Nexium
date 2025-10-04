@@ -12,7 +12,7 @@
 
 /* === Constants === */
 
-#define TIME            uRender.time
+#define TIME            uFrame.elapsedTime
 #define INSTANCE_DATA   iCustom
 
 /* === Outputs === */

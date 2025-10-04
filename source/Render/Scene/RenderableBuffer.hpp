@@ -34,7 +34,6 @@ private:
         alignas(4) uint32_t layerMask;
         alignas(4) int32_t instancing;
         alignas(4) int32_t skinning;
-        alignas(4) float time;
     };
 
 private:
@@ -60,7 +59,6 @@ inline void RenderableBuffer::upload(const DrawData& data, const DrawCall& call)
         .layerMask = call.mesh().layerMask,
         .instancing = data.useInstancing(),
         .skinning = data.useSkinning(),
-        .time = static_cast<float>(HP_GetElapsedTime())
     };
 
     mBufferIndex = (mBufferIndex + 1) % mBuffers.size();
