@@ -8,23 +8,27 @@
 #include <shaders/shadow.frag.h>
 
 #include <string_view>
+#include <string>
 
 /* === Public Implementation === */
 
 HP_MaterialShader::HP_MaterialShader()
-    : mForward(
+{
+    mPrograms[FORWARD] = gpu::Program(
         gpu::Shader(GL_VERTEX_SHADER, FORWARD_VERT),
         gpu::Shader(GL_FRAGMENT_SHADER, FORWARD_FRAG)
-    )
-    , mPrePass(
+    );
+
+    mPrograms[PREPASS] = gpu::Program(
         gpu::Shader(GL_VERTEX_SHADER, PREPASS_VERT),
         gpu::Shader(GL_FRAGMENT_SHADER, PREPASS_FRAG)
-    )
-    , mShadow(
+    );
+
+    mPrograms[SHADOW] = gpu::Program(
         gpu::Shader(GL_VERTEX_SHADER, SHADOW_VERT),
         gpu::Shader(GL_FRAGMENT_SHADER, SHADOW_FRAG)
-    )
-{ }
+    );
+}
 
 HP_MaterialShader::HP_MaterialShader(const char* vert, const char* frag)
 {
@@ -53,29 +57,143 @@ HP_MaterialShader::HP_MaterialShader(const char* vert, const char* frag)
 
     /* --- Compile shaders --- */
 
-    mForward = gpu::Program(
+    mPrograms[FORWARD] = gpu::Program(
         gpu::Shader(GL_VERTEX_SHADER, vertForward.c_str()),
         gpu::Shader(GL_FRAGMENT_SHADER, fragForward.c_str())
     );
 
-    mPrePass = gpu::Program(
+    mPrograms[PREPASS] = gpu::Program(
         gpu::Shader(GL_VERTEX_SHADER, vertPrepass.c_str()),
         gpu::Shader(GL_FRAGMENT_SHADER, fragPrepass.c_str())
     );
 
-    mShadow = gpu::Program(
+    mPrograms[SHADOW] = gpu::Program(
         gpu::Shader(GL_VERTEX_SHADER, vertShadow.c_str()),
         gpu::Shader(GL_FRAGMENT_SHADER, fragShadow.c_str())
     );
+
+    /* --- Collect uniform blocks --- */
+
+    size_t bufferSize[UNIFORM_COUNT]{};
+    for (int i = 0; i < SHADER_COUNT; i++) {
+        for (int j = 0; j < UNIFORM_COUNT; j++) {
+            int blockIndex = mPrograms[i].getUniformBlockIndex(UniformNames[j]);
+            if (blockIndex >= 0) {
+                mPrograms[i].setUniformBlockBinding(blockIndex, UniformBinding[j]);
+                if (bufferSize[j] == 0) {
+                    bufferSize[j] = mPrograms[i].getUniformBlockSize(blockIndex);
+                }
+            }
+        }
+    }
+
+    /* --- Allocate static uniform buffer if needed --- */
+
+    if (bufferSize[STATIC_UNIFORM] > 0) {
+        mStaticBuffer = gpu::Buffer(GL_UNIFORM_BUFFER, bufferSize[STATIC_UNIFORM], nullptr, GL_DYNAMIC_DRAW);
+    }
+
+    /* --- Allocate dynamic uniform buffer if needed --- */
+
+    if (bufferSize[DYNAMIC_UNIFORM] > 0) {
+        int alignment = gpu::Pipeline::uniformBufferOffsetAlignment();
+        int alignedSize = HP_ALIGN_UP(8 * bufferSize[DYNAMIC_UNIFORM], alignment);
+        mDynamicBuffer.buffer = gpu::Buffer(GL_UNIFORM_BUFFER, alignedSize, nullptr, GL_DYNAMIC_DRAW);
+        if (!mDynamicBuffer.ranges.reserve(8)) {
+            HP_INTERNAL_LOG(E, "RENDER: Failed to reserve space for dynamic uniform buffer range infos");
+        }
+    }
+}
+
+void HP_MaterialShader::updateStaticBuffer(size_t offset, size_t size, const void* data)
+{
+    if (!mStaticBuffer.isValid()) {
+        HP_LogE(
+            "RENDER: Failed to upload data to the static uniform buffer of material shader;"
+            "No static buffer was declared for this material shader"
+        );
+    }
+
+    if (offset + size > mStaticBuffer.size()) {
+        HP_LogE(
+            "RENDER: Failed to upload data to the static uniform buffer of material shader;"
+            "offset + size (%zu) exceeds size of static buffer (%zu)",
+            offset + size, mStaticBuffer.size()
+        );
+        return;
+    }
+
+    mStaticBuffer.upload(offset, size, data);
+}
+
+void HP_MaterialShader::updateDynamicBuffer(size_t size, const void* data)
+{
+    if (!mDynamicBuffer.buffer.isValid()) {
+        HP_LogW(
+            "RENDER: Failed to upload data to the dynamic uniform buffer of material shader; "
+            "No dynamic buffer was declared for this material shader"
+        );
+        return;
+    }
+
+    if (size % 16 != 0) /* std140 requirement */ {
+        HP_LogW(
+            "RENDER: Failed to upload data to the dynamic uniform buffer of material shader; "
+            "The size of the data sent must be a multiple of 16"
+        );
+        return;
+    }
+
+    size_t alignment = gpu::Pipeline::uniformBufferOffsetAlignment();
+    size_t alignedOffset = HP_ALIGN_UP(mDynamicBuffer.currentOffset, alignment);
+
+    size_t requiredSize = alignedOffset + size;
+    if (requiredSize > mDynamicBuffer.buffer.size()) {
+        size_t newSize = HP_ALIGN_UP(2 * mDynamicBuffer.buffer.size(), alignment);
+        while (newSize < requiredSize) {
+            newSize *= 2;
+            newSize = HP_ALIGN_UP(newSize, alignment);
+        }
+        mDynamicBuffer.buffer.realloc(newSize, true);
+    }
+
+    mDynamicBuffer.currentRangeIndex = static_cast<int>(mDynamicBuffer.ranges.size());
+    mDynamicBuffer.ranges.emplace_back(alignedOffset, size);
+
+    mDynamicBuffer.buffer.upload(alignedOffset, size, data);
+    mDynamicBuffer.currentOffset = alignedOffset + size;
+}
+
+void HP_MaterialShader::bindUniformBuffers(const gpu::Pipeline& pipeline, Shader shader, int dynamicRangeIndex)
+{
+    if (mStaticBuffer.isValid()) {
+        pipeline.bindUniform(
+            UniformBinding[STATIC_UNIFORM],
+            mStaticBuffer
+        );
+    }
+
+    if (mDynamicBuffer.buffer.isValid() && dynamicRangeIndex >= 0) {
+        pipeline.bindUniform(
+            UniformBinding[DYNAMIC_UNIFORM],
+            mDynamicBuffer.buffer,
+            mDynamicBuffer.ranges[dynamicRangeIndex].offset,
+            mDynamicBuffer.ranges[dynamicRangeIndex].size
+        );
+    }
 }
 
 /* === Private Implementation === */
 
 void HP_MaterialShader::processCode(std::string& source, const std::string_view& define, const char* code)
 {
+    /* --- If no code provided keep default shader --- */
+
     if (code == nullptr) {
         return;
     }
+
+    /* --- Insert use code to the shader --- */
 
     size_t pos = source.find(define);
 

@@ -28,6 +28,9 @@ public:
     HP_MaterialShader* createMaterialShader(const char* vert, const char* frag);
     void destroyMaterialShader(HP_MaterialShader* shader);
 
+    /** Should be called at the end of 'HP_End3D()' */
+    void clearDynamicMaterialBuffers();
+
     /** Cubemap generation */
     gpu::Program& cubemapFromEquirectangular();
     gpu::Program& cubemapIrradiance();
@@ -35,9 +38,7 @@ public:
     gpu::Program& cubemapSkybox();
 
     /** Scene programs */
-    gpu::Program& forward(HP_MaterialShader* shader);
-    gpu::Program& prepass(HP_MaterialShader* shader);
-    gpu::Program& shadow(HP_MaterialShader* shader);
+    HP_MaterialShader& materialShader(HP_MaterialShader* shader);
     gpu::Program& lightCulling();
     gpu::Program& skybox();
 
@@ -106,19 +107,16 @@ inline void ProgramCache::destroyMaterialShader(HP_MaterialShader* shader)
     mMaterialShaders.destroy(shader);
 }
 
-inline gpu::Program& ProgramCache::forward(HP_MaterialShader* shader)
+inline void ProgramCache::clearDynamicMaterialBuffers()
 {
-    return shader ? shader->forward() : mMaterialShader.forward();
+    for (HP_MaterialShader& shader : mMaterialShaders) {
+        shader.clearDynamicBuffer();
+    }
 }
 
-inline gpu::Program& ProgramCache::prepass(HP_MaterialShader* shader)
+inline HP_MaterialShader& ProgramCache::materialShader(HP_MaterialShader* shader)
 {
-    return shader ? shader->prepass() : mMaterialShader.prepass();
-}
-
-inline gpu::Program& ProgramCache::shadow(HP_MaterialShader* shader)
-{
-    return shader ? shader->shadow() : mMaterialShader.shadow();
+    return shader ? *shader : mMaterialShader;
 }
 
 } // namespace render

@@ -1873,6 +1873,16 @@ void HP_DestroyMaterialShader(HP_MaterialShader* shader)
     gRender->programs.destroyMaterialShader(shader);
 }
 
+void HP_UpdateStaticMaterialBuffer(HP_MaterialShader* shader, size_t offset, size_t size, const void* data)
+{
+    shader->updateStaticBuffer(offset, size, data);
+}
+
+void HP_UpdateDynamicMaterialBuffer(HP_MaterialShader* shader, size_t size, const void* data)
+{
+    shader->updateDynamicBuffer(size, data);
+}
+
 /* === Mesh - Public API === */
 
 HP_Mesh* HP_CreateMesh(const HP_Vertex3D* vertices, int vCount, const uint32_t* indices, int iCount)

@@ -312,7 +312,10 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     const auto draw = [this, &params](const gpu::Pipeline& pipeline, const DrawCall& call, const DrawData& data)
     {
-        pipeline.useProgram(mPrograms.shadow(call.material().shader));
+        HP_MaterialShader& shader = mPrograms.materialShader(call.material().shader);
+
+        pipeline.useProgram(shader.program(HP_MaterialShader::SHADOW));
+        shader.bindUniformBuffers(pipeline, HP_MaterialShader::SHADOW, call.dynamicRangeIndex());
 
         const HP_Texture* texture = call.material().albedo.texture;
         pipeline.bindTexture(0, mAssets.textureOrWhite(texture));
@@ -400,8 +403,8 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
                     if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
-                    if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()])) {
-                        draw(pipeline, call, params.drawData[call.dataIndex()]);
+                    if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.drawDataIndex()])) {
+                        draw(pipeline, call, params.drawData[call.drawDataIndex()]);
                     }
                 }
             }
@@ -426,8 +429,8 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
                     if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
-                    if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()])) {
-                        draw(pipeline, call, params.drawData[call.dataIndex()]);
+                    if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.drawDataIndex()])) {
+                        draw(pipeline, call, params.drawData[call.drawDataIndex()]);
                     }
                 }
             }
@@ -457,8 +460,8 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                         if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
                         if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
-                        if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()], iFace)) {
-                            draw(pipeline, call, params.drawData[call.dataIndex()]);
+                        if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.drawDataIndex()], iFace)) {
+                            draw(pipeline, call, params.drawData[call.drawDataIndex()]);
                         }
                     }
                 }

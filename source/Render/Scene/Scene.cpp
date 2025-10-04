@@ -158,7 +158,7 @@ void Scene::end()
         if ((mFrustum.cullMask() & call.mesh().layerMask) == 0) {
             return true;
         }
-        const DrawData& data = mDrawData[call.dataIndex()];
+        const DrawData& data = mDrawData[call.drawDataIndex()];
         if (!data.useInstancing() && mEnvironment.hasFlags(HP_ENV_VIEW_FRUSTUM_CULLING)) {
             return !mFrustum.containsObb(call.mesh().aabb, data.transform());
         }
@@ -170,8 +170,8 @@ void Scene::end()
     if (mEnvironment.hasFlags(HP_ENV_SORT_OPAQUE)) {
         mDrawCalls.sort(DrawCall::Category::OPAQUE,
             [this](const DrawCall& a, const DrawCall& b) {
-                float maxDistA = mFrustum.getDistanceSquaredToCenterPoint(a.mesh().aabb, mDrawData[a.dataIndex()].matrix());
-                float maxDistB = mFrustum.getDistanceSquaredToCenterPoint(b.mesh().aabb, mDrawData[b.dataIndex()].matrix());
+                float maxDistA = mFrustum.getDistanceSquaredToCenterPoint(a.mesh().aabb, mDrawData[a.drawDataIndex()].matrix());
+                float maxDistB = mFrustum.getDistanceSquaredToCenterPoint(b.mesh().aabb, mDrawData[b.drawDataIndex()].matrix());
                 return maxDistA < maxDistB;
             }
         );
@@ -180,8 +180,8 @@ void Scene::end()
     if (mEnvironment.hasFlags(HP_ENV_SORT_TRANSPARENT)) {
         mDrawCalls.sort(DrawCall::Category::TRANSPARENT,
             [this](const DrawCall& a, const DrawCall& b) {
-                float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.mesh().aabb, mDrawData[a.dataIndex()].matrix());
-                float maxDistB = mFrustum.getDistanceSquaredToFarthestPoint(b.mesh().aabb, mDrawData[b.dataIndex()].matrix());
+                float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.mesh().aabb, mDrawData[a.drawDataIndex()].matrix());
+                float maxDistB = mFrustum.getDistanceSquaredToFarthestPoint(b.mesh().aabb, mDrawData[b.drawDataIndex()].matrix());
                 return maxDistA > maxDistB;
             }
         );
@@ -210,6 +210,10 @@ void Scene::end()
     }
 
     postFinal(*source);
+
+    /* --- Clear frame buffers --- */
+
+    mPrograms.clearDynamicMaterialBuffers();
 
     /* --- Reset state --- */
 
@@ -265,10 +269,12 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
 
     for (const DrawCall& call : mDrawCalls.category(DrawCall::PREPASS))
     {
-        const DrawData& data = mDrawData[call.dataIndex()];
+        const DrawData& data = mDrawData[call.drawDataIndex()];
         const HP_Material& mat = call.material();
 
-        pipeline.useProgram(mPrograms.prepass(mat.shader));
+        HP_MaterialShader& shader = mPrograms.materialShader(mat.shader);
+        pipeline.useProgram(shader.program(HP_MaterialShader::PREPASS));
+        shader.bindUniformBuffers(pipeline, HP_MaterialShader::PREPASS, call.dynamicRangeIndex());
 
         switch (mat.depth.test) {
         case HP_DEPTH_TEST_LESS:
@@ -335,10 +341,12 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
     for (const DrawCall& call : mDrawCalls.categories(
         DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
     {
-        const DrawData& data = mDrawData[call.dataIndex()];
+        const DrawData& data = mDrawData[call.drawDataIndex()];
         const HP_Material& mat = call.material();
 
-        pipeline.useProgram(mPrograms.forward(mat.shader));
+        HP_MaterialShader& shader = mPrograms.materialShader(mat.shader);
+        pipeline.useProgram(shader.program(HP_MaterialShader::FORWARD));
+        shader.bindUniformBuffers(pipeline, HP_MaterialShader::FORWARD, call.dynamicRangeIndex());
 
         if (mat.depth.prePass) {
             pipeline.setDepthFunc(gpu::DepthFunc::Equal);
