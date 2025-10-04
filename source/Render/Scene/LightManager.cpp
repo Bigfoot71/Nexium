@@ -310,27 +310,18 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     /* --- Lambda for drawing calls --- */
 
-    const auto useProgram = [this](const gpu::Pipeline& pipeline, HP_Light& light, int face, const DrawCall& call)
+    const auto draw = [this, &params](const gpu::Pipeline& pipeline, const DrawCall& call, const DrawData& data)
     {
         pipeline.useProgram(mPrograms.shadow(call.material().shader));
 
-        // TODO: Make a UBO for these values, in order to avoid re-uploading them by shader
-        pipeline.setUniformMat4(0, light.viewProj(face));
-        pipeline.setUniformFloat3(1, light.position());
-        pipeline.setUniformFloat1(2, light.shadowLambda());
-        pipeline.setUniformFloat1(3, light.range());
-    };
-
-    const auto draw = [this, &params](const gpu::Pipeline& pipeline, const DrawCall& call, const DrawData& data)
-    {
         const HP_Texture* texture = call.material().albedo.texture;
         pipeline.bindTexture(0, mAssets.textureOrWhite(texture));
 
         params.renderableBuffer.upload(data, call);
         params.materialBuffer.upload(call.material());
 
-        pipeline.bindUniform(2, params.renderableBuffer.buffer());
-        pipeline.bindUniform(3, params.materialBuffer.buffer());
+        pipeline.bindUniform(3, params.renderableBuffer.buffer());
+        pipeline.bindUniform(4, params.materialBuffer.buffer());
 
         switch (call.mesh().shadowFaceMode) {
         case HP_SHADOW_FACE_AUTO:
@@ -369,8 +360,9 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     /* --- Bind UBOs and SSBOs --- */
 
-    pipeline.bindUniform(0, params.viewFrustum.buffer());
     pipeline.bindStorage(0, params.boneBuffer.buffer());
+    pipeline.bindUniform(1, params.viewFrustum.buffer());
+    pipeline.bindUniform(2, params.environment.buffer());
 
     /* --- Iterates through all lights with shadows active --- */
 
@@ -389,54 +381,85 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
         switch (light.type()) {
         case HP_LIGHT_DIR:
-            updated2DCount++;
-            pipeline.bindFramebuffer(mFramebufferShadow2D);
-            mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
-            pipeline.clear(mFramebufferShadow2D, HP_COLOR_1(FLT_MAX));
-            for (const DrawCall& call : params.drawCalls.categories(
-                DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
             {
-                if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
-                if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
+                updated2DCount++;
 
-                if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()])) {
-                    useProgram(pipeline, light, 0, call);
-                    draw(pipeline, call, params.drawData[call.dataIndex()]);
-                }
-            }
-            break;
-        case HP_LIGHT_SPOT:
-            updated2DCount++;
-            pipeline.bindFramebuffer(mFramebufferShadow2D);
-            mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
-            pipeline.clear(mFramebufferShadow2D, HP_COLOR_1(FLT_MAX));
-            for (const DrawCall& call : params.drawCalls.categories(
-                DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
-            {
-                if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
-                if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
+                mFrameShadowUniform.upload(
+                    light.viewProj(), light.position(),
+                    light.shadowLambda(), light.range()
+                );
+                pipeline.bindUniform(0, mFrameShadowUniform.buffer());
 
-                if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()])) {
-                    useProgram(pipeline, light, 0, call);
-                    draw(pipeline, call, params.drawData[call.dataIndex()]);
-                }
-            }
-            break;
-        case HP_LIGHT_OMNI:
-            updatedCubeCount++;
-            pipeline.bindFramebuffer(mFramebufferShadowCube);
-            for (int iFace = 0; iFace < 6; iFace++) {
-                mFramebufferShadowCube.setColorAttachmentTarget(0, light.shadowIndex(), iFace);
-                pipeline.clear(mFramebufferShadowCube, HP_COLOR_1(FLT_MAX));
+                pipeline.bindFramebuffer(mFramebufferShadow2D);
+                mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
+                pipeline.clear(mFramebufferShadow2D, HP_COLOR_1(FLT_MAX));
+
                 for (const DrawCall& call : params.drawCalls.categories(
                     DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
                 {
                     if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
                     if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
-                    if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()], iFace)) {
-                        useProgram(pipeline, light, iFace, call);
+                    if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()])) {
                         draw(pipeline, call, params.drawData[call.dataIndex()]);
+                    }
+                }
+            }
+            break;
+        case HP_LIGHT_SPOT:
+            {
+                updated2DCount++;
+
+                mFrameShadowUniform.upload(
+                    light.viewProj(), light.position(),
+                    light.shadowLambda(), light.range()
+                );
+                pipeline.bindUniform(0, mFrameShadowUniform.buffer());
+
+                pipeline.bindFramebuffer(mFramebufferShadow2D);
+                mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
+                pipeline.clear(mFramebufferShadow2D, HP_COLOR_1(FLT_MAX));
+
+                for (const DrawCall& call : params.drawCalls.categories(
+                    DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
+                {
+                    if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
+                    if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
+
+                    if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()])) {
+                        draw(pipeline, call, params.drawData[call.dataIndex()]);
+                    }
+                }
+            }
+            break;
+        case HP_LIGHT_OMNI:
+            {
+                updatedCubeCount++;
+                pipeline.bindFramebuffer(mFramebufferShadowCube);
+
+                mFrameShadowUniform.upload(
+                    light.position(),
+                    light.shadowLambda(),
+                    light.range()
+                );
+
+                for (int iFace = 0; iFace < 6; iFace++)
+                {
+                    mFrameShadowUniform.upload(light.viewProj(iFace));
+                    pipeline.bindUniform(0, mFrameShadowUniform.buffer());
+
+                    mFramebufferShadowCube.setColorAttachmentTarget(0, light.shadowIndex(), iFace);
+                    pipeline.clear(mFramebufferShadowCube, HP_COLOR_1(FLT_MAX));
+
+                    for (const DrawCall& call : params.drawCalls.categories(
+                        DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
+                    {
+                        if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
+                        if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
+
+                        if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.dataIndex()], iFace)) {
+                            draw(pipeline, call, params.drawData[call.dataIndex()]);
+                        }
                     }
                 }
             }

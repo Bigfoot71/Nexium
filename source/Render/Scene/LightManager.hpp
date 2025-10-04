@@ -85,6 +85,30 @@ private:
     static constexpr int MaxLightsPerCluster = 32;          ///< Maximum number of lights in a single cluster
 
 private:
+    class FrameShadowUniform {
+    public:
+        FrameShadowUniform();
+    public:
+        /** Upload all data into a single buffer; used for directional/spot lights */
+        void upload(const HP_Mat4& lightViewProj, const HP_Vec3& lightPosition, float shadowLambda, float farPlane);
+        /** Upload constant data to all rotating buffers; used to initialize omni-light passes */
+        void upload(const HP_Vec3& lightPosition, float shadowLambda, float farPlane);
+        /** Update only the matrix in the current buffer; used for updating omni-light passes */
+        void upload(const HP_Mat4& lightViewProj);
+        /** Getter */
+        gpu::Buffer& buffer();
+    private:
+        struct Uniform {
+            alignas(16) HP_Mat4 lightViewProj;
+            alignas(16) HP_Vec3 lightPosition;
+            alignas(4) float shadowLambda;
+            alignas(4) float farPlane;
+        };
+        int mCurrentBuffer{};
+        std::array<gpu::Buffer, 3> mBuffers{};
+    };
+
+private:
     /** Object Pools */
     util::ObjectPool<HP_Light, 32> mLights{};
 
@@ -105,6 +129,9 @@ private:
     gpu::Buffer mStorageClusters{};             ///< Storage containing the tiles (number of lights per tile)
     gpu::Buffer mStorageIndex{};                ///< Storage containing the light indices for each tile
     gpu::Buffer mStorageClusterAABB{};          ///< Storage containing the cluster AABBs (computed during GPU light culling, could be useful later)
+
+    /** Uniform Buffers */
+    FrameShadowUniform mFrameShadowUniform;
 
     /** Additionnal Data */
     int mShadowResolution{};
@@ -228,6 +255,46 @@ inline void LightManager::markLightDirty()
         HP_INTERNAL_LOG(V, "RENDER: Lights have been marked dirty to the LightManager");
         mLightDirty = true;
     }
+}
+
+/* === FrameShadow - Public Implementation === */
+
+inline LightManager::FrameShadowUniform::FrameShadowUniform()
+{
+    for (gpu::Buffer& buffer : mBuffers) {
+        buffer = gpu::Buffer(GL_UNIFORM_BUFFER, sizeof(Uniform), nullptr, GL_DYNAMIC_DRAW);
+    }
+}
+
+inline void LightManager::FrameShadowUniform::upload(const HP_Mat4& lightViewProj, const HP_Vec3& lightPosition, float shadowLambda, float farPlane)
+{
+    mCurrentBuffer = (mCurrentBuffer + 1) % mBuffers.size();
+
+    mBuffers[mCurrentBuffer].uploadObject(Uniform {
+        .lightViewProj = lightViewProj,
+        .lightPosition = lightPosition,
+        .shadowLambda = shadowLambda,
+        .farPlane = farPlane
+    });
+}
+
+inline void LightManager::FrameShadowUniform::upload(const HP_Vec3& lightPosition, float shadowLambda, float farPlane)
+{
+    for (gpu::Buffer& buffer : mBuffers) {
+        Uniform data { .lightViewProj = {}, .lightPosition = lightPosition, .shadowLambda = shadowLambda, .farPlane = farPlane };
+        buffer.upload(offsetof(Uniform, lightViewProj), sizeof(Uniform) - offsetof(Uniform, lightViewProj), &data.lightPosition);
+    }
+}
+
+inline void LightManager::FrameShadowUniform::upload(const HP_Mat4& lightViewProj)
+{
+    mCurrentBuffer = (mCurrentBuffer + 1) % mBuffers.size();
+    mBuffers[mCurrentBuffer].upload(0, sizeof(HP_Mat4), &lightViewProj);
+}
+
+inline gpu::Buffer& LightManager::FrameShadowUniform::buffer()
+{
+    return mBuffers[mCurrentBuffer];
 }
 
 } // namespace scene

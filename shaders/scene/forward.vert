@@ -41,7 +41,7 @@ layout(std430, binding = 4) buffer BoneBuffer {
 /* === Uniform Buffers === */
 
 layout(std140, binding = 0) uniform U_Frame {
-    Frame uFrame;
+    FrameForward uFrame;
 };
 
 layout(std140, binding = 1) uniform U_ViewFrustum {
