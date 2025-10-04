@@ -1,10 +1,10 @@
-// Material vertex shader test
+// Material vertex shader for 'material_shader.c'
 
-out flat uint vEffectIndex;
+layout(std140) uniform StaticBuffer {
+    float u_scale;
+};
 
 void vertex()
 {
-    float scale = 0.5 + sin(M_PI * TIME + INSTANCE_DATA.y) * 0.5;
-    vEffectIndex = uint(INSTANCE_DATA.x) % 5;
-    POSITION *= 0.5 + scale;
+    POSITION *= u_scale;
 }

@@ -11,6 +11,7 @@ function(add_hyperion_test test_name source_file)
     endif()
 endfunction()
 
+add_hyperion_test("hp-instanced-material-shader" "${HP_ROOT_PATH}/tests/instanced_material_shader.c")
 add_hyperion_test("hp-skybox-procedural" "${HP_ROOT_PATH}/tests/skybox_procedural.c")
 add_hyperion_test("hp-material-shader" "${HP_ROOT_PATH}/tests/material_shader.c")
 add_hyperion_test("hp-render-texture" "${HP_ROOT_PATH}/tests/render_texture.c")
