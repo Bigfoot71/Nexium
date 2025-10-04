@@ -42,6 +42,16 @@ public:
     Program(Program&& other) noexcept;
     Program& operator=(Program&& other) noexcept;
 
+    /** Returns '-1' on failure */
+    int getUniformBlockIndex(const char* name) const noexcept;
+
+    /** Returns size of the uniform block */
+    size_t getUniformBlockSize(int blockIndex) const noexcept;
+
+    /** Set uniform binding point */
+    void setUniformBlockBinding(int blockIndex, uint32_t blockBinding) noexcept;
+
+    /** Simple getters */
     bool isValid() const noexcept;
     GLuint id() const noexcept;
 
@@ -169,6 +179,33 @@ inline Program& Program::operator=(Program&& other) noexcept
         mUniformCache = std::move(other.mUniformCache);
     }
     return *this;
+}
+
+inline int Program::getUniformBlockIndex(const char* name) const noexcept
+{
+    GLuint blockIndex = glGetUniformBlockIndex(mID, name);
+    if (blockIndex == GL_INVALID_INDEX) {
+        glGetError(); // cleanup error
+        return -1;
+    }
+    return static_cast<int>(blockIndex);
+}
+
+inline size_t Program::getUniformBlockSize(int blockIndex) const noexcept
+{
+    SDL_assert(blockIndex >= 0);
+
+    GLint blockSize = 0;
+    glGetActiveUniformBlockiv(mID, blockIndex, GL_UNIFORM_BLOCK_DATA_SIZE, &blockSize);
+
+    return static_cast<int>(blockSize);
+}
+
+inline void Program::setUniformBlockBinding(int blockIndex, uint32_t blockBinding) noexcept
+{
+    SDL_assert(blockIndex >= 0);
+
+    glUniformBlockBinding(mID, blockIndex, blockBinding);
 }
 
 inline bool Program::isValid() const noexcept
