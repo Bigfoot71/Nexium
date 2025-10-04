@@ -10,6 +10,7 @@
 #define HP_SCENE_LIGHT_MANAGER_HPP
 
 #include <Hyperion/HP_Render.h>
+#include <Hyperion/HP_Core.h>
 
 #include "../../Detail/Util/ObjectPool.hpp"
 #include "../../Detail/GPU/Texture.hpp"
@@ -103,6 +104,7 @@ private:
             alignas(16) HP_Vec3 lightPosition;
             alignas(4) float shadowLambda;
             alignas(4) float farPlane;
+            alignas(4) float elapsedTime;
         };
         int mCurrentBuffer{};
         std::array<gpu::Buffer, 3> mBuffers{};
@@ -274,15 +276,26 @@ inline void LightManager::FrameShadowUniform::upload(const HP_Mat4& lightViewPro
         .lightViewProj = lightViewProj,
         .lightPosition = lightPosition,
         .shadowLambda = shadowLambda,
-        .farPlane = farPlane
+        .farPlane = farPlane,
+        .elapsedTime = static_cast<float>(HP_GetElapsedTime())
     });
 }
 
 inline void LightManager::FrameShadowUniform::upload(const HP_Vec3& lightPosition, float shadowLambda, float farPlane)
 {
     for (gpu::Buffer& buffer : mBuffers) {
-        Uniform data { .lightViewProj = {}, .lightPosition = lightPosition, .shadowLambda = shadowLambda, .farPlane = farPlane };
-        buffer.upload(offsetof(Uniform, lightViewProj), sizeof(Uniform) - offsetof(Uniform, lightViewProj), &data.lightPosition);
+        Uniform data {
+            .lightViewProj = {},
+            .lightPosition = lightPosition,
+            .shadowLambda = shadowLambda,
+            .farPlane = farPlane,
+            .elapsedTime = static_cast<float>(HP_GetElapsedTime())
+        };
+        buffer.upload(
+            offsetof(Uniform, lightViewProj),
+            sizeof(Uniform) - offsetof(Uniform, lightViewProj),
+            &data.lightPosition
+        );
     }
 }
 

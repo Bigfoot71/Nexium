@@ -28,4 +28,5 @@ struct FrameShadow {
     vec3 lightPosition;
     float shadowLambda;
     float farPlane;
+    float elapsedTime;
 };
