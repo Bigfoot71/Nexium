@@ -531,6 +531,33 @@ inline bool Program::createUniformCache() noexcept
         type = values[0];
         location = values[1];
 
+        if(location > maxLocation) {
+            maxLocation = location;
+        }
+    }
+
+    if (maxLocation < 0) {
+        return true;
+    }
+
+    size_t cacheSize = maxLocation + 1;
+    mUniformCache = decltype(mUniformCache)(
+        cacheSize, cacheSize
+    );
+
+    if (mUniformCache.capacity() != cacheSize) {
+        return false;
+    }
+
+    // Init cache with sampler binding points
+    for (GLint i = 0; i < numUniforms; ++i)
+    {
+        GLint values[2];
+        glGetProgramResourceiv(mID, GL_UNIFORM, i, 2, props, 2, nullptr, values);
+        type = values[0];
+        location = values[1];
+
+        bool isSampler = false;
         switch (type) {
         case GL_SAMPLER_2D:
         case GL_SAMPLER_3D:
@@ -547,24 +574,18 @@ inline bool Program::createUniformCache() noexcept
         case GL_IMAGE_CUBE:
         case GL_IMAGE_BUFFER:
         case GL_IMAGE_2D_ARRAY:
-            continue;
+            isSampler = true;
+            break;
         }
 
-        if(location > maxLocation) {
-            maxLocation = location;
+        if(isSampler && location >= 0) {
+            GLint defaultBinding = 0;
+            glGetUniformiv(mID, location, &defaultBinding);
+            SDL_memcpy(&mUniformCache[location], &defaultBinding, sizeof(GLint));
         }
     }
 
-    if(maxLocation < 0) {
-        return true;
-    }
-
-    size_t cacheSize = maxLocation + 1;
-    mUniformCache = decltype(mUniformCache)(
-        cacheSize, cacheSize
-    );
-
-    return (mUniformCache.capacity() == cacheSize);
+    return true;
 }
 
 } // namespace gpu
