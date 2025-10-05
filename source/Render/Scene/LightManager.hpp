@@ -88,24 +88,19 @@ private:
 private:
     class FrameShadowUniform {
     public:
-        FrameShadowUniform();
-    public:
-        /** Upload all data into a single buffer; used for directional/spot lights */
-        void upload(const HP_Mat4& lightViewProj, const HP_Vec3& lightPosition, float shadowLambda, float farPlane);
-        /** Upload constant data to all rotating buffers; used to initialize omni-light passes */
-        void upload(const HP_Vec3& lightPosition, float shadowLambda, float farPlane);
-        /** Update only the matrix in the current buffer; used for updating omni-light passes */
-        void upload(const HP_Mat4& lightViewProj);
-        /** Getter */
-        gpu::Buffer& buffer();
-    private:
-        struct Uniform {
+        struct Data {
             alignas(16) HP_Mat4 lightViewProj;
             alignas(16) HP_Vec3 lightPosition;
             alignas(4) float shadowLambda;
             alignas(4) float farPlane;
             alignas(4) float elapsedTime;
         };
+    public:
+        FrameShadowUniform();
+        void upload(const Data& data);
+        gpu::Buffer& buffer();
+    private:
+
         int mCurrentBuffer{};
         std::array<gpu::Buffer, 3> mBuffers{};
     };
@@ -264,45 +259,14 @@ inline void LightManager::markLightDirty()
 inline LightManager::FrameShadowUniform::FrameShadowUniform()
 {
     for (gpu::Buffer& buffer : mBuffers) {
-        buffer = gpu::Buffer(GL_UNIFORM_BUFFER, sizeof(Uniform), nullptr, GL_DYNAMIC_DRAW);
+        buffer = gpu::Buffer(GL_UNIFORM_BUFFER, sizeof(Data), nullptr, GL_DYNAMIC_DRAW);
     }
 }
 
-inline void LightManager::FrameShadowUniform::upload(const HP_Mat4& lightViewProj, const HP_Vec3& lightPosition, float shadowLambda, float farPlane)
+inline void LightManager::FrameShadowUniform::upload(const Data& data)
 {
     mCurrentBuffer = (mCurrentBuffer + 1) % mBuffers.size();
-
-    mBuffers[mCurrentBuffer].uploadObject(Uniform {
-        .lightViewProj = lightViewProj,
-        .lightPosition = lightPosition,
-        .shadowLambda = shadowLambda,
-        .farPlane = farPlane,
-        .elapsedTime = static_cast<float>(HP_GetElapsedTime())
-    });
-}
-
-inline void LightManager::FrameShadowUniform::upload(const HP_Vec3& lightPosition, float shadowLambda, float farPlane)
-{
-    for (gpu::Buffer& buffer : mBuffers) {
-        Uniform data {
-            .lightViewProj = {},
-            .lightPosition = lightPosition,
-            .shadowLambda = shadowLambda,
-            .farPlane = farPlane,
-            .elapsedTime = static_cast<float>(HP_GetElapsedTime())
-        };
-        buffer.upload(
-            offsetof(Uniform, lightViewProj),
-            sizeof(Uniform) - offsetof(Uniform, lightViewProj),
-            &data.lightPosition
-        );
-    }
-}
-
-inline void LightManager::FrameShadowUniform::upload(const HP_Mat4& lightViewProj)
-{
-    mCurrentBuffer = (mCurrentBuffer + 1) % mBuffers.size();
-    mBuffers[mCurrentBuffer].upload(0, sizeof(HP_Mat4), &lightViewProj);
+    mBuffers[mCurrentBuffer].uploadObject(data);
 }
 
 inline gpu::Buffer& LightManager::FrameShadowUniform::buffer()

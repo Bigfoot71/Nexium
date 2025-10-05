@@ -11,6 +11,7 @@
 #include "../../Detail/GPU/Pipeline.hpp"
 #include "../HP_Texture.hpp"
 #include "./DrawCall.hpp"
+#include "Hyperion/HP_Core.h"
 
 #include <Hyperion/HP_Render.h>
 #include <Hyperion/HP_Macros.h>
@@ -388,10 +389,13 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             {
                 updated2DCount++;
 
-                mFrameShadowUniform.upload(
-                    light.viewProj(), light.position(),
-                    light.shadowLambda(), light.range()
-                );
+                mFrameShadowUniform.upload({
+                    .lightViewProj = light.viewProj(),
+                    .lightPosition = light.position(),
+                    .shadowLambda = light.shadowLambda(),
+                    .farPlane = light.range(),
+                    .elapsedTime = static_cast<float>(HP_GetElapsedTime())
+                });
                 pipeline.bindUniform(0, mFrameShadowUniform.buffer());
 
                 pipeline.bindFramebuffer(mFramebufferShadow2D);
@@ -414,10 +418,13 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             {
                 updated2DCount++;
 
-                mFrameShadowUniform.upload(
-                    light.viewProj(), light.position(),
-                    light.shadowLambda(), light.range()
-                );
+                mFrameShadowUniform.upload({
+                    .lightViewProj = light.viewProj(),
+                    .lightPosition = light.position(),
+                    .shadowLambda = light.shadowLambda(),
+                    .farPlane = light.range(),
+                    .elapsedTime = static_cast<float>(HP_GetElapsedTime())
+                });
                 pipeline.bindUniform(0, mFrameShadowUniform.buffer());
 
                 pipeline.bindFramebuffer(mFramebufferShadow2D);
@@ -441,15 +448,15 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                 updatedCubeCount++;
                 pipeline.bindFramebuffer(mFramebufferShadowCube);
 
-                mFrameShadowUniform.upload(
-                    light.position(),
-                    light.shadowLambda(),
-                    light.range()
-                );
-
                 for (int iFace = 0; iFace < 6; iFace++)
                 {
-                    mFrameShadowUniform.upload(light.viewProj(iFace));
+                    mFrameShadowUniform.upload({
+                        .lightViewProj = light.viewProj(iFace),
+                        .lightPosition = light.position(),
+                        .shadowLambda = light.shadowLambda(),
+                        .farPlane = light.range(),
+                        .elapsedTime = static_cast<float>(HP_GetElapsedTime())
+                    });
                     pipeline.bindUniform(0, mFrameShadowUniform.buffer());
 
                     mFramebufferShadowCube.setColorAttachmentTarget(0, light.shadowIndex(), iFace);
