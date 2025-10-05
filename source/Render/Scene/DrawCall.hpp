@@ -42,6 +42,7 @@ public:
     const HP_Mesh& mesh() const;
 
     /** External draw call data */
+    const HP_MaterialShader::TextureArray& materialShaderTextures() const;
     int dynamicRangeIndex() const;
     int drawDataIndex() const;
 
@@ -49,11 +50,14 @@ public:
     void draw(const gpu::Pipeline& pipeline, const HP_InstanceBuffer* instances, int instanceCount) const;
 
 private:
+    /** Object to draw */
     HP_Material mMaterial;
     const HP_Mesh& mMesh;
 
-    int mDynamicRangeIndex;     //< Index of the material shader's dynamic uniform buffer range (if any)
-    int mDrawDataIndex;         //< Index to shared drawing data (DrawData)
+    /** Additionnal data */
+    HP_MaterialShader::TextureArray mTextures;  //< Array containing the textures linked to the material shader at the time of draw (if any)
+    int mDynamicRangeIndex;                     //< Index of the material shader's dynamic uniform buffer range (if any)
+    int mDrawDataIndex;                         //< Index to shared drawing data (DrawData)
 };
 
 /* === Container === */
@@ -67,6 +71,7 @@ inline DrawCall::DrawCall(int dataIndex, const HP_Mesh& mesh, const HP_Material&
 {
     if (material.shader != nullptr) {
         mDynamicRangeIndex = material.shader->dynamicRangeIndex();
+        material.shader->getTextures(mTextures);
     }
 }
 
@@ -96,6 +101,11 @@ inline const HP_Material& DrawCall::material() const
 inline const HP_Mesh& DrawCall::mesh() const
 {
     return mMesh;
+}
+
+inline const HP_MaterialShader::TextureArray& DrawCall::materialShaderTextures() const
+{
+    return mTextures;
 }
 
 inline int DrawCall::dynamicRangeIndex() const

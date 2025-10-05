@@ -275,6 +275,7 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         HP_MaterialShader& shader = mPrograms.materialShader(mat.shader);
         pipeline.useProgram(shader.program(HP_MaterialShader::PREPASS));
         shader.bindUniformBuffers(pipeline, HP_MaterialShader::PREPASS, call.dynamicRangeIndex());
+        shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
         switch (mat.depth.test) {
         case HP_DEPTH_TEST_LESS:
@@ -347,6 +348,7 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         HP_MaterialShader& shader = mPrograms.materialShader(mat.shader);
         pipeline.useProgram(shader.program(HP_MaterialShader::FORWARD));
         shader.bindUniformBuffers(pipeline, HP_MaterialShader::FORWARD, call.dynamicRangeIndex());
+        shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
         if (mat.depth.prePass) {
             pipeline.setDepthFunc(gpu::DepthFunc::Equal);

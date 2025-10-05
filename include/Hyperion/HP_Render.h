@@ -1569,6 +1569,25 @@ HPAPI HP_MaterialShader* HP_LoadMaterialShader(const char* vertFile, const char*
 HPAPI void HP_DestroyMaterialShader(HP_MaterialShader* shader);
 
 /**
+ * @brief Assign a texture to a material shader sampler.
+ *
+ * This function sets a texture for a specific sampler slot in a material shader.
+ * The shader must declare the sampler with one of the predefined names:
+ * "Texture0", "Texture1", "Texture2", or "Texture3", all of type `sampler2D`.
+ *
+ * If `texture` is `NULL`, a default white texture will be used instead.
+ *
+ * @param shader Pointer to the HP_MaterialShader to modify.
+ * @param slot Index of the sampler to assign (0 to 3). The slot must correspond
+ *             to a sampler declared in the shader with the matching name.
+ * @param texture Pointer to the HP_Texture to bind, or `NULL` to use a white texture.
+ *
+ * @note Up to 4 texture samplers are supported per shader. It is the user's
+ *       responsibility to ensure the shader defines the corresponding sampler names.
+ */
+HPAPI void HP_SetMaterialShaderTexture(HP_MaterialShader* shader, int slot, const HP_Texture* texture);
+
+/**
  * @brief Updates the static uniform buffer of a material shader.
  *
  * Static buffers are defined in the shader as an uniform block named `StaticBuffer`.

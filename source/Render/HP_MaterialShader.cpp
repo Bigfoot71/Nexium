@@ -77,7 +77,7 @@ HP_MaterialShader::HP_MaterialShader(const char* vert, const char* frag)
     size_t bufferSize[UNIFORM_COUNT]{};
     for (int i = 0; i < SHADER_COUNT; i++) {
         for (int j = 0; j < UNIFORM_COUNT; j++) {
-            int blockIndex = mPrograms[i].getUniformBlockIndex(UniformNames[j]);
+            int blockIndex = mPrograms[i].getUniformBlockIndex(UniformName[j]);
             if (blockIndex >= 0) {
                 mPrograms[i].setUniformBlockBinding(blockIndex, UniformBinding[j]);
                 if (bufferSize[j] == 0) {
@@ -103,19 +103,34 @@ HP_MaterialShader::HP_MaterialShader(const char* vert, const char* frag)
             HP_INTERNAL_LOG(E, "RENDER: Failed to reserve space for dynamic uniform buffer range infos");
         }
     }
+
+    /* --- Collect and setup all samplers --- */
+
+    gpu::Pipeline([this](const gpu::Pipeline& pipeline) { // NOLINT
+        for (int i = 0; i < SHADER_COUNT; i++) {
+            pipeline.useProgram(mPrograms[i]);
+            for (int j = 0; j < TEXTURE_COUNT; j++) {
+                int loc = mPrograms[i].getUniformLocation(SamplerName[j]);
+                if (loc >= 0) {
+                    pipeline.setUniformInt1(loc, SamplerBinding[j]);
+                    mTextures[j].exists = true;
+                }
+            }
+        }
+    });
 }
 
 void HP_MaterialShader::updateStaticBuffer(size_t offset, size_t size, const void* data)
 {
     if (!mStaticBuffer.isValid()) {
-        HP_LogE(
+        HP_INTERNAL_LOG(E, 
             "RENDER: Failed to upload data to the static uniform buffer of material shader;"
             "No static buffer was declared for this material shader"
         );
     }
 
     if (offset + size > mStaticBuffer.size()) {
-        HP_LogE(
+        HP_INTERNAL_LOG(E, 
             "RENDER: Failed to upload data to the static uniform buffer of material shader;"
             "offset + size (%zu) exceeds size of static buffer (%zu)",
             offset + size, mStaticBuffer.size()
@@ -129,7 +144,7 @@ void HP_MaterialShader::updateStaticBuffer(size_t offset, size_t size, const voi
 void HP_MaterialShader::updateDynamicBuffer(size_t size, const void* data)
 {
     if (!mDynamicBuffer.buffer.isValid()) {
-        HP_LogW(
+        HP_INTERNAL_LOG(W, 
             "RENDER: Failed to upload data to the dynamic uniform buffer of material shader; "
             "No dynamic buffer was declared for this material shader"
         );
@@ -137,7 +152,7 @@ void HP_MaterialShader::updateDynamicBuffer(size_t size, const void* data)
     }
 
     if (size % 16 != 0) /* std140 requirement */ {
-        HP_LogW(
+        HP_INTERNAL_LOG(W, 
             "RENDER: Failed to upload data to the dynamic uniform buffer of material shader; "
             "The size of the data sent must be a multiple of 16"
         );
@@ -180,6 +195,15 @@ void HP_MaterialShader::bindUniformBuffers(const gpu::Pipeline& pipeline, Shader
             mDynamicBuffer.ranges[dynamicRangeIndex].offset,
             mDynamicBuffer.ranges[dynamicRangeIndex].size
         );
+    }
+}
+
+void HP_MaterialShader::bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures, const gpu::Texture& defaultTexture)
+{
+    for (int i = 0; i < TEXTURE_COUNT; i++) {
+        if (mTextures[i].exists) {
+            pipeline.bindTexture(SamplerBinding[i], textures[i] ? *textures[i] : defaultTexture);
+        }
     }
 }
 

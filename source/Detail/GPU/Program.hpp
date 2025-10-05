@@ -43,6 +43,9 @@ public:
     Program& operator=(Program&& other) noexcept;
 
     /** Returns '-1' on failure */
+    int getUniformLocation(const char* name) const noexcept;
+
+    /** Returns '-1' on failure */
     int getUniformBlockIndex(const char* name) const noexcept;
 
     /** Returns size of the uniform block */
@@ -179,6 +182,11 @@ inline Program& Program::operator=(Program&& other) noexcept
         mUniformCache = std::move(other.mUniformCache);
     }
     return *this;
+}
+
+inline int Program::getUniformLocation(const char* name) const noexcept
+{
+    return glGetUniformLocation(mID, name);
 }
 
 inline int Program::getUniformBlockIndex(const char* name) const noexcept

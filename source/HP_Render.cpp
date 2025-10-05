@@ -1873,6 +1873,11 @@ void HP_DestroyMaterialShader(HP_MaterialShader* shader)
     gRender->programs.destroyMaterialShader(shader);
 }
 
+void HP_SetMaterialShaderTexture(HP_MaterialShader* shader, int slot, const HP_Texture* texture)
+{
+    shader->setTexture(slot, texture ? &texture->gpuTexture() : nullptr);
+}
+
 void HP_UpdateStaticMaterialBuffer(HP_MaterialShader* shader, size_t offset, size_t size, const void* data)
 {
     shader->updateStaticBuffer(offset, size, data);

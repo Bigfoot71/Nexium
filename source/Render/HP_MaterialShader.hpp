@@ -13,20 +13,28 @@
 
 class HP_MaterialShader {
 public:
-    /** Helper enums */
     enum Shader { FORWARD, PREPASS, SHADOW, SHADER_COUNT };
+    enum Sampler { TEXTURE_0, TEXTURE_1, TEXTURE_2, TEXTURE_3, TEXTURE_COUNT, };
     enum Uniform { STATIC_UNIFORM, DYNAMIC_UNIFORM, UNIFORM_COUNT };
+
+public:
+    using TextureArray = std::array<const gpu::Texture*, TEXTURE_COUNT>;
 
 public:
     HP_MaterialShader();
     HP_MaterialShader(const char* vertex, const char* fragment);
 
+    /** Texture getter/setter */
+    void getTextures(TextureArray& textures);
+    void setTexture(int slot, const gpu::Texture* texture);
+
     /** Uniform buffer uploading functions */
     void updateStaticBuffer(size_t offset, size_t size, const void* data);
     void updateDynamicBuffer(size_t size, const void* data);
 
-    /** Buffer bindings */
+    /** Binding functions */
     void bindUniformBuffers(const gpu::Pipeline& pipeline, Shader shader, int dynamicRangeIndex);
+    void bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures, const gpu::Texture& defaultTexture);
 
     /** Dynamic buffer management */
     void clearDynamicBuffer();
@@ -40,14 +48,24 @@ private:
     void processCode(std::string& source, const std::string_view& define, const char* code);
 
 private:
+    /** Built-in sampler names */
+    static constexpr const char* SamplerName[TEXTURE_COUNT] = {
+        "Texture0", "Texture1", "Texture2", "Texture3",
+    };
+
     /** Built-in uniform block names */
-    static constexpr const char* UniformNames[UNIFORM_COUNT] = {
+    static constexpr const char* UniformName[UNIFORM_COUNT] = {
         "StaticBuffer", "DynamicBuffer"
     };
 
     /** Built-in uniform block binding points */
+    static constexpr int SamplerBinding[TEXTURE_COUNT] {
+        31, 30, 29, 28,
+    };
+
+    /** Built-in uniform block binding points */
     static constexpr int UniformBinding[UNIFORM_COUNT] {
-        10, 11
+        15, 14
     };
 
 private:
@@ -59,13 +77,41 @@ private:
         gpu::Buffer buffer{};
     };
 
+    struct SamplerSlot {
+        const gpu::Texture* texture{};
+        bool exists{};
+    };
+
 private:
     std::array<gpu::Program, SHADER_COUNT> mPrograms{};
+    std::array<SamplerSlot, TEXTURE_COUNT> mTextures{};
     DynamicBuffer mDynamicBuffer{};
     gpu::Buffer mStaticBuffer{};
 };
 
 /* === Public Implementation === */
+
+inline void HP_MaterialShader::getTextures(TextureArray& textures)
+{
+    for (int i = 0; i < TEXTURE_COUNT; i++) {
+        textures[i] = mTextures[i].texture;
+    }
+}
+
+inline void HP_MaterialShader::setTexture(int slot, const gpu::Texture* texture)
+{
+    if (slot < 0 || slot >= TEXTURE_COUNT) {
+        HP_INTERNAL_LOG(E, "RENDER: Unable to set material shader texture at slot %i/%i; Exceeds the number of slot", slot, TEXTURE_COUNT);
+        return;
+    }
+
+    if (!mTextures[slot].exists) {
+        HP_INTERNAL_LOG(E, "RENDER: Unable to set material shader texture at slot %i/%i; This slot is not defined in the material shader", slot, TEXTURE_COUNT);
+        return;
+    }
+
+    mTextures[slot].texture = texture;
+}
 
 inline void HP_MaterialShader::clearDynamicBuffer()
 {
