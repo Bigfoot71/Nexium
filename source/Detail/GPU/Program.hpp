@@ -578,7 +578,7 @@ inline bool Program::createUniformCache() noexcept
             break;
         }
 
-        if(isSampler && location >= 0) {
+        if (isSampler && location >= 0) {
             GLint defaultBinding = 0;
             glGetUniformiv(mID, location, &defaultBinding);
             SDL_memcpy(&mUniformCache[location], &defaultBinding, sizeof(GLint));
