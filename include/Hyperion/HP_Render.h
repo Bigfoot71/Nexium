@@ -1602,7 +1602,7 @@ HPAPI void HP_SetMaterialShaderTexture(HP_MaterialShader* shader, int slot, cons
  * @param size Size in bytes of the data to upload.
  * @param data Pointer to the data to upload.
  */
-HPAPI void HP_UpdateStaticMaterialBuffer(HP_MaterialShader* shader, size_t offset, size_t size, const void* data);
+HPAPI void HP_UpdateStaticMaterialShaderBuffer(HP_MaterialShader* shader, size_t offset, size_t size, const void* data);
 
 /**
  * @brief Updates the dynamic uniform buffer of a material shader for the next draw call.
@@ -1618,7 +1618,7 @@ HPAPI void HP_UpdateStaticMaterialBuffer(HP_MaterialShader* shader, size_t offse
  * @param size Size in bytes of the data to upload.
  * @param data Pointer to the data to upload.
  */
-HPAPI void HP_UpdateDynamicMaterialBuffer(HP_MaterialShader* shader, size_t size, const void* data);
+HPAPI void HP_UpdateDynamicMaterialShaderBuffer(HP_MaterialShader* shader, size_t size, const void* data);
 
 /** @} */ // end of Material
 

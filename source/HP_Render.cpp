@@ -1878,12 +1878,12 @@ void HP_SetMaterialShaderTexture(HP_MaterialShader* shader, int slot, const HP_T
     shader->setTexture(slot, texture ? &texture->gpuTexture() : nullptr);
 }
 
-void HP_UpdateStaticMaterialBuffer(HP_MaterialShader* shader, size_t offset, size_t size, const void* data)
+void HP_UpdateStaticMaterialShaderBuffer(HP_MaterialShader* shader, size_t offset, size_t size, const void* data)
 {
     shader->updateStaticBuffer(offset, size, data);
 }
 
-void HP_UpdateDynamicMaterialBuffer(HP_MaterialShader* shader, size_t size, const void* data)
+void HP_UpdateDynamicMaterialShaderBuffer(HP_MaterialShader* shader, size_t size, const void* data)
 {
     shader->updateDynamicBuffer(size, data);
 }

@@ -28,7 +28,7 @@ int main(void)
 
     while (HP_FrameStep())
     {
-        HP_UpdateStaticMaterialBuffer(shader, 0, sizeof(HP_Vec4), &HP_VEC4(
+        HP_UpdateStaticMaterialShaderBuffer(shader, 0, sizeof(HP_Vec4), &HP_VEC4(
             1.5f + sinf(4.0f * HP_GetElapsedTime()) * 0.5f, 0.0f, 0.0f, 0.0f
         ));
 
@@ -39,14 +39,14 @@ int main(void)
             HP_Transform T = HP_TRANSFORM_IDENTITY;
 
             HP_Color c0 = HP_ColorFromHSV(90.0 * HP_GetElapsedTime(), 1, 1, 1);
-            HP_UpdateDynamicMaterialBuffer(shader, sizeof(HP_Color), &c0);
+            HP_UpdateDynamicMaterialShaderBuffer(shader, sizeof(HP_Color), &c0);
             HP_SetMaterialShaderTexture(shader, 0, tex0);
 
             T.translation.x = -1.5f;
             HP_DrawMesh3D(cube, &material, &T);
 
             HP_Color c1 = HP_ColorFromHSV(90.0 * HP_GetElapsedTime() + 90.0f, 1, 1, 1);
-            HP_UpdateDynamicMaterialBuffer(shader, sizeof(HP_Color), &c1);
+            HP_UpdateDynamicMaterialShaderBuffer(shader, sizeof(HP_Color), &c1);
             HP_SetMaterialShaderTexture(shader, 0, tex1);
 
             T.translation.x = +1.5f;
