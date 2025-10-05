@@ -1074,7 +1074,7 @@ inline const HP_Mat4& HP_Light::viewProj(int face)
     // Assert that:
     // - For non-omni lights, only face 0 is valid.
     // - For omni lights, valid faces are 0 through 5.
-    SDL_assert((mType != HP_LIGHT_OMNI && face == 0) || (mType == HP_LIGHT_OMNI && face < 5));
+    SDL_assert((mType != HP_LIGHT_OMNI && face == 0) || (mType == HP_LIGHT_OMNI && face <= 5));
 
     return mShadowData.viewProj[face];
 }
