@@ -74,11 +74,16 @@ def normalize_spaces(shader_content):
     lines = shader_content.split('\n')
     processed_lines = []
 
-    symbols = [',', '.', '(', ')', '{', '}', ';', ':', '+', '-', '*', '/', '=']
+    symbols = [
+        ',', '.', '(', ')', '{', '}', ';', ':',
+        '+', '-', '*', '/', '=', '<', '>',
+        '!', '?', '|', '&'
+    ]
 
     for line in lines:
         if line.lstrip().startswith('#'):
-            # Preserve preprocessor directives as is
+            line = re.sub(r'^\s*#', '#', line)      # Remove spaces before the '#'
+            line = re.sub(r'[ \t]+', ' ', line)     # Replace consecutive spaces to one
             processed_lines.append(line)
         else:
             # Apply normalization to other lines
@@ -92,6 +97,12 @@ def normalize_spaces(shader_content):
             processed_lines.append(processed_line)
 
     return '\n'.join(processed_lines)
+
+def optimize_float_literals(shader_content):
+    """Optimize float literal notation"""
+    shader_content = re.sub(r'\b(\d+)\.0+(?!\d)', r'\1.', shader_content)   # 1.000 -> 1.
+    shader_content = re.sub(r'\b0\.([1-9]\d*)\b', r'.\1', shader_content)   # 0.5 -> .5  (but no 0.0 -> .0)
+    return shader_content
 
 # === Main === #
 
@@ -111,8 +122,9 @@ def process_shader(filepath):
 
     shader_content = process_includes(shader_content, filepath.parent)
     shader_content = remove_comments(shader_content)
-    #shader_content = remove_newlines(shader_content)
-    #shader_content = normalize_spaces(shader_content)
+    shader_content = remove_newlines(shader_content)
+    shader_content = normalize_spaces(shader_content)
+    shader_content = optimize_float_literals(shader_content)
 
     return shader_content
 
