@@ -100,7 +100,6 @@ private:
         void upload(const Data& data);
         gpu::Buffer& buffer();
     private:
-
         int mCurrentBuffer{};
         std::array<gpu::Buffer, 3> mBuffers{};
     };
