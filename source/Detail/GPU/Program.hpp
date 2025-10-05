@@ -28,8 +28,9 @@ namespace gpu {
 class Program {
 public:
     Program() = default;
-    explicit Program(const Shader& vertexShader, const Shader& fragmentShader) noexcept;
-    explicit Program(const Shader& computeShader) noexcept;
+    explicit Program(const Shader& vs, const Shader& gs, const Shader& fs) noexcept;
+    explicit Program(const Shader& vs, const Shader& fs) noexcept;
+    explicit Program(const Shader& cs) noexcept;
 
     ~Program() noexcept;
 
@@ -91,14 +92,14 @@ private:
 
 /* === Public Implementation === */
 
-inline Program::Program(const Shader& vertexShader, const Shader& fragmentShader) noexcept
+inline Program::Program(const Shader& vs, const Shader& gs, const Shader& fs) noexcept
 {
-    if (!vertexShader.isValid() || !fragmentShader.isValid()) {
+    if (!vs.isValid() || !gs.isValid() || !fs.isValid()) {
         HP_INTERNAL_LOG(E, "GPU: Failed to create program; Invalid shaders");
         return;
     }
 
-    if (vertexShader.stage() != GL_VERTEX_SHADER || fragmentShader.stage() != GL_FRAGMENT_SHADER) {
+    if (vs.stage() != GL_VERTEX_SHADER || gs.stage() != GL_GEOMETRY_SHADER || fs.stage() != GL_FRAGMENT_SHADER) {
         HP_INTERNAL_LOG(E, "GPU: Failed to create program; Incorrect shader stages for graphics pipeline");
         return;
     }
@@ -109,8 +110,9 @@ inline Program::Program(const Shader& vertexShader, const Shader& fragmentShader
         return;
     }
 
-    glAttachShader(mID, vertexShader.id());
-    glAttachShader(mID, fragmentShader.id());
+    glAttachShader(mID, vs.id());
+    glAttachShader(mID, gs.id());
+    glAttachShader(mID, fs.id());
 
     if (!linkProgram()) {
         glDeleteProgram(mID);
@@ -124,14 +126,47 @@ inline Program::Program(const Shader& vertexShader, const Shader& fragmentShader
     }
 }
 
-inline Program::Program(const Shader& computeShader) noexcept
+inline Program::Program(const Shader& vs, const Shader& fs) noexcept
 {
-    if (!computeShader.isValid()) {
+    if (!vs.isValid() || !fs.isValid()) {
+        HP_INTERNAL_LOG(E, "GPU: Failed to create program; Invalid shaders");
+        return;
+    }
+
+    if (vs.stage() != GL_VERTEX_SHADER || fs.stage() != GL_FRAGMENT_SHADER) {
+        HP_INTERNAL_LOG(E, "GPU: Failed to create program; Incorrect shader stages for graphics pipeline");
+        return;
+    }
+
+    mID = glCreateProgram();
+    if (mID == 0) {
+        HP_INTERNAL_LOG(E, "GPU: Failed to create program object");
+        return;
+    }
+
+    glAttachShader(mID, vs.id());
+    glAttachShader(mID, fs.id());
+
+    if (!linkProgram()) {
+        glDeleteProgram(mID);
+        mID = 0;
+    }
+
+    if (!createUniformCache()) {
+        HP_INTERNAL_LOG(E, "GPU: Failed to create uniform cache");
+        glDeleteProgram(mID);
+        mID = 0;
+    }
+}
+
+inline Program::Program(const Shader& cs) noexcept
+{
+    if (!cs.isValid()) {
         HP_INTERNAL_LOG(E, "GPU: Failed to create program; invalid compute shader");
         return;
     }
 
-    if (computeShader.stage() != GL_COMPUTE_SHADER) {
+    if (cs.stage() != GL_COMPUTE_SHADER) {
         HP_INTERNAL_LOG(E, "GPU: Failed to create program; shader is not a compute shader");
         return;
     }
@@ -142,7 +177,7 @@ inline Program::Program(const Shader& computeShader) noexcept
         return;
     }
 
-    glAttachShader(mID, computeShader.id());
+    glAttachShader(mID, cs.id());
 
     if (!linkProgram()) {
         glDeleteProgram(mID);
