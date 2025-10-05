@@ -1834,6 +1834,7 @@ HP_Material HP_GetDefaultMaterial(void)
         .texOffset = HP_VEC2_ZERO,
         .texScale = HP_VEC2_ONE,
         .billboard = HP_BILLBOARD_DISABLED,
+        .shading = HP_SHADING_LIT,
         .blend = HP_BLEND_OPAQUE,
         .cull = HP_CULL_BACK,
         .shader = nullptr

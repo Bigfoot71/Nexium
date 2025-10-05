@@ -1,7 +1,9 @@
 #include "./HP_MaterialShader.hpp"
 
-#include <shaders/forward.vert.h>
-#include <shaders/forward.frag.h>
+#include <shaders/scene.vert.h>
+#include <shaders/scene_lit.frag.h>
+#include <shaders/scene_unlit.frag.h>
+#include <shaders/scene_wireframe.geom.h>
 #include <shaders/prepass.vert.h>
 #include <shaders/prepass.frag.h>
 #include <shaders/shadow.vert.h>
@@ -14,9 +16,20 @@
 
 HP_MaterialShader::HP_MaterialShader()
 {
-    mPrograms[FORWARD] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, FORWARD_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, FORWARD_FRAG)
+    mPrograms[SCENE_LIT] = gpu::Program(
+        gpu::Shader(GL_VERTEX_SHADER, SCENE_VERT),
+        gpu::Shader(GL_FRAGMENT_SHADER, SCENE_LIT_FRAG)
+    );
+
+    mPrograms[SCENE_UNLIT] = gpu::Program(
+        gpu::Shader(GL_VERTEX_SHADER, SCENE_VERT),
+        gpu::Shader(GL_FRAGMENT_SHADER, SCENE_UNLIT_FRAG)
+    );
+
+    mPrograms[SCENE_WIREFRAME] = gpu::Program(
+        gpu::Shader(GL_VERTEX_SHADER, SCENE_VERT),
+        gpu::Shader(GL_GEOMETRY_SHADER, SCENE_WIREFRAME_GEOM),
+        gpu::Shader(GL_FRAGMENT_SHADER, SCENE_UNLIT_FRAG, {"WIREFRAME"})
     );
 
     mPrograms[PREPASS] = gpu::Program(
@@ -39,8 +52,9 @@ HP_MaterialShader::HP_MaterialShader(const char* vert, const char* frag)
 
     /* --- Load all base shaders --- */
 
-    std::string vertForward = FORWARD_VERT;
-    std::string fragForward = FORWARD_FRAG;
+    std::string vertScene = SCENE_VERT;
+    std::string fragSceneLit = SCENE_LIT_FRAG;
+    std::string fragSceneUnlit = SCENE_UNLIT_FRAG;
     std::string vertPrepass = PREPASS_VERT;
     std::string fragPrepass = PREPASS_FRAG;
     std::string vertShadow = SHADOW_VERT;
@@ -48,18 +62,30 @@ HP_MaterialShader::HP_MaterialShader(const char* vert, const char* frag)
 
     /* --- Process shaders --- */
 
-    processCode(vertForward, vertDefine, vert);
-    processCode(fragForward, fragDefine, frag);
-    processCode(vertForward, vertDefine, vert);
-    processCode(fragForward, fragDefine, frag);
-    processCode(vertForward, vertDefine, vert);
-    processCode(fragForward, fragDefine, frag);
+    processCode(vertScene, vertDefine, vert);
+    processCode(fragSceneLit, fragDefine, frag);
+    processCode(fragSceneUnlit, fragDefine, frag);
+    processCode(vertPrepass, vertDefine, vert);
+    processCode(fragPrepass, fragDefine, frag);
+    processCode(vertShadow, vertDefine, vert);
+    processCode(fragShadow, fragDefine, frag);
 
     /* --- Compile shaders --- */
 
-    mPrograms[FORWARD] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, vertForward.c_str()),
-        gpu::Shader(GL_FRAGMENT_SHADER, fragForward.c_str())
+    mPrograms[SCENE_LIT] = gpu::Program(
+        gpu::Shader(GL_VERTEX_SHADER, vertScene.c_str()),
+        gpu::Shader(GL_FRAGMENT_SHADER, fragSceneLit.c_str())
+    );
+
+    mPrograms[SCENE_UNLIT] = gpu::Program(
+        gpu::Shader(GL_VERTEX_SHADER, vertScene.c_str()),
+        gpu::Shader(GL_FRAGMENT_SHADER, fragSceneUnlit.c_str())
+    );
+
+    mPrograms[SCENE_WIREFRAME] = gpu::Program(
+        gpu::Shader(GL_VERTEX_SHADER, vertScene.c_str()),
+        gpu::Shader(GL_GEOMETRY_SHADER, SCENE_WIREFRAME_GEOM),
+        gpu::Shader(GL_FRAGMENT_SHADER, fragSceneUnlit.c_str(), {"WIREFRAME"})
     );
 
     mPrograms[PREPASS] = gpu::Program(

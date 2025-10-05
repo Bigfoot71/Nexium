@@ -133,6 +133,15 @@ typedef enum HP_BillboardMode {
 } HP_BillboardMode;
 
 /**
+ * @brief Defines the available shading modes for rendering.
+ */
+typedef enum HP_ShadingMode {
+    HP_SHADING_LIT,             ///< Standard lighting and shading applied.
+    HP_SHADING_UNLIT,           ///< No lighting, renders with flat color.
+    HP_SHADING_WIREFRAME        ///< Renders only mesh edges in wireframe mode.
+} HP_ShadingMode;
+
+/**
  * @brief Defines blending modes for rendering.
  */
 typedef enum HP_BlendMode {
@@ -531,6 +540,7 @@ typedef struct HP_Material {
     HP_Vec2 texScale;               ///< Texture coordinate scaling. Default: vec2(1,1)
 
     HP_BillboardMode billboard;     ///< Billboard mode applied to the object
+    HP_ShadingMode shading;         ///< Describes the shading mode, lit or not
     HP_BlendMode blend;             ///< Blending mode for rendering. Default: Opaque
     HP_CullMode cull;               ///< Face culling mode. Default: Back face
 
@@ -1505,6 +1515,8 @@ HPAPI void HP_UpdateReflectionProbe(HP_ReflectionProbe* probe, const HP_Cubemap*
  * - alphaCutOff: 1e-6 (disables discard by default)
  * - texOffset: (0, 0)
  * - texScale: (1, 1)
+ * - billboard mode : HP_BILLBOARD_DISABLED
+ * - shading mode : HP_SHADING_LIT
  * - blend mode: HP_BLEND_OPAQUE
  * - cull mode: HP_CULL_BACK
  * - shader: NULL

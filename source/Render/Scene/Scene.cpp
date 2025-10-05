@@ -346,8 +346,8 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         const HP_Material& mat = call.material();
 
         HP_MaterialShader& shader = mPrograms.materialShader(mat.shader);
-        pipeline.useProgram(shader.program(HP_MaterialShader::FORWARD));
-        shader.bindUniformBuffers(pipeline, HP_MaterialShader::FORWARD, call.dynamicRangeIndex());
+        pipeline.useProgram(shader.program(call.material().shading));
+        shader.bindUniformBuffers(pipeline, call.material().shading, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
         if (mat.depth.prePass) {

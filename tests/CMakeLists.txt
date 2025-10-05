@@ -15,6 +15,7 @@ add_hyperion_test("hp-instanced-material-shader" "${HP_ROOT_PATH}/tests/instance
 add_hyperion_test("hp-skybox-procedural" "${HP_ROOT_PATH}/tests/skybox_procedural.c")
 add_hyperion_test("hp-material-shader" "${HP_ROOT_PATH}/tests/material_shader.c")
 add_hyperion_test("hp-render-texture" "${HP_ROOT_PATH}/tests/render_texture.c")
+add_hyperion_test("hp-shading-mode" "${HP_ROOT_PATH}/tests/shading_mode.c")
 add_hyperion_test("hp-animation" "${HP_ROOT_PATH}/tests/animation.c")
 add_hyperion_test("hp-instanced" "${HP_ROOT_PATH}/tests/instanced.c")
 add_hyperion_test("hp-billboard" "${HP_ROOT_PATH}/tests/billboard.c")

@@ -1,4 +1,4 @@
-/* forward.frag -- Main fragment shader for forward rendering
+/* scene_lit.frag -- Fragment shader for rendering lit scene
  *
  * Copyright (c) 2025 Le Juez Victor
  *

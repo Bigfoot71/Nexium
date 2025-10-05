@@ -1,6 +1,8 @@
 #ifndef HP_RENDER_MATERIAL_SHADER_HPP
 #define HP_RENDER_MATERIAL_SHADER_HPP
 
+#include <Hyperion/HP_Render.h>
+
 #include "../Detail/Util/DynamicArray.hpp"
 #include "../Detail/GPU/Pipeline.hpp"
 #include "../Detail/GPU/Program.hpp"
@@ -13,7 +15,7 @@
 
 class HP_MaterialShader {
 public:
-    enum Shader { FORWARD, PREPASS, SHADOW, SHADER_COUNT };
+    enum Shader { SCENE_LIT, SCENE_UNLIT, SCENE_WIREFRAME, PREPASS, SHADOW, SHADER_COUNT };
     enum Sampler { TEXTURE_0, TEXTURE_1, TEXTURE_2, TEXTURE_3, TEXTURE_COUNT, };
     enum Uniform { STATIC_UNIFORM, DYNAMIC_UNIFORM, UNIFORM_COUNT };
 
@@ -33,6 +35,7 @@ public:
     void updateDynamicBuffer(size_t size, const void* data);
 
     /** Binding functions */
+    void bindUniformBuffers(const gpu::Pipeline& pipeline, HP_ShadingMode shading, int dynamicRangeIndex);
     void bindUniformBuffers(const gpu::Pipeline& pipeline, Shader shader, int dynamicRangeIndex);
     void bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures, const gpu::Texture& defaultTexture);
 
@@ -40,12 +43,16 @@ public:
     void clearDynamicBuffer();
 
     /** Getters */
+    gpu::Program& program(HP_ShadingMode shading);
     gpu::Program& program(Shader shader);
     int dynamicRangeIndex() const;
 
 private:
     /** Used at construction to generate final shader code */
     void processCode(std::string& source, const std::string_view& define, const char* code);
+
+    /** Conversion helpers */
+    static Shader shaderFromShadingMode(HP_ShadingMode shading);
 
 private:
     /** Built-in sampler names */
@@ -113,10 +120,20 @@ inline void HP_MaterialShader::setTexture(int slot, const gpu::Texture* texture)
     mTextures[slot].texture = texture;
 }
 
+inline void HP_MaterialShader::bindUniformBuffers(const gpu::Pipeline& pipeline, HP_ShadingMode shading, int dynamicRangeIndex)
+{
+    bindUniformBuffers(pipeline, shaderFromShadingMode(shading), dynamicRangeIndex);
+}
+
 inline void HP_MaterialShader::clearDynamicBuffer()
 {
     mDynamicBuffer.currentOffset = 0;
     mDynamicBuffer.ranges.clear();
+}
+
+inline gpu::Program& HP_MaterialShader::program(HP_ShadingMode shading)
+{
+    return mPrograms[shaderFromShadingMode(shading)];
 }
 
 inline gpu::Program& HP_MaterialShader::program(Shader shader)
@@ -127,6 +144,23 @@ inline gpu::Program& HP_MaterialShader::program(Shader shader)
 inline int HP_MaterialShader::dynamicRangeIndex() const
 {
     return mDynamicBuffer.currentRangeIndex;
+}
+
+/* === Private Implementation === */
+
+inline HP_MaterialShader::Shader HP_MaterialShader::shaderFromShadingMode(HP_ShadingMode shading)
+{
+    switch (shading) {
+    case HP_SHADING_LIT:
+        return SCENE_LIT;
+    case HP_SHADING_UNLIT:
+        return SCENE_UNLIT;
+    case HP_SHADING_WIREFRAME:
+        return SCENE_WIREFRAME;
+    default:
+        break;
+    }
+    return SCENE_LIT;
 }
 
 #endif // HP_RENDER_MATERIAL_SHADER_HPP

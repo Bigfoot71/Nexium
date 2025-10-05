@@ -1,4 +1,4 @@
-/* forward.vert -- Main vertex shader for forward rendering
+/* scene.vert -- Shared scene vertex shader for all 'lit', 'unlit', 'wireframe', etc, modes.
  *
  * Copyright (c) 2025 Le Juez Victor
  *

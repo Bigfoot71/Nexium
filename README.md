@@ -50,8 +50,8 @@
 Here’s a checklist of the major features that are still missing:
 
 - [x] Instanced rendering
-- [ ] Unlit rendering mode
-- [ ] Wireframe rendering mode
+- [x] Unlit rendering mode
+- [x] Wireframe rendering mode
 - [x] Rendering to custom render targets
 - [x] Procedural skybox cubemap generation
 - [ ] Dynamic reflection probes
