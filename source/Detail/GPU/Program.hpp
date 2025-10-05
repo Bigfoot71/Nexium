@@ -27,9 +27,6 @@ namespace gpu {
 
 class Program {
 public:
-    static constexpr int MaxUniforms = 32;
-
-public:
     Program() = default;
     explicit Program(const Shader& vertexShader, const Shader& fragmentShader) noexcept;
     explicit Program(const Shader& computeShader) noexcept;
