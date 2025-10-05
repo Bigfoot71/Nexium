@@ -85,7 +85,7 @@ HP_MaterialShader::HP_MaterialShader(const char* vert, const char* frag)
     mPrograms[SCENE_WIREFRAME] = gpu::Program(
         gpu::Shader(GL_VERTEX_SHADER, vertScene.c_str()),
         gpu::Shader(GL_GEOMETRY_SHADER, SCENE_WIREFRAME_GEOM),
-        gpu::Shader(GL_FRAGMENT_SHADER, fragSceneUnlit.c_str(), {"WIREFRAME"})
+        gpu::Shader(GL_FRAGMENT_SHADER, fragSceneUnlit.c_str())
     );
 
     mPrograms[PREPASS] = gpu::Program(
