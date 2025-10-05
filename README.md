@@ -50,7 +50,8 @@
 Here’s a checklist of the major features that are still missing:
 
 - [x] Instanced rendering
-- [ ] Unshaded rendering mode
+- [ ] Unlit rendering mode
+- [ ] Wireframe rendering mode
 - [x] Rendering to custom render targets
 - [x] Procedural skybox cubemap generation
 - [ ] Dynamic reflection probes
@@ -60,6 +61,7 @@ Here’s a checklist of the major features that are still missing:
 - [ ] Custom post-processing shaders
 - [x] Custom material shaders
 - [ ] More flexible 2D rendering
+- [ ] Gamepad support
 - [ ] Audio spatialization
 
 ## Getting Started
