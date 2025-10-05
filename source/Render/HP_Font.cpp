@@ -10,6 +10,7 @@
 
 #include "../Core/HP_InternalLog.hpp"
 #include "Hyperion/HP_Macros.h"
+#include "Hyperion/HP_Render.h"
 
 /* === FreeType Includes === */
 
@@ -63,6 +64,8 @@ HP_Font::HP_Font(const void* fileData, size_t dataSize, HP_FontType type, int ba
 
     /* --- Creating the atlas texture --- */
 
+    GLenum filter = (type == HP_FONT_MONO) ? GL_NEAREST : GL_LINEAR;
+
     mTexture = gpu::Texture(
         gpu::TextureConfig
         {
@@ -74,8 +77,8 @@ HP_Font::HP_Font(const void* fileData, size_t dataSize, HP_FontType type, int ba
         },
         gpu::TextureParam
         {
-            .minFilter = GL_LINEAR,
-            .magFilter = GL_LINEAR,
+            .minFilter = filter,
+            .magFilter = filter,
             .sWrap = GL_CLAMP_TO_EDGE,
             .tWrap = GL_CLAMP_TO_EDGE,
             .rWrap = GL_CLAMP_TO_EDGE
@@ -213,11 +216,30 @@ bool HP_Font::generateFontAtlas(HP_Image* atlas, const uint8_t* fileData, int da
 
     /* --- Some basic initialization --- */
 
-    constexpr FT_Int32 ftGlyphFlags =
-        FT_LOAD_RENDER | FT_LOAD_NO_AUTOHINT | FT_LOAD_TARGET_NORMAL;
+    FT_Render_Mode ftRenderMode{};
+    FT_Int32 ftGlyphFlags = FT_LOAD_RENDER | FT_LOAD_NO_AUTOHINT;
 
-    FT_Render_Mode ftRenderMode = (fontType == HP_FONT_SDF)
-        ? FT_RENDER_MODE_SDF : FT_RENDER_MODE_NORMAL;
+    switch (fontType) {
+    case HP_FONT_NORMAL:
+        ftRenderMode = FT_RENDER_MODE_NORMAL;
+        ftGlyphFlags |= FT_LOAD_TARGET_NORMAL;
+        break;
+    case HP_FONT_LIGHT:
+        ftRenderMode = FT_RENDER_MODE_LIGHT;
+        ftGlyphFlags |= FT_LOAD_TARGET_LIGHT;
+        break;
+    case HP_FONT_MONO:
+        ftRenderMode = FT_RENDER_MODE_MONO;
+        ftGlyphFlags |= FT_LOAD_TARGET_MONO;
+        break;
+    case HP_FONT_SDF:
+        ftRenderMode = FT_RENDER_MODE_SDF;
+        ftGlyphFlags |= FT_LOAD_TARGET_NORMAL;
+        break;
+    default:
+        HP_INTERNAL_LOG(E, "RENDER: Faild to load font; Invalid font type (%i)", fontType);
+        return false;
+    }
 
     *outGlyphs = NULL;
 
@@ -334,7 +356,20 @@ bool HP_Font::generateFontAtlas(HP_Image* atlas, const uint8_t* fileData, int da
             if (!glyph.pixels) continue;
 
             // Copying the rasterized bitmap to our glyph cache
-            SDL_memcpy(glyph.pixels, ftBitmap.buffer, pixelCount);
+            if (fontType != HP_FONT_MONO) {
+                SDL_memcpy(glyph.pixels, ftBitmap.buffer, pixelCount);
+            }
+            else {
+                const FT_Bitmap &bm = ftBitmap;
+                for (unsigned int y = 0; y < bm.rows; ++y) {
+                    for (unsigned int x = 0; x < bm.width; ++x) {
+                        int byteIndex = y * bm.pitch + (x >> 3);
+                        int bitIndex = 7 - (x & 7);
+                        bool pixelOn = (bm.buffer[byteIndex] >> bitIndex) & 1;
+                        static_cast<uint8_t*>(glyph.pixels)[y * bm.width + x] = pixelOn ? 255 : 0;
+                    }
+                }
+            }
 
             // Get horizontal advance
             glyph.xAdvance = (int)(ftGlyph->advance.x >> 6);

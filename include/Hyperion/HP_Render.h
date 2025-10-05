@@ -115,8 +115,10 @@ typedef enum HP_TextureWrap {
  * @brief Defines the type of font used for rendering.
  */
 typedef enum HP_FontType {
-    HP_FONT_BITMAP,             ///< Bitmap font. Fast, pixel-perfect, no scaling smoothing.
-    HP_FONT_SDF                 ///< Signed Distance Field font. Smooth scaling, supports effects like outlines.
+    HP_FONT_NORMAL,             ///< Standard vector font, anti-aliased, general-purpose text.
+    HP_FONT_LIGHT,              ///< Light/thin vector font, finer strokes, good for small UI text.
+    HP_FONT_MONO,               ///< Monochrome bitmap font, pixel-perfect, very fast to load.
+    HP_FONT_SDF                 ///< Signed Distance Field font, scalable, smooth rendering at arbitrary sizes.
 } HP_FontType;
 
 /**
