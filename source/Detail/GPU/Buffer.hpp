@@ -49,6 +49,9 @@ public:
     bool upload(const void* data) noexcept;                                     // Overwrite entire buffer content, keep current size
     bool upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept;   // Overwrite part of the buffer at given offset
 
+    template<typename T>
+    bool uploadObject(const T& data) noexcept;                                  // Overwrite entire buffer from offset 0 with provided data (size = sizeof(T))
+
     /** Memory mapping */
     template <typename T>
     T* map(GLenum access = GL_MAP_WRITE_BIT) noexcept;
@@ -160,6 +163,13 @@ inline void Buffer::reserve(GLsizeiptr size, bool keepData) noexcept
     if (size > mSize) {
         realloc(size, keepData);
     }
+}
+
+template<typename T>
+inline bool Buffer::uploadObject(const T& data) noexcept
+{
+    static_assert(!std::is_pointer_v<T>, "Do not pass pointers to uploadObject<T>!");
+    return upload(0, sizeof(T), &data);
 }
 
 inline bool Buffer::upload(const void* data) noexcept

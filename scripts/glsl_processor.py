@@ -111,8 +111,8 @@ def process_shader(filepath):
 
     shader_content = process_includes(shader_content, filepath.parent)
     shader_content = remove_comments(shader_content)
-    shader_content = remove_newlines(shader_content)
-    shader_content = normalize_spaces(shader_content)
+    #shader_content = remove_newlines(shader_content)
+    #shader_content = normalize_spaces(shader_content)
 
     return shader_content
 

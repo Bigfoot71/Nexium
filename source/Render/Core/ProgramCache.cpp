@@ -7,7 +7,6 @@
  */
 
 #include "./ProgramCache.hpp"
-#include "Hyperion/HP_Render.h"
 
 #include <shaders/screen.vert.h>
 #include <shaders/cube.vert.h>
@@ -18,14 +17,8 @@
 #include <shaders/cubemap_skybox.frag.h>
 
 #include <shaders/light_culling.comp.h>
-#include <shaders/prepass.vert.h>
-#include <shaders/prepass.frag.h>
-#include <shaders/forward.vert.h>
-#include <shaders/forward.frag.h>
 #include <shaders/skybox.vert.h>
 #include <shaders/skybox.frag.h>
-#include <shaders/shadow.vert.h>
-#include <shaders/shadow.frag.h>
 
 #include <shaders/bilateral_blur.frag.h>
 #include <shaders/downsampling.frag.h>
@@ -118,34 +111,6 @@ gpu::Program& ProgramCache::lightCulling()
     return mLightCulling;
 }
 
-gpu::Program& ProgramCache::prepass()
-{
-    if (mPrepass.isValid()) {
-        return mPrepass;
-    }
-
-    mPrepass = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, PREPASS_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, PREPASS_FRAG)
-    );
-
-    return mPrepass;
-}
-
-gpu::Program& ProgramCache::forward()
-{
-    if (mForward.isValid()) {
-        return mForward;
-    }
-
-    mForward = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, FORWARD_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, FORWARD_FRAG)
-    );
-
-    return mForward;
-}
-
 gpu::Program& ProgramCache::skybox()
 {
     if (mSkybox.isValid()) {
@@ -164,20 +129,6 @@ gpu::Program& ProgramCache::skybox()
     );
 
     return mSkybox;
-}
-
-gpu::Program& ProgramCache::shadow()
-{
-    if (mShadow.isValid()) {
-        return mShadow;
-    }
-
-    mShadow = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, SHADOW_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, SHADOW_FRAG)
-    );
-
-    return mShadow;
 }
 
 gpu::Program& ProgramCache::output(HP_Tonemap tonemap)

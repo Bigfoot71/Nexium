@@ -14,6 +14,7 @@
 
 #include "../../Detail/Util/BucketArray.hpp"
 #include "../../Detail/GPU/Pipeline.hpp"
+#include "../HP_MaterialShader.hpp"
 #include "../HP_VertexBuffer.hpp"
 
 namespace scene {
@@ -36,18 +37,27 @@ public:
     static Category category(const HP_Material& material);
     Category category() const;
 
-    /** Draw call data */
+    /** Internal draw call data */
     const HP_Material& material() const;
     const HP_Mesh& mesh() const;
-    int dataIndex() const;
+
+    /** External draw call data */
+    const HP_MaterialShader::TextureArray& materialShaderTextures() const;
+    int dynamicRangeIndex() const;
+    int drawDataIndex() const;
 
     /** Draw command */
     void draw(const gpu::Pipeline& pipeline, const HP_InstanceBuffer* instances, int instanceCount) const;
 
 private:
+    /** Object to draw */
     HP_Material mMaterial;
     const HP_Mesh& mMesh;
-    int mDataIndex;
+
+    /** Additionnal data */
+    HP_MaterialShader::TextureArray mTextures;  //< Array containing the textures linked to the material shader at the time of draw (if any)
+    int mDynamicRangeIndex;                     //< Index of the material shader's dynamic uniform buffer range (if any)
+    int mDrawDataIndex;                         //< Index to shared drawing data (DrawData)
 };
 
 /* === Container === */
@@ -57,8 +67,13 @@ using BucketDrawCalls = util::BucketArray<DrawCall, DrawCall::Category, DrawCall
 /* === Public Implementation === */
 
 inline DrawCall::DrawCall(int dataIndex, const HP_Mesh& mesh, const HP_Material& material)
-    : mMaterial(material), mMesh(mesh), mDataIndex(dataIndex)
-{ }
+    : mMaterial(material), mMesh(mesh), mDynamicRangeIndex(-1), mDrawDataIndex(dataIndex)
+{
+    if (material.shader != nullptr) {
+        mDynamicRangeIndex = material.shader->dynamicRangeIndex();
+        material.shader->getTextures(mTextures);
+    }
+}
 
 inline DrawCall::Category DrawCall::category(const HP_Material& material)
 {
@@ -88,9 +103,19 @@ inline const HP_Mesh& DrawCall::mesh() const
     return mMesh;
 }
 
-inline int DrawCall::dataIndex() const
+inline const HP_MaterialShader::TextureArray& DrawCall::materialShaderTextures() const
 {
-    return mDataIndex;
+    return mTextures;
+}
+
+inline int DrawCall::dynamicRangeIndex() const
+{
+    return mDynamicRangeIndex;
+}
+
+inline int DrawCall::drawDataIndex() const
+{
+    return mDrawDataIndex;
 }
 
 inline void DrawCall::draw(const gpu::Pipeline& pipeline, const HP_InstanceBuffer* instances, int instanceCount) const

@@ -9,6 +9,7 @@
 #include "./Scene.hpp"
 
 #include <Hyperion/HP_Render.h>
+#include <Hyperion/HP_Core.h>
 
 #include "../../Detail/BuildInfo.hpp"
 #include "../HP_ReflectionProbe.hpp"
@@ -20,10 +21,8 @@ namespace scene {
 /* === Public Implementation === */
 
 Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, HP_AppDesc& desc)
-    : mPrograms(programs)
-    , mAssets(assets)
-    , mLights(programs, assets, desc)
-    , mFrustum()
+    : mPrograms(programs), mAssets(assets), mLights(programs, assets, desc), mFrustum()
+    , mFrameUniform(GL_UNIFORM_BUFFER, sizeof(FrameUniform), nullptr, GL_DYNAMIC_DRAW)
 {
     /* --- Tweak description --- */
 
@@ -114,9 +113,13 @@ Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, HP_AppD
 
 void Scene::begin(const HP_Camera& camera, const HP_Environment& env, const HP_RenderTexture* target)
 {
+    /* --- Get target (where we blit) info --- */
+
     mTargetInfo.target = target;
     mTargetInfo.resolution = (target) ? target->framebuffer().dimensions() : HP_GetWindowSize();
     mTargetInfo.aspect = static_cast<float>(mTargetInfo.resolution.x) / mTargetInfo.resolution.y;
+
+    /* --- Update managers --- */
 
     mFrustum.update(camera, mTargetInfo.aspect);
     mEnvironment.update(env);
@@ -129,9 +132,24 @@ void Scene::end()
     mLights.process({
         .viewFrustum = mFrustum,
         .environment = mEnvironment,
+        .renderableBuffer = mRenderableBuffer,
+        .materialBuffer = mMaterialBuffer,
         .boneBuffer = mBoneBuffer,
         .drawCalls = mDrawCalls,
         .drawData = mDrawData
+    });
+
+    /* --- Upload frame info data --- */
+
+    mFrameUniform.uploadObject(FrameUniform{
+        .screenSize = mFramebufferScene.dimensions(),
+        .clusterCount = mLights.clusterCount(),
+        .maxLightsPerCluster = static_cast<uint32_t>(mLights.maxLightsPerCluster()),
+        .clusterSliceScale = mLights.clusterSliceScale(),
+        .clusterSliceBias = mLights.clusterSliceBias(),
+        .elapsedTime = static_cast<float>(HP_GetElapsedTime()),
+        .hasActiveLights = (mLights.activeCount() > 0),
+        .hasProbe = (mEnvironment.skyProbe() != nullptr)
     });
 
     /* --- View layer/furstum culling --- */
@@ -140,7 +158,7 @@ void Scene::end()
         if ((mFrustum.cullMask() & call.mesh().layerMask) == 0) {
             return true;
         }
-        const DrawData& data = mDrawData[call.dataIndex()];
+        const DrawData& data = mDrawData[call.drawDataIndex()];
         if (!data.useInstancing() && mEnvironment.hasFlags(HP_ENV_VIEW_FRUSTUM_CULLING)) {
             return !mFrustum.containsObb(call.mesh().aabb, data.transform());
         }
@@ -152,8 +170,8 @@ void Scene::end()
     if (mEnvironment.hasFlags(HP_ENV_SORT_OPAQUE)) {
         mDrawCalls.sort(DrawCall::Category::OPAQUE,
             [this](const DrawCall& a, const DrawCall& b) {
-                float maxDistA = mFrustum.getDistanceSquaredToCenterPoint(a.mesh().aabb, mDrawData[a.dataIndex()].matrix());
-                float maxDistB = mFrustum.getDistanceSquaredToCenterPoint(b.mesh().aabb, mDrawData[b.dataIndex()].matrix());
+                float maxDistA = mFrustum.getDistanceSquaredToCenterPoint(a.mesh().aabb, mDrawData[a.drawDataIndex()].matrix());
+                float maxDistB = mFrustum.getDistanceSquaredToCenterPoint(b.mesh().aabb, mDrawData[b.drawDataIndex()].matrix());
                 return maxDistA < maxDistB;
             }
         );
@@ -162,8 +180,8 @@ void Scene::end()
     if (mEnvironment.hasFlags(HP_ENV_SORT_TRANSPARENT)) {
         mDrawCalls.sort(DrawCall::Category::TRANSPARENT,
             [this](const DrawCall& a, const DrawCall& b) {
-                float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.mesh().aabb, mDrawData[a.dataIndex()].matrix());
-                float maxDistB = mFrustum.getDistanceSquaredToFarthestPoint(b.mesh().aabb, mDrawData[b.dataIndex()].matrix());
+                float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.mesh().aabb, mDrawData[a.drawDataIndex()].matrix());
+                float maxDistB = mFrustum.getDistanceSquaredToFarthestPoint(b.mesh().aabb, mDrawData[b.drawDataIndex()].matrix());
                 return maxDistA > maxDistB;
             }
         );
@@ -193,6 +211,10 @@ void Scene::end()
 
     postFinal(*source);
 
+    /* --- Clear frame buffers --- */
+
+    mPrograms.clearDynamicMaterialBuffers();
+
     /* --- Reset state --- */
 
     mBoneBuffer.clear();
@@ -218,8 +240,8 @@ void Scene::renderBackground(const gpu::Pipeline& pipeline)
 
     mFramebufferScene.setDrawBuffers({0});
 
-    pipeline.bindUniform(0, mFrustum.buffer());
-    pipeline.bindUniform(1, mEnvironment.buffer());
+    pipeline.bindUniform(1, mFrustum.buffer());
+    pipeline.bindUniform(2, mEnvironment.buffer());
 
     pipeline.setDepthMode(gpu::DepthMode::Disabled);
     pipeline.useProgram(mPrograms.skybox());
@@ -239,17 +261,21 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::Disabled);
 
-    pipeline.useProgram(mPrograms.prepass());
-
     pipeline.bindStorage(4, mBoneBuffer.buffer());
 
-    pipeline.bindUniform(0, mFrustum.buffer());
-    pipeline.bindUniform(1, mEnvironment.buffer());
+    pipeline.bindUniform(0, mFrameUniform);
+    pipeline.bindUniform(1, mFrustum.buffer());
+    pipeline.bindUniform(2, mEnvironment.buffer());
 
     for (const DrawCall& call : mDrawCalls.category(DrawCall::PREPASS))
     {
-        const DrawData& data = mDrawData[call.dataIndex()];
+        const DrawData& data = mDrawData[call.drawDataIndex()];
         const HP_Material& mat = call.material();
+
+        HP_MaterialShader& shader = mPrograms.materialShader(mat.shader);
+        pipeline.useProgram(shader.program(HP_MaterialShader::PREPASS));
+        shader.bindUniformBuffers(pipeline, HP_MaterialShader::PREPASS, call.dynamicRangeIndex());
+        shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
         switch (mat.depth.test) {
         case HP_DEPTH_TEST_LESS:
@@ -274,13 +300,13 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
             pipeline.setCullMode(gpu::CullMode::Front);
             break;
         }
-    
+
         mMaterialBuffer.upload(mat);
         mRenderableBuffer.upload(data, call);
 
         pipeline.bindTexture(0, mAssets.textureOrWhite(mat.albedo.texture));
-        pipeline.bindUniform(2, mRenderableBuffer.buffer());
-        pipeline.bindUniform(3, mMaterialBuffer.buffer());
+        pipeline.bindUniform(3, mRenderableBuffer.buffer());
+        pipeline.bindUniform(4, mMaterialBuffer.buffer());
 
         call.draw(pipeline, data.instances(), data.instanceCount());
     }
@@ -290,7 +316,6 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
 {
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::RGBA);
-    pipeline.useProgram(mPrograms.forward());
 
     pipeline.bindStorage(0, mLights.lightsBuffer());
     pipeline.bindStorage(1, mLights.shadowBuffer());
@@ -302,27 +327,13 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
     pipeline.bindTexture(7, mLights.shadowCube());
     pipeline.bindTexture(8, mLights.shadow2D());
 
-    pipeline.bindUniform(0, mFrustum.buffer());
-    pipeline.bindUniform(1, mEnvironment.buffer());
+    pipeline.bindUniform(0, mFrameUniform);
+    pipeline.bindUniform(1, mFrustum.buffer());
+    pipeline.bindUniform(2, mEnvironment.buffer());
 
     if (mEnvironment.skyProbe() != nullptr) {
         pipeline.bindTexture(5, mEnvironment.skyProbe()->irradiance());
         pipeline.bindTexture(6, mEnvironment.skyProbe()->prefilter());
-    }
-
-    pipeline.setUniformInt1(10, mLights.activeCount() > 0);
-    pipeline.setUniformUint2(11, mFramebufferScene.dimensions());
-    pipeline.setUniformUint3(12, mLights.clusterCount());
-    pipeline.setUniformUint1(13, mLights.maxLightsPerCluster());
-    pipeline.setUniformFloat1(14, mLights.clusterSliceScale());
-    pipeline.setUniformFloat1(15, mLights.clusterSliceBias());
-
-    if (mEnvironment.skyProbe() != nullptr) {
-        pipeline.setUniformInt1(17, true);
-        pipeline.setUniformInt1(21, mEnvironment.skyProbe()->prefilter().numLevels());
-    }
-    else {
-        pipeline.setUniformInt1(17, false);
     }
 
     // Ensures SSBOs are ready (especially clusters)
@@ -331,8 +342,13 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
     for (const DrawCall& call : mDrawCalls.categories(
         DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
     {
-        const DrawData& data = mDrawData[call.dataIndex()];
+        const DrawData& data = mDrawData[call.drawDataIndex()];
         const HP_Material& mat = call.material();
+
+        HP_MaterialShader& shader = mPrograms.materialShader(mat.shader);
+        pipeline.useProgram(shader.program(HP_MaterialShader::FORWARD));
+        shader.bindUniformBuffers(pipeline, HP_MaterialShader::FORWARD, call.dynamicRangeIndex());
+        shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
         if (mat.depth.prePass) {
             pipeline.setDepthFunc(gpu::DepthFunc::Equal);
@@ -386,8 +402,8 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         pipeline.bindTexture(2, mAssets.textureOrWhite(mat.orm.texture));
         pipeline.bindTexture(3, mAssets.textureOrNormal(mat.normal.texture));
 
-        pipeline.bindUniform(2, mRenderableBuffer.buffer());
-        pipeline.bindUniform(3, mMaterialBuffer.buffer());
+        pipeline.bindUniform(3, mRenderableBuffer.buffer());
+        pipeline.bindUniform(4, mMaterialBuffer.buffer());
 
         call.draw(pipeline, data.instances(), data.instanceCount());
     }

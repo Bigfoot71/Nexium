@@ -14,18 +14,23 @@ precision highp float;
 
 /* === Includes === */
 
+#include "../include/environment.glsl"
 #include "../include/billboard.glsl"
 #include "../include/frustum.glsl"
+#include "../include/frame.glsl"
 
 /* === Attributes === */
 
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec2 aTexCoord;
+layout(location = 2) in vec3 aNormal;
+layout(location = 3) in vec4 aTangent;
 layout(location = 4) in vec4 aColor;
 layout(location = 5) in ivec4 aBoneIDs;
 layout(location = 6) in vec4 aWeights;
 layout(location = 7) in mat4 iMatModel;
 layout(location = 11) in vec4 iColor;
+layout(location = 12) in vec4 iCustom;
 
 /* === Storage Buffers === */
 
@@ -35,11 +40,19 @@ layout(std430, binding = 4) buffer BoneBuffer {
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform U_ViewFrustum {
+layout(std140, binding = 0) uniform U_Frame {
+    FrameForward uFrame;
+};
+
+layout(std140, binding = 1) uniform U_ViewFrustum {
     Frustum uFrustum;
 };
 
-layout(std140, binding = 2) uniform U_Renderable {
+layout(std140, binding = 2) uniform U_Environment {
+    Environment uEnv;
+};
+
+layout(std140, binding = 3) uniform U_Renderable {
     mat4 matModel;
     mat4 matNormal;
     int boneOffset;
@@ -48,7 +61,7 @@ layout(std140, binding = 2) uniform U_Renderable {
     bool skinning;
 } uRender;
 
-layout(std140, binding = 3) uniform U_Material {
+layout(std140, binding = 4) uniform U_Material {
     vec4 albedoColor;
     vec3 emissionColor;
     float emissionEnergy;
@@ -61,12 +74,16 @@ layout(std140, binding = 3) uniform U_Material {
     vec2 texOffset;
     vec2 texScale;
     int billboard;
-} uMat;
+} uMaterial;
 
 /* === Varyings === */
 
 layout(location = 0) out vec2 vTexCoord;
 layout(location = 1) out float vAlpha;
+
+/* === Vertex Override === */
+
+#include "../include/template/scene.vert"
 
 /* === Helper Functions === */
 
@@ -82,6 +99,8 @@ mat4 SkinMatrix(ivec4 boneIDs, vec4 weights, int offset)
 
 void main()
 {
+    /* --- Calculation of matrices --- */
+
     mat4 matModel = uRender.matModel;
 
     if (uRender.skinning) {
@@ -93,7 +112,7 @@ void main()
         matModel = iMatModel * matModel;
     }
 
-    switch(uMat.billboard) {
+    switch(uMaterial.billboard) {
     case BILLBOARD_NONE:
         break;
     case BILLBOARD_FRONT:
@@ -104,9 +123,13 @@ void main()
         break;
     }
 
-    vec3 position = vec3(matModel * vec4(aPosition, 1.0));
-    vTexCoord = uMat.texOffset + aTexCoord * uMat.texScale;
-    vAlpha = aColor.a * iColor.a * uMat.albedoColor.a;
+    /* --- Call vertex override and final vertex calculation --- */
+
+    VertexOverride();
+
+    vec3 position = vec3(matModel * vec4(POSITION, 1.0));
+    vTexCoord = TEXCOORD;
+    vAlpha = COLOR.a;
 
     gl_Position = uFrustum.viewProj * vec4(position, 1.0);
 }

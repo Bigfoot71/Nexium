@@ -14,8 +14,10 @@ precision highp float;
 
 /* === Includes === */
 
+#include "../include/environment.glsl"
 #include "../include/billboard.glsl"
 #include "../include/frustum.glsl"
+#include "../include/frame.glsl"
 
 /* === Attributes === */
 
@@ -38,11 +40,19 @@ layout(std430, binding = 4) buffer BoneBuffer {
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform U_ViewFrustum {
+layout(std140, binding = 0) uniform U_Frame {
+    FrameForward uFrame;
+};
+
+layout(std140, binding = 1) uniform U_ViewFrustum {
     Frustum uFrustum;
 };
 
-layout(std140, binding = 2) uniform U_Renderable {
+layout(std140, binding = 2) uniform U_Environment {
+    Environment uEnv;
+};
+
+layout(std140, binding = 3) uniform U_Renderable {
     mat4 matModel;
     mat4 matNormal;
     int boneOffset;
@@ -51,7 +61,7 @@ layout(std140, binding = 2) uniform U_Renderable {
     bool skinning;
 } uRender;
 
-layout(std140, binding = 3) uniform U_Material {
+layout(std140, binding = 4) uniform U_Material {
     vec4 albedoColor;
     vec3 emissionColor;
     float emissionEnergy;
@@ -64,7 +74,7 @@ layout(std140, binding = 3) uniform U_Material {
     vec2 texOffset;
     vec2 texScale;
     int billboard;
-} uMat;
+} uMaterial;
 
 /* === Varyings === */
 
@@ -72,6 +82,10 @@ layout(location = 0) out vec3 vPosition;
 layout(location = 1) out vec2 vTexCoord;
 layout(location = 2) out vec4 vColor;
 layout(location = 3) out mat3 vTBN;
+
+/* === Vertex Override === */
+
+#include "../include/template/scene.vert"
 
 /* === Helper Functions === */
 
@@ -87,6 +101,8 @@ mat4 SkinMatrix(ivec4 boneIDs, vec4 weights, int offset)
 
 void main()
 {
+    /* --- Calculation of matrices --- */
+
     mat4 matModel = uRender.matModel;
     mat3 matNormal = mat3(uRender.matNormal);
 
@@ -101,7 +117,7 @@ void main()
         matNormal = mat3(transpose(inverse(iMatModel))) * matNormal;
     }
 
-    switch(uMat.billboard) {
+    switch(uMaterial.billboard) {
     case BILLBOARD_NONE:
         break;
     case BILLBOARD_FRONT:
@@ -112,13 +128,17 @@ void main()
         break;
     }
 
-    vec3 T = normalize(matNormal * aTangent.xyz);
-    vec3 N = normalize(matNormal * aNormal);
-    vec3 B = normalize(cross(N, T) * aTangent.w);
+    /* --- Call vertex override and final vertex calculation --- */
 
-    vPosition = vec3(matModel * vec4(aPosition, 1.0));
-    vTexCoord = uMat.texOffset + aTexCoord * uMat.texScale;
-    vColor = aColor * iColor * uMat.albedoColor;
+    VertexOverride();
+
+    vec3 T = normalize(matNormal * TANGENT.xyz);
+    vec3 N = normalize(matNormal * NORMAL);
+    vec3 B = normalize(cross(N, T) * TANGENT.w);
+
+    vPosition = vec3(matModel * vec4(POSITION, 1.0));
+    vTexCoord = TEXCOORD;
+    vColor = COLOR;
     vTBN = mat3(T, B, N);
 
     gl_Position = uFrustum.viewProj * vec4(vPosition, 1.0);

@@ -17,6 +17,7 @@ precision highp float;
 #include "../include/environment.glsl"
 #include "../include/frustum.glsl"
 #include "../include/lights.glsl"
+#include "../include/frame.glsl"
 #include "../include/math.glsl"
 #include "../include/pbr.glsl"
 
@@ -74,8 +75,8 @@ layout(binding = 0) uniform sampler2D uTexAlbedo;
 layout(binding = 1) uniform sampler2D uTexEmission;
 layout(binding = 2) uniform sampler2D uTexORM;
 layout(binding = 3) uniform sampler2D uTexNormal;
-layout(binding = 4) uniform sampler2D uTexBrdfLut;
 
+layout(binding = 4) uniform sampler2D uTexBrdfLut;
 layout(binding = 5) uniform samplerCube uTexProbeIrradiance;
 layout(binding = 6) uniform samplerCube uTexProbePrefilter;
 
@@ -84,15 +85,19 @@ layout(binding = 8) uniform highp sampler2DArray uTexShadow2D;
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform U_ViewFrustum {
+layout(std140, binding = 0) uniform U_Frame {
+    FrameForward uFrame;
+};
+
+layout(std140, binding = 1) uniform U_ViewFrustum {
     Frustum uFrustum;
 };
 
-layout(std140, binding = 1) uniform U_Environment {
+layout(std140, binding = 2) uniform U_Environment {
     Environment uEnv;
 };
 
-layout(std140, binding = 2) uniform U_Renderable {
+layout(std140, binding = 3) uniform U_Renderable {
     mat4 matModel;
     mat4 matNormal;
     int boneOffset;
@@ -101,7 +106,7 @@ layout(std140, binding = 2) uniform U_Renderable {
     bool skinning;
 } uRender;
 
-layout(std140, binding = 3) uniform U_Material {
+layout(std140, binding = 4) uniform U_Material {
     vec4 albedoColor;
     vec3 emissionColor;
     float emissionEnergy;
@@ -114,25 +119,16 @@ layout(std140, binding = 3) uniform U_Material {
     vec2 texOffset;
     vec2 texScale;
     int billboard;
-} uMat;
-
-/* === Uniforms === */
-
-layout(location = 10) uniform bool uHasActiveLights;
-
-layout(location = 11) uniform uvec2 uScreenSize;             //< Must match the dimensions of the render target
-layout(location = 12) uniform uvec3 uClusterCount;
-layout(location = 13) uniform uint uMaxLightsPerCluster;
-layout(location = 14) uniform float uClusterSliceScale;
-layout(location = 15) uniform float uClusterSliceBias;
-
-layout(location = 17) uniform bool uHasProbe;
-layout(location = 21) uniform int uProbePrefilterMipCount;
+} uMaterial;
 
 /* === Fragments === */
 
 layout(location = 0) out vec4 FragColor;
 layout(location = 1) out vec4 FragNormal;
+
+/* === Fragment Override === */
+
+#include "../include/template/scene.frag"
 
 /* === Lighting Functions === */
 
@@ -353,27 +349,14 @@ vec3 NormalScale(vec3 normal, float scale)
 
 void main()
 {
-    /* --- Sample albedo texture --- */
+    /* --- Call fragment override --- */
 
-    vec4 albedo = vColor * texture(uTexAlbedo, vTexCoord);
-
-    /* --- Sample emission texture --- */
-
-    vec3 emission = uMat.emissionColor * texture(uTexEmission, vTexCoord).rgb;
-    emission *= uMat.emissionEnergy;
-
-    /* --- Sampling and calculation of ORM values --- */
-
-    vec3 orm = texture(uTexORM, vTexCoord).rgb;
-
-    float occlusion = uMat.occlusion * orm.x;
-    float roughness = uMat.roughness * orm.y;
-    float metalness = uMat.metalness * orm.z;
+    FragmentOverride();
 
     /* --- Pre-calculation of ORM related data --- */ 
 
-    float alphaGGX = max(roughness * roughness, 1e-6);
-    float oneMinusMetalness = 1.0 - metalness;
+    float alphaGGX = max(ROUGHNESS * ROUGHNESS, 1e-6);
+    float oneMinusMetalness = 1.0 - METALNESS;
 
     /* --- Calculation of the distance from the fragment to the camera in scene units --- */
 
@@ -381,11 +364,11 @@ void main()
 
     /* --- Compute F0 (reflectance at normal incidence) based on the metallic factor --- */
 
-    vec3 F0 = PBR_ComputeF0(metalness, 0.5, albedo.rgb);
+    vec3 F0 = PBR_ComputeF0(METALNESS, 0.5, ALBEDO.rgb);
 
     /* --- Sample normal and compute view direction vector --- */
 
-    vec3 N = normalize(vTBN * NormalScale(texture(uTexNormal, vTexCoord).rgb * 2.0 - 1.0, uMat.normalScale));
+    vec3 N = normalize(vTBN * NormalScale(NORMAL_MAP.rgb * 2.0 - 1.0, NORMAL_SCALE));
     vec3 V = normalize(uFrustum.position - vPosition);
 
     /* --- Compute the dot product of the normal and view direction --- */
@@ -395,15 +378,15 @@ void main()
 
     /* --- Getting the cluster index and the number of lights in the cluster --- */
 
-    uvec3 clusterCoord = L_ClusterFromScreen(gl_FragCoord.xy / vec2(uScreenSize),
-        -zLinear, uClusterCount, uClusterSliceScale, uClusterSliceBias);
+    uvec3 clusterCoord = L_ClusterFromScreen(gl_FragCoord.xy / vec2(uFrame.screenSize),
+        -zLinear, uFrame.clusterCount, uFrame.clusterSliceScale, uFrame.clusterSliceBias);
 
-    uint clusterIndex = L_ClusterIndex(clusterCoord, uClusterCount);
+    uint clusterIndex = L_ClusterIndex(clusterCoord, uFrame.clusterCount);
     uint lightCount = sClusters[clusterIndex];
 
-    // Branchless early exit, if there are no active lights,
+    // Mask light count if there are no active lights,
     // sClusters may contain stale/garbage values otherwise.
-    lightCount *= uint(uHasActiveLights);
+    lightCount *= uint(uFrame.hasActiveLights);
 
     /* --- Loop through all light sources accumulating diffuse and specular light --- */
 
@@ -414,7 +397,7 @@ void main()
     {
         /* --- Calculate light index and get light --- */
 
-        uint lightIndex = sIndices[clusterIndex * uMaxLightsPerCluster + i];
+        uint lightIndex = sIndices[clusterIndex * uFrame.maxLightsPerCluster + i];
         Light light = sLights[lightIndex];
 
         /* --- Compute light direction --- */
@@ -445,7 +428,7 @@ void main()
 
         /* --- Compute diffuse lighting --- */
 
-        vec3 diffLight = vec3(Diffuse(cLdotH, cNdotV, cNdotL, roughness));
+        vec3 diffLight = vec3(Diffuse(cLdotH, cNdotV, cNdotL, ROUGHNESS));
         diffLight *= lightColE * oneMinusMetalness; // 0.0 for pure metal, 1.0 for dielectric
 
         /* --- Compute specular lighting --- */
@@ -489,39 +472,37 @@ void main()
 
     /* --- Compute AO light affect --- */
 
-    float aoLightAffect = mix(1.0, occlusion, uMat.aoLightAffect);
-    specular *= aoLightAffect;
-    diffuse *= aoLightAffect;
+    diffuse *= mix(1.0, OCCLUSION, AO_LIGHT_AFFECT);
 
     /* --- Ambient diffuse from sky --- */
 
     vec3 skyDiffuse = uEnv.ambientColor;
 
-    if (uHasProbe) {
+    if (uFrame.hasProbe) {
         vec3 Nr = M_Rotate3D(N, uEnv.skyRotation);
         skyDiffuse = texture(uTexProbeIrradiance, Nr).rgb;
     }
 
-    vec3 kS = IBL_FresnelSchlickRoughness(cNdotV, F0, roughness);
+    vec3 kS = IBL_FresnelSchlickRoughness(cNdotV, F0, ROUGHNESS);
     vec3 kD = (1.0 - kS) * oneMinusMetalness;
 
-    skyDiffuse *= kD * uEnv.skyDiffuse * occlusion;
+    skyDiffuse *= kD * uEnv.skyDiffuse * OCCLUSION;
 
     /* --- Ambient specular from sky --- */
 
     vec3 skySpecular = uEnv.ambientColor;
 
-    if (uHasProbe) {
+    if (uFrame.hasProbe) {
         vec3 R = M_Rotate3D(reflect(-V, N), uEnv.skyRotation);
-        float mipLevel = roughness * (float(uProbePrefilterMipCount) - 1.0);
+        float mipLevel = ROUGHNESS * (float(textureQueryLevels(uTexProbePrefilter)) - 1.0);
         skySpecular = textureLod(uTexProbePrefilter, R, mipLevel).rgb;
     }
 
     // Applies fog according to skyAffect to the source prefilter or ambient color
     skySpecular = mix(skySpecular, uEnv.fogColor, uEnv.fogSkyAffect);
 
-    float specOcclusion = IBL_GetSpecularOcclusion(cNdotV, occlusion, roughness);
-    vec3 specBRDF = IBL_GetMultiScatterBRDF(cNdotV, roughness, F0, metalness);
+    float specOcclusion = IBL_GetSpecularOcclusion(cNdotV, OCCLUSION, ROUGHNESS);
+    vec3 specBRDF = IBL_GetMultiScatterBRDF(cNdotV, ROUGHNESS, F0, METALNESS);
     skySpecular *= specBRDF * uEnv.skySpecular * specOcclusion;
 
     /* --- Calculate and apply fog factor --- */
@@ -544,12 +525,12 @@ void main()
 
     /* --- Compute the final fragment color by combining albedo, lighting contributions and fog --- */
 
-    vec3 litColor = albedo.rgb * (skyDiffuse + diffuse);
+    vec3 litColor = ALBEDO.rgb * (skyDiffuse + diffuse);
     litColor += skySpecular + specular;
-    litColor += emission;
+    litColor += EMISSION;
 
     FragColor.rgb = mix(uEnv.fogColor, litColor, fogFactor);
-    FragColor.a   = albedo.a;
+    FragColor.a   = ALBEDO.a;
 
     /* --- Store normals --- */
 

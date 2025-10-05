@@ -58,7 +58,7 @@ Here’s a checklist of the major features that are still missing:
 - [x] Bloom in post process
 - [x] Fog effect
 - [ ] Custom post-processing shaders
-- [ ] Custom material shaders
+- [x] Custom material shaders
 - [ ] More flexible 2D rendering
 - [ ] Audio spatialization
 

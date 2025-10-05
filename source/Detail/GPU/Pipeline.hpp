@@ -98,7 +98,9 @@ public:
     void bindVertexArray(const VertexArray& vertexArray) const noexcept;
     void bindTexture(int slot, const Texture& texture) const noexcept;
     void bindStorage(int slot, const Buffer& storage) const noexcept;
+    void bindStorage(int slot, const Buffer& storage, size_t offset, size_t size) const noexcept;
     void bindUniform(int slot, const Buffer& uniform) const noexcept;
+    void bindUniform(int slot, const Buffer& uniform, size_t offset, size_t size) const noexcept;
 
     void unbindFramebuffer() const noexcept;
     void unbindVertexArray() const noexcept;
@@ -155,8 +157,13 @@ public:
     void dispatchComputeIndirect(GLintptr indirect) const noexcept;
 
 public:
+    /** Non-instantiated operations */
     static void blitToBackBuffer(const gpu::Framebuffer& src, int xDst, int yDst, int wDst, int hDst, bool linear) noexcept;
     static void memoryBarrier(GLbitfield barriers) noexcept;
+
+    /** Hardware info getters */
+    static int uniformBufferOffsetAlignment() noexcept;
+    static int storageBufferOffsetAlignment() noexcept;
 
 private:
     // Prevents reentrancy for 'withXBind' functions
@@ -199,27 +206,47 @@ private:
     void setCullMode_Internal(CullMode mode) const noexcept;
 
 private:
+    struct BufferRange {
+        size_t offset, size;
+        BufferRange() : offset(0), size(0) {}
+        BufferRange(size_t o, size_t s) : offset(o), size(s) {}
+        bool operator==(const BufferRange& other) const noexcept {
+            return (offset == other.offset && size == other.size);
+        }
+        bool operator!=(const BufferRange& other) const noexcept {
+            return (offset != other.offset || size != other.size);
+        }
+    };
+
+private:
+    /** Default pipeline state */
     static constexpr ColorWrite InitialColorWrite = ColorWrite::RGBA;
     static constexpr DepthMode InitialDepthMode = DepthMode::Disabled;
     static constexpr DepthFunc InitialDepthFunc = DepthFunc::Less;
     static constexpr BlendMode InitialBlendMode = BlendMode::Disabled;
     static constexpr CullMode InitialCullMode = CullMode::Disabled;
 
+    /** Current pipeline state */
     static inline ColorWrite sCurrentColorWrite = InitialColorWrite;
     static inline DepthMode sCurrentDepthMode = InitialDepthMode;
     static inline DepthFunc sCurrentDepthFunc = InitialDepthFunc;
     static inline BlendMode sCurrentBlendMode = InitialBlendMode;
     static inline CullMode sCurrentCullMode = InitialCullMode;
 
+    /** Object trackers */
     static inline const Framebuffer* sBindFramebuffer = nullptr;
     static inline const VertexArray* sBindVertexArray = nullptr;
     static inline std::array<const Texture*, 32> sBindTexture{};
     static inline std::array<const Buffer*, 8> sBindStorage{};
-    static inline std::array<const Buffer*, 8> sBindUniform{};
+    static inline std::array<BufferRange, 8> sStorageRange{};
+    static inline std::array<const Buffer*, 16> sBindUniform{};
+    static inline std::array<BufferRange, 16> sUniformRange{};
     static inline const Program* sUsedProgram = nullptr;
 
+    /** Default state objects */
     static inline GLuint sDummyVAO{}; //< Used for draw without VAO
 
+    /** Pipeline instance tracker */
     static inline bool sCurrentlyInstanced{false};
 };
 
@@ -293,12 +320,14 @@ inline Pipeline::~Pipeline() noexcept
     for (int slot = 0; slot < sBindStorage.size(); ++slot) {
         if (sBindStorage[slot] != nullptr) {
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, slot, 0);
+            sStorageRange[slot] = BufferRange();
             sBindStorage[slot] = nullptr;
         }
     }
     for (int slot = 0; slot < sBindUniform.size(); ++slot) {
         if (sBindUniform[slot] != nullptr) {
             glBindBufferBase(GL_UNIFORM_BUFFER, slot, 0);
+            sUniformRange[slot] = BufferRange();
             sBindUniform[slot] = nullptr;
         }
     }
@@ -396,12 +425,31 @@ inline void Pipeline::bindStorage(int slot, const Buffer& storage) const noexcep
     SDL_assert(storage.target() == GL_SHADER_STORAGE_BUFFER);
     SDL_assert(slot < sBindStorage.size());
 
-    if (&storage == sBindStorage[slot]) {
+    BufferRange range(0, storage.size());
+    if (&storage == sBindStorage[slot] && range == sStorageRange[slot]) {
         return;
     }
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, slot, storage.id());
     sBindStorage[slot] = &storage;
+    sStorageRange[slot] = range;
+}
+
+inline void Pipeline::bindStorage(int slot, const Buffer& storage, size_t offset, size_t size) const noexcept
+{
+    SDL_assert((offset % storageBufferOffsetAlignment()) == 0);
+    SDL_assert(storage.target() == GL_SHADER_STORAGE_BUFFER);
+    SDL_assert(size > 0 && size <= storage.size());
+    SDL_assert(slot < sBindStorage.size());
+
+    BufferRange range(offset, size);
+    if (&storage == sBindStorage[slot] && range == sStorageRange[slot]) {
+        return;
+    }
+
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, slot, storage.id(), offset, size);
+    sBindStorage[slot] = &storage;
+    sStorageRange[slot] = range;
 }
 
 inline void Pipeline::bindUniform(int slot, const Buffer& uniform) const noexcept
@@ -409,12 +457,31 @@ inline void Pipeline::bindUniform(int slot, const Buffer& uniform) const noexcep
     SDL_assert(uniform.target() == GL_UNIFORM_BUFFER);
     SDL_assert(slot < sBindUniform.size());
 
-    if (&uniform == sBindUniform[slot]) {
+    BufferRange range(0, uniform.size());
+    if (&uniform == sBindUniform[slot] && range == sUniformRange[slot]) {
         return;
     }
 
     glBindBufferBase(GL_UNIFORM_BUFFER, slot, uniform.id());
     sBindUniform[slot] = &uniform;
+    sUniformRange[slot] = range;
+}
+
+inline void Pipeline::bindUniform(int slot, const Buffer& uniform, size_t offset, size_t size) const noexcept
+{
+    SDL_assert((offset % uniformBufferOffsetAlignment()) == 0);
+    SDL_assert(uniform.target() == GL_UNIFORM_BUFFER);
+    SDL_assert(size > 0 && size <= uniform.size());
+    SDL_assert(slot < sBindUniform.size());
+
+    BufferRange range(offset, size);
+    if (&uniform == sBindUniform[slot] && range == sUniformRange[slot]) {
+        return;
+    }
+
+    glBindBufferRange(GL_UNIFORM_BUFFER, slot, uniform.id(), offset, size);
+    sBindUniform[slot] = &uniform;
+    sUniformRange[slot] = range;
 }
 
 inline void Pipeline::unbindFramebuffer() const noexcept
@@ -446,6 +513,7 @@ inline void Pipeline::unbindStorage(int slot) const noexcept
 {
     if (sBindStorage[slot] != nullptr) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, slot, 0);
+        sStorageRange[slot] = BufferRange();
         sBindStorage[slot] = nullptr;
     }
 }
@@ -454,6 +522,7 @@ inline void Pipeline::unbindUniform(int slot) const noexcept
 {
     if (sBindUniform[slot] != nullptr) {
         glBindBufferBase(GL_UNIFORM_BUFFER, slot, 0);
+        sUniformRange[slot] = BufferRange();
         sBindUniform[slot] = nullptr;
     }
 }
@@ -716,6 +785,28 @@ inline void Pipeline::blitToBackBuffer(const gpu::Framebuffer& src, int xDst, in
 inline void Pipeline::memoryBarrier(GLbitfield barriers) noexcept
 {
     glMemoryBarrier(barriers);
+}
+
+inline int Pipeline::uniformBufferOffsetAlignment() noexcept
+{
+    static int value{-1};
+
+    if (value < 0) {
+        glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &value);
+    }
+
+    return value;
+}
+
+inline int Pipeline::storageBufferOffsetAlignment() noexcept
+{
+    static int value{-1};
+
+    if (value < 0) {
+        glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &value);
+    }
+
+    return value;
 }
 
 /* === Private Implementation === */

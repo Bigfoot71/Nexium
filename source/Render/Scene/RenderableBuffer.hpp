@@ -9,7 +9,9 @@
 #ifndef HP_SCENE_RENDERABLE_BUFFER_HPP
 #define HP_SCENE_RENDERABLE_BUFFER_HPP
 
+#include <Hyperion/HP_Core.h>
 #include <Hyperion/HP_Math.h>
+
 #include "./DrawData.hpp"
 #include "./DrawCall.hpp"
 
@@ -56,7 +58,7 @@ inline void RenderableBuffer::upload(const DrawData& data, const DrawCall& call)
         .boneOffset = data.boneMatrixOffset(),
         .layerMask = call.mesh().layerMask,
         .instancing = data.useInstancing(),
-        .skinning = data.useSkinning()
+        .skinning = data.useSkinning(),
     };
 
     mBufferIndex = (mBufferIndex + 1) % mBuffers.size();

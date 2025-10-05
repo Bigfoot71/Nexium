@@ -11,14 +11,25 @@
 
 #include <Hyperion/HP_Render.h>
 
+#include "../../Detail/Util/ObjectPool.hpp"
 #include "../../Detail/GPU/Program.hpp"
 #include "../../Detail/GPU/Shader.hpp"
+#include "../HP_MaterialShader.hpp"
 
 namespace render {
+
+/* === Declaration === */
 
 class ProgramCache {
 public:
     ProgramCache();
+
+    /** Material shaders */
+    HP_MaterialShader* createMaterialShader(const char* vert, const char* frag);
+    void destroyMaterialShader(HP_MaterialShader* shader);
+
+    /** Should be called at the end of 'HP_End3D()' */
+    void clearDynamicMaterialBuffers();
 
     /** Cubemap generation */
     gpu::Program& cubemapFromEquirectangular();
@@ -27,11 +38,9 @@ public:
     gpu::Program& cubemapSkybox();
 
     /** Scene programs */
+    HP_MaterialShader& materialShader(HP_MaterialShader* shader);
     gpu::Program& lightCulling();
-    gpu::Program& prepass();
-    gpu::Program& forward();
     gpu::Program& skybox();
-    gpu::Program& shadow();
 
     /** Scene post process programs */
     gpu::Program& bloomPost(HP_Bloom mode);
@@ -50,6 +59,9 @@ public:
     gpu::Program& overlay();
 
 private:
+    /** Shader pools */
+    util::ObjectPool<HP_MaterialShader, 32> mMaterialShaders;
+
     /** Cubemap generation */
     gpu::Program mCubemapFromEquirectangular;
     gpu::Program mCubemapIrradiance;
@@ -57,11 +69,9 @@ private:
     gpu::Program mCubemapSkybox;
 
     /** Scene programs */
+    HP_MaterialShader mMaterialShader{};
     gpu::Program mLightCulling{};
-    gpu::Program mPrepass{};
-    gpu::Program mForward{};
     gpu::Program mSkybox{};
-    gpu::Program mShadow{};
 
     /** Scene post process programs */
     std::array<gpu::Program, HP_BLOOM_COUNT> mBloomPost{};
@@ -84,6 +94,30 @@ private:
     gpu::Shader mVertexShaderScreen;
     gpu::Shader mVertexShaderCube;
 };
+
+/* === Public Implementation === */
+
+inline HP_MaterialShader* ProgramCache::createMaterialShader(const char* vert, const char* frag)
+{
+    return mMaterialShaders.create(vert, frag);
+}
+
+inline void ProgramCache::destroyMaterialShader(HP_MaterialShader* shader)
+{
+    mMaterialShaders.destroy(shader);
+}
+
+inline void ProgramCache::clearDynamicMaterialBuffers()
+{
+    for (HP_MaterialShader& shader : mMaterialShaders) {
+        shader.clearDynamicBuffer();
+    }
+}
+
+inline HP_MaterialShader& ProgramCache::materialShader(HP_MaterialShader* shader)
+{
+    return shader ? *shader : mMaterialShader;
+}
 
 } // namespace render
 

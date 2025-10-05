@@ -26,7 +26,7 @@ layout(binding = 0) uniform samplerCube uTexSkybox;
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 1) uniform U_Environment {
+layout(std140, binding = 2) uniform U_Environment {
     Environment uEnv;
 };
 

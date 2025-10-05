@@ -67,6 +67,17 @@ private:
         float aspect{};
     };
 
+    struct FrameUniform {
+        alignas(8) HP_IVec2 screenSize;
+        alignas(16) HP_IVec3 clusterCount;
+        alignas(4) uint32_t maxLightsPerCluster;
+        alignas(4) float clusterSliceScale;
+        alignas(4) float clusterSliceBias;
+        alignas(4) float elapsedTime;
+        alignas(4) int32_t hasActiveLights;
+        alignas(4) int32_t hasProbe;
+    };
+
 private:
     /** Shared assets */
     render::ProgramCache& mPrograms;
@@ -98,6 +109,9 @@ private:
     /** Swap buffers */
     gpu::SwapBuffer mSwapPostProcess{};     //< Ping-pong buffer used during scene post process
     gpu::SwapBuffer mSwapAuxiliary{};       //< Secondary ping-pong buffer in half resolution
+
+    /** Uniform buffers */
+    gpu::Buffer mFrameUniform;
 
     /** State infos */
     TargetInfo mTargetInfo{};

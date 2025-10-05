@@ -14,18 +14,23 @@ precision highp float;
 
 /* === Includes === */
 
+#include "../include/environment.glsl"
 #include "../include/billboard.glsl"
 #include "../include/frustum.glsl"
+#include "../include/frame.glsl"
 
 /* === Attributes === */
 
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec2 aTexCoord;
+layout(location = 2) in vec3 aNormal;
+layout(location = 3) in vec4 aTangent;
 layout(location = 4) in vec4 aColor;
 layout(location = 5) in ivec4 aBoneIDs;
 layout(location = 6) in vec4 aWeights;
 layout(location = 7) in mat4 iMatModel;
 layout(location = 11) in vec4 iColor;
+layout(location = 12) in vec4 iCustom;
 
 /* === Storage Buffers === */
 
@@ -35,27 +40,51 @@ layout(std430, binding = 0) buffer BoneBuffer {
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform U_ViewFrustum {
+layout(std140, binding = 0) uniform U_Frame {
+    FrameShadow uFrame;
+};
+
+layout(std140, binding = 1) uniform U_ViewFrustum {
     Frustum uFrustum;
 };
 
-/* === Uniforms === */
+layout(std140, binding = 2) uniform U_Environment {
+    Environment uEnv;
+};
 
-layout(location = 0) uniform mat4 uLightViewProj;
-layout(location = 1) uniform mat4 uMatModel;
-layout(location = 2) uniform vec2 uTCOffset;
-layout(location = 3) uniform vec2 uTCScale;
-layout(location = 4) uniform float uAlpha;
-layout(location = 5) uniform bool uSkinning;
-layout(location = 6) uniform int uBoneOffset;
-layout(location = 7) uniform bool uInstancing;
-layout(location = 8) uniform uint uBillboard;
+layout(std140, binding = 3) uniform U_Renderable {
+    mat4 matModel;
+    mat4 matNormal;
+    int boneOffset;
+    uint layerMask;
+    bool instancing;
+    bool skinning;
+} uRender;
+
+layout(std140, binding = 4) uniform U_Material {
+    vec4 albedoColor;
+    vec3 emissionColor;
+    float emissionEnergy;
+    float aoLightAffect;
+    float occlusion;
+    float roughness;
+    float metalness;
+    float normalScale;
+    float alphaCutOff;
+    vec2 texOffset;
+    vec2 texScale;
+    int billboard;
+} uMaterial;
 
 /* === Varyings === */
 
 layout(location = 0) out vec3 vPosition;
 layout(location = 1) out vec2 vTexCoord;
 layout(location = 2) out float vAlpha;
+
+/* === Vertex Override === */
+
+#include "../include/template/scene.vert"
 
 /* === Helper Functions === */
 
@@ -71,18 +100,20 @@ mat4 SkinMatrix(ivec4 boneIDs, vec4 weights, int offset)
 
 void main()
 {
-    mat4 matModel = uMatModel;
+    /* --- Calculation of matrices --- */
 
-    if (uSkinning) {
-        mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, uBoneOffset);
+    mat4 matModel = uRender.matModel;
+
+    if (uRender.skinning) {
+        mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, uRender.boneOffset);
         matModel = sMatModel * matModel;
     }
 
-    if (uInstancing) {
+    if (uRender.instancing) {
         matModel = iMatModel * matModel;
     }
 
-    switch(uBillboard) {
+    switch(uMaterial.billboard) {
     case BILLBOARD_NONE:
         break;
     case BILLBOARD_FRONT:
@@ -93,9 +124,13 @@ void main()
         break;
     }
 
-    vPosition = vec3(matModel * vec4(aPosition, 1.0));
-    vTexCoord = uTCOffset + aTexCoord * uTCScale;
-    vAlpha = aColor.a * iColor.a * uAlpha;
+    /* --- Call vertex override and final vertex calculation --- */
 
-    gl_Position = uLightViewProj * vec4(vPosition, 1.0);
+    VertexOverride();
+
+    vPosition = vec3(matModel * vec4(POSITION, 1.0));
+    vTexCoord = TEXCOORD;
+    vAlpha = COLOR.a;
+
+    gl_Position = uFrame.lightViewProj * vec4(vPosition, 1.0);
 }
