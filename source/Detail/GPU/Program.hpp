@@ -14,6 +14,7 @@
 
 #include "../../Core/HP_InternalLog.hpp"
 #include "../Util/FixedArray.hpp"
+#include "../BuildInfo.hpp"
 #include "./Shader.hpp"
 
 #include <glad/gles2.h>
@@ -28,9 +29,9 @@ namespace gpu {
 class Program {
 public:
     Program() = default;
-    explicit Program(const Shader& vs, const Shader& gs, const Shader& fs) noexcept;
-    explicit Program(const Shader& vs, const Shader& fs) noexcept;
-    explicit Program(const Shader& cs) noexcept;
+
+    template<typename... Shaders>
+    explicit Program(const Shaders&... shaders) noexcept;
 
     ~Program() noexcept;
 
@@ -80,8 +81,13 @@ private:
     void setMat4(int location, const HP_Mat4& value) const noexcept;
 
 private:
+    template<typename... Shaders>
+    bool initProgram(const Shaders&... shaders) noexcept;
     bool linkProgram() noexcept;
+    template<typename... Shaders>
+    bool validateShaderStages(const Shaders&... shaders) noexcept;
     bool createUniformCache() noexcept;
+    void cleanup() noexcept;
 
 private:
     GLuint mID{0};
@@ -92,111 +98,19 @@ private:
 
 /* === Public Implementation === */
 
-inline Program::Program(const Shader& vs, const Shader& gs, const Shader& fs) noexcept
+template<typename... Shaders>
+inline Program::Program(const Shaders&... shaders) noexcept
 {
-    if (!vs.isValid() || !gs.isValid() || !fs.isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create program; Invalid shaders");
-        return;
-    }
-
-    if (vs.stage() != GL_VERTEX_SHADER || gs.stage() != GL_GEOMETRY_SHADER || fs.stage() != GL_FRAGMENT_SHADER) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create program; Incorrect shader stages for graphics pipeline");
-        return;
-    }
-
-    mID = glCreateProgram();
-    if (mID == 0) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create program object");
-        return;
-    }
-
-    glAttachShader(mID, vs.id());
-    glAttachShader(mID, gs.id());
-    glAttachShader(mID, fs.id());
-
-    if (!linkProgram()) {
-        glDeleteProgram(mID);
-        mID = 0;
-    }
-
-    if (!createUniformCache()) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create uniform cache");
-        glDeleteProgram(mID);
-        mID = 0;
-    }
-}
-
-inline Program::Program(const Shader& vs, const Shader& fs) noexcept
-{
-    if (!vs.isValid() || !fs.isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create program; Invalid shaders");
-        return;
-    }
-
-    if (vs.stage() != GL_VERTEX_SHADER || fs.stage() != GL_FRAGMENT_SHADER) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create program; Incorrect shader stages for graphics pipeline");
-        return;
-    }
-
-    mID = glCreateProgram();
-    if (mID == 0) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create program object");
-        return;
-    }
-
-    glAttachShader(mID, vs.id());
-    glAttachShader(mID, fs.id());
-
-    if (!linkProgram()) {
-        glDeleteProgram(mID);
-        mID = 0;
-    }
-
-    if (!createUniformCache()) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create uniform cache");
-        glDeleteProgram(mID);
-        mID = 0;
-    }
-}
-
-inline Program::Program(const Shader& cs) noexcept
-{
-    if (!cs.isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create program; invalid compute shader");
-        return;
-    }
-
-    if (cs.stage() != GL_COMPUTE_SHADER) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create program; shader is not a compute shader");
-        return;
-    }
-
-    mID = glCreateProgram();
-    if (mID == 0) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create program object");
-        return;
-    }
-
-    glAttachShader(mID, cs.id());
-
-    if (!linkProgram()) {
-        glDeleteProgram(mID);
-        mID = 0;
-    }
-
-    if (!createUniformCache()) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create uniform cache");
-        glDeleteProgram(mID);
-        mID = 0;
+    static_assert(sizeof...(Shaders) > 0, "At least one shader is required");
+    
+    if (!initProgram(shaders...)) {
+        cleanup();
     }
 }
 
 inline Program::~Program() noexcept
 {
-    if (mID != 0) {
-        glDeleteProgram(mID);
-        mID = 0;
-    }
+    cleanup();
 }
 
 inline Program::Program(Program&& other) noexcept
@@ -207,9 +121,7 @@ inline Program::Program(Program&& other) noexcept
 inline Program& Program::operator=(Program&& other) noexcept
 {
     if (this != &other) {
-        if (mID != 0) {
-            glDeleteProgram(mID);
-        }
+        cleanup();
         mID = std::exchange(other.mID, 0);
         mUniformCache = std::move(other.mUniformCache);
     }
@@ -491,6 +403,39 @@ inline void Program::setMat4(int location, const HP_Mat4& value) const noexcept
     }
 }
 
+template<typename... Shaders>
+inline bool Program::initProgram(const Shaders&... shaders) noexcept
+{
+    if (!(shaders.isValid() && ...)) {
+        HP_INTERNAL_LOG(E, "GPU: Failed to create program; Invalid shaders");
+        return false;
+    }
+
+    if constexpr (detail::BuildInfo::debug) {
+        SDL_assert(validateShaderStages(shaders...));
+    }
+
+    mID = glCreateProgram();
+    if (mID == 0) {
+        HP_INTERNAL_LOG(E, "GPU: Failed to create program object");
+        return false;
+    }
+
+    (glAttachShader(mID, shaders.id()), ...);
+
+    if (!linkProgram()) {
+        HP_INTERNAL_LOG(E, "GPU: Failed to link program");
+        return false;
+    }
+
+    if (!createUniformCache()) {
+        HP_INTERNAL_LOG(E, "GPU: Failed to create uniform cache");
+        return false;
+    }
+
+    return true;
+}
+
 inline bool Program::linkProgram() noexcept
 {
     glLinkProgram(mID);
@@ -509,9 +454,44 @@ inline bool Program::linkProgram() noexcept
         else {
             HP_INTERNAL_LOG(E, "GPU: Failed to link program (no error log available)");
         }
+    }
+
+    SDL_assert(success > 0);
+
+    return static_cast<bool>(success);
+}
+
+template<typename... Shaders>
+inline bool Program::validateShaderStages(const Shaders&... shaders) noexcept
+{
+    constexpr size_t count = sizeof...(Shaders);
+    std::array<GLenum, count> stages = {shaders.stage()...};
+
+    // Compute pipeline: only one compute shader
+    if (std::find(stages.begin(), stages.end(), GL_COMPUTE_SHADER) != stages.end()) {
+        if (count != 1) {
+            HP_INTERNAL_LOG(E, "GPU: Compute pipeline requires exactly one compute shader");
+            return false;
+        }
+        return true;
+    }
+
+    // Graphics pipeline: checks
+    bool hasVertex = std::find(stages.begin(), stages.end(), GL_VERTEX_SHADER) != stages.end();
+    bool hasFragment = std::find(stages.begin(), stages.end(), GL_FRAGMENT_SHADER) != stages.end();
+    if (!hasVertex || !hasFragment) {
+        HP_INTERNAL_LOG(E, "GPU: Graphics pipeline requires at least vertex and fragment shaders");
         return false;
     }
 
+    // Check that there are no duplicates
+    std::array<GLenum, count> sortedStages = stages;
+    std::sort(sortedStages.begin(), sortedStages.end());
+    if (std::adjacent_find(sortedStages.begin(), sortedStages.end()) != sortedStages.end()) {
+        HP_INTERNAL_LOG(E, "GPU: Duplicate shader stages detected");
+        return false;
+    }
+    
     return true;
 }
 
@@ -586,6 +566,14 @@ inline bool Program::createUniformCache() noexcept
     }
 
     return true;
+}
+
+inline void Program::cleanup() noexcept
+{
+    if (mID != 0) {
+        glDeleteProgram(mID);
+        mID = 0;
+    }
 }
 
 } // namespace gpu
