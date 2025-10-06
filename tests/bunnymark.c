@@ -100,5 +100,5 @@ void Bunny_Update(Bunny* bunny, float delta)
 void Bunny_Draw(const Bunny* bunny)
 {
     HP_SetColor2D(bunny->color);
-    HP_DrawRectEx2D(bunny->position, HP_VEC2_1(16), HP_VEC2_1(8), bunny->rotation);
+    HP_DrawRectEx2D(bunny->position, HP_VEC2_1(16), HP_VEC2_1(0.5f), bunny->rotation);
 }
