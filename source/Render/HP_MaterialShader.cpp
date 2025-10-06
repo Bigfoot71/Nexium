@@ -4,10 +4,10 @@
 #include <shaders/scene_lit.frag.h>
 #include <shaders/scene_unlit.frag.h>
 #include <shaders/scene_wireframe.geom.h>
-#include <shaders/prepass.vert.h>
-#include <shaders/prepass.frag.h>
-#include <shaders/shadow.vert.h>
-#include <shaders/shadow.frag.h>
+#include <shaders/scene_prepass.vert.h>
+#include <shaders/scene_prepass.frag.h>
+#include <shaders/scene_shadow.vert.h>
+#include <shaders/scene_shadow.frag.h>
 
 #include <string_view>
 #include <string>
@@ -32,14 +32,14 @@ HP_MaterialShader::HP_MaterialShader()
         gpu::Shader(GL_FRAGMENT_SHADER, SCENE_UNLIT_FRAG, {"WIREFRAME"})
     );
 
-    mPrograms[PREPASS] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, PREPASS_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, PREPASS_FRAG)
+    mPrograms[SCENE_PREPASS] = gpu::Program(
+        gpu::Shader(GL_VERTEX_SHADER, SCENE_PREPASS_VERT),
+        gpu::Shader(GL_FRAGMENT_SHADER, SCENE_PREPASS_FRAG)
     );
 
-    mPrograms[SHADOW] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, SHADOW_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, SHADOW_FRAG)
+    mPrograms[SCENE_SHADOW] = gpu::Program(
+        gpu::Shader(GL_VERTEX_SHADER, SCENE_SHADOW_VERT),
+        gpu::Shader(GL_FRAGMENT_SHADER, SCENE_SHADOW_FRAG)
     );
 }
 
@@ -55,10 +55,10 @@ HP_MaterialShader::HP_MaterialShader(const char* vert, const char* frag)
     std::string vertScene = SCENE_VERT;
     std::string fragSceneLit = SCENE_LIT_FRAG;
     std::string fragSceneUnlit = SCENE_UNLIT_FRAG;
-    std::string vertPrepass = PREPASS_VERT;
-    std::string fragPrepass = PREPASS_FRAG;
-    std::string vertShadow = SHADOW_VERT;
-    std::string fragShadow = SHADOW_FRAG;
+    std::string vertPrepass = SCENE_PREPASS_VERT;
+    std::string fragPrepass = SCENE_PREPASS_FRAG;
+    std::string vertShadow = SCENE_SHADOW_VERT;
+    std::string fragShadow = SCENE_SHADOW_FRAG;
 
     /* --- Process shaders --- */
 
@@ -88,12 +88,12 @@ HP_MaterialShader::HP_MaterialShader(const char* vert, const char* frag)
         gpu::Shader(GL_FRAGMENT_SHADER, fragSceneUnlit.c_str())
     );
 
-    mPrograms[PREPASS] = gpu::Program(
+    mPrograms[SCENE_PREPASS] = gpu::Program(
         gpu::Shader(GL_VERTEX_SHADER, vertPrepass.c_str()),
         gpu::Shader(GL_FRAGMENT_SHADER, fragPrepass.c_str())
     );
 
-    mPrograms[SHADOW] = gpu::Program(
+    mPrograms[SCENE_SHADOW] = gpu::Program(
         gpu::Shader(GL_VERTEX_SHADER, vertShadow.c_str()),
         gpu::Shader(GL_FRAGMENT_SHADER, fragShadow.c_str())
     );

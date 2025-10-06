@@ -1,4 +1,4 @@
-/* prepass.vert -- Vertex shader for depth pre-pass
+/* scene_prepass.vert -- Vertex shader for depth pre-pass
  *
  * Copyright (c) 2025 Le Juez Victor
  *

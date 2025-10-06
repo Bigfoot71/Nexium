@@ -273,8 +273,8 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         const HP_Material& mat = call.material();
 
         HP_MaterialShader& shader = mPrograms.materialShader(mat.shader);
-        pipeline.useProgram(shader.program(HP_MaterialShader::PREPASS));
-        shader.bindUniformBuffers(pipeline, HP_MaterialShader::PREPASS, call.dynamicRangeIndex());
+        pipeline.useProgram(shader.program(HP_MaterialShader::SCENE_PREPASS));
+        shader.bindUniformBuffers(pipeline, HP_MaterialShader::SCENE_PREPASS, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
         switch (mat.depth.test) {

@@ -315,8 +315,8 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
     {
         HP_MaterialShader& shader = mPrograms.materialShader(call.material().shader);
 
-        pipeline.useProgram(shader.program(HP_MaterialShader::SHADOW));
-        shader.bindUniformBuffers(pipeline, HP_MaterialShader::SHADOW, call.dynamicRangeIndex());
+        pipeline.useProgram(shader.program(HP_MaterialShader::SCENE_SHADOW));
+        shader.bindUniformBuffers(pipeline, HP_MaterialShader::SCENE_SHADOW, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
         const HP_Texture* texture = call.material().albedo.texture;

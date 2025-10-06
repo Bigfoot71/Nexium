@@ -1,4 +1,4 @@
-/* shadow.vert -- Vertex shader for rendering shadow maps
+/* scene_prepass.vert -- Vertex shader for rendering shadow maps
  *
  * Copyright (c) 2025 Le Juez Victor
  *
