@@ -60,7 +60,7 @@ int main(void)
             HP_SetColor2D(HP_BLACK);
             HP_DrawText2D(
                 CMN_FormatText("BILLBOARD: %i\nPress SPACE to switch", matSprite.billboard),
-                HP_VEC2_1(10), 24, HP_VEC2_ONE
+                HP_VEC2_1(10), 32, HP_VEC2_ONE
             );
         }
         HP_End2D();

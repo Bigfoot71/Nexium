@@ -1,5 +1,6 @@
 #include <Hyperion/Hyperion.h>
 #include "./common.h"
+#include "Hyperion/HP_Render.h"
 
 int main(void)
 {
@@ -34,6 +35,8 @@ int main(void)
     envs[0].background = HP_BLACK;
 
     envs[1] = HP_GetDefaultEnvironment();
+    envs[1].bloom.mode = HP_BLOOM_MIX;
+    envs[1].bloom.strength = 0.08f;
     envs[1].tonemap.mode = HP_TONEMAP_ACES;
     envs[1].tonemap.exposure = 2.0f;
     envs[1].tonemap.white = 8.0f;
@@ -49,6 +52,9 @@ int main(void)
         HP_Begin3D(&camera, &envs[env], NULL);
         HP_DrawModel3D(model, NULL);
         HP_End3D();
+        HP_Begin2D(NULL);
+        HP_DrawText2D("Press SPACE to change environment", HP_VEC2_1(10), 32, HP_VEC2_ONE);
+        HP_End2D();
     }
 
     HP_Quit();
