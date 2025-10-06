@@ -25,43 +25,6 @@ Overlay::Overlay(render::ProgramCache& programs, render::AssetCache& assets, HP_
     /* --- Create GPU Buffers --- */
 
     mUniformBuffer = gpu::Buffer(GL_UNIFORM_BUFFER, sizeof(HP_Mat4), nullptr, GL_DYNAMIC_DRAW);
-    mVertexBuffer = gpu::Buffer(GL_ARRAY_BUFFER, MaxVertices * sizeof(HP_Vertex2D), nullptr, GL_DYNAMIC_DRAW);
-    mIndexBuffer = gpu::Buffer(GL_ELEMENT_ARRAY_BUFFER, MaxIndices * sizeof(uint16_t), nullptr, GL_DYNAMIC_DRAW);
-
-    mVertexArray = gpu::VertexArray(&mIndexBuffer, {
-        gpu::VertexBufferDesc {
-            .buffer = &mVertexBuffer,
-            .attributes = {
-                gpu::VertexAttribute {
-                    .location = 0,
-                    .size = 2,
-                    .type = GL_FLOAT,
-                    .normalized = false,
-                    .stride = sizeof(HP_Vertex2D),
-                    .offset = offsetof(HP_Vertex2D, position),
-                    .divisor = 0
-                },
-                gpu::VertexAttribute {
-                    .location = 1,
-                    .size = 2,
-                    .type = GL_FLOAT,
-                    .normalized = false,
-                    .stride = sizeof(HP_Vertex2D),
-                    .offset = offsetof(HP_Vertex2D, texcoord),
-                    .divisor = 0
-                },
-                gpu::VertexAttribute {
-                    .location = 2,
-                    .size = 4,
-                    .type = GL_FLOAT,
-                    .normalized = false,
-                    .stride = sizeof(HP_Vertex2D),
-                    .offset = offsetof(HP_Vertex2D, color),
-                    .divisor = 0
-                }
-            }
-        }
-    });
 
     /* --- Create Framebuffer --- */
 
@@ -108,18 +71,18 @@ void Overlay::flush()
         return;
     }
 
-    /* --- Upload data --- */
+    /* --- Upload to vertex buffer --- */
 
-    mVertexBuffer.upload(0, mVertices.size() * sizeof(HP_Vertex2D), mVertices.data());
-    mIndexBuffer.upload(0, mIndices.size() * sizeof(uint16_t), mIndices.data());
+    mVertexBuffer->vbo.upload(0, mVertices.size() * sizeof(HP_Vertex2D), mVertices.data());
+    mVertexBuffer->ebo.upload(0, mIndices.size() * sizeof(uint16_t), mIndices.data());
 
     /* --- Setup pipeline --- */
 
     gpu::Pipeline pipeline;
 
     pipeline.setBlendMode(gpu::BlendMode::Premultiplied);
+    pipeline.bindVertexArray(mVertexBuffer->vao);
     pipeline.bindUniform(0, mUniformBuffer);
-    pipeline.bindVertexArray(mVertexArray);
     pipeline.bindFramebuffer(mFramebuffer);
     pipeline.setViewport(mFramebuffer);
 
@@ -144,6 +107,10 @@ void Overlay::flush()
         }
         call.draw(pipeline);
     }
+
+    /* --- Rotate vertex buffer --- */
+
+    mVertexBuffer.rotate();
 
     /* --- Reset --- */
 

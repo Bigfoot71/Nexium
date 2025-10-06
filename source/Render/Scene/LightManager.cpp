@@ -11,7 +11,6 @@
 #include "../../Detail/GPU/Pipeline.hpp"
 #include "../HP_Texture.hpp"
 #include "./DrawCall.hpp"
-#include "Hyperion/HP_Core.h"
 
 #include <Hyperion/HP_Render.h>
 #include <Hyperion/HP_Macros.h>
@@ -23,7 +22,9 @@ namespace scene {
 /* === Public Implementation === */
 
 LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& assets, const HP_AppDesc& desc)
-    : mPrograms(programs), mAssets(assets), mShadowResolution{desc.render3D.shadowRes > 0 ? desc.render3D.shadowRes : 2048}
+    : mPrograms(programs), mAssets(assets)
+    , mFrameShadowUniform(GL_UNIFORM_BUFFER, sizeof(FrameShadowUniform), nullptr, GL_DYNAMIC_DRAW)
+    , mShadowResolution{desc.render3D.shadowRes > 0 ? desc.render3D.shadowRes : 2048}
 {
     /* --- Calculation of the number of clusters according to the target size --- */
 
@@ -389,14 +390,14 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             {
                 updated2DCount++;
 
-                mFrameShadowUniform.upload({
+                mFrameShadowUniform->uploadObject(FrameShadowUniform {
                     .lightViewProj = light.viewProj(),
                     .lightPosition = light.position(),
                     .shadowLambda = light.shadowLambda(),
                     .farPlane = light.range(),
                     .elapsedTime = static_cast<float>(HP_GetElapsedTime())
                 });
-                pipeline.bindUniform(0, mFrameShadowUniform.buffer());
+                pipeline.bindUniform(0, *mFrameShadowUniform);
 
                 pipeline.bindFramebuffer(mFramebufferShadow2D);
                 mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
@@ -412,20 +413,22 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                         draw(pipeline, call, params.drawData[call.drawDataIndex()]);
                     }
                 }
+
+                mFrameShadowUniform.rotate();
             }
             break;
         case HP_LIGHT_SPOT:
             {
                 updated2DCount++;
 
-                mFrameShadowUniform.upload({
+                mFrameShadowUniform->uploadObject(FrameShadowUniform {
                     .lightViewProj = light.viewProj(),
                     .lightPosition = light.position(),
                     .shadowLambda = light.shadowLambda(),
                     .farPlane = light.range(),
                     .elapsedTime = static_cast<float>(HP_GetElapsedTime())
                 });
-                pipeline.bindUniform(0, mFrameShadowUniform.buffer());
+                pipeline.bindUniform(0, *mFrameShadowUniform);
 
                 pipeline.bindFramebuffer(mFramebufferShadow2D);
                 mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
@@ -441,6 +444,8 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                         draw(pipeline, call, params.drawData[call.drawDataIndex()]);
                     }
                 }
+
+                mFrameShadowUniform.rotate();
             }
             break;
         case HP_LIGHT_OMNI:
@@ -450,14 +455,14 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
                 for (int iFace = 0; iFace < 6; iFace++)
                 {
-                    mFrameShadowUniform.upload({
+                    mFrameShadowUniform->uploadObject(FrameShadowUniform {
                         .lightViewProj = light.viewProj(iFace),
                         .lightPosition = light.position(),
                         .shadowLambda = light.shadowLambda(),
                         .farPlane = light.range(),
                         .elapsedTime = static_cast<float>(HP_GetElapsedTime())
                     });
-                    pipeline.bindUniform(0, mFrameShadowUniform.buffer());
+                    pipeline.bindUniform(0, *mFrameShadowUniform);
 
                     mFramebufferShadowCube.setColorAttachmentTarget(0, light.shadowIndex(), iFace);
                     pipeline.clear(mFramebufferShadowCube, HP_COLOR_1(FLT_MAX));
@@ -472,6 +477,8 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                             draw(pipeline, call, params.drawData[call.drawDataIndex()]);
                         }
                     }
+
+                    mFrameShadowUniform.rotate();
                 }
             }
             break;

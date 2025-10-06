@@ -12,6 +12,8 @@
 #include <Hyperion/HP_Core.h>
 #include <Hyperion/HP_Math.h>
 
+#include "../../Detail/Util/ObjectRing.hpp"
+#include "../../Detail/GPU/Buffer.hpp"
 #include "./DrawData.hpp"
 #include "./DrawCall.hpp"
 
@@ -37,18 +39,14 @@ private:
     };
 
 private:
-    std::array<gpu::Buffer, 3> mBuffers{};
-    int mBufferIndex{};
+    util::ObjectRing<gpu::Buffer, 3> mBuffer;
 };
 
 /* === Public Implementaiton === */
 
 inline RenderableBuffer::RenderableBuffer()
-{
-    for (auto& buffer : mBuffers) {
-        buffer = gpu::Buffer(GL_UNIFORM_BUFFER, sizeof(GPUData), nullptr, GL_DYNAMIC_DRAW);
-    }
-}
+    : mBuffer(GL_UNIFORM_BUFFER, sizeof(GPUData), nullptr, GL_DYNAMIC_DRAW)
+{ }
 
 inline void RenderableBuffer::upload(const DrawData& data, const DrawCall& call)
 {
@@ -61,13 +59,13 @@ inline void RenderableBuffer::upload(const DrawData& data, const DrawCall& call)
         .skinning = data.useSkinning(),
     };
 
-    mBufferIndex = (mBufferIndex + 1) % mBuffers.size();
-    mBuffers[mBufferIndex].upload(&gpuData);
+    mBuffer.rotate();
+    mBuffer->upload(&gpuData);
 }
 
 inline const gpu::Buffer& RenderableBuffer::buffer() const
 {
-    return mBuffers[mBufferIndex];
+    return *mBuffer;
 }
 
 } // namespace scene

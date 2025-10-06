@@ -13,6 +13,7 @@
 #include <Hyperion/HP_Core.h>
 
 #include "../../Detail/Util/ObjectPool.hpp"
+#include "../../Detail/Util/ObjectRing.hpp"
 #include "../../Detail/GPU/Texture.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
 
@@ -86,22 +87,12 @@ private:
     static constexpr int MaxLightsPerCluster = 32;          ///< Maximum number of lights in a single cluster
 
 private:
-    class FrameShadowUniform {
-    public:
-        struct Data {
-            alignas(16) HP_Mat4 lightViewProj;
-            alignas(16) HP_Vec3 lightPosition;
-            alignas(4) float shadowLambda;
-            alignas(4) float farPlane;
-            alignas(4) float elapsedTime;
-        };
-    public:
-        FrameShadowUniform();
-        void upload(const Data& data);
-        gpu::Buffer& buffer();
-    private:
-        int mCurrentBuffer{};
-        std::array<gpu::Buffer, 3> mBuffers{};
+    struct FrameShadowUniform {
+        alignas(16) HP_Mat4 lightViewProj;
+        alignas(16) HP_Vec3 lightPosition;
+        alignas(4) float shadowLambda;
+        alignas(4) float farPlane;
+        alignas(4) float elapsedTime;
     };
 
 private:
@@ -127,7 +118,7 @@ private:
     gpu::Buffer mStorageClusterAABB{};          ///< Storage containing the cluster AABBs (computed during GPU light culling, could be useful later)
 
     /** Uniform Buffers */
-    FrameShadowUniform mFrameShadowUniform;
+    util::ObjectRing<gpu::Buffer, 3> mFrameShadowUniform;
 
     /** Additionnal Data */
     int mShadowResolution{};
@@ -251,26 +242,6 @@ inline void LightManager::markLightDirty()
         HP_INTERNAL_LOG(V, "RENDER: Lights have been marked dirty to the LightManager");
         mLightDirty = true;
     }
-}
-
-/* === FrameShadow - Public Implementation === */
-
-inline LightManager::FrameShadowUniform::FrameShadowUniform()
-{
-    for (gpu::Buffer& buffer : mBuffers) {
-        buffer = gpu::Buffer(GL_UNIFORM_BUFFER, sizeof(Data), nullptr, GL_DYNAMIC_DRAW);
-    }
-}
-
-inline void LightManager::FrameShadowUniform::upload(const Data& data)
-{
-    mCurrentBuffer = (mCurrentBuffer + 1) % mBuffers.size();
-    mBuffers[mCurrentBuffer].uploadObject(data);
-}
-
-inline gpu::Buffer& LightManager::FrameShadowUniform::buffer()
-{
-    return mBuffers[mCurrentBuffer];
 }
 
 } // namespace scene

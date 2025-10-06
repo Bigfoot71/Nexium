@@ -13,6 +13,7 @@
 #include "./DrawCall.hpp"
 
 #include "../../Detail/Util/StaticArray.hpp"
+#include "../../Detail/Util/ObjectRing.hpp"
 #include "../../Detail/GPU/VertexArray.hpp"
 #include "../../Detail/GPU/Pipeline.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
@@ -63,16 +64,23 @@ public:
     void ensureDrawCall(DrawCall::Mode mode, int vertices, int indices);
 
 private:
+    /** GPU Vertex buffer */
+    struct VertexBuffer {
+        gpu::VertexArray vao{};
+        gpu::Buffer vbo{};
+        gpu::Buffer ebo{};
+        VertexBuffer();
+    };
+
+private:
     /** CPU Buffers */
     util::StaticArray<DrawCall, MaxDrawCalls> mDrawCalls;
     util::StaticArray<HP_Vertex2D, MaxVertices> mVertices;
     util::StaticArray<uint16_t, MaxIndices> mIndices;
 
     /** GPU Buffers */
-    gpu::VertexArray mVertexArray{};
+    util::ObjectRing<VertexBuffer, 3> mVertexBuffer{};
     gpu::Buffer mUniformBuffer{};
-    gpu::Buffer mVertexBuffer{};
-    gpu::Buffer mIndexBuffer{};
 
     /** Framebuffer */
     gpu::Framebuffer mFramebuffer{};
@@ -205,6 +213,49 @@ inline void Overlay::ensureDrawCall(DrawCall::Mode mode, int vertices, int indic
         mDrawCalls.emplace_back(mCurrentFont, mIndices.size());
         break;
     }
+}
+
+/* === Overlay::VertexBuffer - Implementation === */
+
+inline Overlay::VertexBuffer::VertexBuffer()
+{
+    vbo = gpu::Buffer(GL_ARRAY_BUFFER, MaxVertices * sizeof(HP_Vertex2D), nullptr, GL_DYNAMIC_DRAW);
+    ebo = gpu::Buffer(GL_ELEMENT_ARRAY_BUFFER, MaxIndices * sizeof(uint16_t), nullptr, GL_DYNAMIC_DRAW);
+
+    vao = gpu::VertexArray(&ebo, {
+        gpu::VertexBufferDesc {
+            .buffer = &vbo,
+            .attributes = {
+                gpu::VertexAttribute {
+                    .location = 0,
+                    .size = 2,
+                    .type = GL_FLOAT,
+                    .normalized = false,
+                    .stride = sizeof(HP_Vertex2D),
+                    .offset = offsetof(HP_Vertex2D, position),
+                    .divisor = 0
+                },
+                gpu::VertexAttribute {
+                    .location = 1,
+                    .size = 2,
+                    .type = GL_FLOAT,
+                    .normalized = false,
+                    .stride = sizeof(HP_Vertex2D),
+                    .offset = offsetof(HP_Vertex2D, texcoord),
+                    .divisor = 0
+                },
+                gpu::VertexAttribute {
+                    .location = 2,
+                    .size = 4,
+                    .type = GL_FLOAT,
+                    .normalized = false,
+                    .stride = sizeof(HP_Vertex2D),
+                    .offset = offsetof(HP_Vertex2D, color),
+                    .divisor = 0
+                }
+            }
+        }
+    });
 }
 
 } // namespace overlay

@@ -9,10 +9,11 @@
 #ifndef HP_SCENE_MATERIAL_BUFFER_HPP
 #define HP_SCENE_MATERIAL_BUFFER_HPP
 
-#include "../../Detail/GPU/Buffer.hpp"
 #include <Hyperion/HP_Render.h>
 #include <Hyperion/HP_Math.h>
-#include <array>
+
+#include "../../Detail/Util/ObjectRing.hpp"
+#include "../../Detail/GPU/Buffer.hpp"
 
 namespace scene {
 
@@ -42,18 +43,14 @@ private:
     };
 
 private:
-    std::array<gpu::Buffer, 3> mBuffers{};
-    int mBufferIndex{};
+    util::ObjectRing<gpu::Buffer, 3> mBuffer;
 };
 
 /* === Public Implementation === */
 
 inline MaterialBuffer::MaterialBuffer()
-{
-    for (auto& buffer : mBuffers) {
-        buffer = gpu::Buffer(GL_UNIFORM_BUFFER, sizeof(GPUData), nullptr, GL_DYNAMIC_DRAW);
-    }
-}
+    : mBuffer(GL_UNIFORM_BUFFER, sizeof(GPUData), nullptr, GL_DYNAMIC_DRAW)
+{ }
 
 inline void MaterialBuffer::upload(const HP_Material& material)
 {
@@ -77,13 +74,13 @@ inline void MaterialBuffer::upload(const HP_Material& material)
         .billboard = material.billboard
     };
 
-    mBufferIndex = (mBufferIndex + 1) % mBuffers.size();
-    mBuffers[mBufferIndex].upload(&data);
+    mBuffer.rotate();
+    mBuffer->upload(&data);
 }
 
 inline const gpu::Buffer& MaterialBuffer::buffer() const
 {
-    return mBuffers[mBufferIndex];
+    return *mBuffer;
 }
 
 } // namespace scene
