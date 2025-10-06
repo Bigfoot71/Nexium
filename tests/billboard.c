@@ -3,7 +3,7 @@
 
 int main(void)
 {
-    HP_Init("Hyperion - Animation", 800, 450, HP_FLAG_VSYNC_HINT);
+    HP_Init("Hyperion - Billboard", 800, 450, HP_FLAG_VSYNC_HINT);
     HP_AddSearchPath(RESOURCES_PATH, false);
 
     HP_Mesh* ground = HP_GenMeshQuad(HP_VEC2_1(10.0f), HP_VEC2_ONE, HP_VEC3_UP);

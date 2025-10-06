@@ -3,7 +3,7 @@
 
 int main(void)
 {
-    HP_Init("Hyperion - Skybox", 800, 450, HP_FLAG_VSYNC_HINT);
+    HP_Init("Hyperion - Skybox Procedural", 800, 450, HP_FLAG_VSYNC_HINT);
 
     HP_Mesh* sphere = HP_GenMeshSphere(0.4f, 32, 16);
     HP_Material material = HP_GetDefaultMaterial();

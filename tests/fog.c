@@ -3,7 +3,7 @@
 
 int main(void)
 {
-    HP_Init("Hyperion - SSAO", 800, 450, HP_FLAG_VSYNC_HINT);
+    HP_Init("Hyperion - Fog", 800, 450, HP_FLAG_VSYNC_HINT);
 
     HP_Mesh* ground = HP_GenMeshQuad(HP_VEC2_1(10.0f), HP_VEC2_ONE, HP_VEC3_UP);
     HP_Mesh* cube = HP_GenMeshCube(HP_VEC3_1(0.5f), HP_VEC3_ONE);

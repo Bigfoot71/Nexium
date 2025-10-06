@@ -3,7 +3,7 @@
 
 int main(void)
 {
-    HP_Init("Hyperion - Skybox", 800, 450, HP_FLAG_VSYNC_HINT);
+    HP_Init("Hyperion - Bloom", 800, 450, HP_FLAG_VSYNC_HINT);
     HP_AddSearchPath(RESOURCES_PATH, false);
 
     HP_Mesh* cube = HP_GenMeshCube(HP_VEC3_ONE, HP_VEC3_ONE);
