@@ -34,7 +34,7 @@ int main(void)
 
         HP_Begin2D(target);
         HP_SetColor2D(HP_YELLOW);
-        HP_DrawText2D("Hello, I'm blit on the screen!", HP_VEC2(10, 10), 24, HP_VEC2_ONE);
+        HP_DrawText2D("Hello, I'm blit on the screen!", HP_VEC2(10, 10), 128, HP_VEC2_ONE);
         HP_End2D();
 
         HP_BlitRenderTexture(target, 50, 50, 700, 350, true);
