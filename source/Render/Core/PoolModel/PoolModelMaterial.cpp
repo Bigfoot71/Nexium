@@ -36,7 +36,7 @@ HP_TextureWrap getWrapMode(aiTextureMapMode wrap)
     return hpWrap;
 }
 
-HP_Image loadImage(const aiScene* scene, const aiString& path, bool* isAllocated)
+HP_Image loadImage(const aiScene* scene, const aiString& path, bool asData, bool* isAllocated)
 {
     HP_Image image{};
 
@@ -59,7 +59,12 @@ HP_Image loadImage(const aiScene* scene, const aiString& path, bool* isAllocated
         /* --- Handle compressed embedded texture --- */
 
         if (aiTex->mHeight == 0) {
-            image = HP_LoadImageFromMem(aiTex->pcData, aiTex->mWidth);
+            if (asData) {
+                image = HP_LoadImageAsDataFromMem(aiTex->pcData, aiTex->mWidth);
+            }
+            else {
+                image = HP_LoadImageFromMem(aiTex->pcData, aiTex->mWidth);
+            }
             *isAllocated = true;
         }
 
@@ -78,7 +83,12 @@ HP_Image loadImage(const aiScene* scene, const aiString& path, bool* isAllocated
     /* --- Handle external texture from file --- */
 
     else {
-        image = HP_LoadImage(path.data);
+        if (asData) {
+            image = HP_LoadImageAsData(path.data);
+        }
+        else {
+            image = HP_LoadImage(path.data);
+        }
         if (image.pixels != nullptr) {
             *isAllocated = true;
         }
@@ -93,7 +103,7 @@ HP_Image loadImage(const aiScene* scene, const aiString& path, bool* isAllocated
 
 namespace render {
 
-HP_Texture* PoolModel::loadTexture(const aiScene* scene, const aiMaterial* material, aiTextureType type, uint32_t index)
+HP_Texture* PoolModel::loadTexture(const aiScene* scene, const aiMaterial* material, aiTextureType type, uint32_t index, bool asData)
 {
     /* --- Get texture info --- */
 
@@ -111,7 +121,7 @@ HP_Texture* PoolModel::loadTexture(const aiScene* scene, const aiMaterial* mater
     /* --- Loads the texture into RAM --- */
 
     bool isAllocated = false;
-    HP_Image image = loadImage(scene, path, &isAllocated);
+    HP_Image image = loadImage(scene, path, asData, &isAllocated);
     if (image.pixels == nullptr) {
         return nullptr;
     }
@@ -142,7 +152,7 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
     if (material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &gltfPath, nullptr, nullptr, nullptr, nullptr, gltfWrapMode) == AI_SUCCESS)
     {
         bool gltfAllocated;
-        HP_Image gltfImage = loadImage(scene, gltfPath, &gltfAllocated);
+        HP_Image gltfImage = loadImage(scene, gltfPath, true, &gltfAllocated);
 
         if (gltfImage.pixels != nullptr)
         {
@@ -154,11 +164,11 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
             HP_Image occlusionImage{};
             aiString occlusionPath{};
             if (material->GetTexture(aiTextureType_AMBIENT_OCCLUSION, 0, &occlusionPath, nullptr, nullptr, nullptr, nullptr, nullptr) == AI_SUCCESS) {
-                occlusionImage = loadImage(scene, occlusionPath, &occlusionAllocated);
+                occlusionImage = loadImage(scene, occlusionPath, true, &occlusionAllocated);
                 *hasOcclusion = (occlusionImage.pixels != nullptr);
             }
             else if (material->GetTexture(aiTextureType_LIGHTMAP, 0, &occlusionPath, nullptr, nullptr, nullptr, nullptr, nullptr) == AI_SUCCESS) {
-                occlusionImage = loadImage(scene, occlusionPath, &occlusionAllocated);
+                occlusionImage = loadImage(scene, occlusionPath, true, &occlusionAllocated);
                 *hasOcclusion = (occlusionImage.pixels != nullptr);
             }
 
@@ -205,22 +215,22 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
     // Load occlusion
     struct aiString occlusionPath;
     if (material->GetTexture(aiTextureType_AMBIENT_OCCLUSION, 0, &occlusionPath, nullptr, nullptr, nullptr, nullptr, occlusionWrapMode) == AI_SUCCESS) {
-        occlusionImage = loadImage(scene, occlusionPath, &occlusionAllocated);
+        occlusionImage = loadImage(scene, occlusionPath, true, &occlusionAllocated);
         *hasOcclusion = (occlusionImage.pixels != nullptr);
     }
     else if (material->GetTexture(aiTextureType_LIGHTMAP, 0, &occlusionPath, nullptr, nullptr, nullptr, nullptr, occlusionWrapMode) == AI_SUCCESS) {
-        occlusionImage = loadImage(scene, occlusionPath, &occlusionAllocated);
+        occlusionImage = loadImage(scene, occlusionPath, true, &occlusionAllocated);
         *hasOcclusion = (occlusionImage.pixels != nullptr);
     }
 
     // Load roughness (with shininess fallback)
     struct aiString roughnessPath;
     if (material->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &roughnessPath, nullptr, nullptr, nullptr, nullptr, roughnessWrapMode) == AI_SUCCESS) {
-        roughnessImage = loadImage(scene, roughnessPath, &roughnessAllocated);
+        roughnessImage = loadImage(scene, roughnessPath, true, &roughnessAllocated);
         *hasRoughness = (roughnessImage.pixels != nullptr);
     }
     else if (material->GetTexture(aiTextureType_SHININESS, 0, &roughnessPath, nullptr, nullptr, nullptr, nullptr, roughnessWrapMode) == AI_SUCCESS) {
-        roughnessImage = loadImage(scene, roughnessPath, &roughnessAllocated);
+        roughnessImage = loadImage(scene, roughnessPath, true, &roughnessAllocated);
         if (roughnessImage.pixels) {
             *hasRoughness = true;
             HP_InvertImage(&roughnessImage); // Convert shininess to roughness
@@ -230,7 +240,7 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
     // Load metalness
     struct aiString metalnessPath;
     if (material->GetTexture(aiTextureType_METALNESS, 0, &metalnessPath, nullptr, nullptr, nullptr, nullptr, metalnessWrapMode) == AI_SUCCESS) {
-        metalnessImage = loadImage(scene, metalnessPath, &metalnessAllocated);
+        metalnessImage = loadImage(scene, metalnessPath, true, &metalnessAllocated);
         *hasMetalness = (metalnessImage.pixels != nullptr);
     }
 
@@ -313,15 +323,14 @@ bool PoolModel::processMaterials(HP_Model* model, const aiScene* scene)
 
         /* --- Load albedo texture --- */
 
-        modelMaterial.albedo.texture = loadTexture(scene, material, aiTextureType_BASE_COLOR, 0);
+        modelMaterial.albedo.texture = loadTexture(scene, material, aiTextureType_BASE_COLOR, 0, false);
         if (modelMaterial.albedo.texture == nullptr) {
-            modelMaterial.albedo.texture = loadTexture(scene, material, aiTextureType_DIFFUSE, 0);
+            modelMaterial.albedo.texture = loadTexture(scene, material, aiTextureType_DIFFUSE, 0, false);
         }
 
         /* --- Load normal map --- */
 
-        modelMaterial.normal.texture = loadTexture(scene, material, aiTextureType_NORMALS, 0);
-
+        modelMaterial.normal.texture = loadTexture(scene, material, aiTextureType_NORMALS, 0, true);
         if (modelMaterial.normal.texture != nullptr) {
             float normalScale;
             if (material->Get(AI_MATKEY_BUMPSCALING, normalScale) == AI_SUCCESS) {
@@ -337,7 +346,7 @@ bool PoolModel::processMaterials(HP_Model* model, const aiScene* scene)
             modelMaterial.emission.energy = 1.0f;
         }
 
-        modelMaterial.emission.texture = loadTexture(scene, material, aiTextureType_EMISSIVE, 0);
+        modelMaterial.emission.texture = loadTexture(scene, material, aiTextureType_EMISSIVE, 0, false);
         if (modelMaterial.emission.texture != nullptr) {
             modelMaterial.emission.energy = 1.0f;
         }

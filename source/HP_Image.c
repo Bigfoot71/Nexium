@@ -25,31 +25,11 @@
 
 #include <stb_image.h>
 
-/* === Helper Functions === */
+/* === Internal Functions === */
 
-static HP_PixelFormat GetBestFormatForColors(const HP_Color* colors, int count)
-{
-    bool hasAlpha = false;
-    bool outOfRange = false;
-    bool extremeHDR = false;
-
-    for (int i = 0; i < count; ++i) {
-        HP_Color c = colors[i];
-        hasAlpha |= (c.a < 1.0f);
-        outOfRange |= (c.r < 0.0f || c.r > 1.0f || c.g < 0.0f || c.g > 1.0f || c.b < 0.0f || c.b > 1.0f);
-        extremeHDR |= (outOfRange && (fabsf(c.r) > 65504.0f || fabsf(c.g) > 65504.0f || fabsf(c.b) > 65504.0f));
-    }
-
-    if (extremeHDR) {
-        return hasAlpha ? HP_PIXEL_FORMAT_RGBA32F : HP_PIXEL_FORMAT_RGB32F;
-    }
-
-    if (outOfRange) {
-        return hasAlpha ? HP_PIXEL_FORMAT_RGBA16F : HP_PIXEL_FORMAT_RGB16F;
-    }
-
-    return hasAlpha ? HP_PIXEL_FORMAT_RGBA8 : HP_PIXEL_FORMAT_RGB8;
-}
+static HP_PixelFormat GetPixelFormat(int channels, bool isHDR);
+static HP_Image DecodeImage(const void* data, size_t size, int reqChannels);
+static HP_PixelFormat GetBestFormatForColors(const HP_Color* colors, int count);
 
 /* === Pixel - Public API === */
 
@@ -381,111 +361,62 @@ HP_Image HP_CreateImageFromMem(const void* pixels, int w, int h, HP_PixelFormat 
     return image;
 }
 
+HP_Image HP_LoadImageFromMem(const void* data, size_t size)
+{
+    int channels;
+    stbi_info_from_memory((const unsigned char*)data, size, NULL, NULL, &channels);
+
+    return DecodeImage(data, size, (channels == 1) ? 3 : (channels == 2) ? 4 : channels);
+}
+
+HP_Image HP_LoadImageAsDataFromMem(const void* data, size_t size)
+{
+    return DecodeImage(data, size, 0);
+}
+
 HP_Image HP_LoadImage(const char* filePath)
 {
     HP_Image image = { 0 };
-
     if (!filePath) {
         HP_INTERNAL_LOG(E, "IMAGE: File path is null");
         return image;
     }
-
+    
     size_t fileSize;
     void* fileData = HP_LoadFile(filePath, &fileSize);
     if (!fileData) {
         HP_INTERNAL_LOG(E, "IMAGE: Failed to load file: %s", filePath);
         return image;
     }
-
+    
     image = HP_LoadImageFromMem(fileData, fileSize);
     if (image.pixels == NULL) {
         HP_INTERNAL_LOG(E, "IMAGE: Failed to load image: %s", filePath);
-        return image;
     }
-
+    
     return image;
 }
 
-HP_Image HP_LoadImageFromMem(const void* data, size_t size)
+HP_Image HP_LoadImageAsData(const char* filePath)
 {
     HP_Image image = { 0 };
-
-    int width, height, channels;
-    HP_PixelFormat format;
-    void* pixels = NULL;
-
-    /* --- Try loading as HDR image first --- */
-
-    if (stbi_is_hdr_from_memory((const unsigned char*)data, (int)size))
-    {
-        float* hdrPixels = stbi_loadf_from_memory(
-            (const unsigned char*)data, (int)size,
-            &width, &height, &channels, 0
-        );
-
-        if (!hdrPixels) {
-            HP_INTERNAL_LOG(E, "IMAGE: Failed to decode HDR image");
-            return image;
-        }
-
-        pixels = hdrPixels;
-
-        /* --- Set HDR pixel format (32F) --- */
-
-        switch (channels) {
-        case 1: format = HP_PIXEL_FORMAT_R32F; break;
-        case 2: format = HP_PIXEL_FORMAT_RG32F; break;
-        case 3: format = HP_PIXEL_FORMAT_RGB32F; break;
-        case 4: format = HP_PIXEL_FORMAT_RGBA32F; break;
-        default:
-            HP_INTERNAL_LOG(E, "IMAGE: Unsupported HDR channel count (%d)", channels);
-            stbi_image_free(hdrPixels);
-            return image;
-        }
-    }
-
-    /* --- Try loading as LDR image if HDR failed --- */
-
-    if (!pixels)
-    {
-        unsigned char* ldrPixels = stbi_load_from_memory(
-            (const unsigned char*)data, (int)size,
-            &width, &height, &channels, 0
-        );
-
-        if (!ldrPixels) {
-            HP_INTERNAL_LOG(E, "IMAGE: Failed to decode LDR image");
-            return image;
-        }
-
-        pixels = ldrPixels;
-
-        /* --- Set LDR pixel format --- */
-
-        switch (channels) {
-        case 1: format = HP_PIXEL_FORMAT_R8; break;
-        case 2: format = HP_PIXEL_FORMAT_RG8; break;
-        case 3: format = HP_PIXEL_FORMAT_RGB8; break;
-        case 4: format = HP_PIXEL_FORMAT_RGBA8; break;
-        default:
-            HP_INTERNAL_LOG(E, "IMAGE: Unsupported LDR channel count (%d)", channels);
-            stbi_image_free(ldrPixels);
-            return image;
-        }
-    }
-
-    /* --- Final validation and image setup --- */
-
-    if (!pixels) {
-        HP_INTERNAL_LOG(E, "IMAGE: Failed to load any pixel data");
+    if (!filePath) {
+        HP_INTERNAL_LOG(E, "IMAGE: File path is null");
         return image;
     }
-
-    image.pixels = pixels;
-    image.w = width;
-    image.h = height;
-    image.format = format;
-
+    
+    size_t fileSize;
+    void* fileData = HP_LoadFile(filePath, &fileSize);
+    if (!fileData) {
+        HP_INTERNAL_LOG(E, "IMAGE: Failed to load file: %s", filePath);
+        return image;
+    }
+    
+    image = HP_LoadImageAsDataFromMem(fileData, fileSize);
+    if (image.pixels == NULL) {
+        HP_INTERNAL_LOG(E, "IMAGE: Failed to load image: %s", filePath);
+    }
+    
     return image;
 }
 
@@ -910,4 +841,95 @@ void HP_BlitImage(
             HP_WritePixel(dst->pixels, dstIndex, dst->format, color);
         }
     }
+}
+
+/* === Internal Functions === */
+
+HP_PixelFormat GetPixelFormat(int channels, bool isHDR)
+{
+    if (isHDR) {
+        switch (channels) {
+        case 1: return HP_PIXEL_FORMAT_R32F;
+        case 2: return HP_PIXEL_FORMAT_RG32F;
+        case 3: return HP_PIXEL_FORMAT_RGB32F;
+        case 4: return HP_PIXEL_FORMAT_RGBA32F;
+        }
+    }
+    else {
+        switch (channels) {
+        case 1: return HP_PIXEL_FORMAT_R8;
+        case 2: return HP_PIXEL_FORMAT_RG8;
+        case 3: return HP_PIXEL_FORMAT_RGB8;
+        case 4: return HP_PIXEL_FORMAT_RGBA8;
+        }
+    }
+    return 0;  // format invalide
+}
+
+HP_Image DecodeImage(const void* data, size_t size, int reqChannels)
+{
+    HP_Image image = { 0 };
+    int width, height, channels;
+    void* pixels = NULL;
+    bool isHDR = false;
+
+    if (stbi_is_hdr_from_memory((const unsigned char*)data, (int)size)) {
+        pixels = stbi_loadf_from_memory(
+            (const unsigned char*)data, (int)size,
+            &width, &height, &channels, reqChannels
+        );
+        isHDR = true;
+    }
+
+    if (!pixels) {
+        pixels = stbi_load_from_memory(
+            (const unsigned char*)data, (int)size,
+            &width, &height, &channels, reqChannels
+        );
+    }
+    
+    if (!pixels) {
+        HP_INTERNAL_LOG(E, "IMAGE: Failed to decode image");
+        return image;
+    }
+
+    int finalChannels = (reqChannels > 0) ? reqChannels : channels;
+    HP_PixelFormat format = GetPixelFormat(finalChannels, isHDR);
+    
+    if (format == 0) {
+        HP_INTERNAL_LOG(E, "IMAGE: Unsupported channel count (%d)", finalChannels);
+        stbi_image_free(pixels);
+        return image;
+    }
+    
+    image.pixels = pixels;
+    image.w = width;
+    image.h = height;
+    image.format = format;
+    
+    return image;
+}
+
+HP_PixelFormat GetBestFormatForColors(const HP_Color* colors, int count)
+{
+    bool hasAlpha = false;
+    bool outOfRange = false;
+    bool extremeHDR = false;
+
+    for (int i = 0; i < count; ++i) {
+        HP_Color c = colors[i];
+        hasAlpha |= (c.a < 1.0f);
+        outOfRange |= (c.r < 0.0f || c.r > 1.0f || c.g < 0.0f || c.g > 1.0f || c.b < 0.0f || c.b > 1.0f);
+        extremeHDR |= (outOfRange && (fabsf(c.r) > 65504.0f || fabsf(c.g) > 65504.0f || fabsf(c.b) > 65504.0f));
+    }
+
+    if (extremeHDR) {
+        return hasAlpha ? HP_PIXEL_FORMAT_RGBA32F : HP_PIXEL_FORMAT_RGB32F;
+    }
+
+    if (outOfRange) {
+        return hasAlpha ? HP_PIXEL_FORMAT_RGBA16F : HP_PIXEL_FORMAT_RGB16F;
+    }
+
+    return hasAlpha ? HP_PIXEL_FORMAT_RGBA8 : HP_PIXEL_FORMAT_RGB8;
 }

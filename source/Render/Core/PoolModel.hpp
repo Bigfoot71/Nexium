@@ -51,7 +51,7 @@ private:
     bool processMeshes(HP_Model* model, const aiScene* scene, const aiNode* node);
 
     /** PoolModelMaterial.cpp */
-    HP_Texture* loadTexture(const aiScene* scene, const aiMaterial* aiMat, aiTextureType type, uint32_t index);
+    HP_Texture* loadTexture(const aiScene* scene, const aiMaterial* aiMat, aiTextureType type, uint32_t index, bool asData);
     HP_Texture* loadTextureORM(const aiScene* scene, const aiMaterial* aiMat, bool* hasOcclusion, bool* hasRoughness, bool* hasMetalness);
     bool processMaterials(HP_Model* model, const aiScene* scene);
 

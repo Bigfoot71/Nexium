@@ -38,6 +38,14 @@ HP_Texture* HP_LoadTexture(const char* filePath)
     return texture;
 }
 
+HP_Texture* HP_LoadTextureAsData(const char* filePath)
+{
+    HP_Image image = HP_LoadImageAsData(filePath);
+    HP_Texture* texture = HP_CreateTexture(&image);
+    HP_DestroyImage(&image);
+    return texture;
+}
+
 void HP_DestroyTexture(HP_Texture* texture)
 {
     gRender->textures.destroyTexture(texture);

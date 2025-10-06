@@ -127,23 +127,48 @@ HPAPI HP_Image HP_CreateImageFromMem(const void* pixels, int w, int h, HP_PixelF
 /**
  * @brief Load and decode an image from file
  *
- * Supports the following formats: PNG, TGA, HDR, JPG, BMP, PIC, PNM
+ * Supports the following formats: PNG, TGA, HDR, JPG, BMP, PIC, PNM.
+ * Automatically converts L/LA images to RGB/RGBA and selects the appropriate pixel format.
  *
  * @param filePath Path to the image file
- * @return Loaded image, or empty image on failure
+ * @return Decoded image, ready for use in rendering, or empty image on failure
  */
 HPAPI HP_Image HP_LoadImage(const char* filePath);
 
 /**
+ * @brief Load raw image data from file without any channel conversion
+ *
+ * Supports the following formats: PNG, TGA, HDR, JPG, BMP, PIC, PNM.
+ * Preserves the original number of channels and pixel layout as stored in the file.
+ *
+ * @param filePath Path to the image file
+ * @return Image containing raw pixel data as-is, or empty image on failure
+ */
+HPAPI HP_Image HP_LoadImageAsData(const char* filePath);
+
+/**
  * @brief Decode an image from memory buffer
  *
- * Supports the following formats: PNG, TGA, HDR, JPG, BMP, PIC, PNM
+ * Supports the following formats: PNG, TGA, HDR, JPG, BMP, PIC, PNM.
+ * Automatically converts L/LA images to RGB/RGBA and selects the appropriate pixel format.
  *
  * @param data Pointer to encoded image data in memory
  * @param size Size of the encoded data in bytes
- * @return Decoded image, or empty image on failure
+ * @return Decoded image, ready for use in rendering, or empty image on failure
  */
 HPAPI HP_Image HP_LoadImageFromMem(const void* data, size_t size);
+
+/**
+ * @brief Load raw image data from memory buffer without any channel conversion
+ *
+ * Supports the following formats: PNG, TGA, HDR, JPG, BMP, PIC, PNM.
+ * Preserves the original number of channels and pixel layout as stored in the memory buffer.
+ *
+ * @param data Pointer to encoded image data in memory
+ * @param size Size of the encoded data in bytes
+ * @return Image containing raw pixel data as-is, or empty image on failure
+ */
+HPAPI HP_Image HP_LoadImageAsDataFromMem(const void* data, size_t size);
 
 /**
  * @brief Destroy an image and free its resources

@@ -623,16 +623,30 @@ extern "C" {
 /**
  * @brief Creates a GPU texture from an image.
  * @param image Pointer to the source image.
- * @return Pointer to a newly created HP_Texture.
+ * @return Pointer to a newly created HP_Texture, or NULL on failure.
  */
 HPAPI HP_Texture* HP_CreateTexture(const HP_Image* image);
 
 /**
- * @brief Loads a texture from a file.
- * @param filePath Path to the texture file.
- * @return Pointer to a newly loaded HP_Texture.
+ * @brief Load a texture from a file and decode it for rendering.
+ *
+ * Automatically converts pixel formats if needed (e.g., L/LA -> RGB/RGBA)
+ *
+ * @param filePath Path to the texture file
+ * @return Pointer to a newly loaded HP_Texture ready for rendering, or NULL on failure
  */
 HPAPI HP_Texture* HP_LoadTexture(const char* filePath);
+
+/**
+ * @brief Load raw texture data from a file without decoding or conversion.
+ *
+ * Preserves the original number of channels and pixel layout as stored in the file.
+ * Useful if you want to handle texture decoding manually or keep raw data.
+ *
+ * @param filePath Path to the texture file
+ * @return Pointer to a newly loaded HP_Texture containing raw pixel data, or NULL on failure
+ */
+HPAPI HP_Texture* HP_LoadTextureAsData(const char* filePath);
 
 /**
  * @brief Destroys a GPU texture and frees its resources.
