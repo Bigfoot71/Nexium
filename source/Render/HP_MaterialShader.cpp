@@ -189,11 +189,22 @@ void HP_MaterialShader::updateDynamicBuffer(size_t size, const void* data)
     size_t alignedOffset = HP_ALIGN_UP(mDynamicBuffer.currentOffset, alignment);
 
     size_t requiredSize = alignedOffset + size;
-    if (requiredSize > mDynamicBuffer.buffer.size()) {
-        size_t newSize = HP_ALIGN_UP(2 * mDynamicBuffer.buffer.size(), alignment);
+    size_t currentSize = mDynamicBuffer.buffer.size();
+    size_t maxUBOSize = static_cast<size_t>(gpu::Pipeline::maxUniformBufferSize());
+
+    if (requiredSize > currentSize) {
+        size_t newSize = HP_ALIGN_UP(2 * currentSize, alignment);
         while (newSize < requiredSize) {
             newSize *= 2;
             newSize = HP_ALIGN_UP(newSize, alignment);
+        }
+        if (newSize > maxUBOSize) {
+            HP_INTERNAL_LOG(E,
+                "RENDER: Failed to upload data to the dynamic uniform buffer of material shader; "
+                "The required buffer size ({} bytes) exceeds the GPU limit for uniform buffers ({} bytes).",
+                newSize, maxUBOSize
+            );
+            return;
         }
         mDynamicBuffer.buffer.realloc(newSize, true);
     }

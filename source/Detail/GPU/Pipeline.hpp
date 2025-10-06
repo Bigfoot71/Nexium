@@ -164,6 +164,8 @@ public:
     /** Hardware info getters */
     static int uniformBufferOffsetAlignment() noexcept;
     static int storageBufferOffsetAlignment() noexcept;
+    static int maxUniformBufferSize() noexcept;
+    static int maxStorageBufferSize() noexcept;
 
 private:
     // Prevents reentrancy for 'withXBind' functions
@@ -804,6 +806,28 @@ inline int Pipeline::storageBufferOffsetAlignment() noexcept
 
     if (value < 0) {
         glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, &value);
+    }
+
+    return value;
+}
+
+inline int Pipeline::maxUniformBufferSize() noexcept
+{
+    static int value{-1};
+
+    if (value < 0) {
+        glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &value);
+    }
+
+    return value;
+}
+
+inline int Pipeline::maxStorageBufferSize() noexcept
+{
+    static int value{-1};
+
+    if (value < 0) {
+        glGetIntegerv(GL_MAX_SHADER_STORAGE_BLOCK_SIZE, &value);
     }
 
     return value;
