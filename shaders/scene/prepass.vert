@@ -78,8 +78,17 @@ layout(std140, binding = 4) uniform U_Material {
 
 /* === Varyings === */
 
-layout(location = 0) out vec2 vTexCoord;
-layout(location = 1) out float vAlpha;
+layout(location = 0) out VaryInternal {
+    vec3 position;
+    vec2 texCoord;
+    vec4 color;
+    mat3 tbn;
+} vInt;
+
+layout(location = 10) out VaryUser {
+    smooth vec4 data4f;
+    flat ivec4 data4i;
+} vUsr;
 
 /* === Vertex Override === */
 
@@ -102,24 +111,27 @@ void main()
     /* --- Calculation of matrices --- */
 
     mat4 matModel = uRender.matModel;
+    mat3 matNormal = mat3(uRender.matNormal);
 
     if (uRender.skinning) {
         mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, uRender.boneOffset);
         matModel = sMatModel * matModel;
+        matNormal = mat3(transpose(inverse(sMatModel))) * matNormal;
     }
 
     if (uRender.instancing) {
         matModel = iMatModel * matModel;
+        matNormal = mat3(transpose(inverse(iMatModel))) * matNormal;
     }
 
     switch(uMaterial.billboard) {
     case BILLBOARD_NONE:
         break;
     case BILLBOARD_FRONT:
-        BillboardFront(matModel, uFrustum.invView);
+        BillboardFront(matModel, matNormal, uFrustum.invView);
         break;
     case BILLBOARD_Y_AXIS:
-        BillboardYAxis(matModel, uFrustum.invView);
+        BillboardYAxis(matModel, matNormal, uFrustum.invView);
         break;
     }
 
@@ -127,9 +139,14 @@ void main()
 
     VertexOverride();
 
-    vec3 position = vec3(matModel * vec4(POSITION, 1.0));
-    vTexCoord = TEXCOORD;
-    vAlpha = COLOR.a;
+    vec3 T = normalize(matNormal * TANGENT.xyz);
+    vec3 N = normalize(matNormal * NORMAL);
+    vec3 B = normalize(cross(N, T) * TANGENT.w);
 
-    gl_Position = uFrustum.viewProj * vec4(position, 1.0);
+    vInt.position = vec3(matModel * vec4(POSITION, 1.0));
+    vInt.texCoord = TEXCOORD;
+    vInt.color = COLOR;
+    vInt.tbn = mat3(T, B, N);
+
+    gl_Position = uFrustum.viewProj * vec4(vInt.position, 1.0);
 }

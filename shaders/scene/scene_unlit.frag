@@ -21,10 +21,17 @@ precision highp float;
 
 /* === Varyings === */
 
-layout(location = 0) in vec3 vPosition;
-layout(location = 1) in vec2 vTexCoord;
-layout(location = 2) in vec4 vColor;
-layout(location = 3) in mat3 vTBN;
+layout(location = 0) in VaryInternal {
+    vec3 position;
+    vec2 texCoord;
+    vec4 color;
+    mat3 tbn;
+} vInt;
+
+layout(location = 10) in VaryUser {
+    smooth vec4 data4f;
+    flat ivec4 data4i;
+} vUsr;
 
 /* === Samplers === */
 
@@ -99,7 +106,7 @@ void main()
 
     /* --- Sample normal and compute view direction vector --- */
 
-    vec3 N = normalize(vTBN * NormalScale(NORMAL_MAP.rgb * 2.0 - 1.0, NORMAL_SCALE));
+    vec3 N = normalize(vInt.tbn * NormalScale(NORMAL_MAP.rgb * 2.0 - 1.0, NORMAL_SCALE));
 
     /* --- Calculation of the distance from the fragment to the camera in scene units --- */
 

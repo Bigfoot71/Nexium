@@ -13,9 +13,11 @@
 /* === Constants === */
 
 #define TIME            uFrame.elapsedTime
-#define POSITION        vPosition
-#define TEXCOORD        vTexCoord
-#define NORMAL          vTBN[3]
+#define VARYINGF        vUsr.data4f
+#define VARYINGI        vUsr.data4i
+#define POSITION        vInt.position
+#define TEXCOORD        vInt.texCoord
+#define NORMAL          vInt.tbn[3]
 
 /* === Outputs === */
 
@@ -34,19 +36,19 @@ float NORMAL_SCALE      = 1.0;
 
 void FragmentOverride()
 {
-    ALBEDO = vColor * uMaterial.albedoColor * texture(uTexAlbedo, vTexCoord);
+    ALBEDO = vInt.color * uMaterial.albedoColor * texture(uTexAlbedo, vInt.texCoord);
 
-    EMISSION = uMaterial.emissionColor * texture(uTexEmission, vTexCoord).rgb;
+    EMISSION = uMaterial.emissionColor * texture(uTexEmission, vInt.texCoord).rgb;
     EMISSION *= uMaterial.emissionEnergy;
 
     AO_LIGHT_AFFECT = uMaterial.aoLightAffect;
 
-    vec3 orm = texture(uTexORM, vTexCoord).rgb;
+    vec3 orm = texture(uTexORM, vInt.texCoord).rgb;
     OCCLUSION = uMaterial.occlusion * orm.x;
     ROUGHNESS = uMaterial.roughness * orm.y;
     METALNESS = uMaterial.metalness * orm.z;
 
-    NORMAL_MAP = texture(uTexNormal, vTexCoord).rgb;
+    NORMAL_MAP = texture(uTexNormal, vInt.texCoord).rgb;
     NORMAL_SCALE = uMaterial.normalScale;
 
     fragment();

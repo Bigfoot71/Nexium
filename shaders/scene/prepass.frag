@@ -14,8 +14,17 @@ precision highp float;
 
 /* === Varyings === */
 
-layout(location = 0) in vec2 vTexCoord;
-layout(location = 1) in float vAlpha;
+layout(location = 0) in VaryInternal {
+    vec3 position;
+    vec2 texCoord;
+    vec4 color;
+    mat3 tbn;
+} vInt;
+
+layout(location = 10) in VaryUser {
+    smooth vec4 data4f;
+    flat ivec4 data4i;
+} vUsr;
 
 /* === Samplers === */
 
@@ -42,6 +51,6 @@ layout(std140, binding = 4) uniform U_Material {
 
 void main()
 {
-    float alpha = vAlpha * texture(uTexAlbedo, vTexCoord).a;
+    float alpha = vInt.color.a * texture(uTexAlbedo, vInt.texCoord).a;
     if (alpha < uMaterial.alphaCutOff) discard;
 }

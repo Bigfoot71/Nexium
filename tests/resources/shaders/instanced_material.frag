@@ -1,7 +1,5 @@
 // Material fragment shader for 'instanced_material_shader.c'
 
-in flat uint vEffectIndex;
-
 float hash(vec2 p)
 {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
@@ -27,7 +25,7 @@ float radial(vec2 p)
 
 float effect(vec2 p)
 {
-    switch (vEffectIndex) {
+    switch (VARYINGI.x) {
     case 0: {
         const float pixelSize = 4.0;
         vec2 pp = floor(p * 100.0 / pixelSize) * pixelSize;

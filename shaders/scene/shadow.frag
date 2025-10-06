@@ -18,9 +18,17 @@ precision highp float;
 
 /* === Varyings === */
 
-layout(location = 0) in vec3 vPosition;
-layout(location = 1) in vec2 vTexCoord;
-layout(location = 2) in float vAlpha;
+layout(location = 0) in VaryInternal {
+    vec3 position;
+    vec2 texCoord;
+    vec4 color;
+    mat3 tbn;
+} vInt;
+
+layout(location = 10) in VaryUser {
+    smooth vec4 data4f;
+    flat ivec4 data4i;
+} vUsr;
 
 /* === Samplers === */
 
@@ -55,11 +63,11 @@ layout(location = 0) out vec4 FragDistance;
 
 void main()
 {
-    float alpha = vAlpha * texture(uTexAlbedo, vTexCoord).a;
+    float alpha = vInt.color.a * texture(uTexAlbedo, vInt.texCoord).a;
     if (alpha < uMaterial.alphaCutOff) discard;
 
     // Normalized linear distance in [0,1]
-    float d01 = length(vPosition - uFrame.lightPosition) / uFrame.farPlane;
+    float d01 = length(vInt.position - uFrame.lightPosition) / uFrame.farPlane;
 
 #ifdef GL_ES
     // VSM

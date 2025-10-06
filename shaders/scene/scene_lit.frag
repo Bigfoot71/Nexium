@@ -46,10 +46,17 @@ const vec2 POISSON_DISK[16] = vec2[](
 
 /* === Varyings === */
 
-layout(location = 0) in vec3 vPosition;
-layout(location = 1) in vec2 vTexCoord;
-layout(location = 2) in vec4 vColor;
-layout(location = 3) in mat3 vTBN;
+layout(location = 0) in VaryInternal {
+    vec3 position;
+    vec2 texCoord;
+    vec4 color;
+    mat3 tbn;
+} vInt;
+
+layout(location = 10) in VaryUser {
+    smooth vec4 data4f;
+    flat ivec4 data4i;
+} vUsr;
 
 /* === Storage Buffers === */
 
@@ -173,7 +180,7 @@ float ShadowCube(in Light light, float cNdotL)
 
     /* --- Calculate direction and distance --- */
 
-    vec3 lightToFrag = vPosition - light.position;
+    vec3 lightToFrag = vInt.position - light.position;
     float dist = length(lightToFrag);
 
     vec3 direction = lightToFrag / dist;
@@ -233,7 +240,7 @@ float Shadow2D(in Light light, float cNdotL)
 
     /* --- Light space projection --- */
 
-    vec4 projPos = shadow.viewProj * vec4(vPosition, 1.0);
+    vec4 projPos = shadow.viewProj * vec4(vInt.position, 1.0);
     vec3 projCoords = projPos.xyz / projPos.w * 0.5 + 0.5;
 
     /* --- Shadow map bounds check --- */
@@ -245,7 +252,7 @@ float Shadow2D(in Light light, float cNdotL)
 
     /* --- Normalized distance --- */
 
-    float d01 = length(vPosition - light.position) / light.range;
+    float d01 = length(vInt.position - light.position) / light.range;
 
     /* --- Pre-compute EVSM exponents --- */
 
@@ -368,8 +375,8 @@ void main()
 
     /* --- Sample normal and compute view direction vector --- */
 
-    vec3 N = normalize(vTBN * NormalScale(NORMAL_MAP.rgb * 2.0 - 1.0, NORMAL_SCALE));
-    vec3 V = normalize(uFrustum.position - vPosition);
+    vec3 N = normalize(vInt.tbn * NormalScale(NORMAL_MAP.rgb * 2.0 - 1.0, NORMAL_SCALE));
+    vec3 V = normalize(uFrustum.position - vInt.position);
 
     /* --- Compute the dot product of the normal and view direction --- */
 
@@ -403,7 +410,7 @@ void main()
         /* --- Compute light direction --- */
 
         vec3 L = (light.type != LIGHT_DIR)
-            ? normalize(light.position - vPosition)
+            ? normalize(light.position - vInt.position)
             : -light.direction;
 
         /* --- Compute the dot product of the normal and light direction --- */
@@ -448,7 +455,7 @@ void main()
         /* --- Apply attenuation based on the distance from the light --- */
 
         if (light.type != LIGHT_DIR) {
-            float dist = length(light.position - vPosition);
+            float dist = length(light.position - vInt.position);
             float atten = 1.0 - clamp(dist / light.range, 0.0, 1.0);
             shadow *= atten * light.attenuation;
         }

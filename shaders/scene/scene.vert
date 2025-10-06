@@ -78,10 +78,17 @@ layout(std140, binding = 4) uniform U_Material {
 
 /* === Varyings === */
 
-layout(location = 0) out vec3 vPosition;
-layout(location = 1) out vec2 vTexCoord;
-layout(location = 2) out vec4 vColor;
-layout(location = 3) out mat3 vTBN;
+layout(location = 0) out VaryInternal {
+    vec3 position;
+    vec2 texCoord;
+    vec4 color;
+    mat3 tbn;
+} vInt;
+
+layout(location = 10) out VaryUser {
+    smooth vec4 data4f;
+    flat ivec4 data4i;
+} vUsr;
 
 /* === Vertex Override === */
 
@@ -136,10 +143,10 @@ void main()
     vec3 N = normalize(matNormal * NORMAL);
     vec3 B = normalize(cross(N, T) * TANGENT.w);
 
-    vPosition = vec3(matModel * vec4(POSITION, 1.0));
-    vTexCoord = TEXCOORD;
-    vColor = COLOR;
-    vTBN = mat3(T, B, N);
+    vInt.position = vec3(matModel * vec4(POSITION, 1.0));
+    vInt.texCoord = TEXCOORD;
+    vInt.color = COLOR;
+    vInt.tbn = mat3(T, B, N);
 
-    gl_Position = uFrustum.viewProj * vec4(vPosition, 1.0);
+    gl_Position = uFrustum.viewProj * vec4(vInt.position, 1.0);
 }

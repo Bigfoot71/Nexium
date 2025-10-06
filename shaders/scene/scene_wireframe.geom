@@ -14,17 +14,31 @@ precision highp float;
 
 /* === Vertex Inputs === */
 
-layout(location = 0) in vec3 vPosition[];
-layout(location = 1) in vec2 vTexCoord[];
-layout(location = 2) in vec4 vColor[];
-layout(location = 3) in mat3 vTBN[];
+layout(location = 0) in VaryInternal {
+    vec3 position;
+    vec2 texCoord;
+    vec4 color;
+    mat3 tbn;
+} vInt[];
+
+layout(location = 10) in VaryUser {
+    smooth vec4 data4f;
+    flat ivec4 data4i;
+} vUsr[];
 
 /* === Fragment Outputs === */
 
-layout(location = 0) out vec3 gPosition;
-layout(location = 1) out vec2 gTexCoord;
-layout(location = 2) out vec4 gColor;
-layout(location = 3) out mat3 gTBN;
+layout(location = 0) out VaryInternal {
+    vec3 position;
+    vec2 texCoord;
+    vec4 color;
+    mat3 tbn;
+} gInt;
+
+layout(location = 10) out VaryUser {
+    smooth vec4 data4f;
+    flat ivec4 data4i;
+} gUsr;
 
 /* === Geometry In/Out === */
 
@@ -40,19 +54,29 @@ void main()
     for(int i = 0; i < 3; ++i)
     {
         gl_Position = gl_in[i].gl_Position;
-        gPosition = vPosition[i];
-        gTexCoord = vTexCoord[i];
-        gColor = vColor[i];
-        gTBN = vTBN[i];
+
+        gInt.position = vInt[i].position;
+        gInt.texCoord = vInt[i].texCoord;
+        gInt.color = vInt[i].color;
+        gInt.tbn = vInt[i].tbn;
+
+        gUsr.data4f = vUsr[i].data4f;
+        gUsr.data4i = vUsr[i].data4i;
+
         EmitVertex();
 
         int j = next[i];
 
         gl_Position = gl_in[j].gl_Position;
-        gPosition = vPosition[j];
-        gTexCoord = vTexCoord[j];
-        gColor = vColor[j];
-        gTBN = vTBN[j];
+
+        gInt.position = vInt[j].position;
+        gInt.texCoord = vInt[j].texCoord;
+        gInt.color = vInt[j].color;
+        gInt.tbn = vInt[j].tbn;
+
+        gUsr.data4f = vUsr[j].data4f;
+        gUsr.data4i = vUsr[j].data4i;
+
         EmitVertex();
 
         EndPrimitive();
