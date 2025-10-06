@@ -47,7 +47,7 @@ void main()
 {
     // NOTE: Base level should be set to the current
     //       level to sample in texture parameters.
-    vec2 mipSize = textureSize(uTexture, 0);
+    vec2 mipSize = vec2(textureSize(uTexture, 0));
 
     // The filter kernel is applied with a radius, specified in texture
     // coordinates, so that the radius will vary across mip resolutions.

@@ -68,15 +68,15 @@ float sRGBToLuma(vec3 col)
 float KarisAverage(vec3 col)
 {
     // Formula is 1 / (1 + luma)
-    float luma = sRGBToLuma(LinearToSRGB(col)) * 0.25f;
-    return 1.0f / (1.0f + luma);
+    float luma = sRGBToLuma(LinearToSRGB(col)) * 0.25;
+    return 1.0 / (1.0 + luma);
 }
 
 vec3 Prefilter(vec3 col)
 {
 	float brightness = max(col.r, max(col.g, col.b));
 	float soft = brightness - uEnv.bloomPrefilter.y;
-	soft = clamp(soft, 0, uEnv.bloomPrefilter.z);
+	soft = clamp(soft, 0.0, uEnv.bloomPrefilter.z);
 	soft = soft * soft * uEnv.bloomPrefilter.w;
 	float contribution = max(soft, brightness - uEnv.bloomPrefilter.x);
 	contribution /= max(brightness, 0.00001);
@@ -99,17 +99,17 @@ void main()
     // - l - m -
     // g - h - i
     // === ('e' is the current texel) ===
-    vec3 a = texture(uTexture, vec2(vTexCoord.x - 2*x, vTexCoord.y + 2*y)).rgb;
-    vec3 b = texture(uTexture, vec2(vTexCoord.x,       vTexCoord.y + 2*y)).rgb;
-    vec3 c = texture(uTexture, vec2(vTexCoord.x + 2*x, vTexCoord.y + 2*y)).rgb;
+    vec3 a = texture(uTexture, vec2(vTexCoord.x - 2.0 * x, vTexCoord.y + 2.0 * y)).rgb;
+    vec3 b = texture(uTexture, vec2(vTexCoord.x,           vTexCoord.y + 2.0 * y)).rgb;
+    vec3 c = texture(uTexture, vec2(vTexCoord.x + 2.0 * x, vTexCoord.y + 2.0 * y)).rgb;
 
-    vec3 d = texture(uTexture, vec2(vTexCoord.x - 2*x, vTexCoord.y)).rgb;
-    vec3 e = texture(uTexture, vec2(vTexCoord.x,       vTexCoord.y)).rgb;
-    vec3 f = texture(uTexture, vec2(vTexCoord.x + 2*x, vTexCoord.y)).rgb;
+    vec3 d = texture(uTexture, vec2(vTexCoord.x - 2.0 * x, vTexCoord.y)).rgb;
+    vec3 e = texture(uTexture, vec2(vTexCoord.x,           vTexCoord.y)).rgb;
+    vec3 f = texture(uTexture, vec2(vTexCoord.x + 2.0 * x, vTexCoord.y)).rgb;
 
-    vec3 g = texture(uTexture, vec2(vTexCoord.x - 2*x, vTexCoord.y - 2*y)).rgb;
-    vec3 h = texture(uTexture, vec2(vTexCoord.x,       vTexCoord.y - 2*y)).rgb;
-    vec3 i = texture(uTexture, vec2(vTexCoord.x + 2*x, vTexCoord.y - 2*y)).rgb;
+    vec3 g = texture(uTexture, vec2(vTexCoord.x - 2.0 * x, vTexCoord.y - 2.0 * y)).rgb;
+    vec3 h = texture(uTexture, vec2(vTexCoord.x,           vTexCoord.y - 2.0 * y)).rgb;
+    vec3 i = texture(uTexture, vec2(vTexCoord.x + 2.0 * x, vTexCoord.y - 2.0 * y)).rgb;
 
     vec3 j = texture(uTexture, vec2(vTexCoord.x - x, vTexCoord.y + y)).rgb;
     vec3 k = texture(uTexture, vec2(vTexCoord.x + x, vTexCoord.y + y)).rgb;
