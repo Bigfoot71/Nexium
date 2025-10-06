@@ -115,8 +115,8 @@ void main()
 
     if (uRender.skinning) {
         mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, uRender.boneOffset);
-        matModel = sMatModel * matModel;
-        matNormal = mat3(transpose(inverse(sMatModel))) * matNormal;
+        matModel = matModel * sMatModel;
+        matNormal = matNormal * mat3(transpose(inverse(sMatModel)));
     }
 
     if (uRender.instancing) {
