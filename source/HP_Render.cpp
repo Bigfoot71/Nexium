@@ -151,11 +151,9 @@ void HP_BlitRenderTexture(const HP_RenderTexture* target, int xDst, int yDst, in
 
 void HP_Begin2D(HP_RenderTexture* target)
 {
-    HP_IVec2 size = HP_GetWindowSize();
     gRender->overlay.setRenderTexture(target);
-    gRender->overlay.setProjection(HP_Mat4Ortho(
-        0, size.x, size.y, 0, 0, 1
-    ));
+    HP_IVec2 size = target ? target->framebuffer().dimensions() : HP_GetWindowSize();
+    gRender->overlay.setProjection(HP_Mat4Ortho(0, size.x, size.y, 0, 0, 1));
     gRender->overlay.clear();
 }
 
