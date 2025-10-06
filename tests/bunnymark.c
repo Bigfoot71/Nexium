@@ -10,7 +10,6 @@
 typedef struct {
     HP_Vec2 position;
     HP_Vec2 velocity;
-    float rotation;
     HP_Color color;
 } Bunny;
 
@@ -27,7 +26,13 @@ static void Bunny_Draw(const Bunny* bunny);
 
 int main(void)
 {
-    HP_Init("Hyperion - BunnyMark", 800, 450, HP_FLAG_VSYNC_HINT);
+    HP_AppDesc desc = {
+        .render2D.resolution.x = 800,
+        .render2D.resolution.y = 450,
+        .targetFPS = 60
+    };
+
+    HP_InitEx("Hyperion - BunnyMark", 800, 450, &desc);
     HP_AddSearchPath(RESOURCES_PATH, false);
 
     HP_Texture* texture = HP_LoadTexture("images/wabbit_alpha.png");
@@ -70,7 +75,6 @@ void Bunny_Init(Bunny* bunny, HP_Vec2 position)
 
     bunny->position = position;
     bunny->velocity = HP_VEC2(speed * cosf(th), speed * sinf(th));
-    bunny->rotation = th;
     bunny->color = HP_ColorFromHSV(360 * HP_RandFloat(NULL), 1, 1, 1);
 }
 
@@ -100,5 +104,5 @@ void Bunny_Update(Bunny* bunny, float delta)
 void Bunny_Draw(const Bunny* bunny)
 {
     HP_SetColor2D(bunny->color);
-    HP_DrawRectEx2D(bunny->position, HP_VEC2_1(16), HP_VEC2_1(0.5f), bunny->rotation);
+    HP_DrawRect2D(bunny->position.x - 16, bunny->position.y - 16, 32, 32);
 }
