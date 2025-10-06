@@ -464,7 +464,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     });
                     pipeline.bindUniform(0, *mFrameShadowUniform);
 
-                    mFramebufferShadowCube.setColorAttachmentTarget(0, light.shadowIndex(), iFace);
+                    mFramebufferShadowCube.setColorAttachmentTarget(0, light.shadowMapIndex(), iFace);
                     pipeline.clear(mFramebufferShadowCube, HP_COLOR_1(FLT_MAX));
 
                     for (const DrawCall& call : params.drawCalls.categories(

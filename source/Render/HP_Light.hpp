@@ -114,6 +114,7 @@ public:
     void fillShadowGPU(ShadowGPU* shadow) const;
     void fillLightGPU(LightGPU* light) const;
     const HP_Mat4& viewProj(int face = 0);
+    uint32_t shadowMapIndex() const;
     int32_t shadowIndex() const;
     uint32_t lightIndex() const;
 
@@ -1079,6 +1080,10 @@ inline const HP_Mat4& HP_Light::viewProj(int face)
     return mShadowData.viewProj[face];
 }
 
+inline uint32_t HP_Light::shadowMapIndex() const
+{
+    return mShadowMapIndex;
+}
 
 inline int32_t HP_Light::shadowIndex() const
 {
