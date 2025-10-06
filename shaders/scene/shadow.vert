@@ -148,5 +148,5 @@ void main()
     vInt.color = COLOR;
     vInt.tbn = mat3(T, B, N);
 
-    gl_Position = uFrustum.viewProj * vec4(vInt.position, 1.0);
+    gl_Position = uFrame.lightViewProj * vec4(vInt.position, 1.0);
 }
