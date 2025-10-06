@@ -262,6 +262,10 @@ void BucketArray<T, Category, N>::remove_if(Condition&& cond) noexcept
         if (!cond(mObjects[idx])) continue;
 
         size_t lastIdx = mObjects.size() - 1;
+        
+        // Get category info BEFORE modifying anything
+        auto [cat, pos] = mObjectCategoryMap[idx];
+        auto& bucket = mBuckets[static_cast<size_t>(cat)];
 
         if (idx != lastIdx)
         {
@@ -275,7 +279,7 @@ void BucketArray<T, Category, N>::remove_if(Condition&& cond) noexcept
 
             // Update the bucket of the last element
             auto [lastCat, lastPos] = mObjectCategoryMap[lastIdx];
-            auto& lastBucket = mBuckets[lastCat];
+            auto& lastBucket = mBuckets[static_cast<size_t>(lastCat)];
             lastBucket[lastPos] = idx;                          // update the index in the bucket
             mObjectCategoryMap[idx] = { lastCat, lastPos };     // update the pair
         }
@@ -285,10 +289,12 @@ void BucketArray<T, Category, N>::remove_if(Condition&& cond) noexcept
         mObjectCategoryMap.pop_back();
 
         // Remove the object's index from its bucket
-        auto [cat, pos] = mObjectCategoryMap[idx];
-        auto& bucket = mBuckets[cat];
-        bucket[pos] = *bucket.back();                       // move the last index of the bucket here
-        mObjectCategoryMap[bucket[pos]].second = pos;       // update the index_in_bucket of the moved object
+        // Use the bucket info we saved earlier
+        size_t lastBucketPos = bucket.size() - 1;
+        if (pos != lastBucketPos) {
+            bucket[pos] = bucket[lastBucketPos];                    // move the last index of the bucket here
+            mObjectCategoryMap[bucket[pos]].second = pos;           // update the index_in_bucket of the moved object
+        }
         bucket.pop_back();
     }
 }
