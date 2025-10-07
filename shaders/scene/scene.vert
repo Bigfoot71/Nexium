@@ -34,14 +34,14 @@ layout(location = 12) in vec4 iCustom;
 
 /* === Storage Buffers === */
 
-layout(std430, binding = 4) buffer BoneBuffer {
+layout(std430, binding = 0) buffer BoneBuffer {
     mat4 sBoneMatrices[];
 };
 
 /* === Uniform Buffers === */
 
 layout(std140, binding = 0) uniform U_Frame {
-    FrameForward uFrame;
+    Frame uFrame;
 };
 
 layout(std140, binding = 1) uniform U_ViewFrustum {
@@ -148,5 +148,9 @@ void main()
     vInt.color = COLOR;
     vInt.tbn = mat3(T, B, N);
 
+#if defined(SHADOW)
+    gl_Position = uFrame.lightViewProj * vec4(vInt.position, 1.0);
+#else
     gl_Position = uFrustum.viewProj * vec4(vInt.position, 1.0);
+#endif
 }

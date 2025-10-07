@@ -43,7 +43,7 @@ layout(binding = 3) uniform sampler2D uTexNormal;
 /* === Uniform Buffers === */
 
 layout(std140, binding = 0) uniform U_Frame {
-    FrameForward uFrame;
+    Frame uFrame;
 };
 
 layout(std140, binding = 1) uniform U_ViewFrustum {

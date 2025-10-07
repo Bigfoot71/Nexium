@@ -261,7 +261,7 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::Disabled);
 
-    pipeline.bindStorage(4, mBoneBuffer.buffer());
+    pipeline.bindStorage(0, mBoneBuffer.buffer());
 
     pipeline.bindUniform(0, mFrameUniform);
     pipeline.bindUniform(1, mFrustum.buffer());
@@ -317,11 +317,11 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::RGBA);
 
-    pipeline.bindStorage(0, mLights.lightsBuffer());
-    pipeline.bindStorage(1, mLights.shadowBuffer());
-    pipeline.bindStorage(2, mLights.tilesBuffer());
-    pipeline.bindStorage(3, mLights.indexBuffer());
-    pipeline.bindStorage(4, mBoneBuffer.buffer());
+    pipeline.bindStorage(0, mBoneBuffer.buffer());
+    pipeline.bindStorage(1, mLights.lightsBuffer());
+    pipeline.bindStorage(2, mLights.shadowBuffer());
+    pipeline.bindStorage(3, mLights.tilesBuffer());
+    pipeline.bindStorage(4, mLights.indexBuffer());
 
     pipeline.bindTexture(4, mAssets.textureBrdfLut());
     pipeline.bindTexture(7, mLights.shadowCube());

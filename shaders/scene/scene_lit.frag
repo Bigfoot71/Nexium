@@ -60,19 +60,19 @@ layout(location = 10) in VaryUser {
 
 /* === Storage Buffers === */
 
-layout(std430, binding = 0) buffer LightBuffer {
+layout(std430, binding = 1) buffer LightBuffer {
     Light sLights[];
 };
 
-layout(std430, binding = 1) buffer ShadowBuffer {
+layout(std430, binding = 2) buffer ShadowBuffer {
     Shadow sShadows[];
 };
 
-layout(std430, binding = 2) buffer TileBuffer {
+layout(std430, binding = 3) buffer TileBuffer {
     uint sClusters[]; //< Contains number of lights for each tile
 };
 
-layout(std430, binding = 3) buffer IndexBuffer {
+layout(std430, binding = 4) buffer IndexBuffer {
     uint sIndices[]; //< Contains the light indices for each tile, in increments of 'uMaxLightsPerTile'
 };
 
@@ -93,7 +93,7 @@ layout(binding = 8) uniform highp sampler2DArray uTexShadow2D;
 /* === Uniform Buffers === */
 
 layout(std140, binding = 0) uniform U_Frame {
-    FrameForward uFrame;
+    Frame uFrame;
 };
 
 layout(std140, binding = 1) uniform U_ViewFrustum {

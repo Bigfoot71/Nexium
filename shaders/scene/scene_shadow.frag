@@ -12,6 +12,10 @@
 precision highp float;
 #endif
 
+/* === Defines === */
+
+#define SHADOW      //< Definition for frame.glsl
+
 /* === Includes === */
 
 #include "../include/frame.glsl"
@@ -37,7 +41,7 @@ layout(binding = 0) uniform sampler2D uTexAlbedo;
 /* === Uniform Buffers === */
 
 layout(std140, binding = 0) uniform U_Frame {
-    FrameShadow uFrame;
+    Frame uFrame;
 };
 
 layout(std140, binding = 4) uniform U_Material {

@@ -4,11 +4,12 @@
 #include <NX/NX_Render.h>
 
 #include "../Detail/Util/DynamicArray.hpp"
+#include "../Detail/Util/String.hpp"
+
 #include "../Detail/GPU/Pipeline.hpp"
 #include "../Detail/GPU/Program.hpp"
 #include "../Detail/GPU/Buffer.hpp"
 
-#include <string_view>
 #include <array>
 
 /* === Declaration === */
@@ -49,7 +50,7 @@ public:
 
 private:
     /** Used at construction to generate final shader code */
-    void processCode(std::string& source, const std::string_view& define, const char* code);
+    void insertUserCode(util::String& source, const char* dst, const char* src);
 
     /** Conversion helpers */
     static Shader shaderFromShadingMode(NX_ShadingMode shading);
@@ -147,6 +148,14 @@ inline int NX_MaterialShader::dynamicRangeIndex() const
 }
 
 /* === Private Implementation === */
+
+inline void NX_MaterialShader::insertUserCode(util::String& source, const char* dst, const char* src)
+{
+    if (src == nullptr) return;
+    if (size_t pos = source.find(dst); pos != std::string::npos) {
+        source.replace(pos, SDL_strlen(dst), src);
+    }
+}
 
 inline NX_MaterialShader::Shader NX_MaterialShader::shaderFromShadingMode(NX_ShadingMode shading)
 {

@@ -4,122 +4,89 @@
 #include <shaders/scene_lit.frag.h>
 #include <shaders/scene_unlit.frag.h>
 #include <shaders/scene_wireframe.geom.h>
-#include <shaders/scene_prepass.vert.h>
 #include <shaders/scene_prepass.frag.h>
-#include <shaders/scene_shadow.vert.h>
 #include <shaders/scene_shadow.frag.h>
-
-#include <string_view>
-#include <string>
 
 /* === Public Implementation === */
 
 NX_MaterialShader::NX_MaterialShader()
 {
-    mPrograms[SCENE_LIT] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, SCENE_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, SCENE_LIT_FRAG)
-    );
+    /* --- Compile shaders --- */
 
-    mPrograms[SCENE_UNLIT] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, SCENE_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, SCENE_UNLIT_FRAG)
-    );
+    gpu::Shader vertSceneShader(GL_VERTEX_SHADER, SCENE_VERT);
+    gpu::Shader vertShadowShader(GL_VERTEX_SHADER, SCENE_VERT, {"SHADOW"});
+    gpu::Shader geomWireframe(GL_GEOMETRY_SHADER, SCENE_WIREFRAME_GEOM);
+    gpu::Shader fragLitShader(GL_FRAGMENT_SHADER, SCENE_LIT_FRAG);
+    gpu::Shader fragUnlitShader(GL_FRAGMENT_SHADER, SCENE_UNLIT_FRAG);
+    gpu::Shader fragPrepass(GL_FRAGMENT_SHADER, SCENE_PREPASS_FRAG);
+    gpu::Shader fragShadow(GL_FRAGMENT_SHADER, SCENE_SHADOW_FRAG);
 
-    mPrograms[SCENE_WIREFRAME] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, SCENE_VERT),
-        gpu::Shader(GL_GEOMETRY_SHADER, SCENE_WIREFRAME_GEOM),
-        gpu::Shader(GL_FRAGMENT_SHADER, SCENE_UNLIT_FRAG, {"WIREFRAME"})
-    );
+    /* --- Link all programs --- */
 
-    mPrograms[SCENE_PREPASS] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, SCENE_PREPASS_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, SCENE_PREPASS_FRAG)
-    );
-
-    mPrograms[SCENE_SHADOW] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, SCENE_SHADOW_VERT),
-        gpu::Shader(GL_FRAGMENT_SHADER, SCENE_SHADOW_FRAG)
-    );
+    mPrograms[SCENE_LIT]       = gpu::Program(vertSceneShader, fragLitShader);
+    mPrograms[SCENE_UNLIT]     = gpu::Program(vertSceneShader, fragUnlitShader);
+    mPrograms[SCENE_WIREFRAME] = gpu::Program(vertSceneShader, geomWireframe, fragUnlitShader);
+    mPrograms[SCENE_PREPASS]   = gpu::Program(vertSceneShader, fragPrepass);
+    mPrograms[SCENE_SHADOW]    = gpu::Program(vertShadowShader, fragShadow);
 }
 
 NX_MaterialShader::NX_MaterialShader(const char* vert, const char* frag)
 {
     /* --- Constants --- */
 
-    constexpr std::string_view vertDefine = "#define vertex()";
-    constexpr std::string_view fragDefine = "#define fragment()";
+    constexpr const char* vertMarker = "#define vertex()";
+    constexpr const char* fragMarker = "#define fragment()";
 
-    /* --- Load all base shaders --- */
+    /* --- Prepare base sources --- */
 
-    std::string vertScene = SCENE_VERT;
-    std::string fragSceneLit = SCENE_LIT_FRAG;
-    std::string fragSceneUnlit = SCENE_UNLIT_FRAG;
-    std::string vertPrepass = SCENE_PREPASS_VERT;
-    std::string fragPrepass = SCENE_PREPASS_FRAG;
-    std::string vertShadow = SCENE_SHADOW_VERT;
-    std::string fragShadow = SCENE_SHADOW_FRAG;
+    util::String vertScene = SCENE_VERT;
+    util::String fragLit   = SCENE_LIT_FRAG;
+    util::String fragUnlit = SCENE_UNLIT_FRAG;
 
-    /* --- Process shaders --- */
+    /* --- Insert user code --- */
 
-    processCode(vertScene, vertDefine, vert);
-    processCode(fragSceneLit, fragDefine, frag);
-    processCode(fragSceneUnlit, fragDefine, frag);
-    processCode(vertPrepass, vertDefine, vert);
-    processCode(fragPrepass, fragDefine, frag);
-    processCode(vertShadow, vertDefine, vert);
-    processCode(fragShadow, fragDefine, frag);
+    insertUserCode(vertScene, vertMarker, vert);
+    insertUserCode(fragLit,   fragMarker, frag);
+    insertUserCode(fragUnlit, fragMarker, frag);
 
     /* --- Compile shaders --- */
 
-    mPrograms[SCENE_LIT] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, vertScene.c_str()),
-        gpu::Shader(GL_FRAGMENT_SHADER, fragSceneLit.c_str())
-    );
+    gpu::Shader vertSceneShader(GL_VERTEX_SHADER, vertScene.data());
+    gpu::Shader vertShadowShader(GL_VERTEX_SHADER, vertScene.data(), {"SHADOW"});
+    gpu::Shader geomWireframe(GL_GEOMETRY_SHADER, SCENE_WIREFRAME_GEOM);
+    gpu::Shader fragLitShader(GL_FRAGMENT_SHADER, fragLit.data());
+    gpu::Shader fragUnlitShader(GL_FRAGMENT_SHADER, fragUnlit.data());
+    gpu::Shader fragPrepass(GL_FRAGMENT_SHADER, SCENE_PREPASS_FRAG);
+    gpu::Shader fragShadow(GL_FRAGMENT_SHADER, SCENE_SHADOW_FRAG);
 
-    mPrograms[SCENE_UNLIT] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, vertScene.c_str()),
-        gpu::Shader(GL_FRAGMENT_SHADER, fragSceneUnlit.c_str())
-    );
+    /* --- Link all programs --- */
 
-    mPrograms[SCENE_WIREFRAME] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, vertScene.c_str()),
-        gpu::Shader(GL_GEOMETRY_SHADER, SCENE_WIREFRAME_GEOM),
-        gpu::Shader(GL_FRAGMENT_SHADER, fragSceneUnlit.c_str())
-    );
+    mPrograms[SCENE_LIT]       = gpu::Program(vertSceneShader, fragLitShader);
+    mPrograms[SCENE_UNLIT]     = gpu::Program(vertSceneShader, fragUnlitShader);
+    mPrograms[SCENE_WIREFRAME] = gpu::Program(vertSceneShader, geomWireframe, fragUnlitShader);
+    mPrograms[SCENE_PREPASS]   = gpu::Program(vertSceneShader, fragPrepass);
+    mPrograms[SCENE_SHADOW]    = gpu::Program(vertShadowShader, fragShadow);
 
-    mPrograms[SCENE_PREPASS] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, vertPrepass.c_str()),
-        gpu::Shader(GL_FRAGMENT_SHADER, fragPrepass.c_str())
-    );
+    /* --- Collect uniform block sizes and setup bindings --- */
 
-    mPrograms[SCENE_SHADOW] = gpu::Program(
-        gpu::Shader(GL_VERTEX_SHADER, vertShadow.c_str()),
-        gpu::Shader(GL_FRAGMENT_SHADER, fragShadow.c_str())
-    );
-
-    /* --- Collect uniform blocks --- */
-
-    size_t bufferSize[UNIFORM_COUNT]{};
-    for (int i = 0; i < SHADER_COUNT; i++) {
-        for (int j = 0; j < UNIFORM_COUNT; j++) {
-            int blockIndex = mPrograms[i].getUniformBlockIndex(UniformName[j]);
-            if (blockIndex >= 0) {
-                mPrograms[i].setUniformBlockBinding(blockIndex, UniformBinding[j]);
-                if (bufferSize[j] == 0) {
-                    bufferSize[j] = mPrograms[i].getUniformBlockSize(blockIndex);
-                }
+    size_t bufferSize[UNIFORM_COUNT] = {};
+    for (int i = 0; i < SHADER_COUNT; ++i) {
+        auto& program = mPrograms[i];
+        for (int j = 0; j < UNIFORM_COUNT; ++j) {
+            int blockIndex = program.getUniformBlockIndex(UniformName[j]);
+            if (blockIndex < 0) continue;
+            program.setUniformBlockBinding(blockIndex, UniformBinding[j]);
+            if (bufferSize[j] == 0) {
+                bufferSize[j] = program.getUniformBlockSize(blockIndex);
             }
         }
     }
 
-    /* --- Allocate static uniform buffer if needed --- */
+    /* --- Allocate uniform buffers --- */
 
     if (bufferSize[STATIC_UNIFORM] > 0) {
         mStaticBuffer = gpu::Buffer(GL_UNIFORM_BUFFER, bufferSize[STATIC_UNIFORM], nullptr, GL_DYNAMIC_DRAW);
     }
-
-    /* --- Allocate dynamic uniform buffer if needed --- */
 
     if (bufferSize[DYNAMIC_UNIFORM] > 0) {
         int alignment = gpu::Pipeline::uniformBufferOffsetAlignment();
@@ -130,17 +97,16 @@ NX_MaterialShader::NX_MaterialShader(const char* vert, const char* frag)
         }
     }
 
-    /* --- Collect and setup all samplers --- */
+    /* --- Setup texture samplers --- */
 
-    gpu::Pipeline([this](const gpu::Pipeline& pipeline) { // NOLINT
-        for (int i = 0; i < SHADER_COUNT; i++) {
+    gpu::Pipeline([this](const gpu::Pipeline& pipeline) {
+        for (int i = 0; i < SHADER_COUNT; ++i) {
             pipeline.useProgram(mPrograms[i]);
-            for (int j = 0; j < TEXTURE_COUNT; j++) {
+            for (int j = 0; j < TEXTURE_COUNT; ++j) {
                 int loc = mPrograms[i].getUniformLocation(SamplerName[j]);
-                if (loc >= 0) {
-                    pipeline.setUniformInt1(loc, SamplerBinding[j]);
-                    mTextures[j].exists = true;
-                }
+                if (loc < 0) continue;
+                pipeline.setUniformInt1(loc, SamplerBinding[j]);
+                mTextures[j].exists = true;
             }
         }
     });
@@ -241,24 +207,5 @@ void NX_MaterialShader::bindTextures(const gpu::Pipeline& pipeline, const Textur
         if (mTextures[i].exists) {
             pipeline.bindTexture(SamplerBinding[i], textures[i] ? *textures[i] : defaultTexture);
         }
-    }
-}
-
-/* === Private Implementation === */
-
-void NX_MaterialShader::processCode(std::string& source, const std::string_view& define, const char* code)
-{
-    /* --- If no code provided keep default shader --- */
-
-    if (code == nullptr) {
-        return;
-    }
-
-    /* --- Insert use code to the shader --- */
-
-    size_t pos = source.find(define);
-
-    if (pos != std::string::npos) {
-        source.replace(pos, define.length(), code);
     }
 }
