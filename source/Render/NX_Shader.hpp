@@ -1,5 +1,5 @@
-#ifndef NX_RENDER_MATERIAL_SHADER_HPP
-#define NX_RENDER_MATERIAL_SHADER_HPP
+#ifndef NX_RENDER_SHADER_HPP
+#define NX_RENDER_SHADER_HPP
 
 #include <NX/NX_Render.h>
 
@@ -14,9 +14,9 @@
 
 /* === Declaration === */
 
-class NX_MaterialShader {
+class NX_Shader {
 public:
-    enum Shader { SCENE_LIT, SCENE_UNLIT, SCENE_WIREFRAME, SCENE_PREPASS, SCENE_SHADOW, SHADER_COUNT };
+    enum Shader { SHAPE_COLOR, SHAPE_TEXTURE, TEXT_BITMAP, TEXT_SDF, SHADER_COUNT };
     enum Sampler { TEXTURE_0, TEXTURE_1, TEXTURE_2, TEXTURE_3, TEXTURE_COUNT, };
     enum Uniform { STATIC_UNIFORM, DYNAMIC_UNIFORM, UNIFORM_COUNT };
 
@@ -24,8 +24,8 @@ public:
     using TextureArray = std::array<const gpu::Texture*, TEXTURE_COUNT>;
 
 public:
-    NX_MaterialShader();
-    NX_MaterialShader(const char* vertex, const char* fragment);
+    NX_Shader();
+    NX_Shader(const char* vertex, const char* fragment);
 
     /** Texture getter/setter */
     void getTextures(TextureArray& textures);
@@ -43,16 +43,12 @@ public:
     void clearDynamicBuffer();
 
     /** Getters */
-    gpu::Program& program(NX_ShadingMode shading);
     gpu::Program& program(Shader shader);
     int dynamicRangeIndex() const;
 
 private:
     /** Used at construction to generate final shader code */
     void insertUserCode(util::String& source, const char* dst, const char* src);
-
-    /** Conversion helpers */
-    static Shader shaderFromShadingMode(NX_ShadingMode shading);
 
 private:
     /** Built-in sampler names */
@@ -98,52 +94,47 @@ private:
 
 /* === Public Implementation === */
 
-inline void NX_MaterialShader::getTextures(TextureArray& textures)
+inline void NX_Shader::getTextures(TextureArray& textures)
 {
     for (int i = 0; i < TEXTURE_COUNT; i++) {
         textures[i] = mTextures[i].texture;
     }
 }
 
-inline void NX_MaterialShader::setTexture(int slot, const gpu::Texture* texture)
+inline void NX_Shader::setTexture(int slot, const gpu::Texture* texture)
 {
     if (slot < 0 || slot >= TEXTURE_COUNT) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to set material shader texture at slot %i/%i; Exceeds the number of slot", slot, TEXTURE_COUNT);
+        NX_INTERNAL_LOG(E, "RENDER: Unable to set shader texture at slot %i/%i; Exceeds the number of slot", slot, TEXTURE_COUNT);
         return;
     }
 
     if (!mTextures[slot].exists) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to set material shader texture at slot %i/%i; This slot is not defined in the material shader", slot, TEXTURE_COUNT);
+        NX_INTERNAL_LOG(E, "RENDER: Unable to set shader texture at slot %i/%i; This slot is not defined in the shader", slot, TEXTURE_COUNT);
         return;
     }
 
     mTextures[slot].texture = texture;
 }
 
-inline void NX_MaterialShader::clearDynamicBuffer()
+inline void NX_Shader::clearDynamicBuffer()
 {
     mDynamicBuffer.currentOffset = 0;
     mDynamicBuffer.ranges.clear();
 }
 
-inline gpu::Program& NX_MaterialShader::program(NX_ShadingMode shading)
-{
-    return mPrograms[shaderFromShadingMode(shading)];
-}
-
-inline gpu::Program& NX_MaterialShader::program(Shader shader)
+inline gpu::Program& NX_Shader::program(Shader shader)
 {
     return mPrograms[shader];
 }
 
-inline int NX_MaterialShader::dynamicRangeIndex() const
+inline int NX_Shader::dynamicRangeIndex() const
 {
     return mDynamicBuffer.currentRangeIndex;
 }
 
 /* === Private Implementation === */
 
-inline void NX_MaterialShader::insertUserCode(util::String& source, const char* dst, const char* src)
+inline void NX_Shader::insertUserCode(util::String& source, const char* dst, const char* src)
 {
     if (src == nullptr) return;
     if (size_t pos = source.find(dst); pos != std::string::npos) {
@@ -151,19 +142,4 @@ inline void NX_MaterialShader::insertUserCode(util::String& source, const char* 
     }
 }
 
-inline NX_MaterialShader::Shader NX_MaterialShader::shaderFromShadingMode(NX_ShadingMode shading)
-{
-    switch (shading) {
-    case NX_SHADING_LIT:
-        return SCENE_LIT;
-    case NX_SHADING_UNLIT:
-        return SCENE_UNLIT;
-    case NX_SHADING_WIREFRAME:
-        return SCENE_WIREFRAME;
-    default:
-        break;
-    }
-    return SCENE_LIT;
-}
-
-#endif // NX_RENDER_MATERIAL_SHADER_HPP
+#endif // NX_RENDER_SHADER_HPP

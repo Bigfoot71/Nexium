@@ -211,7 +211,7 @@ void Scene::end()
 
     postFinal(*source);
 
-    /* --- Clear frame buffers --- */
+    /* --- Clear dynamic uniform buffers --- */
 
     mPrograms.clearDynamicMaterialBuffers();
 
@@ -274,7 +274,8 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
 
         NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
         pipeline.useProgram(shader.program(NX_MaterialShader::SCENE_PREPASS));
-        shader.bindUniformBuffers(pipeline, NX_MaterialShader::SCENE_PREPASS, call.dynamicRangeIndex());
+
+        shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
         switch (mat.depth.test) {
@@ -347,7 +348,8 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
 
         NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
         pipeline.useProgram(shader.program(call.material().shading));
-        shader.bindUniformBuffers(pipeline, call.material().shading, call.dynamicRangeIndex());
+
+        shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
         if (mat.depth.prePass) {

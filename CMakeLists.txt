@@ -260,6 +260,7 @@ set(NX_SOURCES
 
     "${NX_ROOT_PATH}/source/Render/NX_ReflectionProbe.cpp"
     "${NX_ROOT_PATH}/source/Render/NX_MaterialShader.cpp"
+    "${NX_ROOT_PATH}/source/Render/NX_Shader.cpp"
     "${NX_ROOT_PATH}/source/Render/NX_Cubemap.cpp"
     "${NX_ROOT_PATH}/source/Render/NX_Light.cpp"
     "${NX_ROOT_PATH}/source/Render/NX_Font.cpp"
@@ -329,8 +330,8 @@ embed_shaders(${PROJECT_NAME}
     "${NX_ROOT_PATH}/shaders/process/upsampling.frag"
     "${NX_ROOT_PATH}/shaders/process/bilateral_blur.frag"
     "${NX_ROOT_PATH}/shaders/process/ssao_pass.frag"
-    "${NX_ROOT_PATH}/shaders/overlay/generic.vert"
-    "${NX_ROOT_PATH}/shaders/overlay/generic.frag"
+    "${NX_ROOT_PATH}/shaders/overlay/shape.vert"
+    "${NX_ROOT_PATH}/shaders/overlay/shape.frag"
     "${NX_ROOT_PATH}/shaders/overlay/overlay.frag"
     "${NX_ROOT_PATH}/shaders/scene/light_culling.comp"
     "${NX_ROOT_PATH}/shaders/scene/skybox.vert"

@@ -15,6 +15,7 @@
 #include "../../Detail/GPU/Program.hpp"
 #include "../../Detail/GPU/Shader.hpp"
 #include "../NX_MaterialShader.hpp"
+#include "../NX_Shader.hpp"
 
 namespace render {
 
@@ -28,8 +29,13 @@ public:
     NX_MaterialShader* createMaterialShader(const char* vert, const char* frag);
     void destroyMaterialShader(NX_MaterialShader* shader);
 
-    /** Should be called at the end of 'NX_End3D()' */
+    /** Shape shaders */
+    NX_Shader* createShader(const char* vert, const char* frag);
+    void destroyShader(NX_Shader* shader);
+
+    /** Should be called at the end of 'NX_End3D()' / 'NX_End2D()' */
     void clearDynamicMaterialBuffers();
+    void clearDynamicBuffers();
 
     /** Cubemap generation */
     gpu::Program& cubemapFromEquirectangular();
@@ -52,15 +58,13 @@ public:
     gpu::Program& ssaoPost();
 
     /** Overlay programs */
-    gpu::Program& overlayFontBitmap();
-    gpu::Program& overlayFontSDF();
-    gpu::Program& overlayTexture();
-    gpu::Program& overlayColor();
+    NX_Shader& shader(NX_Shader* shader);
     gpu::Program& overlay();
 
 private:
     /** Shader pools */
     util::ObjectPool<NX_MaterialShader, 32> mMaterialShaders;
+    util::ObjectPool<NX_Shader, 32> mShaders;
 
     /** Cubemap generation */
     gpu::Program mCubemapFromEquirectangular;
@@ -83,14 +87,10 @@ private:
     gpu::Program mSsaoPost{};
 
     /** Overlay programs */
-    gpu::Program mOverlayFontBitmap{};
-    gpu::Program mOverlayFontSDF{};
-    gpu::Program mOverlayTexture{};
-    gpu::Program mOverlayColor{};
+    NX_Shader mShader{};
     gpu::Program mOverlay{};
 
 private:
-    gpu::Shader mVertexShaderOverlayGeneric;
     gpu::Shader mVertexShaderScreen;
     gpu::Shader mVertexShaderCube;
 };
@@ -107,6 +107,16 @@ inline void ProgramCache::destroyMaterialShader(NX_MaterialShader* shader)
     mMaterialShaders.destroy(shader);
 }
 
+inline NX_Shader* ProgramCache::createShader(const char* vert, const char* frag)
+{
+    return mShaders.create(vert, frag);
+}
+
+inline void ProgramCache::destroyShader(NX_Shader* shader)
+{
+    mShaders.destroy(shader);
+}
+
 inline void ProgramCache::clearDynamicMaterialBuffers()
 {
     for (NX_MaterialShader& shader : mMaterialShaders) {
@@ -114,9 +124,21 @@ inline void ProgramCache::clearDynamicMaterialBuffers()
     }
 }
 
+inline void ProgramCache::clearDynamicBuffers()
+{
+    for (NX_Shader& shader : mShaders) {
+        shader.clearDynamicBuffer();
+    }
+}
+
 inline NX_MaterialShader& ProgramCache::materialShader(NX_MaterialShader* shader)
 {
     return shader ? *shader : mMaterialShader;
+}
+
+inline NX_Shader& ProgramCache::shader(NX_Shader* shader)
+{
+    return shader ? *shader : mShader;
 }
 
 } // namespace render

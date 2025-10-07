@@ -28,8 +28,6 @@
 #include <shaders/ssao_post.frag.h>
 #include <shaders/output.frag.h>
 
-#include <shaders/generic.vert.h>
-#include <shaders/generic.frag.h>
 #include <shaders/overlay.frag.h>
 
 namespace render {
@@ -37,8 +35,7 @@ namespace render {
 /* === Public Implementation === */
 
 ProgramCache::ProgramCache()
-    : mVertexShaderOverlayGeneric(GL_VERTEX_SHADER, GENERIC_VERT)
-    , mVertexShaderScreen(GL_VERTEX_SHADER, SCREEN_VERT)
+    : mVertexShaderScreen(GL_VERTEX_SHADER, SCREEN_VERT)
     , mVertexShaderCube(GL_VERTEX_SHADER, CUBE_VERT)
 { }
 
@@ -274,62 +271,6 @@ gpu::Program& ProgramCache::ssaoPost()
     );
 
     return mSsaoPost;
-}
-
-gpu::Program& ProgramCache::overlayFontBitmap()
-{
-    if (mOverlayFontBitmap.isValid()) {
-        return mOverlayFontBitmap;
-    }
-
-    mOverlayFontBitmap = gpu::Program(
-        mVertexShaderOverlayGeneric,
-        gpu::Shader(GL_FRAGMENT_SHADER, GENERIC_FRAG, {"FONT_BITMAP"})
-    );
-
-    return mOverlayFontBitmap;
-}
-
-gpu::Program& ProgramCache::overlayFontSDF()
-{
-    if (mOverlayFontSDF.isValid()) {
-        return mOverlayFontSDF;
-    }
-    
-    mOverlayFontSDF = gpu::Program(
-        mVertexShaderOverlayGeneric,
-        gpu::Shader(GL_FRAGMENT_SHADER, GENERIC_FRAG, {"FONT_SDF"})
-    );
-
-    return mOverlayFontSDF;
-}
-
-gpu::Program& ProgramCache::overlayTexture()
-{
-    if (mOverlayTexture.isValid()) {
-        return mOverlayTexture;
-    }
-
-    mOverlayTexture = gpu::Program(
-        mVertexShaderOverlayGeneric,
-        gpu::Shader(GL_FRAGMENT_SHADER, GENERIC_FRAG, {"TEXTURE"})
-    );
-
-    return mOverlayTexture;
-}
-
-gpu::Program& ProgramCache::overlayColor()
-{
-    if (mOverlayColor.isValid()) {
-        return mOverlayColor;
-    }
-
-    mOverlayColor = gpu::Program(
-        mVertexShaderOverlayGeneric,
-        gpu::Shader(GL_FRAGMENT_SHADER, GENERIC_FRAG, {"COLOR"})
-    );
-
-    return mOverlayColor;
 }
 
 gpu::Program& ProgramCache::overlay()

@@ -11,41 +11,57 @@
 
 #include "../../Detail/GPU/Pipeline.hpp"
 #include "../NX_Texture.hpp"
+#include "../NX_Shader.hpp"
 
 namespace overlay {
 
 /* === Declaration === */
 
 struct DrawCall {
+    /** Draw mode */
     enum Mode {
         SHAPE,
         TEXT
     };
 
+    /** Constructors */
     DrawCall() = default;
-    DrawCall(const NX_Texture* t, size_t o);
-    DrawCall(const NX_Font* f, size_t o);
+    DrawCall(NX_Shader* s, const NX_Texture* t, size_t o);
+    DrawCall(NX_Shader* s, const NX_Font* f, size_t o);
 
+    /** Helper functions */
     void draw(const gpu::Pipeline& pipeline) const;
 
+    /** Shader related data */
+    NX_Shader::TextureArray shaderTextures;
+    NX_Shader* shader;
+    int uRangeIndex;
+
+    /** Built-in drawable */
     union {
         const NX_Texture* texture;
         const NX_Font* font;
     };
 
-    size_t offset;  // Offset in the index buffer (in number of indices)
-    size_t count;   // Number of indices to draw
+    /** Draw call info */
+    size_t offset;          //< Offset in the index buffer (in number of indices)
+    size_t count;           //< Number of indices to draw
     Mode mode;
 };
 
 /* === Public Implementation === */
 
-inline DrawCall::DrawCall(const NX_Texture* t, size_t o)
-    : texture(t), offset(o), count(0), mode(SHAPE)
-{ }
+inline DrawCall::DrawCall(NX_Shader* s, const NX_Texture* t, size_t o)
+    : shader(s), texture(t), offset(o), count(0), mode(SHAPE)
+{
+    if (s) {
+        s->getTextures(shaderTextures);
+        uRangeIndex = s->dynamicRangeIndex();
+    }
+}
 
-inline DrawCall::DrawCall(const NX_Font* f, size_t o)
-    : font(f), offset(o), count(0), mode(TEXT)
+inline DrawCall::DrawCall(NX_Shader* s, const NX_Font* f, size_t o)
+    : shader(s), font(f), offset(o), count(0), mode(TEXT)
 { }
 
 inline void DrawCall::draw(const gpu::Pipeline& pipeline) const

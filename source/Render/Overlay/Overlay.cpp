@@ -24,7 +24,7 @@ Overlay::Overlay(render::ProgramCache& programs, render::AssetCache& assets, NX_
 
     /* --- Create GPU Buffers --- */
 
-    mUniformBuffer = gpu::Buffer(GL_UNIFORM_BUFFER, sizeof(NX_Mat4), nullptr, GL_DYNAMIC_DRAW);
+    mUniformBuffer = gpu::Buffer(GL_UNIFORM_BUFFER, sizeof(Uniform), nullptr, GL_DYNAMIC_DRAW);
 
     /* --- Create Framebuffer --- */
 
@@ -88,29 +88,48 @@ void Overlay::flush()
 
     /* --- Render all draw calls --- */
 
-    for (const DrawCall& call : mDrawCalls) {
+    for (const DrawCall& call : mDrawCalls)
+    {
+        NX_Shader& shader = mPrograms.shader(call.shader);
+        shader.bindUniformBuffers(pipeline, call.uRangeIndex);
+        shader.bindTextures(pipeline, call.shaderTextures, mAssets.textureWhite().gpuTexture());
+
         switch (call.mode) {
         case DrawCall::SHAPE:
             if (call.texture != nullptr) {
-                pipeline.useProgram(mPrograms.overlayTexture());
+                pipeline.useProgram(shader.program(NX_Shader::SHAPE_TEXTURE));
                 pipeline.bindTexture(0, call.texture->gpuTexture());
             }
             else {
-                pipeline.useProgram(mPrograms.overlayColor());
+                pipeline.useProgram(shader.program(NX_Shader::SHAPE_COLOR));
             }
             break;
         case DrawCall::TEXT:
             const NX_Font& font = call.font ? *call.font : mAssets.font();
-            pipeline.useProgram(font.type() == NX_FONT_SDF ? mPrograms.overlayFontSDF() : mPrograms.overlayFontBitmap());
+            switch (font.type()) {
+            case NX_FONT_NORMAL:
+            case NX_FONT_LIGHT:
+            case NX_FONT_MONO:
+                pipeline.useProgram(shader.program(NX_Shader::TEXT_BITMAP));
+                break;
+            case NX_FONT_SDF:
+                pipeline.useProgram(shader.program(NX_Shader::TEXT_SDF));
+                break;
+            }
             pipeline.bindTexture(0, font.gpuTexture());
             break;
         }
+
         call.draw(pipeline);
     }
 
     /* --- Rotate vertex buffer --- */
 
     mVertexBuffer.rotate();
+
+    /* --- Clear dynamic uniform buffers --- */
+
+    mPrograms.clearDynamicBuffers();
 
     /* --- Reset --- */
 

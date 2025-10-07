@@ -147,6 +147,46 @@ void NX_BlitRenderTexture(const NX_RenderTexture* target, int xDst, int yDst, in
     target->blit(xDst, yDst, wDst, hDst, linear);
 }
 
+/* === Shader - Public API === */
+
+NX_Shader* NX_CreateShader(const char* vertCode, const char* fragCode)
+{
+    return gRender->programs.createShader(vertCode, fragCode);
+}
+
+NX_Shader* NX_LoadShader(const char* vertFile, const char* fragFile)
+{
+    char* vertCode = vertFile ? NX_LoadFileText(vertFile) : nullptr;
+    char* fragCode = fragFile ? NX_LoadFileText(fragFile) : nullptr;
+
+    NX_Shader* shader = gRender->programs.createShader(vertCode, fragCode);
+
+    SDL_free(vertCode);
+    SDL_free(fragCode);
+
+    return shader;
+}
+
+void NX_DestroyShader(NX_Shader* shader)
+{
+    gRender->programs.destroyShader(shader);
+}
+
+void NX_SetShaderTexture(NX_Shader* shader, int slot, const NX_Texture* texture)
+{
+    shader->setTexture(slot, texture ? &texture->gpuTexture() : nullptr);
+}
+
+void NX_UpdateStaticShaderBuffer(NX_Shader* shader, size_t offset, size_t size, const void* data)
+{
+    shader->updateStaticBuffer(offset, size, data);
+}
+
+void NX_UpdateDynamicShaderBuffer(NX_Shader* shader, size_t size, const void* data)
+{
+    shader->updateDynamicBuffer(size, data);
+}
+
 /* === Draw2D - Public API === */
 
 void NX_Begin2D(NX_RenderTexture* target)
@@ -176,6 +216,11 @@ void NX_SetTexture2D(const NX_Texture* texture)
 void NX_SetFont2D(const NX_Font* font)
 {
     gRender->overlay.setFont(font);
+}
+
+void NX_SetShader2D(NX_Shader* shader)
+{
+    gRender->overlay.setShader(shader);
 }
 
 void NX_DrawTriangle2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2)

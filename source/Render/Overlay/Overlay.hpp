@@ -44,6 +44,7 @@ public:
     void setProjection(const NX_Mat4& projection);
     void setTexture(const NX_Texture* texture);
     void setFont(const NX_Font* font);
+    void setShader(NX_Shader* shader);
     void setColor(NX_Color color);
 
     /** Adding data */
@@ -64,12 +65,18 @@ public:
     void ensureDrawCall(DrawCall::Mode mode, int vertices, int indices);
 
 private:
-    /** GPU Vertex buffer */
+    /** GPU vertex buffer */
     struct VertexBuffer {
         gpu::VertexArray vao{};
         gpu::Buffer vbo{};
         gpu::Buffer ebo{};
         VertexBuffer();
+    };
+
+    /** GPU uniform data */
+    struct Uniform {
+        alignas(16) NX_Mat4 projection;
+        alignas(4) float time;
     };
 
 private:
@@ -88,6 +95,7 @@ private:
 
     /** Current State */
     NX_Color mCurrentColor = NX_WHITE;
+    NX_Shader* mCurrentShader = nullptr;
     const NX_Font* mCurrentFont = nullptr;
     const NX_Texture* mCurrentTexture = nullptr;
     const NX_RenderTexture* mCurrentTarget = nullptr;
@@ -106,7 +114,14 @@ inline void Overlay::setRenderTexture(const NX_RenderTexture* target)
 
 inline void Overlay::setProjection(const NX_Mat4& projection)
 {
-    mUniformBuffer.upload(&projection);
+    // REVIEW: Not very clear upload time here either...
+
+    Uniform data = {
+        .projection = projection,
+        .time = static_cast<float>(NX_GetElapsedTime())
+    };
+
+    mUniformBuffer.upload(&data);
 }
 
 inline void Overlay::setTexture(const NX_Texture* texture)
@@ -117,6 +132,11 @@ inline void Overlay::setTexture(const NX_Texture* texture)
 inline void Overlay::setFont(const NX_Font* font)
 {
     mCurrentFont = font;
+}
+
+inline void Overlay::setShader(NX_Shader* shader)
+{
+    mCurrentShader = shader;
 }
 
 inline void Overlay::setColor(NX_Color color)
@@ -162,10 +182,10 @@ inline void Overlay::ensureDrawCall(DrawCall::Mode mode, int vertices, int indic
     if (mDrawCalls.empty()) {
         switch (mode) {
         case DrawCall::SHAPE:
-            mDrawCalls.emplace_back(mCurrentTexture, 0);
+            mDrawCalls.emplace_back(mCurrentShader, mCurrentTexture, 0);
             break;
         case DrawCall::TEXT:
-            mDrawCalls.emplace_back(mCurrentFont, 0);
+            mDrawCalls.emplace_back(mCurrentShader, mCurrentFont, 0);
             break;
         }
         return;
@@ -174,6 +194,7 @@ inline void Overlay::ensureDrawCall(DrawCall::Mode mode, int vertices, int indic
     DrawCall& call = *mDrawCalls.back();
 
     if (call.count == 0) {
+        call.shader = mCurrentShader;
         call.mode = mode;
         switch (mode) {
         case DrawCall::SHAPE:
@@ -186,7 +207,7 @@ inline void Overlay::ensureDrawCall(DrawCall::Mode mode, int vertices, int indic
         return;
     }
 
-    if (call.mode == mode) {
+    if (call.mode == mode && call.shader == mCurrentShader) {
         switch (call.mode) {
         case DrawCall::SHAPE:
             if (call.texture == mCurrentTexture) {
@@ -207,10 +228,10 @@ inline void Overlay::ensureDrawCall(DrawCall::Mode mode, int vertices, int indic
 
     switch (mode) {
     case DrawCall::SHAPE:
-        mDrawCalls.emplace_back(mCurrentTexture, mIndices.size());
+        mDrawCalls.emplace_back(mCurrentShader, mCurrentTexture, mIndices.size());
         break;
     case DrawCall::TEXT:
-        mDrawCalls.emplace_back(mCurrentFont, mIndices.size());
+        mDrawCalls.emplace_back(mCurrentShader, mCurrentFont, mIndices.size());
         break;
     }
 }

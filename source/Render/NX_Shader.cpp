@@ -1,36 +1,29 @@
-#include "./NX_MaterialShader.hpp"
+#include "./NX_Shader.hpp"
 
-#include <shaders/scene.vert.h>
-#include <shaders/scene_lit.frag.h>
-#include <shaders/scene_unlit.frag.h>
-#include <shaders/scene_wireframe.geom.h>
-#include <shaders/scene_prepass.frag.h>
-#include <shaders/scene_shadow.frag.h>
+#include <shaders/shape.vert.h>
+#include <shaders/shape.frag.h>
 
 /* === Public Implementation === */
 
-NX_MaterialShader::NX_MaterialShader()
+NX_Shader::NX_Shader()
 {
     /* --- Compile shaders --- */
 
-    gpu::Shader vertSceneShader(GL_VERTEX_SHADER, SCENE_VERT);
-    gpu::Shader vertShadowShader(GL_VERTEX_SHADER, SCENE_VERT, {"SHADOW"});
-    gpu::Shader geomWireframe(GL_GEOMETRY_SHADER, SCENE_WIREFRAME_GEOM);
-    gpu::Shader fragLitShader(GL_FRAGMENT_SHADER, SCENE_LIT_FRAG);
-    gpu::Shader fragUnlitShader(GL_FRAGMENT_SHADER, SCENE_UNLIT_FRAG);
-    gpu::Shader fragPrepass(GL_FRAGMENT_SHADER, SCENE_PREPASS_FRAG);
-    gpu::Shader fragShadow(GL_FRAGMENT_SHADER, SCENE_SHADOW_FRAG);
+    gpu::Shader vertShape(GL_VERTEX_SHADER, SHAPE_VERT);
+    gpu::Shader fragShapeColor(GL_FRAGMENT_SHADER, SHAPE_FRAG, {"SHAPE_COLOR"});
+    gpu::Shader fragShapeTexture(GL_FRAGMENT_SHADER, SHAPE_FRAG, {"SHAPE_TEXTURE"});
+    gpu::Shader fragTextBitmap(GL_FRAGMENT_SHADER, SHAPE_FRAG, {"TEXT_BITMAP"});
+    gpu::Shader fragTextSDF(GL_FRAGMENT_SHADER, SHAPE_FRAG, {"TEXT_SDF"});
 
     /* --- Link all programs --- */
 
-    mPrograms[SCENE_LIT]       = gpu::Program(vertSceneShader, fragLitShader);
-    mPrograms[SCENE_UNLIT]     = gpu::Program(vertSceneShader, fragUnlitShader);
-    mPrograms[SCENE_WIREFRAME] = gpu::Program(vertSceneShader, geomWireframe, fragUnlitShader);
-    mPrograms[SCENE_PREPASS]   = gpu::Program(vertSceneShader, fragPrepass);
-    mPrograms[SCENE_SHADOW]    = gpu::Program(vertShadowShader, fragShadow);
+    mPrograms[SHAPE_COLOR]   = gpu::Program(vertShape, fragShapeColor);
+    mPrograms[SHAPE_TEXTURE] = gpu::Program(vertShape, fragShapeTexture);
+    mPrograms[TEXT_BITMAP]   = gpu::Program(vertShape, fragTextBitmap);
+    mPrograms[TEXT_SDF]      = gpu::Program(vertShape, fragTextSDF);
 }
 
-NX_MaterialShader::NX_MaterialShader(const char* vert, const char* frag)
+NX_Shader::NX_Shader(const char* vert, const char* frag)
 {
     /* --- Constants --- */
 
@@ -39,33 +32,28 @@ NX_MaterialShader::NX_MaterialShader(const char* vert, const char* frag)
 
     /* --- Prepare base sources --- */
 
-    util::String vertScene = SCENE_VERT;
-    util::String fragLit   = SCENE_LIT_FRAG;
-    util::String fragUnlit = SCENE_UNLIT_FRAG;
+    util::String vertStr = SHAPE_VERT;
+    util::String fragStr = SHAPE_FRAG;
 
     /* --- Insert user code --- */
 
-    insertUserCode(vertScene, vertMarker, vert);
-    insertUserCode(fragLit,   fragMarker, frag);
-    insertUserCode(fragUnlit, fragMarker, frag);
+    insertUserCode(vertStr, vertMarker, vert);
+    insertUserCode(fragStr, fragMarker, frag);
 
     /* --- Compile shaders --- */
 
-    gpu::Shader vertSceneShader(GL_VERTEX_SHADER, vertScene.data());
-    gpu::Shader vertShadowShader(GL_VERTEX_SHADER, vertScene.data(), {"SHADOW"});
-    gpu::Shader geomWireframe(GL_GEOMETRY_SHADER, SCENE_WIREFRAME_GEOM);
-    gpu::Shader fragLitShader(GL_FRAGMENT_SHADER, fragLit.data());
-    gpu::Shader fragUnlitShader(GL_FRAGMENT_SHADER, fragUnlit.data());
-    gpu::Shader fragPrepass(GL_FRAGMENT_SHADER, SCENE_PREPASS_FRAG);
-    gpu::Shader fragShadow(GL_FRAGMENT_SHADER, SCENE_SHADOW_FRAG);
+    gpu::Shader vertShape(GL_VERTEX_SHADER, vertStr.data());
+    gpu::Shader fragShapeColor(GL_FRAGMENT_SHADER, fragStr.data(), {"SHAPE_COLOR"});
+    gpu::Shader fragShapeTexture(GL_FRAGMENT_SHADER, fragStr.data(), {"SHAPE_TEXTURE"});
+    gpu::Shader fragTextBitmap(GL_FRAGMENT_SHADER, fragStr.data(), {"TEXT_BITMAP"});
+    gpu::Shader fragTextSDF(GL_FRAGMENT_SHADER, fragStr.data(), {"TEXT_SDF"});
 
     /* --- Link all programs --- */
 
-    mPrograms[SCENE_LIT]       = gpu::Program(vertSceneShader, fragLitShader);
-    mPrograms[SCENE_UNLIT]     = gpu::Program(vertSceneShader, fragUnlitShader);
-    mPrograms[SCENE_WIREFRAME] = gpu::Program(vertSceneShader, geomWireframe, fragUnlitShader);
-    mPrograms[SCENE_PREPASS]   = gpu::Program(vertSceneShader, fragPrepass);
-    mPrograms[SCENE_SHADOW]    = gpu::Program(vertShadowShader, fragShadow);
+    mPrograms[SHAPE_COLOR]   = gpu::Program(vertShape, fragShapeColor);
+    mPrograms[SHAPE_TEXTURE] = gpu::Program(vertShape, fragShapeTexture);
+    mPrograms[TEXT_BITMAP]   = gpu::Program(vertShape, fragTextBitmap);
+    mPrograms[TEXT_SDF]      = gpu::Program(vertShape, fragTextSDF);
 
     /* --- Collect uniform block sizes and setup bindings --- */
 
@@ -112,18 +100,18 @@ NX_MaterialShader::NX_MaterialShader(const char* vert, const char* frag)
     });
 }
 
-void NX_MaterialShader::updateStaticBuffer(size_t offset, size_t size, const void* data)
+void NX_Shader::updateStaticBuffer(size_t offset, size_t size, const void* data)
 {
     if (!mStaticBuffer.isValid()) {
         NX_INTERNAL_LOG(E, 
-            "RENDER: Failed to upload data to the static uniform buffer of material shader;"
-            "No static buffer was declared for this material shader"
+            "RENDER: Failed to upload data to the static uniform buffer of shader;"
+            "No static buffer was declared for this shader"
         );
     }
 
     if (offset + size > mStaticBuffer.size()) {
         NX_INTERNAL_LOG(E, 
-            "RENDER: Failed to upload data to the static uniform buffer of material shader;"
+            "RENDER: Failed to upload data to the static uniform buffer of shader;"
             "offset + size (%zu) exceeds size of static buffer (%zu)",
             offset + size, mStaticBuffer.size()
         );
@@ -133,19 +121,19 @@ void NX_MaterialShader::updateStaticBuffer(size_t offset, size_t size, const voi
     mStaticBuffer.upload(offset, size, data);
 }
 
-void NX_MaterialShader::updateDynamicBuffer(size_t size, const void* data)
+void NX_Shader::updateDynamicBuffer(size_t size, const void* data)
 {
     if (!mDynamicBuffer.buffer.isValid()) {
         NX_INTERNAL_LOG(W, 
-            "RENDER: Failed to upload data to the dynamic uniform buffer of material shader; "
-            "No dynamic buffer was declared for this material shader"
+            "RENDER: Failed to upload data to the dynamic uniform buffer of shader; "
+            "No dynamic buffer was declared for this shader"
         );
         return;
     }
 
     if (size % 16 != 0) /* std140 requirement */ {
         NX_INTERNAL_LOG(W, 
-            "RENDER: Failed to upload data to the dynamic uniform buffer of material shader; "
+            "RENDER: Failed to upload data to the dynamic uniform buffer of shader; "
             "The size of the data sent must be a multiple of 16"
         );
         return;
@@ -166,7 +154,7 @@ void NX_MaterialShader::updateDynamicBuffer(size_t size, const void* data)
         }
         if (newSize > maxUBOSize) {
             NX_INTERNAL_LOG(E,
-                "RENDER: Failed to upload data to the dynamic uniform buffer of material shader; "
+                "RENDER: Failed to upload data to the dynamic uniform buffer of shader; "
                 "The required buffer size ({} bytes) exceeds the GPU limit for uniform buffers ({} bytes).",
                 newSize, maxUBOSize
             );
@@ -182,7 +170,7 @@ void NX_MaterialShader::updateDynamicBuffer(size_t size, const void* data)
     mDynamicBuffer.currentOffset = alignedOffset + size;
 }
 
-void NX_MaterialShader::bindUniformBuffers(const gpu::Pipeline& pipeline, int dynamicRangeIndex)
+void NX_Shader::bindUniformBuffers(const gpu::Pipeline& pipeline, int dynamicRangeIndex)
 {
     if (mStaticBuffer.isValid()) {
         pipeline.bindUniform(
@@ -201,7 +189,7 @@ void NX_MaterialShader::bindUniformBuffers(const gpu::Pipeline& pipeline, int dy
     }
 }
 
-void NX_MaterialShader::bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures, const gpu::Texture& defaultTexture)
+void NX_Shader::bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures, const gpu::Texture& defaultTexture)
 {
     for (int i = 0; i < TEXTURE_COUNT; i++) {
         if (mTextures[i].exists) {

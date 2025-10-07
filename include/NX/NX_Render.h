@@ -330,6 +330,8 @@ typedef struct NX_Light NX_Light;
  */
 typedef struct NX_Font NX_Font;
 
+typedef struct NX_Shader NX_Shader;
+
 /**
  * @brief Opaque handle to a material shader.
  *
@@ -817,6 +819,20 @@ HPAPI void NX_BlitRenderTexture(const NX_RenderTexture* target, int xDst, int yD
 /** @} */ // end of RenderTexture
 
 /**
+ * @defgroup Shader Shader Functions
+ * @{
+ */
+
+HPAPI NX_Shader* NX_CreateShader(const char* vertCode, const char* fragCode);
+HPAPI NX_Shader* NX_LoadShader(const char* vertFile, const char* fragFile);
+HPAPI void NX_DestroyShader(NX_Shader* shader);
+HPAPI void NX_SetShaderTexture(NX_Shader* shader, int slot, const NX_Texture* texture);
+HPAPI void NX_UpdateStaticShaderBuffer(NX_Shader* shader, size_t offset, size_t size, const void* data);
+HPAPI void NX_UpdateDynamicShaderBuffer(NX_Shader* shader, size_t size, const void* data);
+
+/** @} */ // end of Shader
+
+/**
  * @defgroup Draw2D 2D Drawing Functions
  * @{
  */
@@ -857,6 +873,8 @@ HPAPI void NX_SetTexture2D(const NX_Texture* texture);
  * @note The default font (NULL) is Vera Sans rendered in SDF with a base size of 32.
  */
 HPAPI void NX_SetFont2D(const NX_Font* font);
+
+HPAPI void NX_SetShader2D(NX_Shader* shader);
 
 /**
  * @brief Draws a filled triangle in 2D.
