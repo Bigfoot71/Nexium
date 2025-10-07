@@ -84,8 +84,7 @@
 #    define NX_ASSERT(cond)                                                    \
         do {                                                                   \
             if (!(cond)) {                                                     \
-                NX_LogF(stderr,                                                \
-                        "[ASSERT FAILED] %s\nFile: %s\nLine: %d\n",            \
+                NX_LogF("[ASSERT FAILED] %s\nFile: %s\nLine: %d\n",            \
                         #cond, __FILE__, __LINE__);                            \
                 abort();                                                       \
             }                                                                  \
