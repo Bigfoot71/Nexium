@@ -6,11 +6,11 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_SCENE_DRAW_DATA_HPP
-#define HP_SCENE_DRAW_DATA_HPP
+#ifndef NX_SCENE_DRAW_DATA_HPP
+#define NX_SCENE_DRAW_DATA_HPP
 
-#include <Hyperion/HP_Render.h>
-#include <Hyperion/HP_Math.h>
+#include <NX/NX_Render.h>
+#include <NX/NX_Math.h>
 
 #include "../../Detail/Util/DynamicArray.hpp"
 
@@ -21,18 +21,18 @@ namespace scene {
 class DrawData {
 public:
     DrawData(
-        const HP_Transform& transform,
-        const HP_InstanceBuffer* instances = nullptr,
+        const NX_Transform& transform,
+        const NX_InstanceBuffer* instances = nullptr,
         int instanceCount = 0, int boneMatrixOffset = -1
     );
 
     /** Transform */
-    const HP_Transform& transform() const;
-    const HP_Mat4& matrix() const;
-    const HP_Mat3& normal() const;
+    const NX_Transform& transform() const;
+    const NX_Mat4& matrix() const;
+    const NX_Mat3& normal() const;
 
     /** Instances */
-    const HP_InstanceBuffer* instances() const;
+    const NX_InstanceBuffer* instances() const;
     int instanceCount() const;
     bool useInstancing() const;
 
@@ -42,12 +42,12 @@ public:
 
 private:
     /** Transform */
-    HP_Transform mTransform;
-    HP_Mat4 mMatrix;
-    HP_Mat3 mNormal;
+    NX_Transform mTransform;
+    NX_Mat4 mMatrix;
+    NX_Mat3 mNormal;
 
     /** Instances */
-    const HP_InstanceBuffer* mInstances;
+    const NX_InstanceBuffer* mInstances;
     int mInstanceCount;
 
     /** Animations */
@@ -60,31 +60,31 @@ using ArrayDrawData = util::DynamicArray<DrawData>;
 
 /* === Public Implementation === */
 
-inline DrawData::DrawData(const HP_Transform& transform, const HP_InstanceBuffer* instances, int instanceCount, int boneMatrixOffset)
+inline DrawData::DrawData(const NX_Transform& transform, const NX_InstanceBuffer* instances, int instanceCount, int boneMatrixOffset)
     : mTransform(transform)
-    , mMatrix(HP_TransformToMat4(&transform))
-    , mNormal(HP_Mat3Normal(&mMatrix))
+    , mMatrix(NX_TransformToMat4(&transform))
+    , mNormal(NX_Mat3Normal(&mMatrix))
     , mInstances(instances)
     , mInstanceCount(instanceCount)
     , mBoneMatrixOffset(boneMatrixOffset)
 { }
 
-inline const HP_Transform& DrawData::transform() const
+inline const NX_Transform& DrawData::transform() const
 {
     return mTransform;
 }
 
-inline const HP_Mat4& DrawData::matrix() const
+inline const NX_Mat4& DrawData::matrix() const
 {
     return mMatrix;
 }
 
-inline const HP_Mat3& DrawData::normal() const
+inline const NX_Mat3& DrawData::normal() const
 {
     return mNormal;
 }
 
-inline const HP_InstanceBuffer* DrawData::instances() const
+inline const NX_InstanceBuffer* DrawData::instances() const
 {
     return mInstances;
 }
@@ -111,4 +111,4 @@ inline bool DrawData::useSkinning() const
 
 } // namespace scene
 
-#endif // HP_SCENE_DRAW_DATA_HPP
+#endif // NX_SCENE_DRAW_DATA_HPP

@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="media/logo.png" alt="Hyperion Logo" width="800"/>
+  <img src="media/logo.png" alt="Nexium Logo" width="800"/>
   <br>
   <img src="https://img.shields.io/badge/status-WIP-yellow" alt="Status: WIP"/>
 </p>
 
-**Hyperion** is a C library inspired by [raylib](https://www.raylib.com/), but focused on advanced 3D rendering. If you enjoy raylib’s simplicity but are looking for a modern all-in-one 3D framework, Hyperion is for you.
+**Nexium** is a C library inspired by [raylib](https://www.raylib.com/), but focused on advanced 3D rendering. If you enjoy raylib’s simplicity but are looking for a modern all-in-one 3D framework, Nexium is for you.
 
-> ⚠️ Hyperion is in active development and not yet stable.
+> ⚠️ Nexium is in active development and not yet stable.
 
 ## Features (so far)
 
@@ -67,7 +67,7 @@ Here’s a checklist of the major features that are still missing:
 ## Getting Started
 
 ### Requirements
-First, to run Hyperion you’ll need a GPU with **OpenGL 4.5** or **OpenGL ES 3.2** support.
+First, to run Nexium you’ll need a GPU with **OpenGL 4.5** or **OpenGL ES 3.2** support.
 
 To build the project, make sure you have:
 - A C11/C++23 compiler
@@ -75,11 +75,11 @@ To build the project, make sure you have:
 - Python 3.6+
 
 ### Dependencies
-Hyperion depends on: [SDL3](https://github.com/libsdl-org/SDL), [PhysFS](https://github.com/icculus/physfs), [Freetype](https://github.com/freetype/freetype) and [Assimp](https://github.com/assimp/assimp)
+Nexium depends on: [SDL3](https://github.com/libsdl-org/SDL), [PhysFS](https://github.com/icculus/physfs), [Freetype](https://github.com/freetype/freetype) and [Assimp](https://github.com/assimp/assimp)
 
-You can either install these manually, or clone Hyperion with submodules:
+You can either install these manually, or clone Nexium with submodules:
 ```bash
-git clone --recurse-submodules https://github.com/Bigfoot71/Hyperion.git
+git clone --recurse-submodules https://github.com/Bigfoot71/Nexium.git
 ````
 
 If you already cloned without submodules:
@@ -93,10 +93,10 @@ git submodule update --init --recursive
 When configuring with CMake, enable vendored dependencies for any library not installed on your system:
 
 ```bash
-cmake -DHP_SDL3_VENDORED=ON \
-      -DHP_PHYSFS_VENDORED=ON \
-      -DHP_FREETYPE_VENDORED=ON \
-      -DHP_ASSIMP_VENDORED=ON \
+cmake -DNX_SDL3_VENDORED=ON \
+      -DNX_PHYSFS_VENDORED=ON \
+      -DNX_FREETYPE_VENDORED=ON \
+      -DNX_ASSIMP_VENDORED=ON \
       -B build
 cmake --build build
 ```
@@ -105,17 +105,17 @@ cmake --build build
 
 You can also generate the Doxygen documentation while building the project by enabling it in CMake:
 ```bash
-cmake -DHP_BUILD_DOCS=ON -B build
+cmake -DNX_BUILD_DOCS=ON -B build
 cmake --build build --target docs
 ```
 
 ## Contributing
 
-Hyperion is actively being developed. Pull requests, feedback, and bug reports are very welcome!
+Nexium is actively being developed. Pull requests, feedback, and bug reports are very welcome!
 
 ## Dependencies
 
-Thanks to the amazing open source projects that power Hyperion:
+Thanks to the amazing open source projects that power Nexium:
   - [Assimp](https://assimp.org/)
   - [dr_libs](https://github.com/mackron/dr_libs)
   - [FP16](https://github.com/Maratyszcza/FP16)

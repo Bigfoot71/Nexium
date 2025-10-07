@@ -6,16 +6,16 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_SCENE_DRAW_CALL_HPP
-#define HP_SCENE_DRAW_CALL_HPP
+#ifndef NX_SCENE_DRAW_CALL_HPP
+#define NX_SCENE_DRAW_CALL_HPP
 
-#include <Hyperion/HP_Render.h>
-#include <Hyperion/HP_Math.h>
+#include <NX/NX_Render.h>
+#include <NX/NX_Math.h>
 
 #include "../../Detail/Util/BucketArray.hpp"
 #include "../../Detail/GPU/Pipeline.hpp"
-#include "../HP_MaterialShader.hpp"
-#include "../HP_VertexBuffer.hpp"
+#include "../NX_MaterialShader.hpp"
+#include "../NX_VertexBuffer.hpp"
 
 namespace scene {
 
@@ -31,31 +31,31 @@ public:
     };
 
 public:
-    DrawCall(int dataIndex, const HP_Mesh& mesh, const HP_Material& material);
+    DrawCall(int dataIndex, const NX_Mesh& mesh, const NX_Material& material);
 
     /** Draw call category management */
-    static Category category(const HP_Material& material);
+    static Category category(const NX_Material& material);
     Category category() const;
 
     /** Internal draw call data */
-    const HP_Material& material() const;
-    const HP_Mesh& mesh() const;
+    const NX_Material& material() const;
+    const NX_Mesh& mesh() const;
 
     /** External draw call data */
-    const HP_MaterialShader::TextureArray& materialShaderTextures() const;
+    const NX_MaterialShader::TextureArray& materialShaderTextures() const;
     int dynamicRangeIndex() const;
     int drawDataIndex() const;
 
     /** Draw command */
-    void draw(const gpu::Pipeline& pipeline, const HP_InstanceBuffer* instances, int instanceCount) const;
+    void draw(const gpu::Pipeline& pipeline, const NX_InstanceBuffer* instances, int instanceCount) const;
 
 private:
     /** Object to draw */
-    HP_Material mMaterial;
-    const HP_Mesh& mMesh;
+    NX_Material mMaterial;
+    const NX_Mesh& mMesh;
 
     /** Additionnal data */
-    HP_MaterialShader::TextureArray mTextures;  //< Array containing the textures linked to the material shader at the time of draw (if any)
+    NX_MaterialShader::TextureArray mTextures;  //< Array containing the textures linked to the material shader at the time of draw (if any)
     int mDynamicRangeIndex;                     //< Index of the material shader's dynamic uniform buffer range (if any)
     int mDrawDataIndex;                         //< Index to shared drawing data (DrawData)
 };
@@ -66,7 +66,7 @@ using BucketDrawCalls = util::BucketArray<DrawCall, DrawCall::Category, DrawCall
 
 /* === Public Implementation === */
 
-inline DrawCall::DrawCall(int dataIndex, const HP_Mesh& mesh, const HP_Material& material)
+inline DrawCall::DrawCall(int dataIndex, const NX_Mesh& mesh, const NX_Material& material)
     : mMaterial(material), mMesh(mesh), mDynamicRangeIndex(-1), mDrawDataIndex(dataIndex)
 {
     if (material.shader != nullptr) {
@@ -75,13 +75,13 @@ inline DrawCall::DrawCall(int dataIndex, const HP_Mesh& mesh, const HP_Material&
     }
 }
 
-inline DrawCall::Category DrawCall::category(const HP_Material& material)
+inline DrawCall::Category DrawCall::category(const NX_Material& material)
 {
     if (material.depth.prePass) {
         return PREPASS;
     }
 
-    if (material.blend != HP_BLEND_OPAQUE) {
+    if (material.blend != NX_BLEND_OPAQUE) {
         return TRANSPARENT;
     }
 
@@ -93,17 +93,17 @@ inline DrawCall::Category DrawCall::category() const
     return category(mMaterial);
 }
 
-inline const HP_Material& DrawCall::material() const
+inline const NX_Material& DrawCall::material() const
 {
     return mMaterial;
 }
 
-inline const HP_Mesh& DrawCall::mesh() const
+inline const NX_Mesh& DrawCall::mesh() const
 {
     return mMesh;
 }
 
-inline const HP_MaterialShader::TextureArray& DrawCall::materialShaderTextures() const
+inline const NX_MaterialShader::TextureArray& DrawCall::materialShaderTextures() const
 {
     return mTextures;
 }
@@ -118,7 +118,7 @@ inline int DrawCall::drawDataIndex() const
     return mDrawDataIndex;
 }
 
-inline void DrawCall::draw(const gpu::Pipeline& pipeline, const HP_InstanceBuffer* instances, int instanceCount) const
+inline void DrawCall::draw(const gpu::Pipeline& pipeline, const NX_InstanceBuffer* instances, int instanceCount) const
 {
     pipeline.bindVertexArray(mMesh.buffer->vao());
 
@@ -146,4 +146,4 @@ inline void DrawCall::draw(const gpu::Pipeline& pipeline, const HP_InstanceBuffe
 
 } // namespace scene
 
-#endif // HP_SCENE_DRAW_CALL_HPP
+#endif // NX_SCENE_DRAW_CALL_HPP

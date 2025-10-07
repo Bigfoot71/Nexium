@@ -6,16 +6,16 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_GPU_FRAMEBUFFER_HPP
-#define HP_GPU_FRAMEBUFFER_HPP
+#ifndef NX_GPU_FRAMEBUFFER_HPP
+#define NX_GPU_FRAMEBUFFER_HPP
 
-#include "../../Core/HP_InternalLog.hpp"
+#include "../../Core/NX_InternalLog.hpp"
 #include "../Util/FixedArray.hpp"
 #include "./TextureView.hpp"
 #include "../BuildInfo.hpp"
 #include "./Texture.hpp"
 
-#include <Hyperion/HP_Core.h>
+#include <NX/NX_Core.h>
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_assert.h>
 #include <glad/gles2.h>
@@ -67,7 +67,7 @@ public:
     GLuint renderId() const noexcept;   // Always returns the active framebuffer (MSAA or normal)
     int width() const noexcept;
     int height() const noexcept;
-    HP_IVec2 dimensions() const noexcept;
+    NX_IVec2 dimensions() const noexcept;
 
     /** Attachment access (always the original textures) */
     const TextureView& getColorAttachment(int index) const noexcept;
@@ -144,14 +144,14 @@ private:
 inline Framebuffer::Framebuffer(std::initializer_list<const Texture*> colorAttachments, const Texture* depthStencilAttachment) noexcept
 {
     if (colorAttachments.size() == 0) {
-        HP_INTERNAL_LOG(E, "GPU: Framebuffer requires at least one color attachment");
+        NX_INTERNAL_LOG(E, "GPU: Framebuffer requires at least one color attachment");
         return;
     }
 
     /* --- Validate texture attachments (debug only) --- */
 
     if constexpr (detail::BuildInfo::debug) {
-        HP_IVec2 expectedDims{};
+        NX_IVec2 expectedDims{};
         bool first = true;
         for (const Texture* tex : colorAttachments)  {
             SDL_assert(tex != nullptr);
@@ -166,7 +166,7 @@ inline Framebuffer::Framebuffer(std::initializer_list<const Texture*> colorAttac
     /* --- Push all color attachments --- */
 
     if (!mColorAttachments.reset(colorAttachments.size())) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to allocate space to store color attachments IDs");
+        NX_INTERNAL_LOG(E, "GPU: Failed to allocate space to store color attachments IDs");
         return;
     }
 
@@ -183,7 +183,7 @@ inline Framebuffer::Framebuffer(std::initializer_list<const Texture*> colorAttac
 
     if (depthStencilAttachment) {
         if (!depthStencilAttachment->isValid()) {
-            HP_INTERNAL_LOG(E, "GPU: Invalid depth/stencil attachment");
+            NX_INTERNAL_LOG(E, "GPU: Invalid depth/stencil attachment");
             return;
         }
         mDepthStencilAttachment = *depthStencilAttachment;
@@ -263,7 +263,7 @@ inline int Framebuffer::height() const noexcept
     return mColorAttachments[0].height();
 }
 
-inline HP_IVec2 Framebuffer::dimensions() const noexcept
+inline NX_IVec2 Framebuffer::dimensions() const noexcept
 {
     return mColorAttachments[0].dimensions();
 }
@@ -286,12 +286,12 @@ inline size_t Framebuffer::colorAttachmentCount() const noexcept
 inline void Framebuffer::setSampleCount(int sampleCount) noexcept
 {
     if (!isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Cannot set sample count on invalid framebuffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot set sample count on invalid framebuffer");
         return;
     }
 
     if (sampleCount < 0) {
-        HP_INTERNAL_LOG(E, "GPU: Sample count cannot be negative");
+        NX_INTERNAL_LOG(E, "GPU: Sample count cannot be negative");
         return;
     }
 
@@ -318,7 +318,7 @@ inline int Framebuffer::getSampleCount() const noexcept
 inline void Framebuffer::setColorAttachmentTarget(int attachmentIndex, int layer, int face, int level) noexcept
 {
     if (!isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Cannot set attachment target on invalid framebuffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot set attachment target on invalid framebuffer");
         return;
     }
 
@@ -354,7 +354,7 @@ inline void Framebuffer::setColorAttachmentTarget(int attachmentIndex, int layer
 inline void Framebuffer::setDepthAttachmentTarget(int layer, int face, int level) noexcept
 {
     if (!isValid() || !mDepthStencilAttachment.isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Cannot set depth attachment target on invalid framebuffer or no depth attachment");
+        NX_INTERNAL_LOG(E, "GPU: Cannot set depth attachment target on invalid framebuffer or no depth attachment");
         return;
     }
 
@@ -448,7 +448,7 @@ inline void Framebuffer::createResolveFramebuffer() noexcept
 {
     glGenFramebuffers(1, &mResolveFramebuffer);
     if (mResolveFramebuffer == 0) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create resolve framebuffer object");
+        NX_INTERNAL_LOG(E, "GPU: Failed to create resolve framebuffer object");
         return;
     }
 
@@ -471,7 +471,7 @@ inline void Framebuffer::createMultisampleFramebuffer() noexcept
     if (mMultisampleFramebuffer == 0) {
         glGenFramebuffers(1, &mMultisampleFramebuffer);
         if (mMultisampleFramebuffer == 0) {
-            HP_INTERNAL_LOG(E, "GPU: Failed to create multisampled framebuffer");
+            NX_INTERNAL_LOG(E, "GPU: Failed to create multisampled framebuffer");
             mSampleCount = 0;
             return;
         }
@@ -480,7 +480,7 @@ inline void Framebuffer::createMultisampleFramebuffer() noexcept
     createAndAttachMultisampleRenderbuffers();
 
     if (!checkFramebufferComplete(mMultisampleFramebuffer)) {
-        HP_INTERNAL_LOG(E, "GPU: Multisampled framebuffer is not complete");
+        NX_INTERNAL_LOG(E, "GPU: Multisampled framebuffer is not complete");
         destroyMultisampleFramebuffer();
         mSampleCount = 0;
     }
@@ -517,11 +517,11 @@ inline GLenum Framebuffer::getDepthStencilAttachment(GLenum internalFormat) noex
     case GL_DEPTH32F_STENCIL8:
         return GL_DEPTH_STENCIL_ATTACHMENT;
     default:
-        HP_INTERNAL_LOG(W, "GPU: Unknown depth/stencil format, using GL_DEPTH_ATTACHMENT");
+        NX_INTERNAL_LOG(W, "GPU: Unknown depth/stencil format, using GL_DEPTH_ATTACHMENT");
         return GL_DEPTH_ATTACHMENT;
     }
 }
 
 } // namespace gpu
 
-#endif // HP_GPU_FRAMEBUFFER_HPP
+#endif // NX_GPU_FRAMEBUFFER_HPP

@@ -6,11 +6,11 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_RENDER_ASSET_CACHE_HPP
-#define HP_RENDER_ASSET_CACHE_HPP
+#ifndef NX_RENDER_ASSET_CACHE_HPP
+#define NX_RENDER_ASSET_CACHE_HPP
 
-#include "../HP_Texture.hpp"
-#include "../HP_Font.hpp"
+#include "../NX_Texture.hpp"
+#include "../NX_Font.hpp"
 
 namespace render {
 
@@ -21,8 +21,8 @@ public:
     AssetCache();
 
     /** Pre-loaded */
-    const HP_Texture& textureWhite() const;
-    const HP_Font& font() const;
+    const NX_Texture& textureWhite() const;
+    const NX_Font& font() const;
 
     /** Textures */
     const gpu::Texture& textureSsaoKernel();
@@ -31,13 +31,13 @@ public:
     const gpu::Texture& textureNormal();
     
     /** Helpers */
-    const gpu::Texture& textureOrWhite(const HP_Texture* texture) const;
-    const gpu::Texture& textureOrNormal(const HP_Texture* texture);
+    const gpu::Texture& textureOrWhite(const NX_Texture* texture) const;
+    const gpu::Texture& textureOrNormal(const NX_Texture* texture);
 
 private:
     /** Pre-loaded */
-    HP_Texture mTextureWhite;
-    HP_Font mFont;
+    NX_Texture mTextureWhite;
+    NX_Font mFont;
 
     /** Textures */
     gpu::Texture mTextureSsaoKernel;
@@ -48,22 +48,22 @@ private:
 
 /* === Public Implementation === */
 
-inline const HP_Texture& AssetCache::textureWhite() const
+inline const NX_Texture& AssetCache::textureWhite() const
 {
     return mTextureWhite;
 }
 
-inline const HP_Font& AssetCache::font() const
+inline const NX_Font& AssetCache::font() const
 {
     return mFont;
 }
 
-inline const gpu::Texture& AssetCache::textureOrWhite(const HP_Texture* texture) const
+inline const gpu::Texture& AssetCache::textureOrWhite(const NX_Texture* texture) const
 {
     return (texture != nullptr) ? texture->gpuTexture() : mTextureWhite.gpuTexture();
 }
 
-inline const gpu::Texture& AssetCache::textureOrNormal(const HP_Texture* texture)
+inline const gpu::Texture& AssetCache::textureOrNormal(const NX_Texture* texture)
 {
     // Returns the default by calling 'textureNormal()' to load it if needed
     return (texture != nullptr) ? texture->gpuTexture() : textureNormal();
@@ -71,4 +71,4 @@ inline const gpu::Texture& AssetCache::textureOrNormal(const HP_Texture* texture
 
 } // namespace render
 
-#endif // HP_RENDER_ASSET_CACHE_HPP
+#endif // NX_RENDER_ASSET_CACHE_HPP

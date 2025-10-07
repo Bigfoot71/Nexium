@@ -6,10 +6,10 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_RENDER_POOL_MODEL_HPP
-#define HP_RENDER_POOL_MODEL_HPP
+#ifndef NX_RENDER_POOL_MODEL_HPP
+#define NX_RENDER_POOL_MODEL_HPP
 
-#include <Hyperion/HP_Render.h>
+#include <NX/NX_Render.h>
 
 #include "../../Detail/Util/ObjectPool.hpp"
 #include "./PoolTexture.hpp"
@@ -29,38 +29,38 @@ public:
     PoolModel(PoolTexture& poolTexture, PoolMesh& poolMesh);
     void setImportScale(float scale);
 
-    HP_Model* loadModel(const void* fileData, size_t fileSize, const char* hint);
-    void destroyModel(HP_Model* model);
+    NX_Model* loadModel(const void* fileData, size_t fileSize, const char* hint);
+    void destroyModel(NX_Model* model);
 
-    HP_ModelAnimation** loadAnimations(const void* fileData, size_t fileSize, const char* hint, int* animCount, int targetFrameRate);
-    void destroyAnimations(HP_ModelAnimation** animations, int count);
+    NX_ModelAnimation** loadAnimations(const void* fileData, size_t fileSize, const char* hint, int* animCount, int targetFrameRate);
+    void destroyAnimations(NX_ModelAnimation** animations, int count);
 
 private:
     const aiScene* loadSceneFromMemory(const void* data, uint32_t size, const char* hint);
-    HP_ModelAnimation** loadAnimationsFromScene(const aiScene* scene, int* animCount, int targetFrameRate);
-    bool loadModelFromScene(const aiScene* scene, HP_Model* model);
+    NX_ModelAnimation** loadAnimationsFromScene(const aiScene* scene, int* animCount, int targetFrameRate);
+    bool loadModelFromScene(const aiScene* scene, NX_Model* model);
 
 private:
     /** PoolModelAnimation.cpp */
-    static bool processAnimation(HP_ModelAnimation* animation, const struct aiScene* scene, const struct aiAnimation* aiAnim, int targetFrameRate);
+    static bool processAnimation(NX_ModelAnimation* animation, const struct aiScene* scene, const struct aiAnimation* aiAnim, int targetFrameRate);
 
     /** PoolModelMesh.cpp */
     template <bool HasBones>
-    HP_Mesh* processMesh(const aiMesh* mesh, const HP_Mat4& transform);
-    bool processMeshesRecursive(HP_Model* model, const aiScene* scene, const aiNode* node, const HP_Mat4& parentFinalTransform);
-    bool processMeshes(HP_Model* model, const aiScene* scene, const aiNode* node);
+    NX_Mesh* processMesh(const aiMesh* mesh, const NX_Mat4& transform);
+    bool processMeshesRecursive(NX_Model* model, const aiScene* scene, const aiNode* node, const NX_Mat4& parentFinalTransform);
+    bool processMeshes(NX_Model* model, const aiScene* scene, const aiNode* node);
 
     /** PoolModelMaterial.cpp */
-    HP_Texture* loadTexture(const aiScene* scene, const aiMaterial* aiMat, aiTextureType type, uint32_t index, bool asData);
-    HP_Texture* loadTextureORM(const aiScene* scene, const aiMaterial* aiMat, bool* hasOcclusion, bool* hasRoughness, bool* hasMetalness);
-    bool processMaterials(HP_Model* model, const aiScene* scene);
+    NX_Texture* loadTexture(const aiScene* scene, const aiMaterial* aiMat, aiTextureType type, uint32_t index, bool asData);
+    NX_Texture* loadTextureORM(const aiScene* scene, const aiMaterial* aiMat, bool* hasOcclusion, bool* hasRoughness, bool* hasMetalness);
+    bool processMaterials(NX_Model* model, const aiScene* scene);
 
     /** PoolModelBones.cpp */
-    bool processBones(HP_Model* model, const aiScene* scene);
+    bool processBones(NX_Model* model, const aiScene* scene);
 
 private:
-    util::ObjectPool<HP_ModelAnimation, 256> mPoolAnimation;
-    util::ObjectPool<HP_Model, 128> mPoolModel;
+    util::ObjectPool<NX_ModelAnimation, 256> mPoolAnimation;
+    util::ObjectPool<NX_Model, 128> mPoolModel;
     Assimp::Importer mImporter;
     PoolTexture& mPoolTexture;
     PoolMesh& mPoolMesh;
@@ -80,14 +80,14 @@ inline void PoolModel::setImportScale(float scale)
     mImporter.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
 }
 
-inline HP_Model* PoolModel::loadModel(const void* fileData, size_t fileSize, const char* hint)
+inline NX_Model* PoolModel::loadModel(const void* fileData, size_t fileSize, const char* hint)
 {
     const aiScene* scene = loadSceneFromMemory(fileData, fileSize, hint);
     if (scene == nullptr) {
         return nullptr;
     }
 
-    HP_Model* model = mPoolModel.create();
+    NX_Model* model = mPoolModel.create();
     if (model == nullptr) {
         return nullptr;
     }
@@ -102,7 +102,7 @@ inline HP_Model* PoolModel::loadModel(const void* fileData, size_t fileSize, con
     return model;
 }
 
-inline void PoolModel::destroyModel(HP_Model* model)
+inline void PoolModel::destroyModel(NX_Model* model)
 {
     if (model == nullptr) return;
 
@@ -113,7 +113,7 @@ inline void PoolModel::destroyModel(HP_Model* model)
     }
 
     for (int i = 0; i < model->materialCount; i++) {
-        HP_Material& mat = model->materials[i];
+        NX_Material& mat = model->materials[i];
         mPoolTexture.destroyTexture(mat.albedo.texture);
         mPoolTexture.destroyTexture(mat.normal.texture);
         mPoolTexture.destroyTexture(mat.emission.texture);
@@ -129,21 +129,21 @@ inline void PoolModel::destroyModel(HP_Model* model)
     mPoolModel.destroy(model);
 }
 
-inline HP_ModelAnimation** PoolModel::loadAnimations(const void* fileData, size_t fileSize, const char* hint, int* animCount, int targetFrameRate)
+inline NX_ModelAnimation** PoolModel::loadAnimations(const void* fileData, size_t fileSize, const char* hint, int* animCount, int targetFrameRate)
 {
     const aiScene* scene = loadSceneFromMemory(fileData, fileSize, hint);
     if (scene == nullptr) {
         return nullptr;
     }
 
-    HP_ModelAnimation** animations = loadAnimationsFromScene(scene, animCount, targetFrameRate);
+    NX_ModelAnimation** animations = loadAnimationsFromScene(scene, animCount, targetFrameRate);
 
     mImporter.FreeScene();
 
     return animations;
 }
 
-inline void PoolModel::destroyAnimations(HP_ModelAnimation** animations, int count)
+inline void PoolModel::destroyAnimations(NX_ModelAnimation** animations, int count)
 {
     if (animations != nullptr) {
         for (int i = 0; i < count; i++) {
@@ -155,4 +155,4 @@ inline void PoolModel::destroyAnimations(HP_ModelAnimation** animations, int cou
 
 } // namespace render
 
-#endif // HP_RENDER_POOL_MODEL_HPP
+#endif // NX_RENDER_POOL_MODEL_HPP

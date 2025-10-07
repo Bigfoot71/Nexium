@@ -6,13 +6,13 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_GPU_VERTEX_ARRAY_HPP
-#define HP_GPU_VERTEX_ARRAY_HPP
+#ifndef NX_GPU_VERTEX_ARRAY_HPP
+#define NX_GPU_VERTEX_ARRAY_HPP
 
 #include "../Util/FixedArray.hpp"
 #include "./Buffer.hpp"
 
-#include <Hyperion/HP_Core.h>
+#include <NX/NX_Core.h>
 #include <glad/gles2.h>
 
 #include <initializer_list>
@@ -35,8 +35,8 @@ struct VertexAttribute {
     GLintptr offset;       // Offset in the buffer
     GLuint divisor;        // For instancing (0 = per vertex, >0 = per instance)
     union {
-        HP_IVec4 vInt;
-        HP_Vec4 vFloat;
+        NX_IVec4 vInt;
+        NX_Vec4 vFloat;
     } defaultValue;
 };
 
@@ -262,4 +262,4 @@ inline const char* VertexArray::attributeTypeToString(GLenum type) noexcept
 
 } // namespace gpu
 
-#endif // HP_GPU_VERTEX_ARRAY_HPP
+#endif // NX_GPU_VERTEX_ARRAY_HPP

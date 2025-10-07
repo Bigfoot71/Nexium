@@ -1,74 +1,74 @@
-#include <Hyperion/Hyperion.h>
+#include <NX/Nexium.h>
 #include "./common.h"
 
 int main(void)
 {
-    HP_Init("Hyperion - Shadows", 800, 450, HP_FLAG_VSYNC_HINT);
+    NX_Init("Nexium - Shadows", 800, 450, NX_FLAG_VSYNC_HINT);
 
-    HP_Mesh* ground = HP_GenMeshQuad(HP_VEC2_1(10.0f), HP_VEC2_ONE, HP_VEC3_UP);
-    HP_Mesh* cube = HP_GenMeshCube(HP_VEC3_1(0.5f), HP_VEC3_ONE);
+    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_VEC2_ONE, NX_VEC3_UP);
+    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_1(0.5f), NX_VEC3_ONE);
 
-    HP_Light* dirLight = HP_CreateLight(HP_LIGHT_DIR);
-    HP_SetLightDirection(dirLight, HP_VEC3(-1, -1, 0));
-    HP_SetLightColor(dirLight, HP_RED);
-    HP_SetShadowActive(dirLight, true);
-    HP_SetLightActive(dirLight, true);
+    NX_Light* dirLight = NX_CreateLight(NX_LIGHT_DIR);
+    NX_SetLightDirection(dirLight, NX_VEC3(-1, -1, 0));
+    NX_SetLightColor(dirLight, NX_RED);
+    NX_SetShadowActive(dirLight, true);
+    NX_SetLightActive(dirLight, true);
 
-    HP_Light* spotLight = HP_CreateLight(HP_LIGHT_SPOT);
-    HP_SetLightPosition(spotLight, HP_VEC3(0, 5, -10));
-    HP_SetLightDirection(spotLight, HP_VEC3(0, -1, 1));
-    HP_SetLightColor(spotLight, HP_GREEN);
-    HP_SetShadowActive(spotLight, true);
-    HP_SetLightActive(spotLight, true);
+    NX_Light* spotLight = NX_CreateLight(NX_LIGHT_SPOT);
+    NX_SetLightPosition(spotLight, NX_VEC3(0, 5, -10));
+    NX_SetLightDirection(spotLight, NX_VEC3(0, -1, 1));
+    NX_SetLightColor(spotLight, NX_GREEN);
+    NX_SetShadowActive(spotLight, true);
+    NX_SetLightActive(spotLight, true);
 
-    HP_Light* omniLight = HP_CreateLight(HP_LIGHT_OMNI);
-    HP_SetLightPosition(omniLight, HP_VEC3(0, 5, 10));
-    HP_SetLightColor(omniLight, HP_BLUE);
-    HP_SetShadowActive(omniLight, true);
-    HP_SetLightActive(omniLight, true);
+    NX_Light* omniLight = NX_CreateLight(NX_LIGHT_OMNI);
+    NX_SetLightPosition(omniLight, NX_VEC3(0, 5, 10));
+    NX_SetLightColor(omniLight, NX_BLUE);
+    NX_SetShadowActive(omniLight, true);
+    NX_SetLightActive(omniLight, true);
 
-    HP_Environment env = HP_GetDefaultEnvironment();
-    env.background = HP_BLACK;
-    env.ambient = HP_BLACK;
+    NX_Environment env = NX_GetDefaultEnvironment();
+    env.background = NX_BLACK;
+    env.ambient = NX_BLACK;
 
-    HP_Camera camera = HP_GetDefaultCamera();
+    NX_Camera camera = NX_GetDefaultCamera();
 
-    while (HP_FrameStep())
+    while (NX_FrameStep())
     {
-        CMN_UpdateCamera(&camera, HP_VEC3(0, 0, 0), 8.0f, 4.0f);
+        CMN_UpdateCamera(&camera, NX_VEC3(0, 0, 0), 8.0f, 4.0f);
 
-        HP_Begin3D(&camera, &env, NULL);
+        NX_Begin3D(&camera, &env, NULL);
         {
-            HP_DrawMesh3D(ground, NULL, NULL);
+            NX_DrawMesh3D(ground, NULL, NULL);
 
-            HP_Transform transform = HP_TRANSFORM_IDENTITY;
+            NX_Transform transform = NX_TRANSFORM_IDENTITY;
 
             for (float z = -4.0f; z <= 4.0f; z += 2.0f) {
                 for (float x = -4.0f; x <= 4.0f; x += 2.0f) {
-                    transform.translation = HP_VEC3(x, 0.25f, z);
-                    HP_DrawMesh3D(cube, NULL, &transform);
+                    transform.translation = NX_VEC3(x, 0.25f, z);
+                    NX_DrawMesh3D(cube, NULL, &transform);
                 }
             }
 
             /* --- Draw spot/omni lights --- */
 
-            HP_Material mat = HP_GetDefaultMaterial();
-            mat.shading = HP_SHADING_UNLIT;
+            NX_Material mat = NX_GetDefaultMaterial();
+            mat.shading = NX_SHADING_UNLIT;
 
-            transform.scale = HP_VEC3_1(0.25f);
+            transform.scale = NX_VEC3_1(0.25f);
 
-            mat.albedo.color = HP_GetLightColor(spotLight);
-            transform.translation = HP_GetLightPosition(spotLight);
-            HP_DrawMesh3D(cube, &mat, &transform);
+            mat.albedo.color = NX_GetLightColor(spotLight);
+            transform.translation = NX_GetLightPosition(spotLight);
+            NX_DrawMesh3D(cube, &mat, &transform);
 
-            mat.albedo.color = HP_GetLightColor(omniLight);
-            transform.translation = HP_GetLightPosition(omniLight);
-            HP_DrawMesh3D(cube, &mat, &transform);
+            mat.albedo.color = NX_GetLightColor(omniLight);
+            transform.translation = NX_GetLightPosition(omniLight);
+            NX_DrawMesh3D(cube, &mat, &transform);
         }
-        HP_End3D();
+        NX_End3D();
     }
 
-    HP_Quit();
+    NX_Quit();
 
     return 0;
 }

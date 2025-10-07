@@ -1,46 +1,46 @@
-#include <Hyperion/Hyperion.h>
+#include <NX/Nexium.h>
 #include "./common.h"
 
 int main(void)
 {
-    HP_Init("Hyperion - Render Texture", 800, 450, HP_FLAG_VSYNC_HINT);
-    HP_AddSearchPath(RESOURCES_PATH, false);
+    NX_Init("Nexium - Render Texture", 800, 450, NX_FLAG_VSYNC_HINT);
+    NX_AddSearchPath(RESOURCES_PATH, false);
 
-    HP_RenderTexture* target = HP_CreateRenderTexture(1920, 1080);
+    NX_RenderTexture* target = NX_CreateRenderTexture(1920, 1080);
 
-    HP_Mesh* ground = HP_GenMeshQuad(HP_VEC2_1(10.0f), HP_VEC2_ONE, HP_VEC3_UP);
-    HP_Model* model = HP_LoadModel("models/CesiumMan.glb");
+    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_VEC2_ONE, NX_VEC3_UP);
+    NX_Model* model = NX_LoadModel("models/CesiumMan.glb");
 
     int animCount = 0;
-    HP_ModelAnimation** anim = HP_LoadModelAnimations("models/CesiumMan.glb", &animCount, 30);
+    NX_ModelAnimation** anim = NX_LoadModelAnimations("models/CesiumMan.glb", &animCount, 30);
     model->anim = anim[0];
 
-    HP_Light* light = HP_CreateLight(HP_LIGHT_DIR);
-    HP_SetLightDirection(light, HP_VEC3(-1, -1, -1));
-    HP_SetShadowActive(light, true);
-    HP_SetLightActive(light, true);
+    NX_Light* light = NX_CreateLight(NX_LIGHT_DIR);
+    NX_SetLightDirection(light, NX_VEC3(-1, -1, -1));
+    NX_SetShadowActive(light, true);
+    NX_SetLightActive(light, true);
 
-    HP_Camera camera = HP_GetDefaultCamera();
+    NX_Camera camera = NX_GetDefaultCamera();
 
-    while (HP_FrameStep())
+    while (NX_FrameStep())
     {
-        CMN_UpdateCamera(&camera, HP_VEC3(0, 1, 0), 2.0f, 1.0f);
-        model->animFrame += 40 * HP_GetFrameTime();
+        CMN_UpdateCamera(&camera, NX_VEC3(0, 1, 0), 2.0f, 1.0f);
+        model->animFrame += 40 * NX_GetFrameTime();
 
-        HP_Begin3D(&camera, NULL, target);
-        HP_DrawMesh3D(ground, NULL, NULL);
-        HP_DrawModel3D(model, NULL);
-        HP_End3D();
+        NX_Begin3D(&camera, NULL, target);
+        NX_DrawMesh3D(ground, NULL, NULL);
+        NX_DrawModel3D(model, NULL);
+        NX_End3D();
 
-        HP_Begin2D(target);
-        HP_SetColor2D(HP_YELLOW);
-        HP_DrawText2D("Hello, I'm blit on the screen!", HP_VEC2(10, 10), 128, HP_VEC2_ONE);
-        HP_End2D();
+        NX_Begin2D(target);
+        NX_SetColor2D(NX_YELLOW);
+        NX_DrawText2D("Hello, I'm blit on the screen!", NX_VEC2(10, 10), 128, NX_VEC2_ONE);
+        NX_End2D();
 
-        HP_BlitRenderTexture(target, 50, 50, 700, 350, true);
+        NX_BlitRenderTexture(target, 50, 50, 700, 350, true);
     }
 
-    HP_Quit();
+    NX_Quit();
 
     return 0;
 }

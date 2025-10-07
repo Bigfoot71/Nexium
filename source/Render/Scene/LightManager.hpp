@@ -6,11 +6,11 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_SCENE_LIGHT_MANAGER_HPP
-#define HP_SCENE_LIGHT_MANAGER_HPP
+#ifndef NX_SCENE_LIGHT_MANAGER_HPP
+#define NX_SCENE_LIGHT_MANAGER_HPP
 
-#include <Hyperion/HP_Render.h>
-#include <Hyperion/HP_Core.h>
+#include <NX/NX_Render.h>
+#include <NX/NX_Core.h>
 
 #include "../../Detail/Util/ObjectPool.hpp"
 #include "../../Detail/Util/ObjectRing.hpp"
@@ -25,7 +25,7 @@
 #include "./ViewFrustum.hpp"
 #include "./Environment.hpp"
 #include "./BoneBuffer.hpp"
-#include "../HP_Light.hpp"
+#include "../NX_Light.hpp"
 #include "./DrawCall.hpp"
 
 namespace scene {
@@ -45,11 +45,11 @@ public:
     };
 
 public:
-    LightManager(render::ProgramCache& programs, render::AssetCache& assets, const HP_AppDesc& desc);
+    LightManager(render::ProgramCache& programs, render::AssetCache& assets, const NX_AppDesc& desc);
 
     /** Light life-cycle management */
-    HP_Light* create(HP_LightType type);
-    void destroy(HP_Light* light);
+    NX_Light* create(NX_LightType type);
+    void destroy(NX_Light* light);
 
     /** Lighting state update */
     void process(const ProcessParams& params);
@@ -64,8 +64,8 @@ public:
 
     /** Info getters */
     int activeCount() const;
-    HP_IVec2 clusterSize() const;
-    HP_IVec3 clusterCount() const;
+    NX_IVec2 clusterSize() const;
+    NX_IVec3 clusterCount() const;
     int maxLightsPerCluster() const;
     float clusterSliceScale() const;
     float clusterSliceBias() const;
@@ -88,8 +88,8 @@ private:
 
 private:
     struct FrameShadowUniform {
-        alignas(16) HP_Mat4 lightViewProj;
-        alignas(16) HP_Vec3 lightPosition;
+        alignas(16) NX_Mat4 lightViewProj;
+        alignas(16) NX_Vec3 lightPosition;
         alignas(4) float shadowLambda;
         alignas(4) float farPlane;
         alignas(4) float elapsedTime;
@@ -97,7 +97,7 @@ private:
 
 private:
     /** Object Pools */
-    util::ObjectPool<HP_Light, 32> mLights{};
+    util::ObjectPool<NX_Light, 32> mLights{};
 
     /** Shared assets */
     render::ProgramCache& mPrograms;
@@ -123,8 +123,8 @@ private:
     /** Additionnal Data */
     int mShadowResolution{};
 
-    HP_IVec3 mClusterCount{};                   ///< Number of clusters X/Y/Z
-    HP_IVec2 mClusterSize{};                    ///< Size of a cluster X/Y
+    NX_IVec3 mClusterCount{};                   ///< Number of clusters X/Y/Z
+    NX_IVec2 mClusterSize{};                    ///< Size of a cluster X/Y
 
     float mClusterSliceScale{};
     float mClusterSliceBias{};
@@ -139,12 +139,12 @@ private:
 
 /* === Public Implementation === */
 
-inline HP_Light* LightManager::create(HP_LightType type)
+inline NX_Light* LightManager::create(NX_LightType type)
 {
     return mLights.create(*this, type);
 }
 
-inline void LightManager::destroy(HP_Light* light)
+inline void LightManager::destroy(NX_Light* light)
 {
     if (light != nullptr) {
         if (light->isActive()) {
@@ -198,12 +198,12 @@ inline int LightManager::activeCount() const
     return mActiveLightCount;
 }
 
-inline HP_IVec2 LightManager::clusterSize() const
+inline NX_IVec2 LightManager::clusterSize() const
 {
     return mClusterSize;
 }
 
-inline HP_IVec3 LightManager::clusterCount() const
+inline NX_IVec3 LightManager::clusterCount() const
 {
     return mClusterCount;
 }
@@ -231,7 +231,7 @@ inline int LightManager::shadowResolution() const
 inline void LightManager::markShadowDirty()
 {
     if (!mShadowDirty) {
-        HP_INTERNAL_LOG(V, "RENDER: Shadows have been marked dirty to the LightManager");
+        NX_INTERNAL_LOG(V, "RENDER: Shadows have been marked dirty to the LightManager");
         mShadowDirty = true;
     }
 }
@@ -239,11 +239,11 @@ inline void LightManager::markShadowDirty()
 inline void LightManager::markLightDirty()
 {
     if (!mLightDirty) {
-        HP_INTERNAL_LOG(V, "RENDER: Lights have been marked dirty to the LightManager");
+        NX_INTERNAL_LOG(V, "RENDER: Lights have been marked dirty to the LightManager");
         mLightDirty = true;
     }
 }
 
 } // namespace scene
 
-#endif // HP_SCENE_LIGHT_MANAGER_HPP
+#endif // NX_SCENE_LIGHT_MANAGER_HPP

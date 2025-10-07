@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <Hyperion/Hyperion.h>
+#include <NX/Nexium.h>
 #include <stdio.h>
 
 static inline const char* CMN_FormatText(const char* fmt, ...)
@@ -16,28 +16,28 @@ static inline const char* CMN_FormatText(const char* fmt, ...)
     return buffer;
 }
 
-static inline void CMN_UpdateCamera(HP_Camera* camera, HP_Vec3 center, float distance, float height)
+static inline void CMN_UpdateCamera(NX_Camera* camera, NX_Vec3 center, float distance, float height)
 {
     static bool mouseCaptured = false;
 
     if (!mouseCaptured) {
-        HP_UpdateCameraOrbital(camera, center, distance, height, HP_GetElapsedTime());
+        NX_UpdateCameraOrbital(camera, center, distance, height, NX_GetElapsedTime());
 
-        if (HP_IsMouseButtonJustPressed(HP_MOUSE_BUTTON_LEFT | HP_MOUSE_BUTTON_RIGHT)) {
-            HP_CaptureMouse(true);
+        if (NX_IsMouseButtonJustPressed(NX_MOUSE_BUTTON_LEFT | NX_MOUSE_BUTTON_RIGHT)) {
+            NX_CaptureMouse(true);
             mouseCaptured = true;
         }
     }
     else {
-        HP_Vec3 move = HP_GetKeyVec3(HP_KEY_W, HP_KEY_S, HP_KEY_A, HP_KEY_D);
-        move = HP_Vec3Scale(move, 10.0f * HP_GetFrameTime());
+        NX_Vec3 move = NX_GetKeyVec3(NX_KEY_W, NX_KEY_S, NX_KEY_A, NX_KEY_D);
+        move = NX_Vec3Scale(move, 10.0f * NX_GetFrameTime());
 
-        HP_Vec2 rot = HP_Vec2Scale(HP_GetMouseDelta(), -0.01f);
+        NX_Vec2 rot = NX_Vec2Scale(NX_GetMouseDelta(), -0.01f);
 
-        HP_UpdateCameraFree(camera, move, HP_VEC3(rot.y, rot.x, 0.0f), -80.0f);
+        NX_UpdateCameraFree(camera, move, NX_VEC3(rot.y, rot.x, 0.0f), -80.0f);
 
-        if (HP_IsMouseButtonJustPressed(HP_MOUSE_BUTTON_LEFT | HP_MOUSE_BUTTON_RIGHT)) {
-            HP_CaptureMouse(false);
+        if (NX_IsMouseButtonJustPressed(NX_MOUSE_BUTTON_LEFT | NX_MOUSE_BUTTON_RIGHT)) {
+            NX_CaptureMouse(false);
             mouseCaptured = false;
         }
     }

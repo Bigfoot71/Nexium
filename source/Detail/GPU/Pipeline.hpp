@@ -6,10 +6,10 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_GPU_PIPELINE_HPP
-#define HP_GPU_PIPELINE_HPP
+#ifndef NX_GPU_PIPELINE_HPP
+#define NX_GPU_PIPELINE_HPP
 
-#include "../../Core/HP_CoreState.hpp"  //< Used to get OpenGL profile used (Core/ES)
+#include "../../Core/NX_CoreState.hpp"  //< Used to get OpenGL profile used (Core/ES)
 
 #include "./VertexArray.hpp"
 #include "./Framebuffer.hpp"
@@ -111,31 +111,31 @@ public:
     void useProgram(const Program& program) const noexcept;
 
     void setUniformUint1(int location, uint32_t value) const noexcept;
-    void setUniformUint2(int location, const HP_IVec2& value) const noexcept;
-    void setUniformUint3(int location, const HP_IVec3& value) const noexcept;
-    void setUniformUint4(int location, const HP_IVec4& value) const noexcept;
+    void setUniformUint2(int location, const NX_IVec2& value) const noexcept;
+    void setUniformUint3(int location, const NX_IVec3& value) const noexcept;
+    void setUniformUint4(int location, const NX_IVec4& value) const noexcept;
     void setUniformInt1(int location, int value) const noexcept;
-    void setUniformInt2(int location, const HP_IVec2& value) const noexcept;
-    void setUniformInt3(int location, const HP_IVec3& value) const noexcept;
-    void setUniformInt4(int location, const HP_IVec4& value) const noexcept;
+    void setUniformInt2(int location, const NX_IVec2& value) const noexcept;
+    void setUniformInt3(int location, const NX_IVec3& value) const noexcept;
+    void setUniformInt4(int location, const NX_IVec4& value) const noexcept;
     void setUniformFloat1(int location, float value) const noexcept;
-    void setUniformFloat2(int location, const HP_Vec2& value) const noexcept;
-    void setUniformFloat3(int location, const HP_Vec3& value) const noexcept;
-    void setUniformFloat3(int location, const HP_Color& value) const noexcept;
-    void setUniformFloat4(int location, const HP_Vec4& value) const noexcept;
-    void setUniformFloat4(int location, const HP_Quat& value) const noexcept;
-    void setUniformFloat4(int location, const HP_Color& value) const noexcept;
-    void setUniformMat3(int location, const HP_Mat3& value) const noexcept;
-    void setUniformMat3(int location, const HP_Mat4& value) const noexcept;
-    void setUniformMat4(int location, const HP_Mat4& value) const noexcept;
+    void setUniformFloat2(int location, const NX_Vec2& value) const noexcept;
+    void setUniformFloat3(int location, const NX_Vec3& value) const noexcept;
+    void setUniformFloat3(int location, const NX_Color& value) const noexcept;
+    void setUniformFloat4(int location, const NX_Vec4& value) const noexcept;
+    void setUniformFloat4(int location, const NX_Quat& value) const noexcept;
+    void setUniformFloat4(int location, const NX_Color& value) const noexcept;
+    void setUniformMat3(int location, const NX_Mat3& value) const noexcept;
+    void setUniformMat3(int location, const NX_Mat4& value) const noexcept;
+    void setUniformMat4(int location, const NX_Mat4& value) const noexcept;
 
-    void setViewport(HP_IVec2 size) const noexcept;
+    void setViewport(NX_IVec2 size) const noexcept;
     void setViewport(int x, int y, int w, int h) const noexcept;
     void setViewport(const gpu::Framebuffer& dst) const noexcept;
 
-    void clear(const gpu::Framebuffer& framebuffer, HP_Color color = HP_BLACK, float depth = 1.0) noexcept;
-    void clearColor(std::initializer_list<std::pair<int, HP_Color>> attachments) const noexcept;
-    void clearColor(int attachment, HP_Color color) const noexcept;
+    void clear(const gpu::Framebuffer& framebuffer, NX_Color color = NX_BLACK, float depth = 1.0) noexcept;
+    void clearColor(std::initializer_list<std::pair<int, NX_Color>> attachments) const noexcept;
+    void clearColor(int attachment, NX_Color color) const noexcept;
     void clearDepth(float depth) const noexcept;
 
     void draw(GLenum mode, GLsizei count) const noexcept;
@@ -543,19 +543,19 @@ inline void Pipeline::setUniformUint1(int location, uint32_t value) const noexce
     sUsedProgram->setUint1(location, value);
 }
 
-inline void Pipeline::setUniformUint2(int location, const HP_IVec2& value) const noexcept
+inline void Pipeline::setUniformUint2(int location, const NX_IVec2& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setUint2(location, value);
 }
 
-inline void Pipeline::setUniformUint3(int location, const HP_IVec3& value) const noexcept
+inline void Pipeline::setUniformUint3(int location, const NX_IVec3& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setUint3(location, value);
 }
 
-inline void Pipeline::setUniformUint4(int location, const HP_IVec4& value) const noexcept
+inline void Pipeline::setUniformUint4(int location, const NX_IVec4& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setUint4(location, value);
@@ -567,19 +567,19 @@ inline void Pipeline::setUniformInt1(int location, int value) const noexcept
     sUsedProgram->setInt1(location, value);
 }
 
-inline void Pipeline::setUniformInt2(int location, const HP_IVec2& value) const noexcept
+inline void Pipeline::setUniformInt2(int location, const NX_IVec2& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setInt2(location, value);
 }
 
-inline void Pipeline::setUniformInt3(int location, const HP_IVec3& value) const noexcept
+inline void Pipeline::setUniformInt3(int location, const NX_IVec3& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setInt3(location, value);
 }
 
-inline void Pipeline::setUniformInt4(int location, const HP_IVec4& value) const noexcept
+inline void Pipeline::setUniformInt4(int location, const NX_IVec4& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setInt4(location, value);
@@ -591,61 +591,61 @@ inline void Pipeline::setUniformFloat1(int location, float value) const noexcept
     sUsedProgram->setFloat1(location, value);
 }
 
-inline void Pipeline::setUniformFloat2(int location, const HP_Vec2& value) const noexcept
+inline void Pipeline::setUniformFloat2(int location, const NX_Vec2& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setFloat2(location, value);
 }
 
-inline void Pipeline::setUniformFloat3(int location, const HP_Vec3& value) const noexcept
+inline void Pipeline::setUniformFloat3(int location, const NX_Vec3& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setFloat3(location, value);
 }
 
-inline void Pipeline::setUniformFloat3(int location, const HP_Color& value) const noexcept
+inline void Pipeline::setUniformFloat3(int location, const NX_Color& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setFloat3(location, value);
 }
 
-inline void Pipeline::setUniformFloat4(int location, const HP_Vec4& value) const noexcept
+inline void Pipeline::setUniformFloat4(int location, const NX_Vec4& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setFloat4(location, value);
 }
 
-inline void Pipeline::setUniformFloat4(int location, const HP_Quat& value) const noexcept
+inline void Pipeline::setUniformFloat4(int location, const NX_Quat& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setFloat4(location, value);
 }
 
-inline void Pipeline::setUniformFloat4(int location, const HP_Color& value) const noexcept
+inline void Pipeline::setUniformFloat4(int location, const NX_Color& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setFloat4(location, value);
 }
 
-inline void Pipeline::setUniformMat3(int location, const HP_Mat3& value) const noexcept
+inline void Pipeline::setUniformMat3(int location, const NX_Mat3& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setMat3(location, value);
 }
 
-inline void Pipeline::setUniformMat3(int location, const HP_Mat4& value) const noexcept
+inline void Pipeline::setUniformMat3(int location, const NX_Mat4& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setMat3(location, value);
 }
 
-inline void Pipeline::setUniformMat4(int location, const HP_Mat4& value) const noexcept
+inline void Pipeline::setUniformMat4(int location, const NX_Mat4& value) const noexcept
 {
     SDL_assert(sUsedProgram != nullptr);
     sUsedProgram->setMat4(location, value);
 }
 
-inline void Pipeline::setViewport(HP_IVec2 size) const noexcept
+inline void Pipeline::setViewport(NX_IVec2 size) const noexcept
 {
     glViewport(0, 0, size.x, size.y);
 }
@@ -661,7 +661,7 @@ inline void Pipeline::setViewport(const gpu::Framebuffer& dst) const noexcept
     glViewport(0, 0, dst.width(), dst.height());
 }
 
-inline void Pipeline::clear(const gpu::Framebuffer& framebuffer, HP_Color color, float depth) noexcept
+inline void Pipeline::clear(const gpu::Framebuffer& framebuffer, NX_Color color, float depth) noexcept
 {
     SDL_assert(sBindFramebuffer == &framebuffer && "Likely framebuffer management error");
 
@@ -674,14 +674,14 @@ inline void Pipeline::clear(const gpu::Framebuffer& framebuffer, HP_Color color,
     }
 }
 
-inline void Pipeline::clearColor(std::initializer_list<std::pair<int, HP_Color>> attachments) const noexcept
+inline void Pipeline::clearColor(std::initializer_list<std::pair<int, NX_Color>> attachments) const noexcept
 {
     for (const auto& attachment : attachments) {
         glClearBufferfv(GL_COLOR, attachment.first, reinterpret_cast<const float*>(&attachment.second));
     }
 }
 
-inline void Pipeline::clearColor(int attachment, HP_Color color) const noexcept
+inline void Pipeline::clearColor(int attachment, NX_Color color) const noexcept
 {
     glClearBufferfv(GL_COLOR, attachment, reinterpret_cast<const float*>(&color));
 }
@@ -767,7 +767,7 @@ inline void Pipeline::dispatchComputeIndirect(GLintptr indirect) const noexcept
 
 inline void Pipeline::blitToBackBuffer(const gpu::Framebuffer& src, int xDst, int yDst, int wDst, int hDst, bool linear) noexcept
 {
-    HP_IVec2 srcSize = src.dimensions();
+    NX_IVec2 srcSize = src.dimensions();
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, src.resolveId());
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -1047,4 +1047,4 @@ inline void Pipeline::setCullMode_Internal(CullMode mode) const noexcept
 
 } // namespace gpu
 
-#endif // HP_GPU_PIPELINE_HPP
+#endif // NX_GPU_PIPELINE_HPP

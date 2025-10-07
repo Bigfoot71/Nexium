@@ -1,28 +1,28 @@
-#include <Hyperion/Hyperion.h>
+#include <NX/Nexium.h>
 #include "./common.h"
 
 int main(void)
 {
-    HP_Init("Hyperion - Billboard", 800, 450, HP_FLAG_VSYNC_HINT);
-    HP_AddSearchPath(RESOURCES_PATH, false);
+    NX_Init("Nexium - Billboard", 800, 450, NX_FLAG_VSYNC_HINT);
+    NX_AddSearchPath(RESOURCES_PATH, false);
 
-    HP_Mesh* ground = HP_GenMeshQuad(HP_VEC2_1(10.0f), HP_VEC2_ONE, HP_VEC3_UP);
-    HP_Mesh* sprite = HP_GenMeshQuad(HP_VEC2_1(1.0f), HP_VEC2_ONE, HP_VEC3_BACK);
+    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_VEC2_ONE, NX_VEC3_UP);
+    NX_Mesh* sprite = NX_GenMeshQuad(NX_VEC2_1(1.0f), NX_VEC2_ONE, NX_VEC3_BACK);
 
-    HP_Material matSprite = HP_GetDefaultMaterial();
-    matSprite.albedo.texture = HP_LoadTexture("images/spritesheet.png");
-    HP_SetTextureWrap(matSprite.albedo.texture, HP_TEXTURE_WRAP_REPEAT);
+    NX_Material matSprite = NX_GetDefaultMaterial();
+    matSprite.albedo.texture = NX_LoadTexture("images/spritesheet.png");
+    NX_SetTextureWrap(matSprite.albedo.texture, NX_TEXTURE_WRAP_REPEAT);
 
-    matSprite.billboard = HP_BILLBOARD_Y_AXIS;
-    matSprite.blend = HP_BLEND_ALPHA;
-    matSprite.cull = HP_CULL_NONE;
+    matSprite.billboard = NX_BILLBOARD_Y_AXIS;
+    matSprite.blend = NX_BLEND_ALPHA;
+    matSprite.cull = NX_CULL_NONE;
 
-    HP_Light* light = HP_CreateLight(HP_LIGHT_DIR);
-    HP_SetLightDirection(light, HP_VEC3(-1, -1, -1));
-    HP_SetShadowActive(light, true);
-    HP_SetLightActive(light, true);
+    NX_Light* light = NX_CreateLight(NX_LIGHT_DIR);
+    NX_SetLightDirection(light, NX_VEC3(-1, -1, -1));
+    NX_SetShadowActive(light, true);
+    NX_SetLightActive(light, true);
 
-    HP_Camera camera = HP_GetDefaultCamera();
+    NX_Camera camera = NX_GetDefaultCamera();
 
     const int numFrame = 4;
     matSprite.texScale.x = 1.0f / numFrame;
@@ -30,11 +30,11 @@ int main(void)
     int frameCounter = 0;
     int animSpeed = 5;
 
-    while (HP_FrameStep())
+    while (NX_FrameStep())
     {
-        CMN_UpdateCamera(&camera, HP_VEC3(0, 0.5f, 0), 2.0f, 0.0f);
+        CMN_UpdateCamera(&camera, NX_VEC3(0, 0.5f, 0), 2.0f, 0.0f);
 
-        if (HP_IsKeyJustPressed(HP_KEY_SPACE)) {
+        if (NX_IsKeyJustPressed(NX_KEY_SPACE)) {
             matSprite.billboard = (matSprite.billboard + 1) % 3;
         }
 
@@ -43,30 +43,30 @@ int main(void)
         }
         frameCounter++;
 
-        HP_Transform transform = HP_TRANSFORM_IDENTITY;
+        NX_Transform transform = NX_TRANSFORM_IDENTITY;
 
-        HP_Begin3D(&camera, NULL, NULL);
+        NX_Begin3D(&camera, NULL, NULL);
         {
             transform.translation.y = -0.5f;
-            HP_DrawMesh3D(ground, NULL, &transform);
+            NX_DrawMesh3D(ground, NULL, &transform);
 
             transform.translation.y = +0.5f;
-            HP_DrawMesh3D(sprite, &matSprite, &transform);
+            NX_DrawMesh3D(sprite, &matSprite, &transform);
         }
-        HP_End3D();
+        NX_End3D();
 
-        HP_Begin2D(NULL);
+        NX_Begin2D(NULL);
         {
-            HP_SetColor2D(HP_BLACK);
-            HP_DrawText2D(
+            NX_SetColor2D(NX_BLACK);
+            NX_DrawText2D(
                 CMN_FormatText("BILLBOARD: %i\nPress SPACE to switch", matSprite.billboard),
-                HP_VEC2_1(10), 32, HP_VEC2_ONE
+                NX_VEC2_1(10), 32, NX_VEC2_ONE
             );
         }
-        HP_End2D();
+        NX_End2D();
     }
 
-    HP_Quit();
+    NX_Quit();
 
     return 0;
 }

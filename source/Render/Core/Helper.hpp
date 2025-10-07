@@ -6,36 +6,36 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_RENDER_HELPER_HPP
-#define HP_RENDER_HELPER_HPP
+#ifndef NX_RENDER_HELPER_HPP
+#define NX_RENDER_HELPER_HPP
 
-#include "../../Core/HP_CoreState.hpp"
+#include "../../Core/NX_CoreState.hpp"
 
-#include <Hyperion/HP_Image.h>
-#include <Hyperion/HP_Math.h>
+#include <NX/NX_Image.h>
+#include <NX/NX_Math.h>
 #include <glad/gles2.h>
 
 namespace render {
 
 /* === Format Helpers === */
 
-inline GLenum getInternalFormat(HP_PixelFormat format, bool framebuffer)
+inline GLenum getInternalFormat(NX_PixelFormat format, bool framebuffer)
 {
     GLenum internalFormat = GL_RGBA8;
 
     switch (format) {
-    case HP_PIXEL_FORMAT_R8: internalFormat = GL_R8; break;
-    case HP_PIXEL_FORMAT_RG8: internalFormat = GL_RG8; break;
-    case HP_PIXEL_FORMAT_RGB8: internalFormat = GL_RGB8; break;
-    case HP_PIXEL_FORMAT_RGBA8: internalFormat = GL_RGBA8; break;
-    case HP_PIXEL_FORMAT_R16F: internalFormat = GL_R16F; break;
-    case HP_PIXEL_FORMAT_RG16F: internalFormat = GL_RG16F; break;
-    case HP_PIXEL_FORMAT_RGB16F: internalFormat = GL_RGB16F; break;
-    case HP_PIXEL_FORMAT_RGBA16F: internalFormat = GL_RGBA16F; break;
-    case HP_PIXEL_FORMAT_R32F: internalFormat = GL_R32F; break;
-    case HP_PIXEL_FORMAT_RG32F: internalFormat = GL_RG32F; break;
-    case HP_PIXEL_FORMAT_RGB32F: internalFormat = GL_RGB32F; break;
-    case HP_PIXEL_FORMAT_RGBA32F: internalFormat = GL_RGBA32F; break;
+    case NX_PIXEL_FORMAT_R8: internalFormat = GL_R8; break;
+    case NX_PIXEL_FORMAT_RG8: internalFormat = GL_RG8; break;
+    case NX_PIXEL_FORMAT_RGB8: internalFormat = GL_RGB8; break;
+    case NX_PIXEL_FORMAT_RGBA8: internalFormat = GL_RGBA8; break;
+    case NX_PIXEL_FORMAT_R16F: internalFormat = GL_R16F; break;
+    case NX_PIXEL_FORMAT_RG16F: internalFormat = GL_RG16F; break;
+    case NX_PIXEL_FORMAT_RGB16F: internalFormat = GL_RGB16F; break;
+    case NX_PIXEL_FORMAT_RGBA16F: internalFormat = GL_RGBA16F; break;
+    case NX_PIXEL_FORMAT_R32F: internalFormat = GL_R32F; break;
+    case NX_PIXEL_FORMAT_RG32F: internalFormat = GL_RG32F; break;
+    case NX_PIXEL_FORMAT_RGB32F: internalFormat = GL_RGB32F; break;
+    case NX_PIXEL_FORMAT_RGBA32F: internalFormat = GL_RGBA32F; break;
     default: break;
     }
 
@@ -54,10 +54,10 @@ inline GLenum getInternalFormat(HP_PixelFormat format, bool framebuffer)
 
     if (gCore->glProfile() == SDL_GL_CONTEXT_PROFILE_ES /*&& !GLAD_GL_EXT_color_buffer_float*/) {
         switch (format) {
-        case HP_PIXEL_FORMAT_R32F: internalFormat = GL_R16F; break;
-        case HP_PIXEL_FORMAT_RG32F: internalFormat = GL_RG16F; break;
-        case HP_PIXEL_FORMAT_RGB32F: internalFormat = GL_RGB16F; break;
-        case HP_PIXEL_FORMAT_RGBA32F: internalFormat = GL_RGBA16F; break;
+        case NX_PIXEL_FORMAT_R32F: internalFormat = GL_R16F; break;
+        case NX_PIXEL_FORMAT_RG32F: internalFormat = GL_RG16F; break;
+        case NX_PIXEL_FORMAT_RGB32F: internalFormat = GL_RGB16F; break;
+        case NX_PIXEL_FORMAT_RGBA32F: internalFormat = GL_RGBA16F; break;
         default: break;
         }
     }
@@ -67,9 +67,9 @@ inline GLenum getInternalFormat(HP_PixelFormat format, bool framebuffer)
 
 /* === Cubemap Helpers === */
 
-inline HP_Mat4 getCubeView(int face, const HP_Vec3& eye = HP_VEC3_ZERO)
+inline NX_Mat4 getCubeView(int face, const NX_Vec3& eye = NX_VEC3_ZERO)
 {
-    constexpr HP_Vec3 dirs[6] = {
+    constexpr NX_Vec3 dirs[6] = {
         {  1.0,  0.0,  0.0 }, // +X
         { -1.0,  0.0,  0.0 }, // -X
         {  0.0,  1.0,  0.0 }, // +Y
@@ -78,7 +78,7 @@ inline HP_Mat4 getCubeView(int face, const HP_Vec3& eye = HP_VEC3_ZERO)
         {  0.0,  0.0, -1.0 }  // -Z
     };
 
-    constexpr HP_Vec3 ups[6] = {
+    constexpr NX_Vec3 ups[6] = {
         {  0.0, -1.0,  0.0 }, // +X
         {  0.0, -1.0,  0.0 }, // -X
         {  0.0,  0.0,  1.0 }, // +Y
@@ -87,14 +87,14 @@ inline HP_Mat4 getCubeView(int face, const HP_Vec3& eye = HP_VEC3_ZERO)
         {  0.0, -1.0,  0.0 }  // -Z
     };
 
-    return HP_Mat4LookAt(eye, eye + dirs[face], ups[face]);
+    return NX_Mat4LookAt(eye, eye + dirs[face], ups[face]);
 }
 
-inline HP_Mat4 getCubeProj(float near = 0.25f, float far = 2.5f)
+inline NX_Mat4 getCubeProj(float near = 0.25f, float far = 2.5f)
 {
-    return HP_Mat4Perspective(HP_PI / 2.0f, 1.0f, near, far);
+    return NX_Mat4Perspective(NX_PI / 2.0f, 1.0f, near, far);
 }
 
 } // namespace render
 
-#endif // HP_RENDER_HELPER_HPP
+#endif // NX_RENDER_HELPER_HPP

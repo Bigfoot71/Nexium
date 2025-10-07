@@ -6,10 +6,10 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_UTIL_BUCKET_ARRAY_HPP
-#define HP_UTIL_BUCKET_ARRAY_HPP
+#ifndef NX_UTIL_BUCKET_ARRAY_HPP
+#define NX_UTIL_BUCKET_ARRAY_HPP
 
-#include <Hyperion/HP_Math.h>
+#include <NX/NX_Math.h>
 #include <SDL3/SDL_assert.h>
 
 #include "./DynamicArray.hpp"
@@ -202,7 +202,7 @@ bool BucketArray<T, Category, N>::reserve(size_t cap) noexcept
         return false;
     }
 
-    const size_t bucketCap = HP_DIV_CEIL(cap, N);
+    const size_t bucketCap = NX_DIV_CEIL(cap, N);
     for (auto& bucket : mBuckets) {
         if (!bucket.reserve(bucketCap)) {
             return false;
@@ -598,4 +598,4 @@ bool BucketArray<T, Category, N>::MultiCategoryView<CatCount>::empty() const noe
 
 } // namespace util
 
-#endif // HP_UTIL_BUCKET_ARRAY_HPP
+#endif // NX_UTIL_BUCKET_ARRAY_HPP

@@ -8,29 +8,29 @@
 
 #include "./Scene.hpp"
 
-#include <Hyperion/HP_Render.h>
-#include <Hyperion/HP_Core.h>
+#include <NX/NX_Render.h>
+#include <NX/NX_Core.h>
 
 #include "../../Detail/BuildInfo.hpp"
-#include "../HP_ReflectionProbe.hpp"
-#include "../HP_Cubemap.hpp"
-#include "../HP_Texture.hpp"
+#include "../NX_ReflectionProbe.hpp"
+#include "../NX_Cubemap.hpp"
+#include "../NX_Texture.hpp"
 
 namespace scene {
 
 /* === Public Implementation === */
 
-Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, HP_AppDesc& desc)
+Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, NX_AppDesc& desc)
     : mPrograms(programs), mAssets(assets), mLights(programs, assets, desc), mFrustum()
     , mFrameUniform(GL_UNIFORM_BUFFER, sizeof(FrameUniform), nullptr, GL_DYNAMIC_DRAW)
 {
     /* --- Tweak description --- */
 
-    if (desc.render3D.resolution < HP_IVEC2_ONE) {
-        desc.render3D.resolution = HP_GetDisplaySize();
+    if (desc.render3D.resolution < NX_IVEC2_ONE) {
+        desc.render3D.resolution = NX_GetDisplaySize();
     }
 
-    desc.render3D.sampleCount = HP_MAX(desc.render3D.sampleCount, 1);
+    desc.render3D.sampleCount = NX_MAX(desc.render3D.sampleCount, 1);
 
     /* --- Create render targets --- */
 
@@ -103,20 +103,20 @@ Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, HP_AppD
     /* --- Reserve enough space for the draw calls array --- */
 
     if (!mDrawCalls.reserve(1024)) {
-        HP_INTERNAL_LOG(W, "RENDER: Failed to pre-allocate the draw call buffer");
+        NX_INTERNAL_LOG(W, "RENDER: Failed to pre-allocate the draw call buffer");
     }
 
     if (!mDrawData.reserve(1024)) {
-        HP_INTERNAL_LOG(W, "RENDER: Failed to pre-allocate the draw data buffer");
+        NX_INTERNAL_LOG(W, "RENDER: Failed to pre-allocate the draw data buffer");
     }
 }
 
-void Scene::begin(const HP_Camera& camera, const HP_Environment& env, const HP_RenderTexture* target)
+void Scene::begin(const NX_Camera& camera, const NX_Environment& env, const NX_RenderTexture* target)
 {
     /* --- Get target (where we blit) info --- */
 
     mTargetInfo.target = target;
-    mTargetInfo.resolution = (target) ? target->framebuffer().dimensions() : HP_GetWindowSize();
+    mTargetInfo.resolution = (target) ? target->framebuffer().dimensions() : NX_GetWindowSize();
     mTargetInfo.aspect = static_cast<float>(mTargetInfo.resolution.x) / mTargetInfo.resolution.y;
 
     /* --- Update managers --- */
@@ -147,7 +147,7 @@ void Scene::end()
         .maxLightsPerCluster = static_cast<uint32_t>(mLights.maxLightsPerCluster()),
         .clusterSliceScale = mLights.clusterSliceScale(),
         .clusterSliceBias = mLights.clusterSliceBias(),
-        .elapsedTime = static_cast<float>(HP_GetElapsedTime()),
+        .elapsedTime = static_cast<float>(NX_GetElapsedTime()),
         .hasActiveLights = (mLights.activeCount() > 0),
         .hasProbe = (mEnvironment.skyProbe() != nullptr)
     });
@@ -159,7 +159,7 @@ void Scene::end()
             return true;
         }
         const DrawData& data = mDrawData[call.drawDataIndex()];
-        if (!data.useInstancing() && mEnvironment.hasFlags(HP_ENV_VIEW_FRUSTUM_CULLING)) {
+        if (!data.useInstancing() && mEnvironment.hasFlags(NX_ENV_VIEW_FRUSTUM_CULLING)) {
             return !mFrustum.containsObb(call.mesh().aabb, data.transform());
         }
         return false;
@@ -167,7 +167,7 @@ void Scene::end()
 
     /* --- Sort draw calls --- */
 
-    if (mEnvironment.hasFlags(HP_ENV_SORT_OPAQUE)) {
+    if (mEnvironment.hasFlags(NX_ENV_SORT_OPAQUE)) {
         mDrawCalls.sort(DrawCall::Category::OPAQUE,
             [this](const DrawCall& a, const DrawCall& b) {
                 float maxDistA = mFrustum.getDistanceSquaredToCenterPoint(a.mesh().aabb, mDrawData[a.drawDataIndex()].matrix());
@@ -177,7 +177,7 @@ void Scene::end()
         );
     }
 
-    if (mEnvironment.hasFlags(HP_ENV_SORT_TRANSPARENT)) {
+    if (mEnvironment.hasFlags(NX_ENV_SORT_TRANSPARENT)) {
         mDrawCalls.sort(DrawCall::Category::TRANSPARENT,
             [this](const DrawCall& a, const DrawCall& b) {
                 float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.mesh().aabb, mDrawData[a.drawDataIndex()].matrix());
@@ -205,7 +205,7 @@ void Scene::end()
         source = &postSSAO(*source);
     }
 
-    if (mEnvironment.bloomMode() != HP_BLOOM_DISABLED) {
+    if (mEnvironment.bloomMode() != NX_BLOOM_DISABLED) {
         source = &postBloom(*source);
     }
 
@@ -232,7 +232,7 @@ void Scene::renderBackground(const gpu::Pipeline& pipeline)
 
     pipeline.clearDepth(1.0f);
     pipeline.clearColor(0, mEnvironment.background());
-    pipeline.clearColor(1, HP_COLOR(0.25f, 0.25f, 1.0f, 1.0f));
+    pipeline.clearColor(1, NX_COLOR(0.25f, 0.25f, 1.0f, 1.0f));
 
     if (mEnvironment.skyCubemap() == nullptr) {
         return;
@@ -270,33 +270,33 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
     for (const DrawCall& call : mDrawCalls.category(DrawCall::PREPASS))
     {
         const DrawData& data = mDrawData[call.drawDataIndex()];
-        const HP_Material& mat = call.material();
+        const NX_Material& mat = call.material();
 
-        HP_MaterialShader& shader = mPrograms.materialShader(mat.shader);
-        pipeline.useProgram(shader.program(HP_MaterialShader::SCENE_PREPASS));
-        shader.bindUniformBuffers(pipeline, HP_MaterialShader::SCENE_PREPASS, call.dynamicRangeIndex());
+        NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
+        pipeline.useProgram(shader.program(NX_MaterialShader::SCENE_PREPASS));
+        shader.bindUniformBuffers(pipeline, NX_MaterialShader::SCENE_PREPASS, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
         switch (mat.depth.test) {
-        case HP_DEPTH_TEST_LESS:
+        case NX_DEPTH_TEST_LESS:
             pipeline.setDepthFunc(gpu::DepthFunc::Less);
             break;
-        case HP_DEPTH_TEST_GREATER:
+        case NX_DEPTH_TEST_GREATER:
             pipeline.setDepthFunc(gpu::DepthFunc::Greater);
             break;
-        case HP_DEPTH_TEST_ALWAYS:
+        case NX_DEPTH_TEST_ALWAYS:
             pipeline.setDepthFunc(gpu::DepthFunc::Always);
             break;
         }
 
         switch (mat.cull) {
-        case HP_CULL_NONE:
+        case NX_CULL_NONE:
             pipeline.setCullMode(gpu::CullMode::Disabled);
             break;
-        case HP_CULL_BACK:
+        case NX_CULL_BACK:
             pipeline.setCullMode(gpu::CullMode::Back);
             break;
-        case HP_CULL_FRONT:
+        case NX_CULL_FRONT:
             pipeline.setCullMode(gpu::CullMode::Front);
             break;
         }
@@ -343,9 +343,9 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
     {
         const DrawData& data = mDrawData[call.drawDataIndex()];
-        const HP_Material& mat = call.material();
+        const NX_Material& mat = call.material();
 
-        HP_MaterialShader& shader = mPrograms.materialShader(mat.shader);
+        NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
         pipeline.useProgram(shader.program(call.material().shading));
         shader.bindUniformBuffers(pipeline, call.material().shading, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
@@ -355,41 +355,41 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         }
         else {
             switch (mat.depth.test) {
-            case HP_DEPTH_TEST_LESS:
+            case NX_DEPTH_TEST_LESS:
                 pipeline.setDepthFunc(gpu::DepthFunc::Less);
                 break;
-            case HP_DEPTH_TEST_GREATER:
+            case NX_DEPTH_TEST_GREATER:
                 pipeline.setDepthFunc(gpu::DepthFunc::Greater);
                 break;
-            case HP_DEPTH_TEST_ALWAYS:
+            case NX_DEPTH_TEST_ALWAYS:
                 pipeline.setDepthFunc(gpu::DepthFunc::Always);
                 break;
             }
         }
 
         switch (mat.blend) {
-        case HP_BLEND_OPAQUE:
+        case NX_BLEND_OPAQUE:
             pipeline.setBlendMode(gpu::BlendMode::Disabled);
             break;
-        case HP_BLEND_ALPHA:
+        case NX_BLEND_ALPHA:
             pipeline.setBlendMode(gpu::BlendMode::Alpha);
             break;
-        case HP_BLEND_ADD:
+        case NX_BLEND_ADD:
             pipeline.setBlendMode(gpu::BlendMode::AddAlpha);
             break;
-        case HP_BLEND_MUL:
+        case NX_BLEND_MUL:
             pipeline.setBlendMode(gpu::BlendMode::Multiply);
             break;
         }
 
         switch (mat.cull) {
-        case HP_CULL_NONE:
+        case NX_CULL_NONE:
             pipeline.setCullMode(gpu::CullMode::Disabled);
             break;
-        case HP_CULL_BACK:
+        case NX_CULL_BACK:
             pipeline.setCullMode(gpu::CullMode::Back);
             break;
-        case HP_CULL_FRONT:
+        case NX_CULL_FRONT:
             pipeline.setCullMode(gpu::CullMode::Front);
             break;
         }
@@ -452,7 +452,7 @@ const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
     pipeline.bindFramebuffer(mSwapAuxiliary.target());
     {
         pipeline.bindTexture(0, mSwapAuxiliary.source());
-        pipeline.setUniformFloat2(0, HP_VEC2(1.0f / mSwapAuxiliary.source().width(), 0.0f));
+        pipeline.setUniformFloat2(0, NX_VEC2(1.0f / mSwapAuxiliary.source().width(), 0.0f));
         pipeline.draw(GL_TRIANGLES, 3);
     }
     mSwapAuxiliary.swap();
@@ -460,7 +460,7 @@ const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
     pipeline.bindFramebuffer(mSwapAuxiliary.target());
     {
         pipeline.bindTexture(0, mSwapAuxiliary.source());
-        pipeline.setUniformFloat2(0, HP_VEC2(0.0f, 1.0f / mSwapAuxiliary.source().height()));
+        pipeline.setUniformFloat2(0, NX_VEC2(0.0f, 1.0f / mSwapAuxiliary.source().height()));
         pipeline.draw(GL_TRIANGLES, 3);
     }
     mSwapAuxiliary.swap();
@@ -497,7 +497,7 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
     pipeline.useProgram(mPrograms.downsampling());
     pipeline.bindTexture(0, source);
 
-    pipeline.setUniformFloat2(0, HP_IVec2Rcp(mTargetSceneColor.dimensions()));
+    pipeline.setUniformFloat2(0, NX_IVec2Rcp(mTargetSceneColor.dimensions()));
 
     mMipChain.downsample(pipeline, 0, [&](uint32_t targetLevel, uint32_t sourceLevel) {
         pipeline.setUniformInt1(2, targetLevel);
@@ -505,7 +505,7 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
             mMipChain.setMipLevelRange(sourceLevel, sourceLevel);
         }
         pipeline.draw(GL_TRIANGLES, 3);
-        pipeline.setUniformFloat2(0, HP_IVec2Rcp(mMipChain.dimensions(targetLevel)));
+        pipeline.setUniformFloat2(0, NX_IVec2Rcp(mMipChain.dimensions(targetLevel)));
         if (targetLevel == 0) {
             pipeline.bindTexture(0, mMipChain.texture());
         }

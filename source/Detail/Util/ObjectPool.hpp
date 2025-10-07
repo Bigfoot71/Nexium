@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_UTIL_OBJECT_POOL_HPP
-#define HP_UTIL_OBJECT_POOL_HPP
+#ifndef NX_UTIL_OBJECT_POOL_HPP
+#define NX_UTIL_OBJECT_POOL_HPP
 
 #include <SDL3/SDL_stdinc.h>
 #include <type_traits>
@@ -533,4 +533,4 @@ inline bool ObjectPool<T, PoolSize>::ReverseIterator::operator!=(const ReverseIt
 
 } // namespace util
 
-#endif // HP_UTIL_OBJECT_POOL_HPP
+#endif // NX_UTIL_OBJECT_POOL_HPP

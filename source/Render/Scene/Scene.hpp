@@ -6,10 +6,10 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_SCENE_HPP
-#define HP_SCENE_HPP
+#ifndef NX_SCENE_HPP
+#define NX_SCENE_HPP
 
-#include <Hyperion/HP_Render.h>
+#include <NX/NX_Render.h>
 
 #include "../../Detail/Util/BucketArray.hpp"
 #include "../../Detail/GPU/Framebuffer.hpp"
@@ -20,7 +20,7 @@
 #include "../Core/ProgramCache.hpp"
 #include "../Core/AssetCache.hpp"
 
-#include "../HP_RenderTexture.hpp"
+#include "../NX_RenderTexture.hpp"
 #include "./RenderableBuffer.hpp"
 #include "./MaterialBuffer.hpp"
 #include "./LightManager.hpp"
@@ -36,15 +36,15 @@ namespace scene {
 
 class Scene {
 public:
-    Scene(render::ProgramCache& programs, render::AssetCache& assets, HP_AppDesc& desc);
+    Scene(render::ProgramCache& programs, render::AssetCache& assets, NX_AppDesc& desc);
 
     /** Begin/End 3D mode functions */
-    void begin(const HP_Camera& camera, const HP_Environment& env, const HP_RenderTexture* target);
+    void begin(const NX_Camera& camera, const NX_Environment& env, const NX_RenderTexture* target);
     void end();
 
     /** Push draw call functions */
-    void drawMesh(const HP_Mesh& mesh, const HP_InstanceBuffer* instances, int instanceCount, const HP_Material& material, const HP_Transform& transform);
-    void drawModel(const HP_Model& model, const HP_InstanceBuffer* instances, int instanceCount, const HP_Transform& transform);
+    void drawMesh(const NX_Mesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform);
+    void drawModel(const NX_Model& model, const NX_InstanceBuffer* instances, int instanceCount, const NX_Transform& transform);
 
     const LightManager& lights() const;
     LightManager& lights();
@@ -62,14 +62,14 @@ private:
 
 private:
     struct TargetInfo {
-        const HP_RenderTexture* target{nullptr};
-        HP_IVec2 resolution{};
+        const NX_RenderTexture* target{nullptr};
+        NX_IVec2 resolution{};
         float aspect{};
     };
 
     struct FrameUniform {
-        alignas(8) HP_IVec2 screenSize;
-        alignas(16) HP_IVec3 clusterCount;
+        alignas(8) NX_IVec2 screenSize;
+        alignas(16) NX_IVec3 clusterCount;
         alignas(4) uint32_t maxLightsPerCluster;
         alignas(4) float clusterSliceScale;
         alignas(4) float clusterSliceBias;
@@ -119,14 +119,14 @@ private:
 
 /* === Public Implementation === */
 
-inline void Scene::drawMesh(const HP_Mesh& mesh, const HP_InstanceBuffer* instances, int instanceCount, const HP_Material& material, const HP_Transform& transform)
+inline void Scene::drawMesh(const NX_Mesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform)
 {
     int dataIndex = mDrawData.size();
     mDrawData.emplace_back(transform, instances, instanceCount);
     mDrawCalls.emplace(DrawCall::category(material), dataIndex, mesh, material);
 }
 
-inline void Scene::drawModel(const HP_Model& model, const HP_InstanceBuffer* instances, int instanceCount, const HP_Transform& transform)
+inline void Scene::drawModel(const NX_Model& model, const NX_InstanceBuffer* instances, int instanceCount, const NX_Transform& transform)
 {
     /* --- If the model is rigged we upload its bone transformations to the buffer --- */
 
@@ -134,16 +134,16 @@ inline void Scene::drawModel(const HP_Model& model, const HP_InstanceBuffer* ins
 
     if (model.boneCount > 0)
     {
-        const HP_Mat4* boneMatrices = model.boneBindPose;
+        const NX_Mat4* boneMatrices = model.boneBindPose;
 
-        if (model.animMode == HP_ANIM_INTERNAL && model.anim != nullptr) {
+        if (model.animMode == NX_ANIM_INTERNAL && model.anim != nullptr) {
             if (model.boneCount != model.anim->boneCount) {
-                HP_INTERNAL_LOG(W, "RENDER: Model and animation bone counts differ");
+                NX_INTERNAL_LOG(W, "RENDER: Model and animation bone counts differ");
             }
             int frame = static_cast<int>(model.animFrame + 0.5) % model.anim->frameCount;
             boneMatrices = model.anim->frameGlobalPoses[frame];
         }
-        else if (model.animMode == HP_ANIM_CUSTOM && model.boneOverride != nullptr) {
+        else if (model.animMode == NX_ANIM_CUSTOM && model.boneOverride != nullptr) {
             boneMatrices = model.boneOverride;
         }
 
@@ -158,7 +158,7 @@ inline void Scene::drawModel(const HP_Model& model, const HP_InstanceBuffer* ins
 
     int dataIndex = mDrawData.size();
     for (int i = 0; i < model.meshCount; i++) {
-        const HP_Material& material = model.materials[model.meshMaterials[i]];
+        const NX_Material& material = model.materials[model.meshMaterials[i]];
         mDrawCalls.emplace(DrawCall::category(material), dataIndex, *model.meshes[i], material);
     }
 
@@ -177,4 +177,4 @@ inline LightManager& Scene::lights()
 
 } // namespace scene
 
-#endif // HP_SCENE_HPP
+#endif // NX_SCENE_HPP

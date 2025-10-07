@@ -13,7 +13,7 @@
 
 namespace {
 
-int findBoneIndex(const char* name, HP_BoneInfo* bones, int count)
+int findBoneIndex(const char* name, NX_BoneInfo* bones, int count)
 {
     for (int i = 0; i < count; i++) {
         if (SDL_strcmp(name, bones[i].name) == 0) return i;
@@ -46,7 +46,7 @@ const aiNode* findNodeByName(const aiNode* node, const char* name)
     return nullptr;
 }
 
-void buildHierarchyRecursive(const aiNode* node, HP_BoneInfo* bones, int boneCount, int parentIndex)
+void buildHierarchyRecursive(const aiNode* node, NX_BoneInfo* bones, int boneCount, int parentIndex)
 {
     int currentIndex = findBoneIndex(node->mName.data, bones, boneCount);
 
@@ -66,7 +66,7 @@ void buildHierarchyRecursive(const aiNode* node, HP_BoneInfo* bones, int boneCou
 
 namespace render {
 
-bool PoolModel::processBones(HP_Model* model, const aiScene* scene)
+bool PoolModel::processBones(NX_Model* model, const aiScene* scene)
 {
     SDL_assert(scene != nullptr);
 
@@ -89,12 +89,12 @@ bool PoolModel::processBones(HP_Model* model, const aiScene* scene)
 
     /* --- Allocate bone arrays --- */
 
-    model->boneOffsets = static_cast<HP_Mat4*>(SDL_malloc(maxPossibleBones * sizeof(HP_Mat4)));
-    model->boneBindPose = static_cast<HP_Mat4*>(SDL_malloc(maxPossibleBones * sizeof(HP_Mat4)));
-    model->bones = static_cast<HP_BoneInfo*>(SDL_malloc(maxPossibleBones * sizeof(HP_BoneInfo)));
+    model->boneOffsets = static_cast<NX_Mat4*>(SDL_malloc(maxPossibleBones * sizeof(NX_Mat4)));
+    model->boneBindPose = static_cast<NX_Mat4*>(SDL_malloc(maxPossibleBones * sizeof(NX_Mat4)));
+    model->bones = static_cast<NX_BoneInfo*>(SDL_malloc(maxPossibleBones * sizeof(NX_BoneInfo)));
 
     if (!model->boneOffsets || !model->boneBindPose || !model->bones) {
-        HP_INTERNAL_LOG(E, "RENDER: Failed to allocate memory for model bones");
+        NX_INTERNAL_LOG(E, "RENDER: Failed to allocate memory for model bones");
         SDL_free(model->boneBindPose);
         SDL_free(model->boneOffsets);
         SDL_free(model->bones);
@@ -117,15 +117,15 @@ bool PoolModel::processBones(HP_Model* model, const aiScene* scene)
                 SDL_strlcpy(model->bones[uniqueBoneCount].name, bone->mName.data, sizeof(model->bones[uniqueBoneCount].name));
                 model->bones[uniqueBoneCount].parent = -1;
 
-                model->boneOffsets[uniqueBoneCount] = assimp_cast<HP_Mat4>(bone->mOffsetMatrix);
+                model->boneOffsets[uniqueBoneCount] = assimp_cast<NX_Mat4>(bone->mOffsetMatrix);
 
                 const aiNode* boneNode = findNodeByName(scene->mRootNode, bone->mName.data);
                 if (boneNode) {
                     aiMatrix4x4 globalTransform = getGlobalNodeTransform(boneNode, scene->mRootNode);
-                    model->boneBindPose[uniqueBoneCount] = assimp_cast<HP_Mat4>(globalTransform);
+                    model->boneBindPose[uniqueBoneCount] = assimp_cast<NX_Mat4>(globalTransform);
                 } else {
                     aiMatrix4x4 bindPoseMatrix = bone->mOffsetMatrix;
-                    model->boneBindPose[uniqueBoneCount] = assimp_cast<HP_Mat4>(bindPoseMatrix.Inverse());
+                    model->boneBindPose[uniqueBoneCount] = assimp_cast<NX_Mat4>(bindPoseMatrix.Inverse());
                 }
 
                 uniqueBoneCount++;
@@ -138,12 +138,12 @@ bool PoolModel::processBones(HP_Model* model, const aiScene* scene)
     /* --- Shrink arrays to actual bone count --- */
 
     if (uniqueBoneCount < maxPossibleBones) {
-        void* boneOffsets = SDL_realloc(model->boneOffsets, uniqueBoneCount * sizeof(HP_Mat4));
-        void* boneBindPose = SDL_realloc(model->boneBindPose, uniqueBoneCount * sizeof(HP_Mat4));
-        void* bones = SDL_realloc(model->bones, uniqueBoneCount * sizeof(HP_BoneInfo));
-        if (boneOffsets) model->boneOffsets = static_cast<HP_Mat4*>(boneOffsets);
-        if (boneBindPose) model->boneBindPose = static_cast<HP_Mat4*>(boneBindPose);
-        if (bones) model->bones = static_cast<HP_BoneInfo*>(bones);
+        void* boneOffsets = SDL_realloc(model->boneOffsets, uniqueBoneCount * sizeof(NX_Mat4));
+        void* boneBindPose = SDL_realloc(model->boneBindPose, uniqueBoneCount * sizeof(NX_Mat4));
+        void* bones = SDL_realloc(model->bones, uniqueBoneCount * sizeof(NX_BoneInfo));
+        if (boneOffsets) model->boneOffsets = static_cast<NX_Mat4*>(boneOffsets);
+        if (boneBindPose) model->boneBindPose = static_cast<NX_Mat4*>(boneBindPose);
+        if (bones) model->bones = static_cast<NX_BoneInfo*>(bones);
     }
 
     /* --- Build bone hierarchy from scene graph --- */

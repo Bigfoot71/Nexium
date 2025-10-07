@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_GPU_MIP_BUFFER_HPP
-#define HP_GPU_MIP_BUFFER_HPP
+#ifndef NX_GPU_MIP_BUFFER_HPP
+#define NX_GPU_MIP_BUFFER_HPP
 
 #include "./Framebuffer.hpp"
 #include "./Pipeline.hpp"
@@ -33,7 +33,7 @@ public:
     int numLevels() const noexcept;
     int width(int level) const noexcept;
     int height(int level) const noexcept;
-    HP_IVec2 dimensions(int level) const noexcept;
+    NX_IVec2 dimensions(int level) const noexcept;
 
     void setMipLevelRange(int baseLevel, int maxLevel) noexcept;
 
@@ -104,20 +104,20 @@ inline int MipBuffer::numLevels() const noexcept
 
 inline int MipBuffer::width(int level) const noexcept
 {
-    return HP_MAX(1, mTexture.width() >> level);
+    return NX_MAX(1, mTexture.width() >> level);
 }
 
 inline int MipBuffer::height(int level) const noexcept
 {
-    return HP_MAX(1, mTexture.height() >> level);
+    return NX_MAX(1, mTexture.height() >> level);
 }
 
-inline HP_IVec2 MipBuffer::dimensions(int level) const noexcept
+inline NX_IVec2 MipBuffer::dimensions(int level) const noexcept
 {
-    int w = HP_MAX(1, mTexture.width() >> level);
-    int h = HP_MAX(1, mTexture.height() >> level);
+    int w = NX_MAX(1, mTexture.width() >> level);
+    int h = NX_MAX(1, mTexture.height() >> level);
 
-    return HP_IVEC2(w, h);
+    return NX_IVEC2(w, h);
 }
 
 inline void MipBuffer::setMipLevelRange(int baseLevel, int maxLevel) noexcept
@@ -132,7 +132,7 @@ void MipBuffer::downsample(const gpu::Pipeline& pipeline, int firstLevel, Func&&
     for (int dstLevel = firstLevel; dstLevel < mTexture.numLevels(); dstLevel++) {
         mFramebuffer.setColorAttachmentTarget(0, 0, 0, dstLevel);
         pipeline.setViewport(dimensions(dstLevel));
-        f(dstLevel, HP_MAX(dstLevel - 1, 0));
+        f(dstLevel, NX_MAX(dstLevel - 1, 0));
     }
 }
 
@@ -149,4 +149,4 @@ void MipBuffer::upsample(const gpu::Pipeline& pipeline, Func&& f) noexcept
 
 } // namespace gpu
 
-#endif // HP_GPU_MIP_BUFFER_HPP
+#endif // NX_GPU_MIP_BUFFER_HPP

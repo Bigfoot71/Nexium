@@ -6,12 +6,12 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_SCENE_BONE_BUFFER_HPP
-#define HP_SCENE_BONE_BUFFER_HPP
+#ifndef NX_SCENE_BONE_BUFFER_HPP
+#define NX_SCENE_BONE_BUFFER_HPP
 
 #include "../../Detail/Util/DynamicArray.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
-#include <Hyperion/HP_Math.h>
+#include <NX/NX_Math.h>
 
 namespace scene {
 
@@ -20,12 +20,12 @@ namespace scene {
 class BoneBuffer {
 public:
     BoneBuffer();
-    int upload(const HP_Mat4* offsets, const HP_Mat4* matrices, int count);
+    int upload(const NX_Mat4* offsets, const NX_Mat4* matrices, int count);
     const gpu::Buffer& buffer() const;
     void clear();
 
 private:
-    util::DynamicArray<HP_Mat4> mTemp{};
+    util::DynamicArray<NX_Mat4> mTemp{};
     gpu::Buffer mBuffer{};
     int mCurrentOffset{};
 };
@@ -33,26 +33,26 @@ private:
 /* === Public Implementation === */
 
 inline BoneBuffer::BoneBuffer()
-    : mBuffer(GL_SHADER_STORAGE_BUFFER, 1024 * sizeof(HP_Mat4), nullptr, GL_DYNAMIC_DRAW)
+    : mBuffer(GL_SHADER_STORAGE_BUFFER, 1024 * sizeof(NX_Mat4), nullptr, GL_DYNAMIC_DRAW)
 {
     if (!mTemp.reserve(256)) {
-        HP_INTERNAL_LOG(W, "RENDER: Failed to pre-allocate the bone matrix computing buffer");
+        NX_INTERNAL_LOG(W, "RENDER: Failed to pre-allocate the bone matrix computing buffer");
     }
 }
 
-inline int BoneBuffer::upload(const HP_Mat4* offsets, const HP_Mat4* matrices, int count)
+inline int BoneBuffer::upload(const NX_Mat4* offsets, const NX_Mat4* matrices, int count)
 {
     /* --- Compute matrices --- */
 
     mTemp.clear();
     mTemp.resize(count);
-    HP_Mat4MulBatch(mTemp.data(), offsets, matrices, count);
+    NX_Mat4MulBatch(mTemp.data(), offsets, matrices, count);
 
     /* --- Upload matrices --- */
 
-    size_t byteOffset = (size_t)mCurrentOffset * sizeof(HP_Mat4);
-    mBuffer.reserve((mCurrentOffset + count) * sizeof(HP_Mat4), true);
-    mBuffer.upload(byteOffset, sizeof(HP_Mat4) * count, mTemp.data());
+    size_t byteOffset = (size_t)mCurrentOffset * sizeof(NX_Mat4);
+    mBuffer.reserve((mCurrentOffset + count) * sizeof(NX_Mat4), true);
+    mBuffer.upload(byteOffset, sizeof(NX_Mat4) * count, mTemp.data());
 
     /* --- Update and return offset --- */
 
@@ -73,4 +73,4 @@ inline void BoneBuffer::clear()
 
 } // namespace scene
 
-#endif // HP_SCENE_BONE_BUFFER_HPP
+#endif // NX_SCENE_BONE_BUFFER_HPP

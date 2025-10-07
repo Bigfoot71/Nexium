@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_UTIL_DYNAMIC_ARRAY_HPP
-#define HP_UTIL_DYNAMIC_ARRAY_HPP
+#ifndef NX_UTIL_DYNAMIC_ARRAY_HPP
+#define NX_UTIL_DYNAMIC_ARRAY_HPP
 
 #include <SDL3/SDL_stdinc.h>
 #include <type_traits>
@@ -901,4 +901,4 @@ void swap(DynamicArray<T>& lhs, DynamicArray<T>& rhs) noexcept
 
 } // namespace util
 
-#endif // HP_UTIL_DYNAMIC_ARRAY_HPP
+#endif // NX_UTIL_DYNAMIC_ARRAY_HPP

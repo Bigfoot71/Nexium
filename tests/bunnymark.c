@@ -1,6 +1,6 @@
 // Just a benchmark test for the overlay
 
-#include <Hyperion/Hyperion.h>
+#include <NX/Nexium.h>
 #include "./common.h"
 
 /* === Bunny Structure === */
@@ -8,9 +8,9 @@
 #define MAX_BUNNIES 500000
 
 typedef struct {
-    HP_Vec2 position;
-    HP_Vec2 velocity;
-    HP_Color color;
+    NX_Vec2 position;
+    NX_Vec2 velocity;
+    NX_Color color;
 } Bunny;
 
 static Bunny bunnies[MAX_BUNNIES];
@@ -18,7 +18,7 @@ static int bunnyCount = 0;
 
 /* === Bunny Functions === */
 
-static void Bunny_Init(Bunny* bunny, HP_Vec2 position);
+static void Bunny_Init(Bunny* bunny, NX_Vec2 position);
 static void Bunny_Update(Bunny* bunny, float delta);
 static void Bunny_Draw(const Bunny* bunny);
 
@@ -26,41 +26,41 @@ static void Bunny_Draw(const Bunny* bunny);
 
 int main(void)
 {
-    HP_AppDesc desc = {
+    NX_AppDesc desc = {
         .render2D.resolution.x = 800,
         .render2D.resolution.y = 450,
         .targetFPS = 60
     };
 
-    HP_InitEx("Hyperion - BunnyMark", 800, 450, &desc);
-    HP_AddSearchPath(RESOURCES_PATH, false);
+    NX_InitEx("Nexium - BunnyMark", 800, 450, &desc);
+    NX_AddSearchPath(RESOURCES_PATH, false);
 
-    HP_Texture* texture = HP_LoadTexture("images/wabbit_alpha.png");
-    HP_SetTexture2D(texture);
+    NX_Texture* texture = NX_LoadTexture("images/wabbit_alpha.png");
+    NX_SetTexture2D(texture);
 
-    while(HP_FrameStep())
+    while(NX_FrameStep())
     {
-        HP_SetWindowTitle(CMN_FormatText(
-            "Hyperion - BunnyMark - Bunnies: %i - FPS: %i", bunnyCount, HP_GetFPS()
+        NX_SetWindowTitle(CMN_FormatText(
+            "Nexium - BunnyMark - Bunnies: %i - FPS: %i", bunnyCount, NX_GetFPS()
         ));
 
-        float delta = HP_GetFrameTime();
+        float delta = NX_GetFrameTime();
 
-        if (HP_IsMouseButtonPressed(HP_MOUSE_BUTTON_LEFT)) {
-            HP_Vec2 position = HP_GetMousePosition();
+        if (NX_IsMouseButtonPressed(NX_MOUSE_BUTTON_LEFT)) {
+            NX_Vec2 position = NX_GetMousePosition();
             for (int i = 0; i < 100 && bunnyCount < MAX_BUNNIES; i++) {
                 Bunny_Init(&bunnies[bunnyCount++], position);
             }
         }
 
-        HP_Begin2D(NULL);
+        NX_Begin2D(NULL);
         {
             for (int i = 0; i < bunnyCount; i++) {
                 Bunny_Update(&bunnies[i], delta);
                 Bunny_Draw(&bunnies[i]);
             }
         }
-        HP_End2D();
+        NX_End2D();
     }
 
     return 0;
@@ -68,41 +68,41 @@ int main(void)
 
 /* === Bunny Functions === */
 
-void Bunny_Init(Bunny* bunny, HP_Vec2 position)
+void Bunny_Init(Bunny* bunny, NX_Vec2 position)
 {
-    float th = HP_TAU * HP_RandFloat(NULL);
-    float speed = HP_RandRangeFloat(NULL, 10.0f, 100.0f);
+    float th = NX_TAU * NX_RandFloat(NULL);
+    float speed = NX_RandRangeFloat(NULL, 10.0f, 100.0f);
 
     bunny->position = position;
-    bunny->velocity = HP_VEC2(speed * cosf(th), speed * sinf(th));
-    bunny->color = HP_ColorFromHSV(360 * HP_RandFloat(NULL), 1, 1, 1);
+    bunny->velocity = NX_VEC2(speed * cosf(th), speed * sinf(th));
+    bunny->color = NX_ColorFromHSV(360 * NX_RandFloat(NULL), 1, 1, 1);
 }
 
 void Bunny_Update(Bunny* bunny, float delta)
 {
-    bunny->position = HP_Vec2Add(bunny->position, HP_Vec2Scale(bunny->velocity, delta));
+    bunny->position = NX_Vec2Add(bunny->position, NX_Vec2Scale(bunny->velocity, delta));
 
     if (bunny->position.x < 0) {
         bunny->velocity.x *= -1;
         bunny->position.x = 0;
     }
-    else if (bunny->position.x > HP_GetWindowWidth()) {
+    else if (bunny->position.x > NX_GetWindowWidth()) {
         bunny->velocity.x *= -1;
-        bunny->position.x = HP_GetWindowWidth();
+        bunny->position.x = NX_GetWindowWidth();
     }
 
     if (bunny->position.y < 0) {
         bunny->velocity.y *= -1;
         bunny->position.y = 0;
     }
-    else if (bunny->position.y > HP_GetWindowHeight()) {
+    else if (bunny->position.y > NX_GetWindowHeight()) {
         bunny->velocity.y *= -1;
-        bunny->position.y = HP_GetWindowHeight();
+        bunny->position.y = NX_GetWindowHeight();
     }
 }
 
 void Bunny_Draw(const Bunny* bunny)
 {
-    HP_SetColor2D(bunny->color);
-    HP_DrawRect2D(bunny->position.x - 16, bunny->position.y - 16, 32, 32);
+    NX_SetColor2D(bunny->color);
+    NX_DrawRect2D(bunny->position.x - 16, bunny->position.y - 16, 32, 32);
 }

@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_GPU_SWAP_BUFFER_HPP
-#define HP_GPU_SWAP_BUFFER_HPP
+#ifndef NX_GPU_SWAP_BUFFER_HPP
+#define NX_GPU_SWAP_BUFFER_HPP
 
 #include "./Framebuffer.hpp"
 #include "./Texture.hpp"
@@ -97,4 +97,4 @@ inline void SwapBuffer::swap() noexcept
 
 } // namespace gpu
 
-#endif // HP_GPU_SWAP_BUFFER_HPP
+#endif // NX_GPU_SWAP_BUFFER_HPP

@@ -93,13 +93,13 @@ jobs:
         ${{ matrix.c_compiler != 'cl' && format('-DCMAKE_CXX_COMPILER={0}', matrix.cpp_compiler) || '' }}
         ${{ matrix.c_compiler != 'cl' && format('-DCMAKE_C_COMPILER={0}', matrix.c_compiler) || '' }}
         ${{ matrix.generator != 'Visual Studio 17 2022' && format('-DCMAKE_BUILD_TYPE={0}', matrix.build_type) || '' }}
-        -DHP_BUILD_TESTS=ON
-        -DHP_BUILD_DOCS=OFF
-        -DHP_INSTALL=OFF
-        -DHP_SDL3_VENDORED=ON
-        -DHP_PHYSFS_VENDORED=ON
-        -DHP_FREETYPE_VENDORED=ON
-        -DHP_ASSIMP_VENDORED=ON
+        -DNX_BUILD_TESTS=ON
+        -DNX_BUILD_DOCS=OFF
+        -DNX_INSTALL=OFF
+        -DNX_SDL3_VENDORED=ON
+        -DNX_PHYSFS_VENDORED=ON
+        -DNX_FREETYPE_VENDORED=ON
+        -DNX_ASSIMP_VENDORED=ON
         -S ${{ github.workspace }}
 
     - name: Build

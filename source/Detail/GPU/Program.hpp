@@ -6,13 +6,13 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_GPU_PROGRAM_HPP
-#define HP_GPU_PROGRAM_HPP
+#ifndef NX_GPU_PROGRAM_HPP
+#define NX_GPU_PROGRAM_HPP
 
-#include <Hyperion/HP_Math.h>
+#include <NX/NX_Math.h>
 #include <SDL3/SDL_assert.h>
 
-#include "../../Core/HP_InternalLog.hpp"
+#include "../../Core/NX_InternalLog.hpp"
 #include "../Util/FixedArray.hpp"
 #include "../BuildInfo.hpp"
 #include "./Shader.hpp"
@@ -62,23 +62,23 @@ private:
 
 private:
     void setUint1(int location, uint32_t value) const noexcept;
-    void setUint2(int location, const HP_IVec2& value) const noexcept;
-    void setUint3(int location, const HP_IVec3& value) const noexcept;
-    void setUint4(int location, const HP_IVec4& value) const noexcept;
+    void setUint2(int location, const NX_IVec2& value) const noexcept;
+    void setUint3(int location, const NX_IVec3& value) const noexcept;
+    void setUint4(int location, const NX_IVec4& value) const noexcept;
     void setInt1(int location, int value) const noexcept;
-    void setInt2(int location, const HP_IVec2& value) const noexcept;
-    void setInt3(int location, const HP_IVec3& value) const noexcept;
-    void setInt4(int location, const HP_IVec4& value) const noexcept;
+    void setInt2(int location, const NX_IVec2& value) const noexcept;
+    void setInt3(int location, const NX_IVec3& value) const noexcept;
+    void setInt4(int location, const NX_IVec4& value) const noexcept;
     void setFloat1(int location, float value) const noexcept;
-    void setFloat2(int location, const HP_Vec2& value) const noexcept;
-    void setFloat3(int location, const HP_Vec3& value) const noexcept;
-    void setFloat3(int location, const HP_Color& value) const noexcept;
-    void setFloat4(int location, const HP_Vec4& value) const noexcept;
-    void setFloat4(int location, const HP_Quat& value) const noexcept;
-    void setFloat4(int location, const HP_Color& value) const noexcept;
-    void setMat3(int location, const HP_Mat3& value) const noexcept;
-    void setMat3(int location, const HP_Mat4& value) const noexcept;
-    void setMat4(int location, const HP_Mat4& value) const noexcept;
+    void setFloat2(int location, const NX_Vec2& value) const noexcept;
+    void setFloat3(int location, const NX_Vec3& value) const noexcept;
+    void setFloat3(int location, const NX_Color& value) const noexcept;
+    void setFloat4(int location, const NX_Vec4& value) const noexcept;
+    void setFloat4(int location, const NX_Quat& value) const noexcept;
+    void setFloat4(int location, const NX_Color& value) const noexcept;
+    void setMat3(int location, const NX_Mat3& value) const noexcept;
+    void setMat3(int location, const NX_Mat4& value) const noexcept;
+    void setMat4(int location, const NX_Mat4& value) const noexcept;
 
 private:
     template<typename... Shaders>
@@ -183,7 +183,7 @@ inline void Program::setUint1(int location, uint32_t value) const noexcept
     }
 }
 
-inline void Program::setUint2(int location, const HP_IVec2& value) const noexcept
+inline void Program::setUint2(int location, const NX_IVec2& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -200,7 +200,7 @@ inline void Program::setUint2(int location, const HP_IVec2& value) const noexcep
     }
 }
 
-inline void Program::setUint3(int location, const HP_IVec3& value) const noexcept
+inline void Program::setUint3(int location, const NX_IVec3& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -218,7 +218,7 @@ inline void Program::setUint3(int location, const HP_IVec3& value) const noexcep
     }
 }
 
-inline void Program::setUint4(int location, const HP_IVec4& value) const noexcept
+inline void Program::setUint4(int location, const NX_IVec4& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -248,7 +248,7 @@ inline void Program::setInt1(int location, int value) const noexcept
     }
 }
 
-inline void Program::setInt2(int location, const HP_IVec2& value) const noexcept
+inline void Program::setInt2(int location, const NX_IVec2& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -259,7 +259,7 @@ inline void Program::setInt2(int location, const HP_IVec2& value) const noexcept
     }
 }
 
-inline void Program::setInt3(int location, const HP_IVec3& value) const noexcept
+inline void Program::setInt3(int location, const NX_IVec3& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -270,7 +270,7 @@ inline void Program::setInt3(int location, const HP_IVec3& value) const noexcept
     }
 }
 
-inline void Program::setInt4(int location, const HP_IVec4& value) const noexcept
+inline void Program::setInt4(int location, const NX_IVec4& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -292,7 +292,7 @@ inline void Program::setFloat1(int location, float value) const noexcept
     }
 }
 
-inline void Program::setFloat2(int location, const HP_Vec2& value) const noexcept
+inline void Program::setFloat2(int location, const NX_Vec2& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -303,7 +303,7 @@ inline void Program::setFloat2(int location, const HP_Vec2& value) const noexcep
     }
 }
 
-inline void Program::setFloat3(int location, const HP_Vec3& value) const noexcept
+inline void Program::setFloat3(int location, const NX_Vec3& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -314,18 +314,18 @@ inline void Program::setFloat3(int location, const HP_Vec3& value) const noexcep
     }
 }
 
-inline void Program::setFloat3(int location, const HP_Color& value) const noexcept
+inline void Program::setFloat3(int location, const NX_Color& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
 
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
-        std::memcpy(mUniformCache[location].data(), &value, sizeof(HP_Vec3));
+        std::memcpy(mUniformCache[location].data(), &value, sizeof(NX_Vec3));
         glUniform3fv(location, 1, reinterpret_cast<const float*>(&value));
     }
 }
 
-inline void Program::setFloat4(int location, const HP_Vec4& value) const noexcept
+inline void Program::setFloat4(int location, const NX_Vec4& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -336,30 +336,30 @@ inline void Program::setFloat4(int location, const HP_Vec4& value) const noexcep
     }
 }
 
-inline void Program::setFloat4(int location, const HP_Quat& value) const noexcept
+inline void Program::setFloat4(int location, const NX_Quat& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
 
-    HP_Vec4 quat = { value.x, value.y, value.z, value.w };
+    NX_Vec4 quat = { value.x, value.y, value.z, value.w };
     if (std::memcmp(mUniformCache[location].data(), &quat, sizeof(quat)) != 0) {
         std::memcpy(mUniformCache[location].data(), &quat, sizeof(quat));
         glUniform4fv(location, 1, reinterpret_cast<const float*>(&quat));
     }
 }
 
-inline void Program::setFloat4(int location, const HP_Color& value) const noexcept
+inline void Program::setFloat4(int location, const NX_Color& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
 
     if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
-        std::memcpy(mUniformCache[location].data(), &value, sizeof(HP_Vec4));
+        std::memcpy(mUniformCache[location].data(), &value, sizeof(NX_Vec4));
         glUniform4fv(location, 1, reinterpret_cast<const float*>(&value));
     }
 }
 
-inline void Program::setMat3(int location, const HP_Mat3& value) const noexcept
+inline void Program::setMat3(int location, const NX_Mat3& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -370,7 +370,7 @@ inline void Program::setMat3(int location, const HP_Mat3& value) const noexcept
     }
 }
 
-inline void Program::setMat3(int location, const HP_Mat4& value) const noexcept
+inline void Program::setMat3(int location, const NX_Mat4& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -392,7 +392,7 @@ inline void Program::setMat3(int location, const HP_Mat4& value) const noexcept
     }
 }
 
-inline void Program::setMat4(int location, const HP_Mat4& value) const noexcept
+inline void Program::setMat4(int location, const NX_Mat4& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -407,7 +407,7 @@ template<typename... Shaders>
 inline bool Program::initProgram(const Shaders&... shaders) noexcept
 {
     if (!(shaders.isValid() && ...)) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create program; Invalid shaders");
+        NX_INTERNAL_LOG(E, "GPU: Failed to create program; Invalid shaders");
         return false;
     }
 
@@ -417,19 +417,19 @@ inline bool Program::initProgram(const Shaders&... shaders) noexcept
 
     mID = glCreateProgram();
     if (mID == 0) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create program object");
+        NX_INTERNAL_LOG(E, "GPU: Failed to create program object");
         return false;
     }
 
     (glAttachShader(mID, shaders.id()), ...);
 
     if (!linkProgram()) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to link program");
+        NX_INTERNAL_LOG(E, "GPU: Failed to link program");
         return false;
     }
 
     if (!createUniformCache()) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create uniform cache");
+        NX_INTERNAL_LOG(E, "GPU: Failed to create uniform cache");
         return false;
     }
 
@@ -449,10 +449,10 @@ inline bool Program::linkProgram() noexcept
         if (logLength > 0) {
             std::string errorLog(logLength, '\0');
             glGetProgramInfoLog(mID, logLength, nullptr, errorLog.data());
-            HP_INTERNAL_LOG(E, "GPU: Failed to link program: %s", errorLog.c_str());
+            NX_INTERNAL_LOG(E, "GPU: Failed to link program: %s", errorLog.c_str());
         }
         else {
-            HP_INTERNAL_LOG(E, "GPU: Failed to link program (no error log available)");
+            NX_INTERNAL_LOG(E, "GPU: Failed to link program (no error log available)");
         }
     }
 
@@ -470,7 +470,7 @@ inline bool Program::validateShaderStages(const Shaders&... shaders) noexcept
     // Compute pipeline: only one compute shader
     if (std::find(stages.begin(), stages.end(), GL_COMPUTE_SHADER) != stages.end()) {
         if (count != 1) {
-            HP_INTERNAL_LOG(E, "GPU: Compute pipeline requires exactly one compute shader");
+            NX_INTERNAL_LOG(E, "GPU: Compute pipeline requires exactly one compute shader");
             return false;
         }
         return true;
@@ -480,7 +480,7 @@ inline bool Program::validateShaderStages(const Shaders&... shaders) noexcept
     bool hasVertex = std::find(stages.begin(), stages.end(), GL_VERTEX_SHADER) != stages.end();
     bool hasFragment = std::find(stages.begin(), stages.end(), GL_FRAGMENT_SHADER) != stages.end();
     if (!hasVertex || !hasFragment) {
-        HP_INTERNAL_LOG(E, "GPU: Graphics pipeline requires at least vertex and fragment shaders");
+        NX_INTERNAL_LOG(E, "GPU: Graphics pipeline requires at least vertex and fragment shaders");
         return false;
     }
 
@@ -488,7 +488,7 @@ inline bool Program::validateShaderStages(const Shaders&... shaders) noexcept
     std::array<GLenum, count> sortedStages = stages;
     std::sort(sortedStages.begin(), sortedStages.end());
     if (std::adjacent_find(sortedStages.begin(), sortedStages.end()) != sortedStages.end()) {
-        HP_INTERNAL_LOG(E, "GPU: Duplicate shader stages detected");
+        NX_INTERNAL_LOG(E, "GPU: Duplicate shader stages detected");
         return false;
     }
     
@@ -578,4 +578,4 @@ inline void Program::cleanup() noexcept
 
 } // namespace gpu
 
-#endif // HP_GPU_PROGRAM_HPP
+#endif // NX_GPU_PROGRAM_HPP

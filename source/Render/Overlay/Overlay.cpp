@@ -10,21 +10,21 @@
 
 namespace overlay {
 
-Overlay::Overlay(render::ProgramCache& programs, render::AssetCache& assets, HP_AppDesc& desc)
+Overlay::Overlay(render::ProgramCache& programs, render::AssetCache& assets, NX_AppDesc& desc)
     : mPrograms(programs)
     , mAssets(assets)
 {
     /* --- Tweak description --- */
 
-    if (desc.render2D.resolution < HP_IVEC2_ONE) {
-        desc.render2D.resolution = HP_GetDisplaySize();
+    if (desc.render2D.resolution < NX_IVEC2_ONE) {
+        desc.render2D.resolution = NX_GetDisplaySize();
     }
 
-    desc.render2D.sampleCount = HP_MAX(desc.render2D.sampleCount, 1);
+    desc.render2D.sampleCount = NX_MAX(desc.render2D.sampleCount, 1);
 
     /* --- Create GPU Buffers --- */
 
-    mUniformBuffer = gpu::Buffer(GL_UNIFORM_BUFFER, sizeof(HP_Mat4), nullptr, GL_DYNAMIC_DRAW);
+    mUniformBuffer = gpu::Buffer(GL_UNIFORM_BUFFER, sizeof(NX_Mat4), nullptr, GL_DYNAMIC_DRAW);
 
     /* --- Create Framebuffer --- */
 
@@ -62,7 +62,7 @@ void Overlay::clear()
 {
     gpu::Pipeline pipeline;
     pipeline.bindFramebuffer(mFramebuffer);
-    pipeline.clear(mFramebuffer, HP_BLANK);
+    pipeline.clear(mFramebuffer, NX_BLANK);
 }
 
 void Overlay::flush()
@@ -73,7 +73,7 @@ void Overlay::flush()
 
     /* --- Upload to vertex buffer --- */
 
-    mVertexBuffer->vbo.upload(0, mVertices.size() * sizeof(HP_Vertex2D), mVertices.data());
+    mVertexBuffer->vbo.upload(0, mVertices.size() * sizeof(NX_Vertex2D), mVertices.data());
     mVertexBuffer->ebo.upload(0, mIndices.size() * sizeof(uint16_t), mIndices.data());
 
     /* --- Setup pipeline --- */
@@ -100,8 +100,8 @@ void Overlay::flush()
             }
             break;
         case DrawCall::TEXT:
-            const HP_Font& font = call.font ? *call.font : mAssets.font();
-            pipeline.useProgram(font.type() == HP_FONT_SDF ? mPrograms.overlayFontSDF() : mPrograms.overlayFontBitmap());
+            const NX_Font& font = call.font ? *call.font : mAssets.font();
+            pipeline.useProgram(font.type() == NX_FONT_SDF ? mPrograms.overlayFontSDF() : mPrograms.overlayFontBitmap());
             pipeline.bindTexture(0, font.gpuTexture());
             break;
         }
@@ -130,7 +130,7 @@ void Overlay::blit()
         pipeline.setViewport(mCurrentTarget->framebuffer());
     }
     else {
-        pipeline.setViewport(HP_GetWindowSize());
+        pipeline.setViewport(NX_GetWindowSize());
     }
 
     pipeline.useProgram(mPrograms.overlay());

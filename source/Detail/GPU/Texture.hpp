@@ -6,10 +6,10 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_GPU_TEXTURE_HPP
-#define HP_GPU_TEXTURE_HPP
+#ifndef NX_GPU_TEXTURE_HPP
+#define NX_GPU_TEXTURE_HPP
 
-#include <Hyperion/HP_Core.h>
+#include <NX/NX_Core.h>
 #include <SDL3/SDL_assert.h>
 #include <glad/gles2.h>
 
@@ -117,7 +117,7 @@ public:
     GLenum internalFormat() const noexcept;
     bool hasMipmap() const noexcept;
     int numLevels() const noexcept;
-    HP_IVec2 dimensions() const noexcept;
+    NX_IVec2 dimensions() const noexcept;
     int width() const noexcept;
     int height() const noexcept;
     int depth() const noexcept;
@@ -272,9 +272,9 @@ inline int Texture::numLevels() const noexcept
     return mMipLevels;
 }
 
-inline HP_IVec2 Texture::dimensions() const noexcept
+inline NX_IVec2 Texture::dimensions() const noexcept
 {
-    return HP_IVEC2(mWidth, mHeight);
+    return NX_IVEC2(mWidth, mHeight);
 }
 
 inline int Texture::width() const noexcept
@@ -446,10 +446,10 @@ inline const char* Texture::targetToString(GLenum target) noexcept
 
 inline int Texture::calculateMaxMipLevels(int width, int height, int depth) noexcept
 {
-    int maxDimension = HP_MAX3(width, height, depth);
+    int maxDimension = NX_MAX3(width, height, depth);
     return static_cast<int>(std::floor(std::log2(maxDimension))) + 1;
 }
 
 } // namespace gpu
 
-#endif // HP_GPU_TEXTURE_HPP
+#endif // NX_GPU_TEXTURE_HPP

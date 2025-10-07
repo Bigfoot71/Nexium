@@ -18,12 +18,12 @@ namespace gpu {
 void Framebuffer::setDrawBuffers(std::initializer_list<GLenum> buffers) noexcept
 {
     if (!isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Cannot set draw buffers on invalid framebuffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot set draw buffers on invalid framebuffer");
         return;
     }
 
     util::StaticArray<GLenum, 32> glBuffers{};
-    for (int i = 0; i < HP_MIN(glBuffers.capacity(), buffers.size()); i++) {
+    for (int i = 0; i < NX_MIN(glBuffers.capacity(), buffers.size()); i++) {
         glBuffers.push_back(GL_COLOR_ATTACHMENT0 + buffers.begin()[i]);
     }
 
@@ -35,7 +35,7 @@ void Framebuffer::setDrawBuffers(std::initializer_list<GLenum> buffers) noexcept
 void Framebuffer::enableAllDrawBuffers() noexcept
 {
     if (!isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Cannot enable draw buffers on invalid framebuffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot enable draw buffers on invalid framebuffer");
         return;
     }
 
@@ -52,7 +52,7 @@ void Framebuffer::enableAllDrawBuffers() noexcept
 void Framebuffer::disableDrawBuffers() noexcept
 {
     if (!isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Cannot disable draw buffers on invalid framebuffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot disable draw buffers on invalid framebuffer");
         return;
     }
 
@@ -317,7 +317,7 @@ bool Framebuffer::checkFramebufferComplete(GLuint framebuffer) noexcept
             statusStr = "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
             break;
         }
-        HP_INTERNAL_LOG(E, "GPU: Framebuffer incomplete: %s (0x%x)", statusStr, status);
+        NX_INTERNAL_LOG(E, "GPU: Framebuffer incomplete: %s (0x%x)", statusStr, status);
         SDL_assert(false);
         return false;
     }

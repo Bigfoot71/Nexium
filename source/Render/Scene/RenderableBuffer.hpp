@@ -6,11 +6,11 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_SCENE_RENDERABLE_BUFFER_HPP
-#define HP_SCENE_RENDERABLE_BUFFER_HPP
+#ifndef NX_SCENE_RENDERABLE_BUFFER_HPP
+#define NX_SCENE_RENDERABLE_BUFFER_HPP
 
-#include <Hyperion/HP_Core.h>
-#include <Hyperion/HP_Math.h>
+#include <NX/NX_Core.h>
+#include <NX/NX_Math.h>
 
 #include "../../Detail/Util/ObjectRing.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
@@ -30,8 +30,8 @@ public:
 
 private:
     struct GPUData {
-        alignas(16) HP_Mat4 matModel;
-        alignas(16) HP_Mat4 matNormal;
+        alignas(16) NX_Mat4 matModel;
+        alignas(16) NX_Mat4 matNormal;
         alignas(4) int32_t boneOffset;
         alignas(4) uint32_t layerMask;
         alignas(4) int32_t instancing;
@@ -52,7 +52,7 @@ inline void RenderableBuffer::upload(const DrawData& data, const DrawCall& call)
 {
     GPUData gpuData{
         .matModel = data.matrix(),
-        .matNormal = HP_Mat3ToMat4(&data.normal()),
+        .matNormal = NX_Mat3ToMat4(&data.normal()),
         .boneOffset = data.boneMatrixOffset(),
         .layerMask = call.mesh().layerMask,
         .instancing = data.useInstancing(),
@@ -70,4 +70,4 @@ inline const gpu::Buffer& RenderableBuffer::buffer() const
 
 } // namespace scene
 
-#endif // HP_SCENE_RENDERABLE_BUFFER_HPP
+#endif // NX_SCENE_RENDERABLE_BUFFER_HPP

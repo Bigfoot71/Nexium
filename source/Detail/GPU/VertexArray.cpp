@@ -28,39 +28,39 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
     for (const auto& vbDesc : vertexBuffers)
     {
         if (vbDesc.buffer && !vbDesc.buffer->isValid()) {
-            HP_INTERNAL_LOG(E, "GPU: Invalid vertex buffer provided");
+            NX_INTERNAL_LOG(E, "GPU: Invalid vertex buffer provided");
             return;
         }
 
         if (vbDesc.buffer && vbDesc.buffer->target() != GL_ARRAY_BUFFER) {
-            HP_INTERNAL_LOG(E, "GPU: Vertex buffer must have GL_ARRAY_BUFFER target");
+            NX_INTERNAL_LOG(E, "GPU: Vertex buffer must have GL_ARRAY_BUFFER target");
             return;
         }
 
         if (vbDesc.attributes.size() == 0) {
-            HP_INTERNAL_LOG(E, "GPU: Vertex buffer must have at least one attribute");
+            NX_INTERNAL_LOG(E, "GPU: Vertex buffer must have at least one attribute");
             return;
         }
 
         for (const auto& attr : vbDesc.attributes)
         {
             if (!isValidAttributeSize(attr.size)) {
-                HP_INTERNAL_LOG(E, "GPU: Invalid attribute size %d for location %u", attr.size, attr.location);
+                NX_INTERNAL_LOG(E, "GPU: Invalid attribute size %d for location %u", attr.size, attr.location);
                 return;
             }
 
             if (!isValidAttributeType(attr.type)) {
-                HP_INTERNAL_LOG(E, "GPU: Invalid attribute type 0x%x for location %u", attr.type, attr.location);
+                NX_INTERNAL_LOG(E, "GPU: Invalid attribute type 0x%x for location %u", attr.type, attr.location);
                 return;
             }
 
             if (attr.stride < 0) {
-                HP_INTERNAL_LOG(E, "GPU: Invalid negative stride %d for location %u", attr.stride, attr.location);
+                NX_INTERNAL_LOG(E, "GPU: Invalid negative stride %d for location %u", attr.stride, attr.location);
                 return;
             }
 
             if (attr.offset < 0) {
-                HP_INTERNAL_LOG(E, "GPU: Invalid negative offset %lld for location %u",
+                NX_INTERNAL_LOG(E, "GPU: Invalid negative offset %lld for location %u",
                     static_cast<long long>(attr.offset), attr.location);
                 return;
             }
@@ -71,11 +71,11 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
 
     if (mIndexBuffer) {
         if (!mIndexBuffer->isValid()) {
-            HP_INTERNAL_LOG(E, "GPU: Invalid index buffer provided");
+            NX_INTERNAL_LOG(E, "GPU: Invalid index buffer provided");
             return;
         }
         if (mIndexBuffer->target() != GL_ELEMENT_ARRAY_BUFFER) {
-            HP_INTERNAL_LOG(E, "GPU: Index buffer must have GL_ELEMENT_ARRAY_BUFFER target");
+            NX_INTERNAL_LOG(E, "GPU: Index buffer must have GL_ELEMENT_ARRAY_BUFFER target");
             return;
         }
     }
@@ -84,7 +84,7 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
 
     glGenVertexArrays(1, &mID);
     if (mID == 0) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create vertex array object");
+        NX_INTERNAL_LOG(E, "GPU: Failed to create vertex array object");
         return;
     }
 
@@ -92,7 +92,7 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
 
     mVertexBuffers = decltype(mVertexBuffers)(vertexBuffers.size());
     if (mVertexBuffers.capacity() < vertexBuffers.size()) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to allocate buffer to store vertex array buffers");
+        NX_INTERNAL_LOG(E, "GPU: Failed to allocate buffer to store vertex array buffers");
         glDeleteVertexArrays(1, &mID);
         mID = 0;
         return;
@@ -124,7 +124,7 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
         // REVIEW: `withBind` already unbinds the buffer, could we review the error handling?
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         if (glGetError() != GL_NO_ERROR) {
-            HP_INTERNAL_LOG(E, "GPU: Failed to setup vertex array");
+            NX_INTERNAL_LOG(E, "GPU: Failed to setup vertex array");
             glDeleteVertexArrays(1, &mID);
             mID = 0;
             return;

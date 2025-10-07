@@ -6,11 +6,11 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_SCENE_FRUSTUM_HPP
-#define HP_SCENE_FRUSTUM_HPP
+#ifndef NX_SCENE_FRUSTUM_HPP
+#define NX_SCENE_FRUSTUM_HPP
 
-#include <Hyperion/HP_Render.h>
-#include <Hyperion/HP_Math.h>
+#include <NX/NX_Render.h>
+#include <NX/NX_Math.h>
 
 namespace scene {
 
@@ -29,63 +29,63 @@ public:
     Frustum() = default;
 
     /** Frustum update */
-    void update(const HP_Mat4& viewProj);
+    void update(const NX_Mat4& viewProj);
 
     /** Frustum culling */
-    bool containsPoint(const HP_Vec3& position) const;
-    bool containsPoints(const HP_Vec3* positions, int count) const;
-    bool cointainsSphere(const HP_Vec3& position, float radius) const;
-    bool containsAabb(const HP_BoundingBox& aabb) const;
-    bool containsObb(const HP_BoundingBox& aabb, const HP_Transform& transform) const;
+    bool containsPoint(const NX_Vec3& position) const;
+    bool containsPoints(const NX_Vec3* positions, int count) const;
+    bool cointainsSphere(const NX_Vec3& position, float radius) const;
+    bool containsAabb(const NX_BoundingBox& aabb) const;
+    bool containsObb(const NX_BoundingBox& aabb, const NX_Transform& transform) const;
 
 private:
     /** Helper functions */
-    static float distanceToPlane(const HP_Vec4& plane, const HP_Vec3& position);
+    static float distanceToPlane(const NX_Vec4& plane, const NX_Vec3& position);
 
 private:
-    HP_Vec4 mPlanes[6]{};
+    NX_Vec4 mPlanes[6]{};
 };
 
 /* === Public Implementation === */
 
-inline void Frustum::update(const HP_Mat4& viewProj)
+inline void Frustum::update(const NX_Mat4& viewProj)
 {
-    mPlanes[Right] = HP_Vec4Normalize({
+    mPlanes[Right] = NX_Vec4Normalize({
         viewProj.m03 - viewProj.m00,
         viewProj.m13 - viewProj.m10,
         viewProj.m23 - viewProj.m20,
         viewProj.m33 - viewProj.m30
     });
 
-    mPlanes[Left] = HP_Vec4Normalize({
+    mPlanes[Left] = NX_Vec4Normalize({
         viewProj.m03 + viewProj.m00,
         viewProj.m13 + viewProj.m10,
         viewProj.m23 + viewProj.m20,
         viewProj.m33 + viewProj.m30
     });
 
-    mPlanes[Top] = HP_Vec4Normalize({
+    mPlanes[Top] = NX_Vec4Normalize({
         viewProj.m03 - viewProj.m01,
         viewProj.m13 - viewProj.m11,
         viewProj.m23 - viewProj.m21,
         viewProj.m33 - viewProj.m31
     });
 
-    mPlanes[Bottom] = HP_Vec4Normalize({
+    mPlanes[Bottom] = NX_Vec4Normalize({
         viewProj.m03 + viewProj.m01,
         viewProj.m13 + viewProj.m11,
         viewProj.m23 + viewProj.m21,
         viewProj.m33 + viewProj.m31
     });
 
-    mPlanes[Back] = HP_Vec4Normalize({
+    mPlanes[Back] = NX_Vec4Normalize({
         viewProj.m03 - viewProj.m02,
         viewProj.m13 - viewProj.m12,
         viewProj.m23 - viewProj.m22,
         viewProj.m33 - viewProj.m32
     });
 
-    mPlanes[Front] = HP_Vec4Normalize({
+    mPlanes[Front] = NX_Vec4Normalize({
         viewProj.m03 + viewProj.m02,
         viewProj.m13 + viewProj.m12,
         viewProj.m23 + viewProj.m22,
@@ -93,7 +93,7 @@ inline void Frustum::update(const HP_Mat4& viewProj)
     });
 }
 
-inline bool Frustum::containsPoint(const HP_Vec3& position) const
+inline bool Frustum::containsPoint(const NX_Vec3& position) const
 {
     for (int i = 0; i < PLANE_COUNT; i++) {
         if (distanceToPlane(mPlanes[i], position) <= 0) {
@@ -103,7 +103,7 @@ inline bool Frustum::containsPoint(const HP_Vec3& position) const
     return true;
 }
 
-inline bool Frustum::containsPoints(const HP_Vec3* positions, int count) const
+inline bool Frustum::containsPoints(const NX_Vec3* positions, int count) const
 {
     for (int i = 0; i < count; i++) {
         if (containsPoint(positions[i])) {
@@ -113,7 +113,7 @@ inline bool Frustum::containsPoints(const HP_Vec3* positions, int count) const
     return false;
 }
 
-inline bool Frustum::cointainsSphere(const HP_Vec3& position, float radius) const
+inline bool Frustum::cointainsSphere(const NX_Vec3& position, float radius) const
 {
     for (int i = 0; i < PLANE_COUNT; i++) {
         if (distanceToPlane(mPlanes[i], position) < -radius) {
@@ -123,17 +123,17 @@ inline bool Frustum::cointainsSphere(const HP_Vec3& position, float radius) cons
     return true;
 }
 
-inline bool Frustum::containsAabb(const HP_BoundingBox& aabb) const
+inline bool Frustum::containsAabb(const NX_BoundingBox& aabb) const
 {
     float xMin = aabb.min.x, yMin = aabb.min.y, zMin = aabb.min.z;
     float xMax = aabb.max.x, yMax = aabb.max.y, zMax = aabb.max.z;
 
     for (int i = 0; i < PLANE_COUNT; i++)
     {
-        const HP_Vec4& plane = mPlanes[i];
+        const NX_Vec4& plane = mPlanes[i];
 
         // Choose the optimal coordinates according to the sign of the normal
-        float distance = distanceToPlane(mPlanes[i], HP_Vec3 {
+        float distance = distanceToPlane(mPlanes[i], NX_Vec3 {
             .x = (plane.x >= 0.0f) ? xMax : xMin,
             .y = (plane.y >= 0.0f) ? yMax : yMin,
             .z = (plane.z >= 0.0f) ? zMax : zMin
@@ -146,39 +146,39 @@ inline bool Frustum::containsAabb(const HP_BoundingBox& aabb) const
     return true;
 }
 
-inline bool Frustum::containsObb(const HP_BoundingBox& aabb, const HP_Transform& transform) const
+inline bool Frustum::containsObb(const NX_BoundingBox& aabb, const NX_Transform& transform) const
 {
     /* --- Compute OBB center and extents in local space --- */
 
-    HP_Vec3 localCenter = (aabb.min + aabb.max) * 0.5f;
-    HP_Vec3 extents = (aabb.max - aabb.min) * 0.5f;
+    NX_Vec3 localCenter = (aabb.min + aabb.max) * 0.5f;
+    NX_Vec3 extents = (aabb.max - aabb.min) * 0.5f;
 
     /* --- Transform center to world space --- */
 
-    HP_Vec3 scaledCenter = localCenter * transform.scale;
-    HP_Vec3 rotatedCenter = HP_Vec3Rotate(scaledCenter, transform.rotation);
-    HP_Vec3 worldCenter = rotatedCenter + transform.translation;
+    NX_Vec3 scaledCenter = localCenter * transform.scale;
+    NX_Vec3 rotatedCenter = NX_Vec3Rotate(scaledCenter, transform.rotation);
+    NX_Vec3 worldCenter = rotatedCenter + transform.translation;
 
     /* --- Compute the 3 OBB axes (columns of rotation matrix scaled) --- */
 
-    HP_Vec3 obbAxisX = HP_Vec3Rotate(HP_VEC3(transform.scale.x, 0, 0), transform.rotation);
-    HP_Vec3 obbAxisY = HP_Vec3Rotate(HP_VEC3(0, transform.scale.y, 0), transform.rotation);
-    HP_Vec3 obbAxisZ = HP_Vec3Rotate(HP_VEC3(0, 0, transform.scale.z), transform.rotation);
+    NX_Vec3 obbAxisX = NX_Vec3Rotate(NX_VEC3(transform.scale.x, 0, 0), transform.rotation);
+    NX_Vec3 obbAxisY = NX_Vec3Rotate(NX_VEC3(0, transform.scale.y, 0), transform.rotation);
+    NX_Vec3 obbAxisZ = NX_Vec3Rotate(NX_VEC3(0, 0, transform.scale.z), transform.rotation);
 
     /* --- Test OBB against each frustum plane --- */
 
     for (int i = 0; i < PLANE_COUNT; i++)
     {
-        const HP_Vec4& plane = mPlanes[i];
+        const NX_Vec4& plane = mPlanes[i];
 
         // Signed distance from OBB center to plane
         float centerDistance = distanceToPlane(plane, worldCenter);
 
         // Project OBB extents onto plane normal
         float projectedRadius =
-            fabsf(HP_Vec3Dot(HP_VEC3(plane.x, plane.y, plane.z), obbAxisX)) * extents.x +
-            fabsf(HP_Vec3Dot(HP_VEC3(plane.x, plane.y, plane.z), obbAxisY)) * extents.y +
-            fabsf(HP_Vec3Dot(HP_VEC3(plane.x, plane.y, plane.z), obbAxisZ)) * extents.z;
+            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obbAxisX)) * extents.x +
+            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obbAxisY)) * extents.y +
+            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obbAxisZ)) * extents.z;
 
         if (centerDistance + projectedRadius < -1e-6f) {
             return false;
@@ -190,11 +190,11 @@ inline bool Frustum::containsObb(const HP_BoundingBox& aabb, const HP_Transform&
 
 /* === Private Implementation === */
 
-inline float Frustum::distanceToPlane(const HP_Vec4& plane, const HP_Vec3& position)
+inline float Frustum::distanceToPlane(const NX_Vec4& plane, const NX_Vec3& position)
 {
     return plane.x * position.x + plane.y * position.y + plane.z * position.z + plane.w;
 }
 
 } // namespace scene
 
-#endif // HP_SCENE_FRUSTUM_HPP
+#endif // NX_SCENE_FRUSTUM_HPP

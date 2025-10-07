@@ -1,4 +1,4 @@
-PROJECT_NAME           = "Hyperion"
+PROJECT_NAME           = "Nexium"
 PROJECT_NUMBER         = "@PROJECT_VERSION@"
 OUTPUT_DIRECTORY       = "@CMAKE_CURRENT_BINARY_DIR@/docs"
 GENERATE_LATEX         = NO
@@ -6,6 +6,6 @@ GENERATE_HTML          = YES
 GENERATE_MAN           = YES
 GENERATE_RTF           = NO
 GENERATE_XML           = NO
-INPUT                  = @HP_ROOT_PATH@/include
+INPUT                  = @NX_ROOT_PATH@/include
 RECURSIVE              = YES
 QUIET                  = YES

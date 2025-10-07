@@ -131,7 +131,7 @@ gpu::Program& ProgramCache::skybox()
     return mSkybox;
 }
 
-gpu::Program& ProgramCache::output(HP_Tonemap tonemap)
+gpu::Program& ProgramCache::output(NX_Tonemap tonemap)
 {
     if (mOutput[tonemap].isValid()) {
         return mOutput[tonemap];
@@ -140,22 +140,22 @@ gpu::Program& ProgramCache::output(HP_Tonemap tonemap)
     const char* tonemapper = "TONEMAPPER TONEMAP_LINEAR";
 
     switch (tonemap) {
-    case HP_TONEMAP_LINEAR:
+    case NX_TONEMAP_LINEAR:
         break;
-    case HP_TONEMAP_REINHARD:
+    case NX_TONEMAP_REINHARD:
         tonemapper = "TONEMAPPER TONEMAP_REINHARD";
         break;
-    case HP_TONEMAP_FILMIC:
+    case NX_TONEMAP_FILMIC:
         tonemapper = "TONEMAPPER TONEMAP_FILMIC";
         break;
-    case HP_TONEMAP_ACES:
+    case NX_TONEMAP_ACES:
         tonemapper = "TONEMAPPER TONEMAP_ACES";
         break;
-    case HP_TONEMAP_AGX:
+    case NX_TONEMAP_AGX:
         tonemapper = "TONEMAPPER TONEMAP_AGX";
         break;
     default:
-        HP_INTERNAL_LOG(W, "RENDER: Unknown tonemap mode (%i); Linear will be used", tonemap);
+        NX_INTERNAL_LOG(W, "RENDER: Unknown tonemap mode (%i); Linear will be used", tonemap);
         break;
     }
 
@@ -210,9 +210,9 @@ gpu::Program& ProgramCache::upsampling()
     return mUpsampling;
 }
 
-gpu::Program& ProgramCache::bloomPost(HP_Bloom mode)
+gpu::Program& ProgramCache::bloomPost(NX_Bloom mode)
 {
-    SDL_assert(mode != HP_BLOOM_DISABLED);
+    SDL_assert(mode != NX_BLOOM_DISABLED);
 
     if (mBloomPost[mode].isValid()) {
         return mBloomPost[mode];
@@ -221,16 +221,16 @@ gpu::Program& ProgramCache::bloomPost(HP_Bloom mode)
     const char* bloomMode = "BLOOM_MIX";
 
     switch (mode) {
-    case HP_BLOOM_MIX:
+    case NX_BLOOM_MIX:
         break;
-    case HP_BLOOM_ADDITIVE:
+    case NX_BLOOM_ADDITIVE:
         bloomMode = "BLOOM_ADDITIVE";
         break;
-    case HP_BLOOM_SCREEN:
+    case NX_BLOOM_SCREEN:
         bloomMode = "BLOOM_SCREEN";
         break;
     default:
-        HP_INTERNAL_LOG(W, "RENDER: Unknown bloom mode (%i); Mix will be used", mode);
+        NX_INTERNAL_LOG(W, "RENDER: Unknown bloom mode (%i); Mix will be used", mode);
         break;
     }
 

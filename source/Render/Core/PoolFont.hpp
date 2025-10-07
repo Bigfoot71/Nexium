@@ -6,12 +6,12 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_RENDER_POOL_FONT_HPP
-#define HP_RENDER_POOL_FONT_HPP
+#ifndef NX_RENDER_POOL_FONT_HPP
+#define NX_RENDER_POOL_FONT_HPP
 
 #include "../../Detail/Util/ObjectPool.hpp"
-#include "../../Core/HP_InternalLog.hpp"
-#include "../HP_Font.hpp"
+#include "../../Core/NX_InternalLog.hpp"
+#include "../NX_Font.hpp"
 
 namespace render {
 
@@ -19,20 +19,20 @@ namespace render {
 
 class PoolFont {
 public:
-    HP_Font* create(const void* fileData, size_t dataSize, HP_FontType type, int baseSize, int* codepoints, int codepointCount);
-    void destroy(HP_Font* font);
+    NX_Font* create(const void* fileData, size_t dataSize, NX_FontType type, int baseSize, int* codepoints, int codepointCount);
+    void destroy(NX_Font* font);
 
 private:
-    util::ObjectPool<HP_Font, 32> mPool{};
+    util::ObjectPool<NX_Font, 32> mPool{};
 };
 
 /* === Public Implementation === */
 
-inline HP_Font* PoolFont::create(const void* fileData, size_t dataSize, HP_FontType type, int baseSize, int* codepoints, int codepointCount)
+inline NX_Font* PoolFont::create(const void* fileData, size_t dataSize, NX_FontType type, int baseSize, int* codepoints, int codepointCount)
 {
-    HP_Font* font = mPool.create(fileData, dataSize, type, baseSize, codepoints, codepointCount);
+    NX_Font* font = mPool.create(fileData, dataSize, type, baseSize, codepoints, codepointCount);
     if (font == nullptr) {
-        HP_INTERNAL_LOG(E, "RENDER: Failed to load font; Object pool issue");
+        NX_INTERNAL_LOG(E, "RENDER: Failed to load font; Object pool issue");
     }
     if (!font->isValid()) {
         mPool.destroy(font);
@@ -41,7 +41,7 @@ inline HP_Font* PoolFont::create(const void* fileData, size_t dataSize, HP_FontT
     return font;
 }
 
-inline void PoolFont::destroy(HP_Font* font)
+inline void PoolFont::destroy(NX_Font* font)
 {
     if (font != nullptr) {
         mPool.destroy(font);
@@ -50,4 +50,4 @@ inline void PoolFont::destroy(HP_Font* font)
 
 } // namespace render
 
-#endif // HP_RENDER_POOL_FONT_HPP
+#endif // NX_RENDER_POOL_FONT_HPP

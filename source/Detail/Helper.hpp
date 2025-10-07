@@ -6,11 +6,11 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_DETAIL_HELPER_HPP
-#define HP_DETAIL_HELPER_HPP
+#ifndef NX_DETAIL_HELPER_HPP
+#define NX_DETAIL_HELPER_HPP
 
-#include <Hyperion/HP_BitUtils.h>
-#include <Hyperion/HP_Macros.h>
+#include <NX/NX_BitUtils.h>
+#include <NX/NX_Macros.h>
 #include <SDL3/SDL_stdinc.h>
 #include <type_traits>
 
@@ -39,7 +39,7 @@ constexpr int bitScanForward(uint32_t flag)
     }
 
     return (flag == 0) ? -1 : static_cast<int>(
-        HP_Ctz64(static_cast<uint64_t>(flag))
+        NX_Ctz64(static_cast<uint64_t>(flag))
     );
 }
 
@@ -99,4 +99,4 @@ const char* formatCString(const char* fmt, ...);
 
 } // namespace helper
 
-#endif // HP_DETAIL_HELPER_HPP
+#endif // NX_DETAIL_HELPER_HPP

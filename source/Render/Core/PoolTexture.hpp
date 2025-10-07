@@ -6,13 +6,13 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_RENDER_POOL_TEXTURE_HPP
-#define HP_RENDER_POOL_TEXTURE_HPP
+#ifndef NX_RENDER_POOL_TEXTURE_HPP
+#define NX_RENDER_POOL_TEXTURE_HPP
 
 #include "../../Detail/Util/ObjectPool.hpp"
-#include "../../Core/HP_InternalLog.hpp"
-#include "../HP_RenderTexture.hpp"
-#include "../HP_Texture.hpp"
+#include "../../Core/NX_InternalLog.hpp"
+#include "../NX_RenderTexture.hpp"
+#include "../NX_Texture.hpp"
 
 namespace render {
 
@@ -20,37 +20,37 @@ namespace render {
 
 class PoolTexture {
 public:
-    HP_Texture* createTexture(const HP_Image& image, HP_TextureWrap wrap);
-    HP_Texture* createTexture(const HP_Image& image);
-    void destroyTexture(HP_Texture* texture);
+    NX_Texture* createTexture(const NX_Image& image, NX_TextureWrap wrap);
+    NX_Texture* createTexture(const NX_Image& image);
+    void destroyTexture(NX_Texture* texture);
 
-    HP_RenderTexture* createRenderTexture(int w, int h);
-    void destroyRenderTexture(HP_RenderTexture* renderTexture);
+    NX_RenderTexture* createRenderTexture(int w, int h);
+    void destroyRenderTexture(NX_RenderTexture* renderTexture);
 
-    void setDefaultFilter(HP_TextureFilter filter);
+    void setDefaultFilter(NX_TextureFilter filter);
     void setDefaultAnisotropy(float anisotropy);
 
 private:
-    util::ObjectPool<HP_RenderTexture, 8> mRenderTextures;
-    util::ObjectPool<HP_Texture, 1024> mTextures;
+    util::ObjectPool<NX_RenderTexture, 8> mRenderTextures;
+    util::ObjectPool<NX_Texture, 1024> mTextures;
 
 private:
-    HP_TextureFilter mDefaultFilter{HP_TEXTURE_FILTER_BILINEAR};
+    NX_TextureFilter mDefaultFilter{NX_TEXTURE_FILTER_BILINEAR};
     float mDefaultAnisotropy{1.0f};
 };
 
 /* === Public Implementation === */
 
-inline HP_Texture* PoolTexture::createTexture(const HP_Image& image, HP_TextureWrap wrap)
+inline NX_Texture* PoolTexture::createTexture(const NX_Image& image, NX_TextureWrap wrap)
 {
-    HP_Texture* texture = mTextures.create(image, mDefaultFilter, wrap, mDefaultFilter);
+    NX_Texture* texture = mTextures.create(image, mDefaultFilter, wrap, mDefaultFilter);
     if (texture == nullptr) {
-        HP_INTERNAL_LOG(E, "RENDER: Failed to load texture; Object pool issue");
+        NX_INTERNAL_LOG(E, "RENDER: Failed to load texture; Object pool issue");
         return texture;
     }
 
     if (!texture->isValid()) {
-        HP_INTERNAL_LOG(E, "RENDER: Failed to load texture; GPU-side issue");
+        NX_INTERNAL_LOG(E, "RENDER: Failed to load texture; GPU-side issue");
         mTextures.destroy(texture);
         return nullptr;
     }
@@ -58,28 +58,28 @@ inline HP_Texture* PoolTexture::createTexture(const HP_Image& image, HP_TextureW
     return texture;
 }
 
-inline HP_Texture* PoolTexture::createTexture(const HP_Image& image)
+inline NX_Texture* PoolTexture::createTexture(const NX_Image& image)
 {
-    return createTexture(image, HP_TEXTURE_WRAP_CLAMP);
+    return createTexture(image, NX_TEXTURE_WRAP_CLAMP);
 }
 
-inline void PoolTexture::destroyTexture(HP_Texture* texture)
+inline void PoolTexture::destroyTexture(NX_Texture* texture)
 {
     if (texture != nullptr) {
         mTextures.destroy(texture);
     }
 }
 
-inline HP_RenderTexture* PoolTexture::createRenderTexture(int w, int h)
+inline NX_RenderTexture* PoolTexture::createRenderTexture(int w, int h)
 {
-    HP_RenderTexture* renderTexture = mRenderTextures.create(w, h);
+    NX_RenderTexture* renderTexture = mRenderTextures.create(w, h);
     if (renderTexture == nullptr) {
-        HP_INTERNAL_LOG(E, "RENDER: Failed to create render texture; Object pool issue");
+        NX_INTERNAL_LOG(E, "RENDER: Failed to create render texture; Object pool issue");
         return renderTexture;
     }
 
     if (!renderTexture->isValid()) {
-        HP_INTERNAL_LOG(E, "RENDER: Failed to create render texture; GPU-side issue");
+        NX_INTERNAL_LOG(E, "RENDER: Failed to create render texture; GPU-side issue");
         mRenderTextures.destroy(renderTexture);
         return nullptr;
     }
@@ -87,14 +87,14 @@ inline HP_RenderTexture* PoolTexture::createRenderTexture(int w, int h)
     return renderTexture;
 }
 
-inline void PoolTexture::destroyRenderTexture(HP_RenderTexture* renderTexture)
+inline void PoolTexture::destroyRenderTexture(NX_RenderTexture* renderTexture)
 {
     if (renderTexture != nullptr) {
         mRenderTextures.destroy(renderTexture);
     }
 }
 
-inline void PoolTexture::setDefaultFilter(HP_TextureFilter filter)
+inline void PoolTexture::setDefaultFilter(NX_TextureFilter filter)
 {
     mDefaultFilter = filter;
 }
@@ -106,4 +106,4 @@ inline void PoolTexture::setDefaultAnisotropy(float anisotropy)
 
 } // namespace render
 
-#endif // HP_RENDER_POOL_TEXTURE_HPP
+#endif // NX_RENDER_POOL_TEXTURE_HPP

@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_DETAIL_BUILD_INFO_HPP
-#define HP_DETAIL_BUILD_INFO_HPP
+#ifndef NX_DETAIL_BUILD_INFO_HPP
+#define NX_DETAIL_BUILD_INFO_HPP
 
 namespace detail {
 
@@ -23,4 +23,4 @@ static constexpr bool debug = true;
 
 } // namespace detail
 
-#endif // HP_DETAIL_BUILD_INFO_HPP
+#endif // NX_DETAIL_BUILD_INFO_HPP

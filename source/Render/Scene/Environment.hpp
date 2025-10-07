@@ -1,7 +1,7 @@
-#ifndef HP_SCENE_ENVIRONMENT_HPP
-#define HP_SCENE_ENVIRONMENT_HPP
+#ifndef NX_SCENE_ENVIRONMENT_HPP
+#define NX_SCENE_ENVIRONMENT_HPP
 
-#include <Hyperion/HP_Render.h>
+#include <NX/NX_Render.h>
 #include "../../Detail/GPU/Buffer.hpp"
 
 namespace scene {
@@ -11,32 +11,32 @@ namespace scene {
 class Environment {
 public:
     Environment();
-    void update(const HP_Environment& env);
+    void update(const NX_Environment& env);
 
     /** Textures */
-    const HP_Cubemap* skyCubemap() const;
-    const HP_ReflectionProbe* skyProbe() const;
+    const NX_Cubemap* skyCubemap() const;
+    const NX_ReflectionProbe* skyProbe() const;
 
     /** CPU data */
-    bool hasFlags(HP_EnvironmentFlag flags) const;
-    const HP_BoundingBox& bounds() const;
-    const HP_Color& background() const;
-    HP_Tonemap tonemapMode() const;
-    HP_Bloom bloomMode() const;
+    bool hasFlags(NX_EnvironmentFlag flags) const;
+    const NX_BoundingBox& bounds() const;
+    const NX_Color& background() const;
+    NX_Tonemap tonemapMode() const;
+    NX_Bloom bloomMode() const;
     bool isSsaoEnabled() const;
 
     /** GPU data */
     const gpu::Buffer& buffer() const;
 
 private:
-    HP_Vec4 getBloomPrefilter(float threshold, float softThreshold);
+    NX_Vec4 getBloomPrefilter(float threshold, float softThreshold);
 
 private:
     struct GPUData {
-        alignas(16) HP_Vec3 ambientColor;
-        alignas(16) HP_Vec4 skyRotation;
-        alignas(16) HP_Vec3 fogColor;
-        alignas(16) HP_Vec4 bloomPrefilter;
+        alignas(16) NX_Vec3 ambientColor;
+        alignas(16) NX_Vec4 skyRotation;
+        alignas(16) NX_Vec3 fogColor;
+        alignas(16) NX_Vec4 bloomPrefilter;
         alignas(4) float skyIntensity;
         alignas(4) float skySpecular;
         alignas(4) float skyDiffuse;
@@ -63,15 +63,15 @@ private:
 
 private:
     /** Textures */
-    HP_Cubemap* mSkyCubemap;
-    HP_ReflectionProbe* mSkyProbe;
+    NX_Cubemap* mSkyCubemap;
+    NX_ReflectionProbe* mSkyProbe;
 
     /** CPU data */
-    HP_EnvironmentFlag mFlags;
-    HP_BoundingBox mBounds;
-    HP_Color mBackground;
-    HP_Tonemap mTonemapMode;
-    HP_Bloom mBloomMode;
+    NX_EnvironmentFlag mFlags;
+    NX_BoundingBox mBounds;
+    NX_Color mBackground;
+    NX_Tonemap mTonemapMode;
+    NX_Bloom mBloomMode;
     bool mSsaoEnabled;
 
     /** GPU data */
@@ -84,7 +84,7 @@ inline Environment::Environment()
     : mBuffer(GL_UNIFORM_BUFFER, sizeof(GPUData), nullptr, GL_DYNAMIC_DRAW)
 { }
 
-inline void Environment::update(const HP_Environment& env)
+inline void Environment::update(const NX_Environment& env)
 {
     /* --- Store textures --- */
 
@@ -97,8 +97,8 @@ inline void Environment::update(const HP_Environment& env)
     mBounds = env.bounds;
     mBackground = env.background;
 
-    if (env.fog.mode != HP_FOG_DISABLED) {
-        mBackground = HP_ColorLerp(mBackground, env.fog.color, env.fog.skyAffect);
+    if (env.fog.mode != NX_FOG_DISABLED) {
+        mBackground = NX_ColorLerp(mBackground, env.fog.color, env.fog.skyAffect);
     }
 
     mTonemapMode = env.tonemap.mode;
@@ -109,8 +109,8 @@ inline void Environment::update(const HP_Environment& env)
 
     GPUData data{};
 
-    data.ambientColor = HP_VEC3(env.ambient.r, env.ambient.g, env.ambient.b);
-    data.skyRotation = HP_VEC4(env.sky.rotation.x, env.sky.rotation.y, env.sky.rotation.z, env.sky.rotation.w);
+    data.ambientColor = NX_VEC3(env.ambient.r, env.ambient.g, env.ambient.b);
+    data.skyRotation = NX_VEC4(env.sky.rotation.x, env.sky.rotation.y, env.sky.rotation.z, env.sky.rotation.w);
     data.skyIntensity = env.sky.intensity;
     data.skySpecular = env.sky.specular * env.sky.intensity;
     data.skyDiffuse = env.sky.diffuse * env.sky.intensity;
@@ -119,7 +119,7 @@ inline void Environment::update(const HP_Environment& env)
     data.fogStart = env.fog.start;
     data.fogEnd = env.fog.end;
     data.fogSkyAffect = (env.fog.mode) ? env.fog.skyAffect : 0.0f;
-    data.fogColor = HP_VEC3(env.fog.color.r, env.fog.color.g, env.fog.color.b);
+    data.fogColor = NX_VEC3(env.fog.color.r, env.fog.color.g, env.fog.color.b);
     data.fogMode = env.fog.mode;
 
     data.ssaoIntensity = env.ssao.intensity;
@@ -146,37 +146,37 @@ inline void Environment::update(const HP_Environment& env)
     mBuffer.upload(&data);
 }
 
-inline const HP_Cubemap* Environment::skyCubemap() const
+inline const NX_Cubemap* Environment::skyCubemap() const
 {
     return mSkyCubemap;
 }
 
-inline const HP_ReflectionProbe* Environment::skyProbe() const
+inline const NX_ReflectionProbe* Environment::skyProbe() const
 {
     return mSkyProbe;
 }
 
-inline bool Environment::hasFlags(HP_EnvironmentFlag flags) const
+inline bool Environment::hasFlags(NX_EnvironmentFlag flags) const
 {
     return (mFlags & flags) == flags;
 }
 
-inline const HP_BoundingBox& Environment::bounds() const
+inline const NX_BoundingBox& Environment::bounds() const
 {
     return mBounds;
 }
 
-inline const HP_Color& Environment::background() const
+inline const NX_Color& Environment::background() const
 {
     return mBackground;
 }
 
-inline HP_Tonemap Environment::tonemapMode() const
+inline NX_Tonemap Environment::tonemapMode() const
 {
     return mTonemapMode;
 }
 
-inline HP_Bloom Environment::bloomMode() const
+inline NX_Bloom Environment::bloomMode() const
 {
     return mBloomMode;
 }
@@ -193,11 +193,11 @@ inline const gpu::Buffer& Environment::buffer() const
 
 /* === Private Implementation === */
 
-inline HP_Vec4 Environment::getBloomPrefilter(float threshold, float softThreshold)
+inline NX_Vec4 Environment::getBloomPrefilter(float threshold, float softThreshold)
 {
     float knee = threshold * softThreshold;
 
-    HP_Vec4 prefilter;
+    NX_Vec4 prefilter;
     prefilter.x = threshold;
     prefilter.y = threshold - knee;
     prefilter.z = 2.0f * knee;
@@ -208,4 +208,4 @@ inline HP_Vec4 Environment::getBloomPrefilter(float threshold, float softThresho
 
 } // namespace scene
 
-#endif // HP_SCENE_ENVIRONMENT_HPP
+#endif // NX_SCENE_ENVIRONMENT_HPP

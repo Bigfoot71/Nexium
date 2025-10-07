@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_UTIL_STATIC_ARRAY_HPP
-#define HP_UTIL_STATIC_ARRAY_HPP
+#ifndef NX_UTIL_STATIC_ARRAY_HPP
+#define NX_UTIL_STATIC_ARRAY_HPP
 
 #include <algorithm>
 #include <iterator>
@@ -594,4 +594,4 @@ constexpr void swap(StaticArray<T, N>& lhs, StaticArray<T, N>& rhs) noexcept
 
 } // namespace util
 
-#endif // HP_UTIL_STATIC_ARRAY_HPP
+#endif // NX_UTIL_STATIC_ARRAY_HPP

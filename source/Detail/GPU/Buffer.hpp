@@ -6,12 +6,12 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_GPU_BUFFER_HPP
-#define HP_GPU_BUFFER_HPP
+#ifndef NX_GPU_BUFFER_HPP
+#define NX_GPU_BUFFER_HPP
 
-#include "../../Core/HP_InternalLog.hpp"
+#include "../../Core/NX_InternalLog.hpp"
 
-#include <Hyperion/HP_Core.h>
+#include <NX/NX_Core.h>
 #include <SDL3/SDL_assert.h>
 #include <glad/gles2.h>
 
@@ -90,17 +90,17 @@ inline Buffer::Buffer(GLenum target, GLsizeiptr size, const void* data, GLenum u
     SDL_assert(size > 0);
 
     if (!isValidTarget(target)) {
-        HP_INTERNAL_LOG(E, "GPU: Invalid buffer target: 0x%x", target);
+        NX_INTERNAL_LOG(E, "GPU: Invalid buffer target: 0x%x", target);
         return;
     }
 
     if (!isValidUsage(usage)) {
-        HP_INTERNAL_LOG(E, "GPU: Invalid buffer usage: 0x%x", usage);
+        NX_INTERNAL_LOG(E, "GPU: Invalid buffer usage: 0x%x", usage);
         return;
     }
 
     if (size <= 0) {
-        HP_INTERNAL_LOG(E, "GPU: Invalid buffer size: %lld", static_cast<long long>(size));
+        NX_INTERNAL_LOG(E, "GPU: Invalid buffer size: %lld", static_cast<long long>(size));
         return;
     }
 
@@ -289,4 +289,4 @@ inline const char* Buffer::usageToString(GLenum usage) noexcept
 
 } // namespace gpu
 
-#endif // HP_GPU_BUFFER_HPP
+#endif // NX_GPU_BUFFER_HPP

@@ -15,16 +15,16 @@
 
 namespace {
 
-HP_TextureWrap getWrapMode(aiTextureMapMode wrap)
+NX_TextureWrap getWrapMode(aiTextureMapMode wrap)
 {
-    HP_TextureWrap hpWrap = HP_TEXTURE_WRAP_CLAMP;
+    NX_TextureWrap hpWrap = NX_TEXTURE_WRAP_CLAMP;
 
     switch (wrap) {
     case aiTextureMapMode_Wrap:
-        hpWrap = HP_TEXTURE_WRAP_REPEAT;
+        hpWrap = NX_TEXTURE_WRAP_REPEAT;
         break;
     case aiTextureMapMode_Mirror:
-        hpWrap = HP_TEXTURE_WRAP_MIRROR;
+        hpWrap = NX_TEXTURE_WRAP_MIRROR;
         break;
     case aiTextureMapMode_Clamp:
     case aiTextureMapMode_Decal:
@@ -36,9 +36,9 @@ HP_TextureWrap getWrapMode(aiTextureMapMode wrap)
     return hpWrap;
 }
 
-HP_Image loadImage(const aiScene* scene, const aiString& path, bool asData, bool* isAllocated)
+NX_Image loadImage(const aiScene* scene, const aiString& path, bool asData, bool* isAllocated)
 {
-    HP_Image image{};
+    NX_Image image{};
 
     *isAllocated = false;
 
@@ -60,10 +60,10 @@ HP_Image loadImage(const aiScene* scene, const aiString& path, bool asData, bool
 
         if (aiTex->mHeight == 0) {
             if (asData) {
-                image = HP_LoadImageAsDataFromMem(aiTex->pcData, aiTex->mWidth);
+                image = NX_LoadImageAsDataFromMem(aiTex->pcData, aiTex->mWidth);
             }
             else {
-                image = HP_LoadImageFromMem(aiTex->pcData, aiTex->mWidth);
+                image = NX_LoadImageFromMem(aiTex->pcData, aiTex->mWidth);
             }
             *isAllocated = true;
         }
@@ -73,7 +73,7 @@ HP_Image loadImage(const aiScene* scene, const aiString& path, bool asData, bool
         else {
             image.w = aiTex->mWidth;
             image.h = aiTex->mHeight;
-            image.format = HP_PIXEL_FORMAT_RGBA8;
+            image.format = NX_PIXEL_FORMAT_RGBA8;
             // NOTE: No need to copy the data here, the image will be immediately
             //       uploaded to the GPU without being retained afterward
             image.pixels = aiTex->pcData;
@@ -84,10 +84,10 @@ HP_Image loadImage(const aiScene* scene, const aiString& path, bool asData, bool
 
     else {
         if (asData) {
-            image = HP_LoadImageAsData(path.data);
+            image = NX_LoadImageAsData(path.data);
         }
         else {
-            image = HP_LoadImage(path.data);
+            image = NX_LoadImage(path.data);
         }
         if (image.pixels != nullptr) {
             *isAllocated = true;
@@ -103,12 +103,12 @@ HP_Image loadImage(const aiScene* scene, const aiString& path, bool asData, bool
 
 namespace render {
 
-HP_Texture* PoolModel::loadTexture(const aiScene* scene, const aiMaterial* material, aiTextureType type, uint32_t index, bool asData)
+NX_Texture* PoolModel::loadTexture(const aiScene* scene, const aiMaterial* material, aiTextureType type, uint32_t index, bool asData)
 {
     /* --- Get texture info --- */
 
     // TODO: Currently, only the first wrap mode is considered, which may be incorrect
-    //       The wrap system with HP_Texture should be revised to handle wrapping on each axis
+    //       The wrap system with NX_Texture should be revised to handle wrapping on each axis
     //       See also 'loadTextureORM' if a change is made
 
     aiTextureMapMode wrapMode[2]{};
@@ -121,24 +121,24 @@ HP_Texture* PoolModel::loadTexture(const aiScene* scene, const aiMaterial* mater
     /* --- Loads the texture into RAM --- */
 
     bool isAllocated = false;
-    HP_Image image = loadImage(scene, path, asData, &isAllocated);
+    NX_Image image = loadImage(scene, path, asData, &isAllocated);
     if (image.pixels == nullptr) {
         return nullptr;
     }
 
     /* --- Upload the texture to VRAM --- */
 
-    HP_Texture* texture = mPoolTexture.createTexture(image, getWrapMode(wrapMode[0]));
+    NX_Texture* texture = mPoolTexture.createTexture(image, getWrapMode(wrapMode[0]));
     if (isAllocated) {
-        HP_DestroyImage(&image);
+        NX_DestroyImage(&image);
     }
 
     return texture;
 }
 
-HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* material, bool* hasOcclusion, bool* hasRoughness, bool* hasMetalness)
+NX_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* material, bool* hasOcclusion, bool* hasRoughness, bool* hasMetalness)
 {
-    HP_Texture* ormTexture = nullptr;
+    NX_Texture* ormTexture = nullptr;
 
     *hasOcclusion = false;
     *hasRoughness = false;
@@ -152,7 +152,7 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
     if (material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &gltfPath, nullptr, nullptr, nullptr, nullptr, gltfWrapMode) == AI_SUCCESS)
     {
         bool gltfAllocated;
-        HP_Image gltfImage = loadImage(scene, gltfPath, true, &gltfAllocated);
+        NX_Image gltfImage = loadImage(scene, gltfPath, true, &gltfAllocated);
 
         if (gltfImage.pixels != nullptr)
         {
@@ -161,7 +161,7 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
 
             // Load separate occlusion if available
             bool occlusionAllocated = false;
-            HP_Image occlusionImage{};
+            NX_Image occlusionImage{};
             aiString occlusionPath{};
             if (material->GetTexture(aiTextureType_AMBIENT_OCCLUSION, 0, &occlusionPath, nullptr, nullptr, nullptr, nullptr, nullptr) == AI_SUCCESS) {
                 occlusionImage = loadImage(scene, occlusionPath, true, &occlusionAllocated);
@@ -173,25 +173,25 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
             }
 
             // Compose ORM: O=occlusion, R=gltf.green, M=gltf.blue
-            const HP_Image* sources[3] = {
+            const NX_Image* sources[3] = {
                 occlusionImage.pixels ? &occlusionImage : nullptr, // Red channel
                 &gltfImage,                                     // Green channel (roughness from glTF)
                 &gltfImage                                      // Blue channel (metalness from glTF)
             };
 
-            HP_Image ormImage = HP_ComposeImagesRGB(sources, HP_WHITE);
+            NX_Image ormImage = NX_ComposeImagesRGB(sources, NX_WHITE);
 
             if (ormImage.pixels != nullptr) {
                 ormTexture = mPoolTexture.createTexture(ormImage, getWrapMode(gltfWrapMode[0]));
-                HP_DestroyImage(&ormImage);
+                NX_DestroyImage(&ormImage);
             }
 
             // Cleanup
             if (gltfAllocated) {
-                HP_DestroyImage(&gltfImage);
+                NX_DestroyImage(&gltfImage);
             }
             if (occlusionAllocated && occlusionImage.pixels) {
-                HP_DestroyImage(&occlusionImage);
+                NX_DestroyImage(&occlusionImage);
             }
 
             return ormTexture;
@@ -200,9 +200,9 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
 
     /* --- Fallback: Load individual textures --- */
 
-    HP_Image occlusionImage{};
-    HP_Image roughnessImage{};
-    HP_Image metalnessImage{};
+    NX_Image occlusionImage{};
+    NX_Image roughnessImage{};
+    NX_Image metalnessImage{};
 
     bool occlusionAllocated = false;
     bool roughnessAllocated = false;
@@ -233,7 +233,7 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
         roughnessImage = loadImage(scene, roughnessPath, true, &roughnessAllocated);
         if (roughnessImage.pixels) {
             *hasRoughness = true;
-            HP_InvertImage(&roughnessImage); // Convert shininess to roughness
+            NX_InvertImage(&roughnessImage); // Convert shininess to roughness
         }
     }
 
@@ -245,13 +245,13 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
     }
 
     // Compose ORM using the utility function
-    const HP_Image* sources[3] = {
+    const NX_Image* sources[3] = {
         occlusionImage.pixels ? &occlusionImage : nullptr,   // Red channel
         roughnessImage.pixels ? &roughnessImage : nullptr,   // Green channel
         metalnessImage.pixels ? &metalnessImage : nullptr    // Blue channel
     };
 
-    HP_Image ormImage = HP_ComposeImagesRGB(sources, HP_WHITE);
+    NX_Image ormImage = NX_ComposeImagesRGB(sources, NX_WHITE);
 
     if (ormImage.pixels)
     {
@@ -262,25 +262,25 @@ HP_Texture* PoolModel::loadTextureORM(const aiScene* scene, const aiMaterial* ma
         else if (sources[0]) wrapMode = occlusionWrapMode[0];
 
         ormTexture = mPoolTexture.createTexture(ormImage, getWrapMode(wrapMode));
-        HP_DestroyImage(&ormImage);
+        NX_DestroyImage(&ormImage);
     }
 
     // Cleanup
-    if (occlusionAllocated && occlusionImage.pixels) HP_DestroyImage(&occlusionImage);
-    if (roughnessAllocated && roughnessImage.pixels) HP_DestroyImage(&roughnessImage);
-    if (metalnessAllocated && metalnessImage.pixels) HP_DestroyImage(&metalnessImage);
+    if (occlusionAllocated && occlusionImage.pixels) NX_DestroyImage(&occlusionImage);
+    if (roughnessAllocated && roughnessImage.pixels) NX_DestroyImage(&roughnessImage);
+    if (metalnessAllocated && metalnessImage.pixels) NX_DestroyImage(&metalnessImage);
 
     return ormTexture;
 }
 
-bool PoolModel::processMaterials(HP_Model* model, const aiScene* scene)
+bool PoolModel::processMaterials(NX_Model* model, const aiScene* scene)
 {
     /* --- Allocate materials array --- */
 
     model->materialCount = scene->mNumMaterials;
-    model->materials = static_cast<HP_Material*>(SDL_malloc(model->materialCount * sizeof(HP_Material)));
+    model->materials = static_cast<NX_Material*>(SDL_malloc(model->materialCount * sizeof(NX_Material)));
     if (model->materials == nullptr) {
-        HP_INTERNAL_LOG(E, "RENDER: Unable to allocate memory for materials; The model will be invalid");
+        NX_INTERNAL_LOG(E, "RENDER: Unable to allocate memory for materials; The model will be invalid");
         return false;
     }
 
@@ -289,20 +289,20 @@ bool PoolModel::processMaterials(HP_Model* model, const aiScene* scene)
     for (size_t i = 0; i < model->materialCount; i++)
     {
         const aiMaterial* material = scene->mMaterials[i];
-        HP_Material& modelMaterial = model->materials[i];
+        NX_Material& modelMaterial = model->materials[i];
 
         /* --- Initialize material defaults --- */
 
-        modelMaterial = HP_GetDefaultMaterial();
+        modelMaterial = NX_GetDefaultMaterial();
 
         /* --- Load the albedo color --- */
 
         aiColor4D color;
         if (material->Get(AI_MATKEY_BASE_COLOR, color) == AI_SUCCESS) {
-            modelMaterial.albedo.color = assimp_cast<HP_Color>(color);
+            modelMaterial.albedo.color = assimp_cast<NX_Color>(color);
         }
         else if (material->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
-            modelMaterial.albedo.color = assimp_cast<HP_Color>(color);
+            modelMaterial.albedo.color = assimp_cast<NX_Color>(color);
         }
 
         /* --- Load the opacity factor --- */
@@ -342,7 +342,7 @@ bool PoolModel::processMaterials(HP_Model* model, const aiScene* scene)
 
         aiColor4D emissionColor;
         if (material->Get(AI_MATKEY_COLOR_EMISSIVE, emissionColor) == AI_SUCCESS) {
-            modelMaterial.emission.color = assimp_cast<HP_Color>(emissionColor);
+            modelMaterial.emission.color = assimp_cast<NX_Color>(emissionColor);
             modelMaterial.emission.energy = 1.0f;
         }
 
@@ -384,7 +384,7 @@ bool PoolModel::processMaterials(HP_Model* model, const aiScene* scene)
 
         bool twoSided;
         if (material->Get(AI_MATKEY_TWOSIDED, twoSided) == AI_SUCCESS) {
-            if (twoSided) modelMaterial.cull = HP_CULL_NONE;
+            if (twoSided) modelMaterial.cull = NX_CULL_NONE;
         }
 
         /* --- Handle glTF alpha cutoff --- */
@@ -403,7 +403,7 @@ bool PoolModel::processMaterials(HP_Model* model, const aiScene* scene)
                 modelMaterial.depth.prePass = true;
             }
             else if (strcmp(alphaMode.C_Str(), "BLEND") == 0) {
-                modelMaterial.blend = HP_BLEND_ALPHA;
+                modelMaterial.blend = NX_BLEND_ALPHA;
             }
         }
 
@@ -413,10 +413,10 @@ bool PoolModel::processMaterials(HP_Model* model, const aiScene* scene)
         if (material->Get(AI_MATKEY_BLEND_FUNC, blendFunc) == AI_SUCCESS) {
             switch (blendFunc) {
             case aiBlendMode_Default:
-                modelMaterial.blend = HP_BLEND_ALPHA;
+                modelMaterial.blend = NX_BLEND_ALPHA;
                 break;
             case aiBlendMode_Additive:
-                modelMaterial.blend = HP_BLEND_ADD;
+                modelMaterial.blend = NX_BLEND_ADD;
                 break;
             default:
                 break;

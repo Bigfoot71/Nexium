@@ -18,12 +18,12 @@ void Buffer::realloc(GLsizeiptr size, const void* data) noexcept
     SDL_assert(size > 0);
 
     if (!isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Cannot set data on invalid buffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot set data on invalid buffer");
         return;
     }
 
     if (size <= 0) {
-        HP_INTERNAL_LOG(E, "GPU: Invalid buffer size: %lld", static_cast<long long>(size));
+        NX_INTERNAL_LOG(E, "GPU: Invalid buffer size: %lld", static_cast<long long>(size));
         return;
     }
 
@@ -32,7 +32,7 @@ void Buffer::realloc(GLsizeiptr size, const void* data) noexcept
     Pipeline::withBufferBind(mTarget, mID, [&]() {
         glBufferData(mTarget, size, data, mUsage);
         if (glGetError() != GL_NO_ERROR) {
-            HP_INTERNAL_LOG(E, "GPU: Failed to set buffer data");
+            NX_INTERNAL_LOG(E, "GPU: Failed to set buffer data");
         }
     });
 }
@@ -42,12 +42,12 @@ void Buffer::realloc(GLsizeiptr size, bool keepData) noexcept
     SDL_assert(size > 0);
 
     if (!isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Cannot set data on invalid buffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot set data on invalid buffer");
         return;
     }
 
     if (size <= 0) {
-        HP_INTERNAL_LOG(E, "GPU: Invalid buffer size: %lld", static_cast<long long>(size));
+        NX_INTERNAL_LOG(E, "GPU: Invalid buffer size: %lld", static_cast<long long>(size));
         return;
     }
 
@@ -61,7 +61,7 @@ void Buffer::realloc(GLsizeiptr size, bool keepData) noexcept
             if (!keepData) {
                 glBufferData(mTarget, size, nullptr, mUsage);
                 if (glGetError() != GL_NO_ERROR) {
-                    HP_INTERNAL_LOG(E, "GPU: Failed to set buffer data");
+                    NX_INTERNAL_LOG(E, "GPU: Failed to set buffer data");
                     return;
                 }
                 mSize = size;
@@ -83,7 +83,7 @@ void Buffer::realloc(GLsizeiptr size, bool keepData) noexcept
 
             GLenum error = glGetError();
             if (error != GL_NO_ERROR) {
-                HP_INTERNAL_LOG(E, "GPU: Failed to copy buffer data to temp buffer (error: %d)", error);
+                NX_INTERNAL_LOG(E, "GPU: Failed to copy buffer data to temp buffer (error: %d)", error);
                 glDeleteBuffers(1, &tempBuffer);
                 return;
             }
@@ -95,7 +95,7 @@ void Buffer::realloc(GLsizeiptr size, bool keepData) noexcept
 
             error = glGetError();
             if (error != GL_NO_ERROR) {
-                HP_INTERNAL_LOG(E, "GPU: Failed to reallocate buffer (error: %d)", error);
+                NX_INTERNAL_LOG(E, "GPU: Failed to reallocate buffer (error: %d)", error);
                 glDeleteBuffers(1, &tempBuffer);
                 return;
             }
@@ -109,7 +109,7 @@ void Buffer::realloc(GLsizeiptr size, bool keepData) noexcept
 
             error = glGetError();
             if (error != GL_NO_ERROR) {
-                HP_INTERNAL_LOG(E, "GPU: Failed to restore buffer data (error: %d)", error);
+                NX_INTERNAL_LOG(E, "GPU: Failed to restore buffer data (error: %d)", error);
             }
 
             glBindBuffer(GL_COPY_READ_BUFFER, 0);
@@ -129,12 +129,12 @@ void Buffer::realloc(GLsizeiptr size, bool keepData) noexcept
 bool Buffer::upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept
 {
     if (!isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Cannot set sub data on invalid buffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot set sub data on invalid buffer");
         return false;
     }
 
     if (offset < 0 || size <= 0 || offset + size > mSize) {
-        HP_INTERNAL_LOG(E, "GPU: Invalid buffer sub data range [%lld, %lld) for buffer size %lld",
+        NX_INTERNAL_LOG(E, "GPU: Invalid buffer sub data range [%lld, %lld) for buffer size %lld",
                 static_cast<long long>(offset),
                 static_cast<long long>(offset + size),
                 static_cast<long long>(mSize));
@@ -142,14 +142,14 @@ bool Buffer::upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept
     }
 
     if (!data) {
-        HP_INTERNAL_LOG(E, "GPU: Buffer sub data cannot be null");
+        NX_INTERNAL_LOG(E, "GPU: Buffer sub data cannot be null");
         return false;
     }
 
     Pipeline::withBufferBind(mTarget, mID, [&]() {
         glBufferSubData(mTarget, offset, size, data);
         if (glGetError() != GL_NO_ERROR) {
-            HP_INTERNAL_LOG(E, "GPU: Failed to set buffer sub data");
+            NX_INTERNAL_LOG(E, "GPU: Failed to set buffer sub data");
         }
     });
 
@@ -159,12 +159,12 @@ bool Buffer::upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept
 void* Buffer::map(GLenum access) noexcept
 {
     if (!isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Cannot map invalid buffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot map invalid buffer");
         return nullptr;
     }
 
     if (!isValidMapAccess(access)) {
-        HP_INTERNAL_LOG(E, "GPU: Invalid map access: 0x%x", access);
+        NX_INTERNAL_LOG(E, "GPU: Invalid map access: 0x%x", access);
         return nullptr;
     }
 
@@ -172,7 +172,7 @@ void* Buffer::map(GLenum access) noexcept
     Pipeline::withBufferBind(mTarget, mID, [&]() {
         ptr = glMapBufferRange(mTarget, 0, mSize, access);
         if (!ptr) {
-            HP_INTERNAL_LOG(E, "GPU: Failed to map buffer");
+            NX_INTERNAL_LOG(E, "GPU: Failed to map buffer");
         }
     });
 
@@ -182,12 +182,12 @@ void* Buffer::map(GLenum access) noexcept
 void* Buffer::mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access) noexcept
 {
     if (!isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Cannot map range on invalid buffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot map range on invalid buffer");
         return nullptr;
     }
 
     if (offset < 0 || length <= 0 || offset + length > mSize) {
-        HP_INTERNAL_LOG(E, "GPU: Invalid map range [%lld, %lld) for buffer size %lld",
+        NX_INTERNAL_LOG(E, "GPU: Invalid map range [%lld, %lld) for buffer size %lld",
                 static_cast<long long>(offset),
                 static_cast<long long>(offset + length),
                 static_cast<long long>(mSize));
@@ -195,7 +195,7 @@ void* Buffer::mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access) no
     }
 
     if (!isValidMapRangeAccess(access)) {
-        HP_INTERNAL_LOG(E, "GPU: Invalid map range access: 0x%x", access);
+        NX_INTERNAL_LOG(E, "GPU: Invalid map range access: 0x%x", access);
         return nullptr;
     }
 
@@ -203,7 +203,7 @@ void* Buffer::mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access) no
     Pipeline::withBufferBind(mTarget, mID, [&]() {
         ptr = glMapBufferRange(mTarget, offset, length, access);
         if (!ptr) {
-            HP_INTERNAL_LOG(E, "GPU: Failed to map buffer range");
+            NX_INTERNAL_LOG(E, "GPU: Failed to map buffer range");
         }
     });
 
@@ -213,7 +213,7 @@ void* Buffer::mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access) no
 bool Buffer::unmap() noexcept
 {
     if (!isValid()) {
-        HP_INTERNAL_LOG(E, "GPU: Cannot unmap invalid buffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot unmap invalid buffer");
         return false;
     }
 
@@ -221,7 +221,7 @@ bool Buffer::unmap() noexcept
     Pipeline::withBufferBind(mTarget, mID, [&]() {
         result = glUnmapBuffer(mTarget);
         if (result == GL_FALSE) {
-            HP_INTERNAL_LOG(W, "GPU: Buffer unmap returned GL_FALSE (data corrupted)");
+            NX_INTERNAL_LOG(W, "GPU: Buffer unmap returned GL_FALSE (data corrupted)");
         }
     });
 
@@ -234,14 +234,14 @@ void Buffer::createBuffer(const void* data, GLenum usage) noexcept
 {
     glGenBuffers(1, &mID);
     if (mID == 0) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create buffer object");
+        NX_INTERNAL_LOG(E, "GPU: Failed to create buffer object");
         return;
     }
 
     Pipeline::withBufferBind(mTarget, mID, [&]() {
         glBufferData(mTarget, mSize, data, usage);
         if (glGetError() != GL_NO_ERROR) {
-            HP_INTERNAL_LOG(E, "GPU: Failed to upload buffer data");
+            NX_INTERNAL_LOG(E, "GPU: Failed to upload buffer data");
             glDeleteBuffers(1, &mID);
             mID = 0;
             return;

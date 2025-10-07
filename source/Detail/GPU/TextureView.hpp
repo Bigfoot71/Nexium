@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_GPU_TEXTURE_VIEW_HPP
-#define HP_GPU_TEXTURE_VIEW_HPP
+#ifndef NX_GPU_TEXTURE_VIEW_HPP
+#define NX_GPU_TEXTURE_VIEW_HPP
 
 #include "./Texture.hpp"
 
@@ -37,7 +37,7 @@ public:
     GLuint id() const noexcept;
     GLenum target() const noexcept;
     GLenum internalFormat() const noexcept;
-    HP_IVec2 dimensions() const noexcept;
+    NX_IVec2 dimensions() const noexcept;
     int width() const noexcept;
     int height() const noexcept;
     int depth() const noexcept;
@@ -83,9 +83,9 @@ inline GLenum TextureView::internalFormat() const noexcept
     return mInternalFormat;
 }
 
-inline HP_IVec2 TextureView::dimensions() const noexcept
+inline NX_IVec2 TextureView::dimensions() const noexcept
 {
-    return HP_IVEC2(mWidth, mHeight);
+    return NX_IVEC2(mWidth, mHeight);
 }
 
 inline int TextureView::width() const noexcept
@@ -110,4 +110,4 @@ inline int TextureView::numLevels() const noexcept
 
 } // namespace gpu
 
-#endif // HP_GPU_TEXTURE_VIEW_HPP
+#endif // NX_GPU_TEXTURE_VIEW_HPP

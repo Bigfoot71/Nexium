@@ -8,7 +8,7 @@
 
 #include "./AssetCache.hpp"
 
-#include <Hyperion/HP_Rand.h>
+#include <NX/NX_Rand.h>
 #include <SDL3/SDL_stdinc.h>
 #include <fp16.h>
 
@@ -72,11 +72,11 @@ namespace render {
 
 AssetCache::AssetCache()
     : mTextureWhite(
-        { .pixels = (void*)WHITE, .w = 1, .h = 1, .format = HP_PIXEL_FORMAT_RGB8 },
-        HP_TEXTURE_FILTER_POINT, HP_TEXTURE_WRAP_CLAMP, 1.0f
+        { .pixels = (void*)WHITE, .w = 1, .h = 1, .format = NX_PIXEL_FORMAT_RGB8 },
+        NX_TEXTURE_FILTER_POINT, NX_TEXTURE_WRAP_CLAMP, 1.0f
     )
     , mFont(
-        FONT_TTF, FONT_TTF_SIZE, HP_FONT_MONO, 16,
+        FONT_TTF, FONT_TTF_SIZE, NX_FONT_MONO, 16,
         CODEPOINTS, SDL_arraysize(CODEPOINTS)
     )
 { }
@@ -91,13 +91,13 @@ const gpu::Texture& AssetCache::textureSsaoKernel()
     uint16_t kernel[3 * size];
     for (int i = 0; i < size; i++)
     {
-        HP_Vec3 sample;
-        sample.x = HP_RandRangeFloat(NULL, -1.0f, 1.0f);
-        sample.y = HP_RandRangeFloat(NULL, -1.0f, 1.0f);
-        sample.z = HP_RandFloat(NULL);
+        NX_Vec3 sample;
+        sample.x = NX_RandRangeFloat(NULL, -1.0f, 1.0f);
+        sample.y = NX_RandRangeFloat(NULL, -1.0f, 1.0f);
+        sample.z = NX_RandFloat(NULL);
 
-        sample = HP_Vec3Normalize(sample) * HP_RandFloat(NULL);
-        sample *= HP_Lerp(0.1f, 1.0f, HP_POW2(static_cast<float>(i) / size));
+        sample = NX_Vec3Normalize(sample) * NX_RandFloat(NULL);
+        sample *= NX_Lerp(0.1f, 1.0f, NX_POW2(static_cast<float>(i) / size));
 
         kernel[i * 3 + 0] = fp16_ieee_from_fp32_value(sample.x);
         kernel[i * 3 + 1] = fp16_ieee_from_fp32_value(sample.y);
@@ -136,8 +136,8 @@ const gpu::Texture& AssetCache::textureSsaoNoise()
     constexpr int size = 4;
     uint16_t noise[2 * size * size];
     for (int i = 0; i < size * size; i++) {
-        noise[i * 2 + 0] = fp16_ieee_from_fp32_value(HP_RandRangeFloat(NULL, -1.0f, 1.0f));
-        noise[i * 2 + 1] = fp16_ieee_from_fp32_value(HP_RandRangeFloat(NULL, -1.0f, 1.0f));
+        noise[i * 2 + 0] = fp16_ieee_from_fp32_value(NX_RandRangeFloat(NULL, -1.0f, 1.0f));
+        noise[i * 2 + 1] = fp16_ieee_from_fp32_value(NX_RandRangeFloat(NULL, -1.0f, 1.0f));
     }
 
     mTextureSsaoNoise = gpu::Texture(

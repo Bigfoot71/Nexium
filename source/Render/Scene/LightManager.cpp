@@ -9,19 +9,19 @@
 #include "./LightManager.hpp"
 
 #include "../../Detail/GPU/Pipeline.hpp"
-#include "../HP_Texture.hpp"
+#include "../NX_Texture.hpp"
 #include "./DrawCall.hpp"
 
-#include <Hyperion/HP_Render.h>
-#include <Hyperion/HP_Macros.h>
-#include <Hyperion/HP_Math.h>
+#include <NX/NX_Render.h>
+#include <NX/NX_Macros.h>
+#include <NX/NX_Math.h>
 #include <cfloat>
 
 namespace scene {
 
 /* === Public Implementation === */
 
-LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& assets, const HP_AppDesc& desc)
+LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& assets, const NX_AppDesc& desc)
     : mPrograms(programs), mAssets(assets)
     , mFrameShadowUniform(GL_UNIFORM_BUFFER, sizeof(FrameShadowUniform), nullptr, GL_DYNAMIC_DRAW)
     , mShadowResolution{desc.render3D.shadowRes > 0 ? desc.render3D.shadowRes : 2048}
@@ -32,14 +32,14 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
     //       During rendering, the actual Z slices are dynamic and calculated per-frame based on
     //       the camera's near and far planes using a logarithmic distribution.
 
-    HP_IVec2 resolution = (desc.render3D.resolution > HP_IVEC2_ONE)
-        ? desc.render3D.resolution : HP_GetDisplaySize();
+    NX_IVec2 resolution = (desc.render3D.resolution > NX_IVEC2_ONE)
+        ? desc.render3D.resolution : NX_GetDisplaySize();
 
     mClusterSize.x = std::max(16, resolution.x / 80); // 80 px per target cluster
     mClusterSize.y = std::max(9, resolution.y / 50);  // 50 px per target cluster
 
-    mClusterCount.x = HP_DIV_CEIL(resolution.x, mClusterSize.x);
-    mClusterCount.y = HP_DIV_CEIL(resolution.y, mClusterSize.y);
+    mClusterCount.x = NX_DIV_CEIL(resolution.x, mClusterSize.x);
+    mClusterCount.y = NX_DIV_CEIL(resolution.y, mClusterSize.y);
     mClusterCount.z = 16;
 
     int clusterTotal = mClusterCount.x * mClusterCount.y * mClusterCount.z;
@@ -48,13 +48,13 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
 
     mStorageLights = gpu::Buffer(
         GL_SHADER_STORAGE_BUFFER,
-        32 * sizeof(HP_Light::LightGPU),
+        32 * sizeof(NX_Light::LightGPU),
         nullptr, GL_DYNAMIC_DRAW
     );
 
     mStorageShadow = gpu::Buffer(
         GL_SHADER_STORAGE_BUFFER,
-        32 * sizeof(HP_Light::ShadowGPU),
+        32 * sizeof(NX_Light::ShadowGPU),
         nullptr, GL_DYNAMIC_DRAW
     );
 
@@ -74,7 +74,7 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
 
     mStorageClusterAABB = gpu::Buffer(
         GL_SHADER_STORAGE_BUFFER,
-        clusterTotal * sizeof(HP_BoundingBox),
+        clusterTotal * sizeof(NX_BoundingBox),
         nullptr, GL_DYNAMIC_COPY
     );
 
@@ -159,7 +159,7 @@ void LightManager::updateState(const ProcessParams& params)
     mActiveShadow2DCount =
     mActiveShadowCubeCount = 0;
 
-    for (HP_Light& light : mLights)
+    for (NX_Light& light : mLights)
     {
         if (!light.isActive()) continue;
 
@@ -172,11 +172,11 @@ void LightManager::updateState(const ProcessParams& params)
             shadowIndex = mActiveShadow2DCount + mActiveShadowCubeCount;
 
             switch (light.type()) {
-            case HP_LIGHT_DIR:
-            case HP_LIGHT_SPOT:
+            case NX_LIGHT_DIR:
+            case NX_LIGHT_SPOT:
                 shadowMapIndex = mActiveShadow2DCount++;
                 break;
-            case HP_LIGHT_OMNI:
+            case NX_LIGHT_OMNI:
                 shadowMapIndex = mActiveShadowCubeCount++;
                 break;
             }
@@ -198,18 +198,18 @@ void LightManager::uploadActive(const ProcessParams& params)
 
     /* --- Prepare buffers if necessary --- */
 
-    HP_Light::LightGPU* mappedLights = nullptr;
-    HP_Light::ShadowGPU* mappedShadows = nullptr;
+    NX_Light::LightGPU* mappedLights = nullptr;
+    NX_Light::ShadowGPU* mappedShadows = nullptr;
 
     if (mLightDirty && mActiveLightCount > 0) {
-        mStorageLights.reserve(mLights.size() * sizeof(HP_Light::LightGPU), false);
-        mappedLights = mStorageLights.mapRange<HP_Light::LightGPU>(0, mActiveLightCount * sizeof(HP_Light::LightGPU));
+        mStorageLights.reserve(mLights.size() * sizeof(NX_Light::LightGPU), false);
+        mappedLights = mStorageLights.mapRange<NX_Light::LightGPU>(0, mActiveLightCount * sizeof(NX_Light::LightGPU));
     }
 
     if (mShadowDirty && shadowCount > 0)
     {
-        mStorageShadow.reserve(shadowCount * sizeof(HP_Light::ShadowGPU), false);
-        mappedShadows = mStorageShadow.mapRange<HP_Light::ShadowGPU>(0, shadowCount * sizeof(HP_Light::ShadowGPU));
+        mStorageShadow.reserve(shadowCount * sizeof(NX_Light::ShadowGPU), false);
+        mappedShadows = mStorageShadow.mapRange<NX_Light::ShadowGPU>(0, shadowCount * sizeof(NX_Light::ShadowGPU));
 
         if (mActiveShadowCubeCount > mShadowMapCubeArray.depth()) {
             mShadowMapCubeArray.realloc(mShadowMapCubeArray.width(), mShadowMapCubeArray.height(), mActiveShadowCubeCount);
@@ -224,7 +224,7 @@ void LightManager::uploadActive(const ProcessParams& params)
 
     /* --- Light and shadow processing loop --- */
 
-    for (HP_Light& light : mLights) {
+    for (NX_Light& light : mLights) {
         if (!light.isActive()) {
             continue;
         }
@@ -240,13 +240,13 @@ void LightManager::uploadActive(const ProcessParams& params)
 
     if (mappedLights) {
         mStorageLights.unmap();
-        HP_INTERNAL_LOG(V, "RENDER: %i lights have been uploaded", mActiveLightCount);
+        NX_INTERNAL_LOG(V, "RENDER: %i lights have been uploaded", mActiveLightCount);
         mLightDirty = false;
     }
 
     if (mappedShadows) {
         mStorageShadow.unmap();
-        HP_INTERNAL_LOG(V, "RENDER: %i shadows have been uploaded", shadowCount);
+        NX_INTERNAL_LOG(V, "RENDER: %i shadows have been uploaded", shadowCount);
         mShadowDirty = false;
     }
 }
@@ -270,7 +270,7 @@ void LightManager::computeClusters(const ProcessParams& params)
 
     mStorageClusters.reserve(clusterTotal * sizeof(uint32_t), false);
     mStorageIndex.reserve(clusterTotal * MaxLightsPerCluster * sizeof(uint32_t), false);
-    mStorageClusterAABB.reserve(clusterTotal * (sizeof(HP_Vec4) + sizeof(HP_Vec3)), false); //< minBounds and maxBounds with padding
+    mStorageClusterAABB.reserve(clusterTotal * (sizeof(NX_Vec4) + sizeof(NX_Vec3)), false); //< minBounds and maxBounds with padding
 
     /* --- Calculate the Z-slicing parameters --- */
 
@@ -295,9 +295,9 @@ void LightManager::computeClusters(const ProcessParams& params)
     pipeline.setUniformUint1(4, MaxLightsPerCluster);
 
     pipeline.dispatchCompute(
-        HP_DIV_CEIL(mClusterCount.x, 4),
-        HP_DIV_CEIL(mClusterCount.y, 4),
-        HP_DIV_CEIL(mClusterCount.z, 4)
+        NX_DIV_CEIL(mClusterCount.x, 4),
+        NX_DIV_CEIL(mClusterCount.y, 4),
+        NX_DIV_CEIL(mClusterCount.z, 4)
     );
 }
 
@@ -314,13 +314,13 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     const auto draw = [this, &params](const gpu::Pipeline& pipeline, const DrawCall& call, const DrawData& data)
     {
-        HP_MaterialShader& shader = mPrograms.materialShader(call.material().shader);
+        NX_MaterialShader& shader = mPrograms.materialShader(call.material().shader);
 
-        pipeline.useProgram(shader.program(HP_MaterialShader::SCENE_SHADOW));
-        shader.bindUniformBuffers(pipeline, HP_MaterialShader::SCENE_SHADOW, call.dynamicRangeIndex());
+        pipeline.useProgram(shader.program(NX_MaterialShader::SCENE_SHADOW));
+        shader.bindUniformBuffers(pipeline, NX_MaterialShader::SCENE_SHADOW, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
-        const HP_Texture* texture = call.material().albedo.texture;
+        const NX_Texture* texture = call.material().albedo.texture;
         pipeline.bindTexture(0, mAssets.textureOrWhite(texture));
 
         params.renderableBuffer.upload(data, call);
@@ -330,26 +330,26 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         pipeline.bindUniform(4, params.materialBuffer.buffer());
 
         switch (call.mesh().shadowFaceMode) {
-        case HP_SHADOW_FACE_AUTO:
+        case NX_SHADOW_FACE_AUTO:
             switch (call.material().cull) {
-            case HP_CULL_BACK:
+            case NX_CULL_BACK:
                 pipeline.setCullMode(gpu::CullMode::Back);
                 break;
-            case HP_CULL_FRONT:
+            case NX_CULL_FRONT:
                 pipeline.setCullMode(gpu::CullMode::Front);
                 break;
-            case HP_CULL_NONE:
+            case NX_CULL_NONE:
                 pipeline.setCullMode(gpu::CullMode::Disabled);
                 break;
             }
             break;
-        case HP_SHADOW_FACE_FRONT:
+        case NX_SHADOW_FACE_FRONT:
             pipeline.setCullMode(gpu::CullMode::Back);
             break;
-        case HP_SHADOW_FACE_BACK:
+        case NX_SHADOW_FACE_BACK:
             pipeline.setCullMode(gpu::CullMode::Front);
             break;
-        case HP_SHADOW_FACE_BOTH:
+        case NX_SHADOW_FACE_BOTH:
             pipeline.setCullMode(gpu::CullMode::Disabled);
             break;
         }
@@ -372,21 +372,21 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     /* --- Iterates through all lights with shadows active --- */
 
-    const bool frustumCulling = params.environment.hasFlags(HP_ENV_SHADOW_FRUSTUM_CULLING);
+    const bool frustumCulling = params.environment.hasFlags(NX_ENV_SHADOW_FRUSTUM_CULLING);
 
     int updatedCubeCount = 0;
     int updated2DCount = 0;
 
-    for (HP_Light& light : mLights)
+    for (NX_Light& light : mLights)
     {
         if (!light.isActive() || !light.isShadowActive() || !light.needsShadowMapUpdate()) {
             continue;
         }
 
-        float rangeSq = HP_POW2(light.range());
+        float rangeSq = NX_POW2(light.range());
 
         switch (light.type()) {
-        case HP_LIGHT_DIR:
+        case NX_LIGHT_DIR:
             {
                 updated2DCount++;
 
@@ -395,18 +395,18 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     .lightPosition = light.position(),
                     .shadowLambda = light.shadowLambda(),
                     .farPlane = light.range(),
-                    .elapsedTime = static_cast<float>(HP_GetElapsedTime())
+                    .elapsedTime = static_cast<float>(NX_GetElapsedTime())
                 });
                 pipeline.bindUniform(0, *mFrameShadowUniform);
 
                 pipeline.bindFramebuffer(mFramebufferShadow2D);
                 mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
-                pipeline.clear(mFramebufferShadow2D, HP_COLOR_1(FLT_MAX));
+                pipeline.clear(mFramebufferShadow2D, NX_COLOR_1(FLT_MAX));
 
                 for (const DrawCall& call : params.drawCalls.categories(
                     DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
                 {
-                    if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
+                    if (call.mesh().shadowCastMode == NX_SHADOW_CAST_DISABLED) continue;
                     if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
                     if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.drawDataIndex()])) {
@@ -417,7 +417,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                 mFrameShadowUniform.rotate();
             }
             break;
-        case HP_LIGHT_SPOT:
+        case NX_LIGHT_SPOT:
             {
                 updated2DCount++;
 
@@ -426,18 +426,18 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     .lightPosition = light.position(),
                     .shadowLambda = light.shadowLambda(),
                     .farPlane = light.range(),
-                    .elapsedTime = static_cast<float>(HP_GetElapsedTime())
+                    .elapsedTime = static_cast<float>(NX_GetElapsedTime())
                 });
                 pipeline.bindUniform(0, *mFrameShadowUniform);
 
                 pipeline.bindFramebuffer(mFramebufferShadow2D);
                 mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
-                pipeline.clear(mFramebufferShadow2D, HP_COLOR_1(FLT_MAX));
+                pipeline.clear(mFramebufferShadow2D, NX_COLOR_1(FLT_MAX));
 
                 for (const DrawCall& call : params.drawCalls.categories(
                     DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
                 {
-                    if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
+                    if (call.mesh().shadowCastMode == NX_SHADOW_CAST_DISABLED) continue;
                     if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
                     if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.drawDataIndex()])) {
@@ -448,7 +448,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                 mFrameShadowUniform.rotate();
             }
             break;
-        case HP_LIGHT_OMNI:
+        case NX_LIGHT_OMNI:
             {
                 updatedCubeCount++;
                 pipeline.bindFramebuffer(mFramebufferShadowCube);
@@ -460,17 +460,17 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                         .lightPosition = light.position(),
                         .shadowLambda = light.shadowLambda(),
                         .farPlane = light.range(),
-                        .elapsedTime = static_cast<float>(HP_GetElapsedTime())
+                        .elapsedTime = static_cast<float>(NX_GetElapsedTime())
                     });
                     pipeline.bindUniform(0, *mFrameShadowUniform);
 
                     mFramebufferShadowCube.setColorAttachmentTarget(0, light.shadowMapIndex(), iFace);
-                    pipeline.clear(mFramebufferShadowCube, HP_COLOR_1(FLT_MAX));
+                    pipeline.clear(mFramebufferShadowCube, NX_COLOR_1(FLT_MAX));
 
                     for (const DrawCall& call : params.drawCalls.categories(
                         DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
                     {
-                        if (call.mesh().shadowCastMode == HP_SHADOW_CAST_DISABLED) continue;
+                        if (call.mesh().shadowCastMode == NX_SHADOW_CAST_DISABLED) continue;
                         if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
 
                         if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.drawDataIndex()], iFace)) {

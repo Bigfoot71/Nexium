@@ -6,11 +6,11 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_SCENE_VIEW_FRUSTUM_HPP
-#define HP_SCENE_VIEW_FRUSTUM_HPP
+#ifndef NX_SCENE_VIEW_FRUSTUM_HPP
+#define NX_SCENE_VIEW_FRUSTUM_HPP
 
-#include <Hyperion/HP_Render.h>
-#include <Hyperion/HP_Math.h>
+#include <NX/NX_Render.h>
+#include <NX/NX_Math.h>
 
 #include "../../Detail/GPU/Buffer.hpp"
 #include "./Frustum.hpp"
@@ -24,23 +24,23 @@ public:
     ViewFrustum();
 
     /** ViewFrustum update */
-    void update(const HP_Camera& camera, float aspect);
+    void update(const NX_Camera& camera, float aspect);
 
     /** Layer culling */
-    HP_Layer cullMask() const;
+    NX_Layer cullMask() const;
 
     /** Distance to view */
-    float getDistanceSquaredTo(const HP_Vec3& point) const;
-    float getDistanceSquaredToCenterPoint(const HP_BoundingBox& box, const HP_Mat4& transform) const;
-    float getDistanceSquaredToFarthestPoint(const HP_BoundingBox& box, const HP_Mat4& transform) const;
+    float getDistanceSquaredTo(const NX_Vec3& point) const;
+    float getDistanceSquaredToCenterPoint(const NX_BoundingBox& box, const NX_Mat4& transform) const;
+    float getDistanceSquaredToFarthestPoint(const NX_BoundingBox& box, const NX_Mat4& transform) const;
 
     /** Matrices */
-    const HP_Vec3& viewPosition() const;
-    const HP_Mat4& viewProj() const;
-    const HP_Mat4& invView() const;
-    const HP_Mat4& invProj() const;
-    const HP_Mat4& view() const;
-    const HP_Mat4& proj() const;
+    const NX_Vec3& viewPosition() const;
+    const NX_Mat4& viewProj() const;
+    const NX_Mat4& invView() const;
+    const NX_Mat4& invProj() const;
+    const NX_Mat4& view() const;
+    const NX_Mat4& proj() const;
 
     /** Projection */
     float near() const;
@@ -51,13 +51,13 @@ public:
 
 private:
     struct GPUData {
-        alignas(16) HP_Mat4 viewProj{};
-        alignas(16) HP_Mat4 view{};
-        alignas(16) HP_Mat4 proj{};
-        alignas(16) HP_Mat4 invViewProj{};
-        alignas(16) HP_Mat4 invView{};
-        alignas(16) HP_Mat4 invProj{};
-        alignas(16) HP_Vec3 position{};
+        alignas(16) NX_Mat4 viewProj{};
+        alignas(16) NX_Mat4 view{};
+        alignas(16) NX_Mat4 proj{};
+        alignas(16) NX_Mat4 invViewProj{};
+        alignas(16) NX_Mat4 invView{};
+        alignas(16) NX_Mat4 invProj{};
+        alignas(16) NX_Vec3 position{};
         alignas(4) uint32_t cullMask{};
         alignas(4) float near;
         alignas(4) float far;
@@ -74,7 +74,7 @@ inline ViewFrustum::ViewFrustum()
     : mUniform(GL_UNIFORM_BUFFER, sizeof(GPUData), nullptr, GL_DYNAMIC_DRAW)
 { }
 
-inline void ViewFrustum::update(const HP_Camera& camera, float aspect)
+inline void ViewFrustum::update(const NX_Camera& camera, float aspect)
 {
     /* --- Save raw data from camera --- */
 
@@ -85,27 +85,27 @@ inline void ViewFrustum::update(const HP_Camera& camera, float aspect)
 
     /* --- Compute view matrix --- */
 
-    HP_Mat4 T = HP_Mat4Translate(-camera.position);
-    HP_Mat4 R = HP_QuatToMat4(camera.rotation);
-    R = HP_Mat4Transpose(&R);
+    NX_Mat4 T = NX_Mat4Translate(-camera.position);
+    NX_Mat4 R = NX_QuatToMat4(camera.rotation);
+    R = NX_Mat4Transpose(&R);
 
     mData.view = T * R;
 
     /* --- Compute projection matrix --- */
 
     switch (camera.projection) {
-    case HP_PROJECTION_PERSPECTIVE:
+    case NX_PROJECTION_PERSPECTIVE:
         {
             float top = camera.nearPlane * tanf(camera.fov * 0.5f);
             float right = top * aspect;
-            mData.proj = HP_Mat4Frustum(-right, right, -top, top, camera.nearPlane, camera.farPlane);
+            mData.proj = NX_Mat4Frustum(-right, right, -top, top, camera.nearPlane, camera.farPlane);
         }
         break;
-    case HP_PROJECTION_ORTHOGRAPHIC:
+    case NX_PROJECTION_ORTHOGRAPHIC:
         {
             float top = camera.fov * 0.5f;
             float right = top * aspect;
-            mData.proj = HP_Mat4Ortho(-right, right, -top, top, camera.nearPlane, camera.farPlane);
+            mData.proj = NX_Mat4Ortho(-right, right, -top, top, camera.nearPlane, camera.farPlane);
         }
         break;
     }
@@ -116,9 +116,9 @@ inline void ViewFrustum::update(const HP_Camera& camera, float aspect)
 
     /* --- Compute inverse matrices --- */
 
-    mData.invViewProj = HP_Mat4Inverse(&mData.viewProj);
-    mData.invView = HP_Mat4Inverse(&mData.view);
-    mData.invProj = HP_Mat4Inverse(&mData.proj);
+    mData.invViewProj = NX_Mat4Inverse(&mData.viewProj);
+    mData.invView = NX_Mat4Inverse(&mData.view);
+    mData.invProj = NX_Mat4Inverse(&mData.proj);
 
     /* --- Compute frustum planes --- */
 
@@ -129,22 +129,22 @@ inline void ViewFrustum::update(const HP_Camera& camera, float aspect)
     mUniform.upload(&mData);
 }
 
-inline HP_Layer ViewFrustum::cullMask() const
+inline NX_Layer ViewFrustum::cullMask() const
 {
     return mData.cullMask;
 }
 
-inline float ViewFrustum::getDistanceSquaredTo(const HP_Vec3& point) const
+inline float ViewFrustum::getDistanceSquaredTo(const NX_Vec3& point) const
 {
-    return HP_Vec3DistanceSq(mData.position, point);
+    return NX_Vec3DistanceSq(mData.position, point);
 }
 
-inline float ViewFrustum::getDistanceSquaredToCenterPoint(const HP_BoundingBox& box, const HP_Mat4& transform) const
+inline float ViewFrustum::getDistanceSquaredToCenterPoint(const NX_BoundingBox& box, const NX_Mat4& transform) const
 {
-    return HP_Vec3DistanceSq(mData.position, (box.min + box.max) * transform);
+    return NX_Vec3DistanceSq(mData.position, (box.min + box.max) * transform);
 }
 
-inline float ViewFrustum::getDistanceSquaredToFarthestPoint(const HP_BoundingBox& box, const HP_Mat4& transform) const
+inline float ViewFrustum::getDistanceSquaredToFarthestPoint(const NX_BoundingBox& box, const NX_Mat4& transform) const
 {
     float maxDistSq = 0.0f;
 
@@ -152,13 +152,13 @@ inline float ViewFrustum::getDistanceSquaredToFarthestPoint(const HP_BoundingBox
      for (int y = 0; y <= 1; ++y)
       for (int z = 0; z <= 1; ++z)
     {
-        HP_Vec3 corner = {
+        NX_Vec3 corner = {
             x ? box.max.x : box.min.x,
             y ? box.max.y : box.min.y,
             z ? box.max.z : box.min.z
         };
 
-        float distSq = HP_Vec3DistanceSq(
+        float distSq = NX_Vec3DistanceSq(
             mData.position, corner * transform
         );
 
@@ -168,32 +168,32 @@ inline float ViewFrustum::getDistanceSquaredToFarthestPoint(const HP_BoundingBox
     return maxDistSq;
 }
 
-inline const HP_Vec3& ViewFrustum::viewPosition() const
+inline const NX_Vec3& ViewFrustum::viewPosition() const
 {
     return mData.position;
 }
 
-inline const HP_Mat4& ViewFrustum::viewProj() const
+inline const NX_Mat4& ViewFrustum::viewProj() const
 {
     return mData.viewProj;
 }
 
-inline const HP_Mat4& ViewFrustum::invView() const
+inline const NX_Mat4& ViewFrustum::invView() const
 {
     return mData.invView;
 }
 
-inline const HP_Mat4& ViewFrustum::invProj() const
+inline const NX_Mat4& ViewFrustum::invProj() const
 {
     return mData.invProj;
 }
 
-inline const HP_Mat4& ViewFrustum::view() const
+inline const NX_Mat4& ViewFrustum::view() const
 {
     return mData.view;
 }
 
-inline const HP_Mat4& ViewFrustum::proj() const
+inline const NX_Mat4& ViewFrustum::proj() const
 {
     return mData.proj;
 }
@@ -215,4 +215,4 @@ inline const gpu::Buffer& ViewFrustum::buffer() const
 
 } // namespace scene
 
-#endif // HP_SCENE_VIEW_FRUSTUM_HPP
+#endif // NX_SCENE_VIEW_FRUSTUM_HPP

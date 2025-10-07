@@ -1,58 +1,58 @@
-#include <Hyperion/Hyperion.h>
+#include <NX/Nexium.h>
 #include "./common.h"
 
 #define INSTANCE_COUNT 128
 
 int main(void)
 {
-    HP_Init("Hyperion - Instanced", 800, 450, HP_FLAG_VSYNC_HINT);
-    HP_AddSearchPath(RESOURCES_PATH, false);
+    NX_Init("Nexium - Instanced", 800, 450, NX_FLAG_VSYNC_HINT);
+    NX_AddSearchPath(RESOURCES_PATH, false);
 
-    HP_Mesh* ground = HP_GenMeshQuad(HP_VEC2_1(10.0f), HP_VEC2_ONE, HP_VEC3_UP);
-    HP_Model* model = HP_LoadModel("models/CesiumMan.glb");
+    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_VEC2_ONE, NX_VEC3_UP);
+    NX_Model* model = NX_LoadModel("models/CesiumMan.glb");
 
     int animCount = 0;
-    HP_ModelAnimation** anim = HP_LoadModelAnimations("models/CesiumMan.glb", &animCount, 30);
+    NX_ModelAnimation** anim = NX_LoadModelAnimations("models/CesiumMan.glb", &animCount, 30);
     model->anim = anim[0];
 
-    HP_Mat4 matrices[INSTANCE_COUNT];
-    HP_Color colors[INSTANCE_COUNT];
+    NX_Mat4 matrices[INSTANCE_COUNT];
+    NX_Color colors[INSTANCE_COUNT];
 
     for (int i = 0; i < INSTANCE_COUNT; i++) {
-        matrices[i] = HP_Mat4Translate(HP_VEC3(
-            HP_RandRangeFloat(NULL, -5, +5),
+        matrices[i] = NX_Mat4Translate(NX_VEC3(
+            NX_RandRangeFloat(NULL, -5, +5),
             0,
-            HP_RandRangeFloat(NULL, -5, +5)
+            NX_RandRangeFloat(NULL, -5, +5)
         ));
-        colors[i] = HP_ColorFromHSV(
-            360 * HP_RandFloat(NULL),
+        colors[i] = NX_ColorFromHSV(
+            360 * NX_RandFloat(NULL),
             1, 1, 1
         );
     }
 
-    HP_InstanceBuffer* instances = HP_CreateInstanceBuffer(HP_INSTANCE_DATA_MATRIX | HP_INSTANCE_DATA_COLOR, INSTANCE_COUNT);
-    HP_UpdateInstanceBuffer(instances, HP_INSTANCE_DATA_MATRIX, matrices, 0, INSTANCE_COUNT, false);
-    HP_UpdateInstanceBuffer(instances, HP_INSTANCE_DATA_COLOR, colors, 0, INSTANCE_COUNT, false);
+    NX_InstanceBuffer* instances = NX_CreateInstanceBuffer(NX_INSTANCE_DATA_MATRIX | NX_INSTANCE_DATA_COLOR, INSTANCE_COUNT);
+    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_MATRIX, matrices, 0, INSTANCE_COUNT, false);
+    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_COLOR, colors, 0, INSTANCE_COUNT, false);
 
-    HP_Light* light = HP_CreateLight(HP_LIGHT_DIR);
-    HP_SetLightDirection(light, HP_VEC3(-1, -1, -1));
-    HP_SetShadowActive(light, true);
-    HP_SetLightActive(light, true);
+    NX_Light* light = NX_CreateLight(NX_LIGHT_DIR);
+    NX_SetLightDirection(light, NX_VEC3(-1, -1, -1));
+    NX_SetShadowActive(light, true);
+    NX_SetLightActive(light, true);
 
-    HP_Camera camera = HP_GetDefaultCamera();
+    NX_Camera camera = NX_GetDefaultCamera();
 
-    while (HP_FrameStep())
+    while (NX_FrameStep())
     {
-        CMN_UpdateCamera(&camera, HP_VEC3(0, 1, 0), 2.0f, 1.0f);
-        model->animFrame += 40 * HP_GetFrameTime();
+        CMN_UpdateCamera(&camera, NX_VEC3(0, 1, 0), 2.0f, 1.0f);
+        model->animFrame += 40 * NX_GetFrameTime();
 
-        HP_Begin3D(&camera, NULL, NULL);
-        HP_DrawMesh3D(ground, NULL, NULL);
-        HP_DrawModelInstanced3D(model, instances, INSTANCE_COUNT, NULL);
-        HP_End3D();
+        NX_Begin3D(&camera, NULL, NULL);
+        NX_DrawMesh3D(ground, NULL, NULL);
+        NX_DrawModelInstanced3D(model, instances, INSTANCE_COUNT, NULL);
+        NX_End3D();
     }
 
-    HP_Quit();
+    NX_Quit();
 
     return 0;
 }

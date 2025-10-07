@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(hyperion VERSION 0.1.0 LANGUAGES C CXX)
+project(nexium VERSION 0.1.0 LANGUAGES C CXX)
 
 # Used language standards
 
@@ -20,31 +20,31 @@ endif()
 
 # Determine the project's root directory and check if it's the main project
 
-set(HP_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+set(NX_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-    set(HP_IS_MAIN ON)
+    set(NX_IS_MAIN ON)
 else()
-    set(HP_IS_MAIN OFF)
+    set(NX_IS_MAIN OFF)
 endif()
 
-# Hyperion build config options
+# Nexium build config options
 
-option(HP_BUILD_DOCS "Build documentation with Doxygen" OFF)
-option(HP_BUILD_TESTS "Enable building tests" ${HP_IS_MAIN})
-option(HP_BUILD_SHARED "Build Hyperion as a shared library" OFF)
-option(HP_INSTALL "Enable installation of the Hyperion library" ${HP_IS_MAIN})
+option(NX_BUILD_DOCS "Build documentation with Doxygen" OFF)
+option(NX_BUILD_TESTS "Enable building tests" ${NX_IS_MAIN})
+option(NX_BUILD_SHARED "Build Nexium as a shared library" OFF)
+option(NX_INSTALL "Enable installation of the Nexium library" ${NX_IS_MAIN})
 
-option(HP_SDL3_VENDORED "Build SDL3 from vendored submodule" OFF)
-option(HP_PHYSFS_VENDORED "Build PhysFS from vendored submodule" OFF)
-option(HP_FREETYPE_VENDORED "Build Freetype from vendored submodule" OFF)
-option(HP_ASSIMP_VENDORED "Build Assimp from vendored submodule" OFF)
+option(NX_SDL3_VENDORED "Build SDL3 from vendored submodule" OFF)
+option(NX_PHYSFS_VENDORED "Build PhysFS from vendored submodule" OFF)
+option(NX_FREETYPE_VENDORED "Build Freetype from vendored submodule" OFF)
+option(NX_ASSIMP_VENDORED "Build Assimp from vendored submodule" OFF)
 
 # Shared build setup
 
-if(HP_BUILD_SHARED)
+if(NX_BUILD_SHARED)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-    add_definitions(-DHP_BUILD_SHARED)
+    add_definitions(-DNX_BUILD_SHARED)
 endif()
 
 # Set the cmake module path
@@ -59,12 +59,12 @@ include(EmbedAssets)
 
 # External dependencies
 
-set(HP_EXTERNAL_INSTALL_TARGETS "")
-set(HP_EXTERNAL_LIBS "")
+set(NX_EXTERNAL_INSTALL_TARGETS "")
+set(NX_EXTERNAL_LIBS "")
 
 # Configure SDL
 
-if(HP_SDL3_VENDORED)
+if(NX_SDL3_VENDORED)
 
     set(SDL_SHARED          ON CACHE BOOL "")
 
@@ -90,20 +90,20 @@ if(HP_SDL3_VENDORED)
     set(SDL_OPENGLES        OFF CACHE BOOL "")
     set(SDL_OFFSCREEN       OFF CACHE BOOL "")
 
-    add_subdirectory("${HP_ROOT_PATH}/external/SDL")
+    add_subdirectory("${NX_ROOT_PATH}/external/SDL")
 
-    list(APPEND HP_EXTERNAL_INSTALL_TARGETS "SDL3_Headers")
-    list(APPEND HP_EXTERNAL_INSTALL_TARGETS "SDL3-shared")
-    list(APPEND HP_EXTERNAL_LIBS "SDL3::SDL3")
+    list(APPEND NX_EXTERNAL_INSTALL_TARGETS "SDL3_Headers")
+    list(APPEND NX_EXTERNAL_INSTALL_TARGETS "SDL3-shared")
+    list(APPEND NX_EXTERNAL_LIBS "SDL3::SDL3")
 
 else()
     find_package(SDL3 REQUIRED)
-    list(APPEND HP_EXTERNAL_LIBS "SDL3::SDL3")
+    list(APPEND NX_EXTERNAL_LIBS "SDL3::SDL3")
 endif()
 
 # Configure PhysFS
 
-if(HP_PHYSFS_VENDORED)
+if(NX_PHYSFS_VENDORED)
 
     set(PHYSFS_BUILD_SHARED             ON CACHE BOOL "")
 
@@ -125,23 +125,23 @@ if(HP_PHYSFS_VENDORED)
     set(PHYSFS_ARCHIVE_VDF              OFF CACHE BOOL "")
     set(PHYSFS_ARCHIVE_LECARCHIVES      OFF CACHE BOOL "")
 
-    add_subdirectory("${HP_ROOT_PATH}/external/physfs")
+    add_subdirectory("${NX_ROOT_PATH}/external/physfs")
 
     set_target_properties(physfs PROPERTIES
         COMPILE_OPTIONS "-D_POSIX_C_SOURCE=200809L"
     )
 
-    list(APPEND HP_EXTERNAL_INSTALL_TARGETS "physfs")
-    list(APPEND HP_EXTERNAL_LIBS "physfs")
+    list(APPEND NX_EXTERNAL_INSTALL_TARGETS "physfs")
+    list(APPEND NX_EXTERNAL_LIBS "physfs")
 
 else()
     find_package(PhysFS REQUIRED)
-    list(APPEND HP_EXTERNAL_LIBS "PhysFS::PhysFS")
+    list(APPEND NX_EXTERNAL_LIBS "PhysFS::PhysFS")
 endif()
 
 # Configure FreeType
 
-if(HP_FREETYPE_VENDORED)
+if(NX_FREETYPE_VENDORED)
 
     set(FT_DISABLE_ZLIB                 ON CACHE BOOL "")
     set(FT_DISABLE_BZIP2                ON CACHE BOOL "")
@@ -149,19 +149,19 @@ if(HP_FREETYPE_VENDORED)
     set(FT_DISABLE_HARFBUZZ             ON CACHE BOOL "")
     set(FT_DISABLE_BROTLI               ON CACHE BOOL "")
 
-    add_subdirectory("${HP_ROOT_PATH}/external/freetype")
+    add_subdirectory("${NX_ROOT_PATH}/external/freetype")
 
-    list(APPEND HP_EXTERNAL_INSTALL_TARGETS "freetype")
-    list(APPEND HP_EXTERNAL_LIBS "freetype")
+    list(APPEND NX_EXTERNAL_INSTALL_TARGETS "freetype")
+    list(APPEND NX_EXTERNAL_LIBS "freetype")
 
 else()
     find_package(Freetype REQUIRED)
-    list(APPEND HP_EXTERNAL_LIBS "Freetype::Freetype")
+    list(APPEND NX_EXTERNAL_LIBS "Freetype::Freetype")
 endif()
 
 # Configure Assimp
 
-if(HP_ASSIMP_VENDORED)
+if(NX_ASSIMP_VENDORED)
 
     set(ASSIMP_INJECT_DEBUG_POSTFIX     OFF CACHE BOOL "")
     set(ASSIMP_WARNINGS_AS_ERRORS       OFF CACHE BOOL "")
@@ -221,79 +221,79 @@ if(HP_ASSIMP_VENDORED)
     set(ASSIMP_BUILD_3MF_IMPORTER       OFF CACHE BOOL "")
     set(ASSIMP_BUILD_MMD_IMPORTER       OFF CACHE BOOL "")
 
-    add_subdirectory("${HP_ROOT_PATH}/external/assimp")
+    add_subdirectory("${NX_ROOT_PATH}/external/assimp")
 
-    list(APPEND HP_EXTERNAL_INSTALL_TARGETS "assimp")
-    list(APPEND HP_EXTERNAL_LIBS "assimp")
+    list(APPEND NX_EXTERNAL_INSTALL_TARGETS "assimp")
+    list(APPEND NX_EXTERNAL_LIBS "assimp")
 
     if(ASSIMP_BUILD_ZLIB)
-        list(APPEND HP_EXTERNAL_INSTALL_TARGETS "zlibstatic")
+        list(APPEND NX_EXTERNAL_INSTALL_TARGETS "zlibstatic")
     endif()
 
 elseif()
     find_package(assimp REQUIRED)
-    list(APPEND HP_EXTERNAL_LIBS "assimp::assimp")
+    list(APPEND NX_EXTERNAL_LIBS "assimp::assimp")
 endif()
 
-# List all the Hyperion sources
+# List all the Nexium sources
 
-set(HP_SOURCES
+set(NX_SOURCES
 
-    "${HP_ROOT_PATH}/source/Detail/GPU/VertexArray.cpp"
-    "${HP_ROOT_PATH}/source/Detail/GPU/Framebuffer.cpp"
-    "${HP_ROOT_PATH}/source/Detail/GPU/Texture.cpp"
-    "${HP_ROOT_PATH}/source/Detail/GPU/Buffer.cpp"
-    "${HP_ROOT_PATH}/source/Detail/Helper.cpp"
+    "${NX_ROOT_PATH}/source/Detail/GPU/VertexArray.cpp"
+    "${NX_ROOT_PATH}/source/Detail/GPU/Framebuffer.cpp"
+    "${NX_ROOT_PATH}/source/Detail/GPU/Texture.cpp"
+    "${NX_ROOT_PATH}/source/Detail/GPU/Buffer.cpp"
+    "${NX_ROOT_PATH}/source/Detail/Helper.cpp"
 
-    "${HP_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelAnimation.cpp"
-    "${HP_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelMaterial.cpp"
-    "${HP_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelMesh.cpp"
-    "${HP_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelBone.cpp"
-    "${HP_ROOT_PATH}/source/Render/Core/ProgramCache.cpp"
-    "${HP_ROOT_PATH}/source/Render/Core/AssetCache.cpp"
-    "${HP_ROOT_PATH}/source/Render/Core/PoolModel.cpp"
+    "${NX_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelAnimation.cpp"
+    "${NX_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelMaterial.cpp"
+    "${NX_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelMesh.cpp"
+    "${NX_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelBone.cpp"
+    "${NX_ROOT_PATH}/source/Render/Core/ProgramCache.cpp"
+    "${NX_ROOT_PATH}/source/Render/Core/AssetCache.cpp"
+    "${NX_ROOT_PATH}/source/Render/Core/PoolModel.cpp"
 
-    "${HP_ROOT_PATH}/source/Render/Overlay/Overlay.cpp"
+    "${NX_ROOT_PATH}/source/Render/Overlay/Overlay.cpp"
 
-    "${HP_ROOT_PATH}/source/Render/Scene/LightManager.cpp"
-    "${HP_ROOT_PATH}/source/Render/Scene/Scene.cpp"
+    "${NX_ROOT_PATH}/source/Render/Scene/LightManager.cpp"
+    "${NX_ROOT_PATH}/source/Render/Scene/Scene.cpp"
 
-    "${HP_ROOT_PATH}/source/Render/HP_ReflectionProbe.cpp"
-    "${HP_ROOT_PATH}/source/Render/HP_MaterialShader.cpp"
-    "${HP_ROOT_PATH}/source/Render/HP_Cubemap.cpp"
-    "${HP_ROOT_PATH}/source/Render/HP_Light.cpp"
-    "${HP_ROOT_PATH}/source/Render/HP_Font.cpp"
+    "${NX_ROOT_PATH}/source/Render/NX_ReflectionProbe.cpp"
+    "${NX_ROOT_PATH}/source/Render/NX_MaterialShader.cpp"
+    "${NX_ROOT_PATH}/source/Render/NX_Cubemap.cpp"
+    "${NX_ROOT_PATH}/source/Render/NX_Light.cpp"
+    "${NX_ROOT_PATH}/source/Render/NX_Font.cpp"
 
-    "${HP_ROOT_PATH}/source/Audio/HP_AudioStream.cpp"
-    "${HP_ROOT_PATH}/source/Audio/HP_AudioState.cpp"
-    "${HP_ROOT_PATH}/source/Audio/HP_AudioClip.cpp"
+    "${NX_ROOT_PATH}/source/Audio/NX_AudioStream.cpp"
+    "${NX_ROOT_PATH}/source/Audio/NX_AudioState.cpp"
+    "${NX_ROOT_PATH}/source/Audio/NX_AudioClip.cpp"
 
-    "${HP_ROOT_PATH}/source/Core/HP_CoreState.cpp"
+    "${NX_ROOT_PATH}/source/Core/NX_CoreState.cpp"
 
-    "${HP_ROOT_PATH}/source/HP_Codepoint.c"
-    "${HP_ROOT_PATH}/source/HP_Render.cpp"
-    "${HP_ROOT_PATH}/source/HP_Audio.cpp"
-    "${HP_ROOT_PATH}/source/HP_Core.cpp"
-    "${HP_ROOT_PATH}/source/HP_Init.cpp"
-    "${HP_ROOT_PATH}/source/HP_Rand.cpp"
-    "${HP_ROOT_PATH}/source/HP_Image.c"
-    "${HP_ROOT_PATH}/source/HP_Math.c"
+    "${NX_ROOT_PATH}/source/NX_Codepoint.c"
+    "${NX_ROOT_PATH}/source/NX_Render.cpp"
+    "${NX_ROOT_PATH}/source/NX_Audio.cpp"
+    "${NX_ROOT_PATH}/source/NX_Core.cpp"
+    "${NX_ROOT_PATH}/source/NX_Init.cpp"
+    "${NX_ROOT_PATH}/source/NX_Rand.cpp"
+    "${NX_ROOT_PATH}/source/NX_Image.c"
+    "${NX_ROOT_PATH}/source/NX_Math.c"
 
 )
 
-# Create the Hyperion library target
+# Create the Nexium library target
 
-if(HP_BUILD_SHARED)
-    add_library(${PROJECT_NAME} SHARED ${HP_SOURCES})
+if(NX_BUILD_SHARED)
+    add_library(${PROJECT_NAME} SHARED ${NX_SOURCES})
 else()
-    add_library(${PROJECT_NAME} STATIC ${HP_SOURCES})
+    add_library(${PROJECT_NAME} STATIC ${NX_SOURCES})
 endif()
 
-# Link private deps to Hyperion
+# Link private deps to Nexium
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        ${HP_EXTERNAL_LIBS}
+        ${NX_EXTERNAL_LIBS}
 )
 
 # Adding compile definitions for external sources
@@ -303,93 +303,93 @@ target_compile_definitions(${PROJECT_NAME}
         AL_LIBTYPE_STATIC
 )
 
-# Adding external sources to Hyperion
+# Adding external sources to Nexium
 
 target_sources(${PROJECT_NAME}
     PRIVATE
-        "${HP_ROOT_PATH}/external/glad/src/gles2.c"
-        "${HP_ROOT_PATH}/external/mojoAL/mojoal.c"
+        "${NX_ROOT_PATH}/external/glad/src/gles2.c"
+        "${NX_ROOT_PATH}/external/mojoAL/mojoal.c"
 )
 
 # Embed shaders
 
 embed_assets(${PROJECT_NAME}
-    "${HP_ROOT_PATH}/assets/brdf_lut_512_rg16_float.raw"
-    "${HP_ROOT_PATH}/assets/font.ttf"
+    "${NX_ROOT_PATH}/assets/brdf_lut_512_rg16_float.raw"
+    "${NX_ROOT_PATH}/assets/font.ttf"
 )
 
 embed_shaders(${PROJECT_NAME}
-    "${HP_ROOT_PATH}/shaders/common/screen.vert"
-    "${HP_ROOT_PATH}/shaders/common/cube.vert"
-    "${HP_ROOT_PATH}/shaders/process/cubemap_from_equirectangular.frag"
-    "${HP_ROOT_PATH}/shaders/process/cubemap_irradiance.frag"
-    "${HP_ROOT_PATH}/shaders/process/cubemap_prefilter.frag"
-    "${HP_ROOT_PATH}/shaders/process/cubemap_skybox.frag"
-    "${HP_ROOT_PATH}/shaders/process/downsampling.frag"
-    "${HP_ROOT_PATH}/shaders/process/upsampling.frag"
-    "${HP_ROOT_PATH}/shaders/process/bilateral_blur.frag"
-    "${HP_ROOT_PATH}/shaders/process/ssao_pass.frag"
-    "${HP_ROOT_PATH}/shaders/overlay/generic.vert"
-    "${HP_ROOT_PATH}/shaders/overlay/generic.frag"
-    "${HP_ROOT_PATH}/shaders/overlay/overlay.frag"
-    "${HP_ROOT_PATH}/shaders/scene/light_culling.comp"
-    "${HP_ROOT_PATH}/shaders/scene/skybox.vert"
-    "${HP_ROOT_PATH}/shaders/scene/skybox.frag"
-    "${HP_ROOT_PATH}/shaders/scene/scene_prepass.vert"
-    "${HP_ROOT_PATH}/shaders/scene/scene_prepass.frag"
-    "${HP_ROOT_PATH}/shaders/scene/scene.vert"
-    "${HP_ROOT_PATH}/shaders/scene/scene_lit.frag"
-    "${HP_ROOT_PATH}/shaders/scene/scene_unlit.frag"
-    "${HP_ROOT_PATH}/shaders/scene/scene_wireframe.geom"
-    "${HP_ROOT_PATH}/shaders/scene/scene_shadow.vert"
-    "${HP_ROOT_PATH}/shaders/scene/scene_shadow.frag"
-    "${HP_ROOT_PATH}/shaders/scene/bloom_post.frag"
-    "${HP_ROOT_PATH}/shaders/scene/ssao_post.frag"
-    "${HP_ROOT_PATH}/shaders/scene/output.frag"
+    "${NX_ROOT_PATH}/shaders/common/screen.vert"
+    "${NX_ROOT_PATH}/shaders/common/cube.vert"
+    "${NX_ROOT_PATH}/shaders/process/cubemap_from_equirectangular.frag"
+    "${NX_ROOT_PATH}/shaders/process/cubemap_irradiance.frag"
+    "${NX_ROOT_PATH}/shaders/process/cubemap_prefilter.frag"
+    "${NX_ROOT_PATH}/shaders/process/cubemap_skybox.frag"
+    "${NX_ROOT_PATH}/shaders/process/downsampling.frag"
+    "${NX_ROOT_PATH}/shaders/process/upsampling.frag"
+    "${NX_ROOT_PATH}/shaders/process/bilateral_blur.frag"
+    "${NX_ROOT_PATH}/shaders/process/ssao_pass.frag"
+    "${NX_ROOT_PATH}/shaders/overlay/generic.vert"
+    "${NX_ROOT_PATH}/shaders/overlay/generic.frag"
+    "${NX_ROOT_PATH}/shaders/overlay/overlay.frag"
+    "${NX_ROOT_PATH}/shaders/scene/light_culling.comp"
+    "${NX_ROOT_PATH}/shaders/scene/skybox.vert"
+    "${NX_ROOT_PATH}/shaders/scene/skybox.frag"
+    "${NX_ROOT_PATH}/shaders/scene/scene_prepass.vert"
+    "${NX_ROOT_PATH}/shaders/scene/scene_prepass.frag"
+    "${NX_ROOT_PATH}/shaders/scene/scene.vert"
+    "${NX_ROOT_PATH}/shaders/scene/scene_lit.frag"
+    "${NX_ROOT_PATH}/shaders/scene/scene_unlit.frag"
+    "${NX_ROOT_PATH}/shaders/scene/scene_wireframe.geom"
+    "${NX_ROOT_PATH}/shaders/scene/scene_shadow.vert"
+    "${NX_ROOT_PATH}/shaders/scene/scene_shadow.frag"
+    "${NX_ROOT_PATH}/shaders/scene/bloom_post.frag"
+    "${NX_ROOT_PATH}/shaders/scene/ssao_post.frag"
+    "${NX_ROOT_PATH}/shaders/scene/output.frag"
 )
 
 # Specify the include directories
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
-        $<BUILD_INTERFACE:${HP_ROOT_PATH}/include>
+        $<BUILD_INTERFACE:${NX_ROOT_PATH}/include>
         $<INSTALL_INTERFACE:include>
     PRIVATE
         "${CMAKE_CURRENT_BINARY_DIR}/external/assimp/include"
-        "${HP_ROOT_PATH}/external/freetype/include"
-        "${HP_ROOT_PATH}/external/assimp/include"
-        "${HP_ROOT_PATH}/external/FP16/include"
-        "${HP_ROOT_PATH}/external/glad/include"
-        "${HP_ROOT_PATH}/external/SDL/include"
-        "${HP_ROOT_PATH}/external/physfs/src"
-        "${HP_ROOT_PATH}/external/mojoAL/AL"
-        "${HP_ROOT_PATH}/external/dr_libs"
-        "${HP_ROOT_PATH}/external/stb"
+        "${NX_ROOT_PATH}/external/freetype/include"
+        "${NX_ROOT_PATH}/external/assimp/include"
+        "${NX_ROOT_PATH}/external/FP16/include"
+        "${NX_ROOT_PATH}/external/glad/include"
+        "${NX_ROOT_PATH}/external/SDL/include"
+        "${NX_ROOT_PATH}/external/physfs/src"
+        "${NX_ROOT_PATH}/external/mojoAL/AL"
+        "${NX_ROOT_PATH}/external/dr_libs"
+        "${NX_ROOT_PATH}/external/stb"
 )
 
 # Link external dependencies
 
-check_library_exists(m cos "" HP_HAVE_LIB_M)
+check_library_exists(m cos "" NX_HAVE_LIB_M)
 
-if(HP_HAVE_LIB_M)
+if(NX_HAVE_LIB_M)
     target_link_libraries(${PROJECT_NAME} PUBLIC m)
 endif()
 
 # Plateform configuration
 
 if(WIN32)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC HP_PLATFORM_WINDOWS)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC NX_PLATFORM_WINDOWS)
 elseif(APPLE)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC HP_PLATFORM_MACOS)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC NX_PLATFORM_MACOS)
 elseif(ANDROID)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC HP_PLATFORM_ANDROID)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC NX_PLATFORM_ANDROID)
 elseif(UNIX)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC HP_PLATFORM_LINUX)
+    target_compile_definitions(${PROJECT_NAME} PUBLIC NX_PLATFORM_LINUX)
 endif()
 
 # Build documentation
 
-if(HP_BUILD_DOXYGEN)
+if(NX_BUILD_DOXYGEN)
     find_package(Doxygen REQUIRED)
 
     set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
@@ -407,7 +407,7 @@ endif()
 
 # Install configuration
 
-if(HP_INSTALL)
+if(NX_INSTALL)
 
     include(GNUInstallDirs)
 
@@ -421,7 +421,7 @@ if(HP_INSTALL)
     )
 
     # Installing vendored dependencies
-    install(TARGETS ${HP_EXTERNAL_INSTALL_TARGETS}
+    install(TARGETS ${NX_EXTERNAL_INSTALL_TARGETS}
         EXPORT HyperionTargets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -429,7 +429,7 @@ if(HP_INSTALL)
     )
 
     # Installing public headers
-    install(DIRECTORY "${HP_ROOT_PATH}/include/"
+    install(DIRECTORY "${NX_ROOT_PATH}/include/"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         FILES_MATCHING PATTERN "*.h"
     )
@@ -437,8 +437,8 @@ if(HP_INSTALL)
     # Export for find_package
     install(EXPORT HyperionTargets
         FILE HyperionTargets.cmake
-        NAMESPACE hyperion::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/hyperion
+        NAMESPACE nexium::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/nexium
     )
 
     # Minimal config for find_package
@@ -451,21 +451,21 @@ if(HP_INSTALL)
     )
 
     configure_package_config_file(
-        "${HP_ROOT_PATH}/cmake/HyperionConfig.cmake.in"
+        "${NX_ROOT_PATH}/cmake/HyperionConfig.cmake.in"
         "${CMAKE_CURRENT_BINARY_DIR}/HyperionConfig.cmake"
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/hyperion
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/nexium
     )
 
     install(FILES
         "${CMAKE_CURRENT_BINARY_DIR}/HyperionConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/HyperionConfigVersion.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/hyperion
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/nexium
     )
 
 endif()
 
 # Example configuration
 
-if(HP_BUILD_TESTS)
-    include("${HP_ROOT_PATH}/tests/CMakeLists.txt")
+if(NX_BUILD_TESTS)
+    include("${NX_ROOT_PATH}/tests/CMakeLists.txt")
 endif()

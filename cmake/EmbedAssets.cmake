@@ -8,7 +8,7 @@ function(process_asset asset_file output_file_var)
     add_custom_command(
         OUTPUT "${output_file}"
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/generated/include/assets"
-        COMMAND "${PYTHON_EXECUTABLE}" "${HP_ROOT_PATH}/scripts/bin2c.py"
+        COMMAND "${PYTHON_EXECUTABLE}" "${NX_ROOT_PATH}/scripts/bin2c.py"
                 --file "${asset_file}" --name "${asset_name}" --mode binary "${output_file}"
         DEPENDS "${asset_file}"
         COMMENT "Processing asset: ${asset_file}"

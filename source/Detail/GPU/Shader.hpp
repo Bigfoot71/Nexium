@@ -6,13 +6,13 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef HP_GPU_SHADER_HPP
-#define HP_GPU_SHADER_HPP
+#ifndef NX_GPU_SHADER_HPP
+#define NX_GPU_SHADER_HPP
 
-#include "../../Core/HP_InternalLog.hpp"
-#include "../../Core/HP_CoreState.hpp"      //< Used to get OpenGL profile used (Core/ES)
+#include "../../Core/NX_InternalLog.hpp"
+#include "../../Core/NX_CoreState.hpp"      //< Used to get OpenGL profile used (Core/ES)
 
-#include <Hyperion/HP_Core.h>
+#include <NX/NX_Core.h>
 #include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_video.h>
 #include <glad/gles2.h>
@@ -54,7 +54,7 @@ inline Shader::Shader(GLenum stage, const char* source, std::initializer_list<co
     : mStage(stage)
 {
     if (!source) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create shader; Source is null");
+        NX_INTERNAL_LOG(E, "GPU: Failed to create shader; Source is null");
         SDL_assert(false);
         return;
     }
@@ -63,7 +63,7 @@ inline Shader::Shader(GLenum stage, const char* source, std::initializer_list<co
 
     mID = glCreateShader(stage);
     if (mID == 0) {
-        HP_INTERNAL_LOG(E, "GPU: Failed to create shader object");
+        NX_INTERNAL_LOG(E, "GPU: Failed to create shader object");
         SDL_assert(false);
         return;
     }
@@ -107,10 +107,10 @@ inline Shader::Shader(GLenum stage, const char* source, std::initializer_list<co
         if (logLength > 0) {
             std::string errorLog(logLength, '\0');
             glGetShaderInfoLog(mID, logLength, nullptr, errorLog.data());
-            HP_INTERNAL_LOG(E, "GPU: Failed to compile %s shader:\n%s", stageToString(stage), errorLog.c_str());
+            NX_INTERNAL_LOG(E, "GPU: Failed to compile %s shader:\n%s", stageToString(stage), errorLog.c_str());
         }
         else {
-            HP_INTERNAL_LOG(E, "GPU: Failed to compile %s shader (no error log available)", stageToString(stage));
+            NX_INTERNAL_LOG(E, "GPU: Failed to compile %s shader (no error log available)", stageToString(stage));
         }
 
         glDeleteShader(mID);
@@ -175,4 +175,4 @@ inline const char* Shader::stageToString(GLenum stage) noexcept
 
 } // namespace gpu
 
-#endif // HP_GPU_SHADER_HPP
+#endif // NX_GPU_SHADER_HPP
