@@ -17,11 +17,11 @@
 class NX_MaterialShader {
 public:
     enum Shader { SCENE_LIT, SCENE_UNLIT, SCENE_WIREFRAME, SCENE_PREPASS, SCENE_SHADOW, SHADER_COUNT };
-    enum Sampler { TEXTURE_0, TEXTURE_1, TEXTURE_2, TEXTURE_3, TEXTURE_COUNT, };
+    enum Sampler { SAMPLER_0, SAMPLER_1, SAMPLER_2, SAMPLER_3, SAMPLER_COUNT, };
     enum Uniform { STATIC_UNIFORM, DYNAMIC_UNIFORM, UNIFORM_COUNT };
 
 public:
-    using TextureArray = std::array<const gpu::Texture*, TEXTURE_COUNT>;
+    using TextureArray = std::array<const gpu::Texture*, SAMPLER_COUNT>;
 
 public:
     NX_MaterialShader();
@@ -56,7 +56,7 @@ private:
 
 private:
     /** Built-in sampler names */
-    static constexpr const char* SamplerName[TEXTURE_COUNT] = {
+    static constexpr const char* SamplerName[SAMPLER_COUNT] = {
         "Texture0", "Texture1", "Texture2", "Texture3",
     };
 
@@ -66,7 +66,7 @@ private:
     };
 
     /** Built-in uniform block binding points */
-    static constexpr int SamplerBinding[TEXTURE_COUNT] {
+    static constexpr int SamplerBinding[SAMPLER_COUNT] {
         31, 30, 29, 28,
     };
 
@@ -91,7 +91,7 @@ private:
 
 private:
     std::array<gpu::Program, SHADER_COUNT> mPrograms{};
-    std::array<SamplerSlot, TEXTURE_COUNT> mTextures{};
+    std::array<SamplerSlot, SAMPLER_COUNT> mTextures{};
     DynamicBuffer mDynamicBuffer{};
     gpu::Buffer mStaticBuffer{};
 };
@@ -100,20 +100,20 @@ private:
 
 inline void NX_MaterialShader::getTextures(TextureArray& textures)
 {
-    for (int i = 0; i < TEXTURE_COUNT; i++) {
+    for (int i = 0; i < SAMPLER_COUNT; i++) {
         textures[i] = mTextures[i].texture;
     }
 }
 
 inline void NX_MaterialShader::setTexture(int slot, const gpu::Texture* texture)
 {
-    if (slot < 0 || slot >= TEXTURE_COUNT) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to set material shader texture at slot %i/%i; Exceeds the number of slot", slot, TEXTURE_COUNT);
+    if (slot < 0 || slot >= SAMPLER_COUNT) {
+        NX_INTERNAL_LOG(E, "RENDER: Unable to set material shader texture at slot %i/%i; Exceeds the number of slot", slot, SAMPLER_COUNT);
         return;
     }
 
     if (!mTextures[slot].exists) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to set material shader texture at slot %i/%i; This slot is not defined in the material shader", slot, TEXTURE_COUNT);
+        NX_INTERNAL_LOG(E, "RENDER: Unable to set material shader texture at slot %i/%i; This slot is not defined in the material shader", slot, SAMPLER_COUNT);
         return;
     }
 

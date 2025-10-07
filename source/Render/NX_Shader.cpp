@@ -90,7 +90,7 @@ NX_Shader::NX_Shader(const char* vert, const char* frag)
     gpu::Pipeline([this](const gpu::Pipeline& pipeline) {
         for (int i = 0; i < SHADER_COUNT; ++i) {
             pipeline.useProgram(mPrograms[i]);
-            for (int j = 0; j < TEXTURE_COUNT; ++j) {
+            for (int j = 0; j < SAMPLER_COUNT; ++j) {
                 int loc = mPrograms[i].getUniformLocation(SamplerName[j]);
                 if (loc < 0) continue;
                 pipeline.setUniformInt1(loc, SamplerBinding[j]);
@@ -191,7 +191,7 @@ void NX_Shader::bindUniformBuffers(const gpu::Pipeline& pipeline, int dynamicRan
 
 void NX_Shader::bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures, const gpu::Texture& defaultTexture)
 {
-    for (int i = 0; i < TEXTURE_COUNT; i++) {
+    for (int i = 0; i < SAMPLER_COUNT; i++) {
         if (mTextures[i].exists) {
             pipeline.bindTexture(SamplerBinding[i], textures[i] ? *textures[i] : defaultTexture);
         }
