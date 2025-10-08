@@ -27,8 +27,9 @@ public:
     void reserveBufferCapacity(NX_InstanceData type, size_t capacity, bool keepData);
     void setBufferState(NX_InstanceData type, bool enabled);
 
-    /** Queries */
+    /** Get buffer pointer, and if enabled (null otherwise) */
     const gpu::Buffer* getBuffer(NX_InstanceData type) const;
+    const gpu::Buffer* getEnabledBuffer(NX_InstanceData type) const;
 
 private:
     struct BufferInfo {
@@ -85,6 +86,14 @@ inline void NX_InstanceBuffer::setBufferState(NX_InstanceData bitfield, bool ena
 inline const gpu::Buffer* NX_InstanceBuffer::getBuffer(NX_InstanceData type) const
 {
     return &mBuffers[helper::bitScanForward(type)].buffer;
+}
+
+inline const gpu::Buffer* NX_InstanceBuffer::getEnabledBuffer(NX_InstanceData type) const
+{
+    if (mBuffers[helper::bitScanForward(type)].enabled) {
+        return getBuffer(type);
+    }
+    return nullptr;
 }
 
 #endif // NX_INSTANCE_BUFFER_HPP
