@@ -125,60 +125,47 @@ inline NX_VertexBuffer::NX_VertexBuffer(const NX_Vertex3D* vertices, int vCount,
         .divisor = 0,
     };
 
-    constexpr gpu::VertexAttribute iMatCol0 {
+    constexpr gpu::VertexAttribute iPosition {
         .location = 7,
-        .size = 4,
+        .size = 3,
         .type = GL_FLOAT,
         .normalized = false,
-        .stride = sizeof(NX_Mat4),
-        .offset = offsetof(NX_Mat4, m00),
+        .stride = sizeof(NX_Vec3),
+        .offset = 0,
         .divisor = 1,
         .defaultValue = {
-            .vFloat = NX_VEC4(1, 0, 0, 0),
+            .vFloat = NX_VEC4(0, 0, 0, 0),
         }
     };
 
-    constexpr gpu::VertexAttribute iMatCol1 {
+    constexpr gpu::VertexAttribute iRotation {
         .location = 8,
         .size = 4,
         .type = GL_FLOAT,
         .normalized = false,
-        .stride = sizeof(NX_Mat4),
-        .offset = offsetof(NX_Mat4, m10),
-        .divisor = 1,
-        .defaultValue = {
-            .vFloat = NX_VEC4(0, 1, 0, 0),
-        }
-    };
-
-    constexpr gpu::VertexAttribute iMatCol2 {
-        .location = 9,
-        .size = 4,
-        .type = GL_FLOAT,
-        .normalized = false,
-        .stride = sizeof(NX_Mat4),
-        .offset = offsetof(NX_Mat4, m20),
-        .divisor = 1,
-        .defaultValue = {
-            .vFloat = NX_VEC4(0, 0, 1, 0),
-        }
-    };
-
-    constexpr gpu::VertexAttribute iMatCol3 {
-        .location = 10,
-        .size = 4,
-        .type = GL_FLOAT,
-        .normalized = false,
-        .stride = sizeof(NX_Mat4),
-        .offset = offsetof(NX_Mat4, m30),
+        .stride = sizeof(NX_Vec4),
+        .offset = 0,
         .divisor = 1,
         .defaultValue = {
             .vFloat = NX_VEC4(0, 0, 0, 1),
         }
     };
 
+    constexpr gpu::VertexAttribute iScale {
+        .location = 9,
+        .size = 3,
+        .type = GL_FLOAT,
+        .normalized = false,
+        .stride = sizeof(NX_Vec3),
+        .offset = 0,
+        .divisor = 1,
+        .defaultValue = {
+            .vFloat = NX_VEC4(1, 1, 1, 1),
+        }
+    };
+
     constexpr gpu::VertexAttribute iColor {
-        .location = 11,
+        .location = 10,
         .size = 4,
         .type = GL_FLOAT,
         .normalized = false,
@@ -191,7 +178,7 @@ inline NX_VertexBuffer::NX_VertexBuffer(const NX_Vertex3D* vertices, int vCount,
     };
 
     constexpr gpu::VertexAttribute iCustom {
-        .location = 12,
+        .location = 11,
         .size = 4,
         .type = GL_FLOAT,
         .normalized = false,
@@ -224,10 +211,21 @@ inline NX_VertexBuffer::NX_VertexBuffer(const NX_Vertex3D* vertices, int vCount,
             {
                 .buffer = nullptr,
                 .attributes = {
-                    iMatCol0,
-                    iMatCol1,
-                    iMatCol2,
-                    iMatCol3,
+                    iPosition,
+                }
+            },
+            gpu::VertexBufferDesc
+            {
+                .buffer = nullptr,
+                .attributes = {
+                    iRotation,
+                }
+            },
+            gpu::VertexBufferDesc
+            {
+                .buffer = nullptr,
+                .attributes = {
+                    iScale,
                 }
             },
             gpu::VertexBufferDesc
@@ -251,15 +249,19 @@ inline NX_VertexBuffer::NX_VertexBuffer(const NX_Vertex3D* vertices, int vCount,
 inline void NX_VertexBuffer::bindInstances(const NX_InstanceBuffer& instances)
 {
     mVAO.bindVertexBuffers({
-        { 1, instances.getBuffer(NX_INSTANCE_DATA_MATRIX) },
-        { 2, instances.getBuffer(NX_INSTANCE_DATA_COLOR) },
-        { 3, instances.getBuffer(NX_INSTANCE_DATA_CUSTOM) }
+        { 1, instances.getBuffer(NX_INSTANCE_DATA_POSITION) },
+        { 2, instances.getBuffer(NX_INSTANCE_DATA_ROTATION) },
+        { 3, instances.getBuffer(NX_INSTANCE_DATA_SCALE) },
+        { 4, instances.getBuffer(NX_INSTANCE_DATA_COLOR) },
+        { 5, instances.getBuffer(NX_INSTANCE_DATA_CUSTOM) }
     });
 }
 
 inline void NX_VertexBuffer::unbindInstances()
 {
-    mVAO.unbindVertexBuffers({ 1, 2, 3 });
+    mVAO.unbindVertexBuffers({
+        1, 2, 3, 4, 5
+    });
 }
 
 inline const gpu::VertexArray& NX_VertexBuffer::vao() const

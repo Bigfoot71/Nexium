@@ -6,7 +6,7 @@
 
 #define NUM_INSTANCES X_INSTANCES * Z_INSTANCES
 
-static NX_Mat4 iMatrices[NUM_INSTANCES];
+static NX_Vec3 iPositions[NUM_INSTANCES];
 static NX_Color iColors[NUM_INSTANCES];
 static NX_Vec4 iData[NUM_INSTANCES];
 
@@ -26,7 +26,7 @@ int main(void)
     material.shader = shader;
 
     NX_InstanceBuffer* instances = NX_CreateInstanceBuffer(
-        NX_INSTANCE_DATA_MATRIX | NX_INSTANCE_DATA_COLOR | NX_INSTANCE_DATA_CUSTOM,
+        NX_INSTANCE_DATA_POSITION | NX_INSTANCE_DATA_COLOR | NX_INSTANCE_DATA_CUSTOM,
         NUM_INSTANCES
     );
 
@@ -36,13 +36,13 @@ int main(void)
             float px = NX_Remap(x, 0, X_INSTANCES, -100, 100);
             float pz = NX_Remap(z, 0, Z_INSTANCES, -100, 100);
 
-            iMatrices[i] = NX_Mat4Translate(NX_VEC3(px, 0, pz));
+            iPositions[i] = NX_VEC3(px, 0, pz);
             iColors[i] = NX_ColorFromHSV(NX_Wrap(i, 0, 360), 1, 1, 1);
             iData[i] = NX_VEC4(10.0f * NX_RandFloat(NULL), 100.0f * NX_RandFloat(NULL), 0, 0);
         }
     }
 
-    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_MATRIX, 0, NUM_INSTANCES, iMatrices);
+    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_POSITION, 0, NUM_INSTANCES, iPositions);
     NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_COLOR, 0, NUM_INSTANCES, iColors);
     NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_CUSTOM, 0, NUM_INSTANCES, iData);
 

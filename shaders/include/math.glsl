@@ -24,6 +24,46 @@ vec3 M_Rotate3D(vec3 v, vec4 q)
     return v + q.w * t + cross(q.xyz, t);
 }
 
+mat3 M_QuaternionToMat3(vec4 q)
+{
+    vec4 n = normalize(q);
+    float x = n.x, y = n.y, z = n.z, w = n.w;
+
+    float xx = x * x;
+    float yy = y * y;
+    float zz = z * z;
+    float xy = x * y;
+    float xz = x * z;
+    float yz = y * z;
+    float wx = w * x;
+    float wy = w * y;
+    float wz = w * z;
+
+    return mat3(
+        1.0 - 2.0 * (yy + zz), 2.0 * (xy + wz),       2.0 * (xz - wy),
+        2.0 * (xy - wz),       1.0 - 2.0 * (xx + zz), 2.0 * (yz + wx),
+        2.0 * (xz + wy),       2.0 * (yz - wx),       1.0 - 2.0 * (xx + yy)
+    );
+}
+
+mat4 M_TransformToMat4(vec3 position, vec4 rotation, vec3 scale)
+{
+    mat3 rotMat = M_QuaternionToMat3(rotation);
+
+    mat3 rotScale = rotMat * mat3(
+        scale.x, 0.0, 0.0,
+        0.0, scale.y, 0.0,
+        0.0, 0.0, scale.z
+    );
+
+    return mat4(
+        vec4(rotScale[0], 0.0),
+        vec4(rotScale[1], 0.0),
+        vec4(rotScale[2], 0.0),
+        vec4(position, 1.0)
+    );
+}
+
 mat3 M_OrthonormalBasis(vec3 N)
 {
     // Frisvad's method for generating a stable orthonormal basis

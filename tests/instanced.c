@@ -15,23 +15,23 @@ int main(void)
     NX_ModelAnimation** anim = NX_LoadModelAnimations("models/CesiumMan.glb", &animCount, 30);
     model->anim = anim[0];
 
-    NX_Mat4 matrices[INSTANCE_COUNT];
+    NX_Vec3 positions[INSTANCE_COUNT];
     NX_Color colors[INSTANCE_COUNT];
 
     for (int i = 0; i < INSTANCE_COUNT; i++) {
-        matrices[i] = NX_Mat4Translate(NX_VEC3(
+        positions[i] = NX_VEC3(
             NX_RandRangeFloat(NULL, -5, +5),
             0,
             NX_RandRangeFloat(NULL, -5, +5)
-        ));
+        );
         colors[i] = NX_ColorFromHSV(
             360 * NX_RandFloat(NULL),
             1, 1, 1
         );
     }
 
-    NX_InstanceBuffer* instances = NX_CreateInstanceBuffer(NX_INSTANCE_DATA_MATRIX | NX_INSTANCE_DATA_COLOR, INSTANCE_COUNT);
-    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_MATRIX, 0, INSTANCE_COUNT, matrices);
+    NX_InstanceBuffer* instances = NX_CreateInstanceBuffer(NX_INSTANCE_DATA_POSITION | NX_INSTANCE_DATA_COLOR, INSTANCE_COUNT);
+    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_POSITION, 0, INSTANCE_COUNT, positions);
     NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_COLOR, 0, INSTANCE_COUNT, colors);
 
     NX_Light* light = NX_CreateLight(NX_LIGHT_DIR);

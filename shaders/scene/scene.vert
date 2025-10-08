@@ -28,9 +28,11 @@ layout(location = 3) in vec4 aTangent;
 layout(location = 4) in vec4 aColor;
 layout(location = 5) in ivec4 aBoneIDs;
 layout(location = 6) in vec4 aWeights;
-layout(location = 7) in mat4 iMatModel;
-layout(location = 11) in vec4 iColor;
-layout(location = 12) in vec4 iCustom;
+layout(location = 7) in vec3 iPosition;
+layout(location = 8) in vec4 iRotation;
+layout(location = 9) in vec3 iScale;
+layout(location = 10) in vec4 iColor;
+layout(location = 11) in vec4 iCustom;
 
 /* === Storage Buffers === */
 
@@ -120,6 +122,7 @@ void main()
     }
 
     if (uRender.instancing) {
+        mat4 iMatModel = M_TransformToMat4(iPosition, iRotation, iScale);
         matModel = iMatModel * matModel;
         matNormal = mat3(transpose(inverse(iMatModel))) * matNormal;
     }

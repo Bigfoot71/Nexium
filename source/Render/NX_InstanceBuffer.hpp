@@ -35,20 +35,24 @@ public:
     size_t allocatedCount() const;
 
 private:
-    static constexpr size_t TypeSizes[3] = {
-        sizeof(NX_Mat4),
+    static constexpr size_t TypeSizes[] = {
+        sizeof(NX_Vec3),
+        sizeof(NX_Quat),
+        sizeof(NX_Vec3),
         sizeof(NX_Color),
         sizeof(NX_Vec4)
     };
 
     static constexpr const char* TypeNames[] = {
-        "NX_INSTANCE_DATA_MATRIX",
+        "NX_INSTANCE_DATA_POSITION",
+        "NX_INSTANCE_DATA_ROTATION",
+        "NX_INSTANCE_DATA_SCALE",
         "NX_INSTANCE_DATA_COLOR",
         "NX_INSTANCE_DATA_CUSTOM"
     };
 
 private:
-    std::array<gpu::Buffer, 3> mBuffers{};
+    std::array<gpu::Buffer, 5> mBuffers{};
     NX_InstanceData mBufferFlags{};
     size_t mAllocatedCount{};
 };
@@ -59,11 +63,9 @@ inline NX_InstanceBuffer::NX_InstanceBuffer(NX_InstanceData bitfield, size_t cou
     : mBufferFlags(bitfield)
     , mAllocatedCount(count)
 {
-    for (int i = 0; i < mBuffers.size(); i++) {
-        if (bitfield & helper::bitScanReverse(i)) {
-            mBuffers[i] = gpu::Buffer(GL_ARRAY_BUFFER, count * TypeSizes[i], nullptr, GL_DYNAMIC_DRAW);
-        }
-    }
+    helper::forEachBit(bitfield, [this, count](int index) {
+        mBuffers[index] = gpu::Buffer(GL_ARRAY_BUFFER, count * TypeSizes[index], nullptr, GL_DYNAMIC_DRAW);
+    });
 }
 
 inline void NX_InstanceBuffer::update(NX_InstanceData type, size_t offset, size_t count, const void* data)
