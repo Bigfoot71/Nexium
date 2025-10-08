@@ -20,23 +20,19 @@
 
 class NX_InstanceBuffer {
 public:
-    NX_InstanceBuffer() = default;
+    /** Constructors */
+    NX_InstanceBuffer(NX_InstanceData bitfield, size_t count);
 
     /** Buffer management */
-    void updateBufferData(NX_InstanceData type, const void* data, size_t offset, size_t count, bool keepData);
-    void reserveBufferCapacity(NX_InstanceData type, size_t capacity, bool keepData);
-    void setBufferState(NX_InstanceData type, bool enabled);
+    void update(NX_InstanceData type, size_t offset, size_t count, const void* data);
+    void realloc(size_t capacity, bool keepData);
 
-    /** Get buffer pointer, and if enabled (null otherwise) */
+    /** Get buffer pointer (nullptr if not valid) */
     const gpu::Buffer* getBuffer(NX_InstanceData type) const;
-    const gpu::Buffer* getEnabledBuffer(NX_InstanceData type) const;
-
-private:
-    struct BufferInfo {
-        gpu::Buffer buffer{};
-        bool enabled{false};
-    };
-    std::array<BufferInfo, 3> mBuffers{};
+    
+    /** Getters */
+    NX_InstanceData instanceFlags() const;
+    size_t allocatedCount() const;
 
 private:
     static constexpr size_t TypeSizes[3] = {
@@ -44,57 +40,79 @@ private:
         sizeof(NX_Color),
         sizeof(NX_Vec4)
     };
+
+    static constexpr const char* TypeNames[] = {
+        "NX_INSTANCE_DATA_MATRIX",
+        "NX_INSTANCE_DATA_COLOR",
+        "NX_INSTANCE_DATA_CUSTOM"
+    };
+
+private:
+    std::array<gpu::Buffer, 3> mBuffers{};
+    NX_InstanceData mBufferFlags{};
+    size_t mAllocatedCount{};
 };
 
 /* === Public Implementation === */
 
-inline void NX_InstanceBuffer::updateBufferData(NX_InstanceData type, const void* data, size_t offset, size_t count, bool keepData)
+inline NX_InstanceBuffer::NX_InstanceBuffer(NX_InstanceData bitfield, size_t count)
+    : mBufferFlags(bitfield)
+    , mAllocatedCount(count)
+{
+    for (int i = 0; i < mBuffers.size(); i++) {
+        if (bitfield & helper::bitScanReverse(i)) {
+            mBuffers[i] = gpu::Buffer(GL_ARRAY_BUFFER, count * TypeSizes[i], nullptr, GL_DYNAMIC_DRAW);
+        }
+    }
+}
+
+inline void NX_InstanceBuffer::update(NX_InstanceData type, size_t offset, size_t count, const void* data)
 {
     type = helper::bitScanForward(type);
-    BufferInfo& info = mBuffers[type];
+    gpu::Buffer& buffer = mBuffers[type];
 
     offset *= TypeSizes[type];
     count *= TypeSizes[type];
 
-    if (!info.buffer.isValid()) {
-        info.buffer = gpu::Buffer(GL_ARRAY_BUFFER, offset + count, nullptr, GL_DYNAMIC_DRAW);
-    } else {
-        info.buffer.reserve(offset + count, keepData);
+    if (!buffer.isValid()) {
+        NX_INTERNAL_LOG(E, "RENDER: Cannot upload to instance buffer; type '%s' is not initialized.", TypeNames[type]);
+        return;
     }
 
-    info.buffer.upload(offset, count, data);
+    if (offset + count > buffer.size()) {
+        NX_INTERNAL_LOG(E, "RENDER: Upload range out of bounds for type '%s' (offset %zu + count %zu > buffer size %zu).",
+                        TypeNames[type], offset, count, buffer.size());
+        return;
+    }
+
+    buffer.upload(offset, count, data);
 }
 
-inline void NX_InstanceBuffer::reserveBufferCapacity(NX_InstanceData bitfield, size_t count, bool keepData)
+inline void NX_InstanceBuffer::realloc(size_t count, bool keepData)
 {
-    helper::forEachBit(static_cast<uint32_t>(bitfield), [&](int index) {
-        if (!mBuffers[index].buffer.isValid()) {
-            mBuffers[index].buffer = gpu::Buffer(GL_ARRAY_BUFFER, count * TypeSizes[index], nullptr, GL_DYNAMIC_DRAW);
-        } else {
-            mBuffers[index].buffer.reserve(count * TypeSizes[index], keepData);
+    for (int i = 0; i < mBuffers.size(); i++) {
+        if (mBuffers[i].isValid()) {
+            mBuffers[i].realloc(count * TypeSizes[i], keepData);
         }
-    });
-}
+    }
 
-inline void NX_InstanceBuffer::setBufferState(NX_InstanceData bitfield, bool enabled)
-{
-    helper::forEachBit(static_cast<uint32_t>(bitfield), [&](int index) {
-        mBuffers[index].enabled = enabled;
-    });
+    mAllocatedCount = count;
 }
 
 inline const gpu::Buffer* NX_InstanceBuffer::getBuffer(NX_InstanceData type) const
 {
-    const BufferInfo& info = mBuffers[helper::bitScanForward(type)];
-    return info.buffer.isValid() ? &info.buffer : nullptr;
+    const gpu::Buffer& buffer = mBuffers[helper::bitScanForward(type)];
+    return buffer.isValid() ? &buffer : nullptr;
 }
 
-inline const gpu::Buffer* NX_InstanceBuffer::getEnabledBuffer(NX_InstanceData type) const
+inline NX_InstanceData NX_InstanceBuffer::instanceFlags() const
 {
-    if (mBuffers[helper::bitScanForward(type)].enabled) {
-        return getBuffer(type);
-    }
-    return nullptr;
+    return mBufferFlags;
+}
+
+inline size_t NX_InstanceBuffer::allocatedCount() const
+{
+    return mAllocatedCount;
 }
 
 #endif // NX_INSTANCE_BUFFER_HPP

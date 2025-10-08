@@ -42,9 +42,9 @@ int main(void)
         }
     }
 
-    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_MATRIX, iMatrices, 0, NUM_INSTANCES, false);
-    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_COLOR, iColors, 0, NUM_INSTANCES, false);
-    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_CUSTOM, iData, 0, NUM_INSTANCES, false);
+    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_MATRIX, 0, NUM_INSTANCES, iMatrices);
+    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_COLOR, 0, NUM_INSTANCES, iColors);
+    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_CUSTOM, 0, NUM_INSTANCES, iData);
 
     NX_Camera camera = NX_GetDefaultCamera();
     NX_Environment env = NX_GetDefaultEnvironment();

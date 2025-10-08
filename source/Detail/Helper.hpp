@@ -21,25 +21,48 @@
 namespace helper {
 
 /**
- * @brief Find the index of the first set bit (least significant 1) in a 32-bit flag.
+ * @brief Find the index of the first set bit (least significant 1) in a 32-bit bitfield.
  * 
- * @param flag The bitfield to scan.
+ * @param bitfield The bitfield to scan.
  * @return int Index of the first set bit, or -1 if no bits are set.
  * 
  * @note Uses constexpr iteration if evaluated at compile-time.
  *       Uses compiler intrinsics for fast runtime evaluation.
  */
-constexpr int bitScanForward(uint32_t flag)
+constexpr int bitScanForward(uint32_t bitfield)
 {
     if (std::is_constant_evaluated()) {
         for (int i = 0; i < 32; ++i) {
-            if (flag & (1u << i)) return i;
+            if (bitfield & (1u << i)) return i;
         }
         return -1;
     }
 
-    return (flag == 0) ? -1 : static_cast<int>(
-        NX_Ctz64(static_cast<uint64_t>(flag))
+    return (bitfield == 0) ? -1 : static_cast<int>(
+        NX_Ctz64(static_cast<uint64_t>(bitfield))
+    );
+}
+
+/**
+ * @brief Find the index of the first set bit starting from the most significant bit in a 32-bit bitfield.
+ * 
+ * @param bitfield The bitfield to scan.
+ * @return int Index of the most significant set bit, or -1 if no bits are set.
+ * 
+ * @note Uses constexpr iteration if evaluated at compile-time.
+ *       Uses compiler intrinsics for fast runtime evaluation.
+ */
+constexpr int bitScanReverse(uint32_t bitfield)
+{
+    if (std::is_constant_evaluated()) {
+        for (int i = 31; i >= 0; --i) {
+            if (bitfield & (1u << i)) return i;
+        }
+        return -1;
+    }
+
+    return (bitfield == 0) ? -1 : static_cast<int>(
+        NX_Clz64(static_cast<uint64_t>(bitfield))
     );
 }
 

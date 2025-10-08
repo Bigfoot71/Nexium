@@ -1860,55 +1860,57 @@ HPAPI void NX_UpdateMeshAABB(NX_Mesh* mesh);
  */
 
 /**
- * @brief Create an instance buffer with pre-allocated GPU memory.
+ * @brief Create a new instance buffer with pre-allocated GPU memory.
  *
- * @param bitfield Types of instance data to allocate.
- * @param count Number of instances to pre-allocate (internal memory size only).
+ * @param bitfield Specifies the types of instance data the buffer will store.
+ *                 (e.g., matrices, colors, custom vec4s). Types are immutable.
+ * @param count Initial number of instances to allocate.
  * @return NX_InstanceBuffer* Pointer to the created instance buffer.
  *
- * @note You control the number of instances used at draw time.
+ * @note The buffer's supported types cannot change after creation.
  */
 HPAPI NX_InstanceBuffer* NX_CreateInstanceBuffer(NX_InstanceData bitfield, size_t count);
 
 /**
- * @brief Destroy an instance buffer and free GPU memory.
+ * @brief Destroy an instance buffer and free all associated GPU memory.
  *
- * @param buffer Pointer to the instance buffer to destroy.
+ * @param buffer The instance buffer to destroy.
  */
 HPAPI void NX_DestroyInstanceBuffer(NX_InstanceBuffer* buffer);
 
 /**
- * @brief Ensure the GPU memory allocated is at least the given size.
+ * @brief Reallocate the instance buffer to hold a new number of instances.
  *
- * @param buffer The instance buffer to resize if needed.
- * @param bitfield Types of instance data to consider.
- * @param count Number of instances to reserve memory for.
- * @param keepData Whether to preserve existing buffer data on reallocation.
+ * @param buffer   The instance buffer to resize.
+ * @param count    New total number of instances to allocate.
+ * @param keepData If true, existing data is preserved; otherwise it may be discarded.
+ *
+ * @note Only the size of the buffer changes. Types of instance data are immutable.
  */
-HPAPI void NX_ReserveInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData bitfield, size_t count, bool keepData);
+HPAPI void NX_ReallocInstanceBuffer(NX_InstanceBuffer* buffer, size_t count, bool keepData);
 
 /**
- * @brief Update instance buffer data for a single type.
+ * @brief Update a specific type of instance data within the buffer.
  *
  * @param buffer The instance buffer to update.
- * @param type Type of instance data to update.
- * @param data Pointer to the data to copy.
- * @param offset Offset in instances to start writing.
- * @param count Number of instances to update.
- * @param keepData Whether to preserve existing data if reallocation occurs.
+ * @param type   The type of data to update. Must be a type supported by this buffer.
+ * @param offset Index of the first instance to update.
+ * @param count  Number of instances to update.
+ * @param data   Pointer to the source data to copy.
  *
- * @note Only a single type is allowed. If multiple types are provided, the lowest flag is used.
+ * @note The operation does nothing if the buffer does not support the requested type
+ *       or if the range exceeds the currently allocated size.
  */
-HPAPI void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type, const void* data, size_t offset, size_t count, bool keepData);
+HPAPI void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type, size_t offset, size_t count, const void* data);
 
 /**
- * @brief Enable or disable certain types of instance data.
+ * @brief Retrieve information about the instance buffer.
  *
- * @param buffer The instance buffer to modify.
- * @param bitfield Types of instance data to enable/disable.
- * @param enabled True to enable, false to disable.
+ * @param buffer   The instance buffer to query.
+ * @param bitfield Output pointer to receive the supported instance data types.
+ * @param count    Output pointer to receive the current allocated instance count.
  */
-HPAPI void NX_SetInstanceBufferState(NX_InstanceBuffer* buffer, NX_InstanceData bitfield, bool enabled);
+HPAPI void NX_QueryInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData* bitfield, size_t* count);
 
 /** @} */ // end of InstanceBuffer
 

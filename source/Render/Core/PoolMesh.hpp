@@ -41,14 +41,11 @@ private:
 
 inline NX_InstanceBuffer* PoolMesh::createInstanceBuffer(NX_InstanceData bitfield, size_t count)
 {
-    NX_InstanceBuffer* instances = mInstanceBuffers.create();
+    NX_InstanceBuffer* instances = mInstanceBuffers.create(bitfield, count);
     if (!instances) {
         NX_INTERNAL_LOG(E, "RENDER: Failed to create instance buffer; Object pool issue");
         return nullptr;
     }
-
-    instances->setBufferState(bitfield, true);
-    instances->reserveBufferCapacity(bitfield, count, false);
 
     return instances;
 }

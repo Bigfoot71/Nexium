@@ -2759,19 +2759,20 @@ void NX_DestroyInstanceBuffer(NX_InstanceBuffer* buffer)
     gRender->meshes.destroyInstanceBuffer(buffer);
 }
 
-void NX_ReserveInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData bitfield, size_t count, bool keepData)
+void NX_RaeallocInstanceBuffer(NX_InstanceBuffer* buffer, size_t count, bool keepData)
 {
-    buffer->reserveBufferCapacity(bitfield, count, keepData);
+    buffer->realloc(count, keepData);
 }
 
-void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type, const void* data, size_t offset, size_t count, bool keepData)
+void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type, size_t offset, size_t count, const void* data)
 {
-    buffer->updateBufferData(type, data, offset, count, keepData);
+    buffer->update(type, offset, count, data);
 }
 
-void NX_SetInstanceBufferState(NX_InstanceBuffer* buffer, NX_InstanceData bitfield, bool enabled)
+void NX_QueryInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData* bitfield, size_t* count)
 {
-    buffer->setBufferState(bitfield, enabled);
+    if (bitfield) *bitfield = buffer->instanceFlags();
+    if (count) *count = buffer->allocatedCount();
 }
 
 /* === Model - Public API === */
