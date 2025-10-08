@@ -58,21 +58,21 @@ extern "C" {
  * @param format The pixel format
  * @return Number of bytes per pixel
  */
-HPAPI int NX_GetPixelBytes(NX_PixelFormat format);
+NXAPI int NX_GetPixelBytes(NX_PixelFormat format);
 
 /**
  * @brief Get the number of channels for a given pixel format
  * @param format The pixel format
  * @return Number of channels (1-4)
  */
-HPAPI int NX_GetPixelChannels(NX_PixelFormat format);
+NXAPI int NX_GetPixelChannels(NX_PixelFormat format);
 
 /**
  * @brief Get the number of bytes per channel for a given format
  * @param format The pixel format
  * @return Number of bytes per channel
  */
-HPAPI int NX_GetPixelChannelBytes(NX_PixelFormat format);
+NXAPI int NX_GetPixelChannelBytes(NX_PixelFormat format);
 
 /**
  * @brief Write a color value to a specific pixel in a pixel buffer
@@ -81,7 +81,7 @@ HPAPI int NX_GetPixelChannelBytes(NX_PixelFormat format);
  * @param format Pixel format of the buffer
  * @param color Color value to write
  */
-HPAPI void NX_WritePixel(void* pixels, int index, NX_PixelFormat format, NX_Color color);
+NXAPI void NX_WritePixel(void* pixels, int index, NX_PixelFormat format, NX_Color color);
 
 /**
  * @brief Read a color value from a specific pixel in a pixel buffer
@@ -90,7 +90,7 @@ HPAPI void NX_WritePixel(void* pixels, int index, NX_PixelFormat format, NX_Colo
  * @param format Pixel format of the buffer
  * @return Color value read from the pixel
  */
-HPAPI NX_Color NX_ReadPixel(const void* pixels, int index, NX_PixelFormat format);
+NXAPI NX_Color NX_ReadPixel(const void* pixels, int index, NX_PixelFormat format);
 
 /** @} */ // end of Pixel
 
@@ -106,7 +106,7 @@ HPAPI NX_Color NX_ReadPixel(const void* pixels, int index, NX_PixelFormat format
  * @param format Pixel format for the new image
  * @return New image structure with allocated pixel buffer
  */
-HPAPI NX_Image NX_CreateImage(int w, int h, NX_PixelFormat format);
+NXAPI NX_Image NX_CreateImage(int w, int h, NX_PixelFormat format);
 
 /**
  * @brief Create an image from raw pixel data with optional format conversion
@@ -122,7 +122,7 @@ HPAPI NX_Image NX_CreateImage(int w, int h, NX_PixelFormat format);
  * @param dstFormat Destination pixel format
  * @return New image with converted pixel data
  */
-HPAPI NX_Image NX_CreateImageFromMem(const void* pixels, int w, int h, NX_PixelFormat srcFormat, NX_PixelFormat dstFormat);
+NXAPI NX_Image NX_CreateImageFromMem(const void* pixels, int w, int h, NX_PixelFormat srcFormat, NX_PixelFormat dstFormat);
 
 /**
  * @brief Load and decode an image from file
@@ -133,7 +133,7 @@ HPAPI NX_Image NX_CreateImageFromMem(const void* pixels, int w, int h, NX_PixelF
  * @param filePath Path to the image file
  * @return Decoded image, ready for use in rendering, or empty image on failure
  */
-HPAPI NX_Image NX_LoadImage(const char* filePath);
+NXAPI NX_Image NX_LoadImage(const char* filePath);
 
 /**
  * @brief Load raw image data from file without any channel conversion
@@ -144,7 +144,7 @@ HPAPI NX_Image NX_LoadImage(const char* filePath);
  * @param filePath Path to the image file
  * @return Image containing raw pixel data as-is, or empty image on failure
  */
-HPAPI NX_Image NX_LoadImageAsData(const char* filePath);
+NXAPI NX_Image NX_LoadImageAsData(const char* filePath);
 
 /**
  * @brief Decode an image from memory buffer
@@ -156,7 +156,7 @@ HPAPI NX_Image NX_LoadImageAsData(const char* filePath);
  * @param size Size of the encoded data in bytes
  * @return Decoded image, ready for use in rendering, or empty image on failure
  */
-HPAPI NX_Image NX_LoadImageFromMem(const void* data, size_t size);
+NXAPI NX_Image NX_LoadImageFromMem(const void* data, size_t size);
 
 /**
  * @brief Load raw image data from memory buffer without any channel conversion
@@ -168,14 +168,14 @@ HPAPI NX_Image NX_LoadImageFromMem(const void* data, size_t size);
  * @param size Size of the encoded data in bytes
  * @return Image containing raw pixel data as-is, or empty image on failure
  */
-HPAPI NX_Image NX_LoadImageAsDataFromMem(const void* data, size_t size);
+NXAPI NX_Image NX_LoadImageAsDataFromMem(const void* data, size_t size);
 
 /**
  * @brief Destroy an image and free its resources
  * @param image Pointer to the image to destroy
  * @note Sets the image structure to zero after freeing resources
  */
-HPAPI void NX_DestroyImage(NX_Image* image);
+NXAPI void NX_DestroyImage(NX_Image* image);
 
 /**
  * @brief Generate a solid color image
@@ -185,7 +185,7 @@ HPAPI void NX_DestroyImage(NX_Image* image);
  * @return Generated image filled with the specified color
  * @note Pixel format is automatically selected based on color characteristics (8-bit, 16-bit float, or 32-bit float, with/without alpha)
  */
-HPAPI NX_Image NX_GenImageColor(int w, int h, NX_Color color);
+NXAPI NX_Image NX_GenImageColor(int w, int h, NX_Color color);
 
 /**
  * @brief Generate a linear gradient image
@@ -197,7 +197,7 @@ HPAPI NX_Image NX_GenImageColor(int w, int h, NX_Color color);
  * @return Generated linear gradient image
  * @note Pixel format is automatically selected based on color characteristics (8-bit, 16-bit float, or 32-bit float, with/without alpha)
  */
-HPAPI NX_Image NX_GenImageGradientLinear(int w, int h, int direction, NX_Color start, NX_Color end);
+NXAPI NX_Image NX_GenImageGradientLinear(int w, int h, int direction, NX_Color start, NX_Color end);
 
 /**
  * @brief Generate a radial gradient image
@@ -209,7 +209,7 @@ HPAPI NX_Image NX_GenImageGradientLinear(int w, int h, int direction, NX_Color s
  * @return Generated radial gradient image
  * @note Pixel format is automatically selected based on color characteristics (8-bit, 16-bit float, or 32-bit float, with/without alpha)
  */
-HPAPI NX_Image NX_GenImageGradientRadial(int w, int h, float density, NX_Color inner, NX_Color outer);
+NXAPI NX_Image NX_GenImageGradientRadial(int w, int h, float density, NX_Color inner, NX_Color outer);
 
 /**
  * @brief Generate a square gradient image
@@ -221,7 +221,7 @@ HPAPI NX_Image NX_GenImageGradientRadial(int w, int h, float density, NX_Color i
  * @return Generated square gradient image
  * @note Pixel format is automatically selected based on color characteristics (8-bit, 16-bit float, or 32-bit float, with/without alpha)
  */
-HPAPI NX_Image NX_GenImageGradientSquare(int w, int h, float density, NX_Color inner, NX_Color outer);
+NXAPI NX_Image NX_GenImageGradientSquare(int w, int h, float density, NX_Color inner, NX_Color outer);
 
 /**
  * @brief Generate a checkerboard pattern image
@@ -234,7 +234,7 @@ HPAPI NX_Image NX_GenImageGradientSquare(int w, int h, float density, NX_Color i
  * @return Generated checkerboard image
  * @note Pixel format is automatically selected based on color characteristics (8-bit, 16-bit float, or 32-bit float, with/without alpha)
  */
-HPAPI NX_Image NX_GenImageChecked(int w, int h, int xChecks, int yChecks, NX_Color c0, NX_Color c1);
+NXAPI NX_Image NX_GenImageChecked(int w, int h, int xChecks, int yChecks, NX_Color c0, NX_Color c1);
 
 /**
  * @brief Composes an RGB image by mapping each source image to its corresponding color channel.
@@ -267,7 +267,7 @@ HPAPI NX_Image NX_GenImageChecked(int w, int h, int xChecks, int yChecks, NX_Col
  * NX_Image ormImage = NX_ComposeImagesRGB(sources, NX_WHITE);
  * ```
  */
-HPAPI NX_Image NX_ComposeImagesRGB(const NX_Image* sources[3], NX_Color defaultColor);
+NXAPI NX_Image NX_ComposeImagesRGB(const NX_Image* sources[3], NX_Color defaultColor);
 
 /**
  * @brief Set a pixel color at specific coordinates with bounds checking
@@ -280,7 +280,7 @@ HPAPI NX_Image NX_ComposeImagesRGB(const NX_Image* sources[3], NX_Color defaultC
  * @param y Y coordinate
  * @param color Color to set
  */
-HPAPI void NX_SetImagePixel(const NX_Image* image, int x, int y, NX_Color color);
+NXAPI void NX_SetImagePixel(const NX_Image* image, int x, int y, NX_Color color);
 
 /**
  * @brief Get a pixel color at specific coordinates with bounds checking
@@ -293,14 +293,14 @@ HPAPI void NX_SetImagePixel(const NX_Image* image, int x, int y, NX_Color color)
  * @param y Y coordinate
  * @return Color value at the specified coordinates, or default color if out of bounds
  */
-HPAPI NX_Color NX_GetImagePixel(const NX_Image* image, int x, int y);
+NXAPI NX_Color NX_GetImagePixel(const NX_Image* image, int x, int y);
 
 /**
  * @brief Convert an image to a different pixel format
  * @param image Image to convert (modified in place)
  * @param format Target pixel format
  */
-HPAPI void NX_ConvertImage(NX_Image* image, NX_PixelFormat format);
+NXAPI void NX_ConvertImage(NX_Image* image, NX_PixelFormat format);
 
 /**
  * @brief Invert the colors of an image
@@ -310,7 +310,7 @@ HPAPI void NX_ConvertImage(NX_Image* image, NX_PixelFormat format);
  *
  * @param image Image to invert (modified in place)
  */
-HPAPI void NX_InvertImage(const NX_Image* image);
+NXAPI void NX_InvertImage(const NX_Image* image);
 
 /**
  * @brief Blits a rectangular region from source image to destination using nearest neighbor sampling.
@@ -330,7 +330,7 @@ HPAPI void NX_InvertImage(const NX_Image* image);
  * @param dstW Destination rectangle width
  * @param dstH Destination rectangle height
  */
-HPAPI void NX_BlitImage(
+NXAPI void NX_BlitImage(
     const NX_Image* src, int srcX, int srcY, int srcW, int srcH,
     const NX_Image* dst, int dstX, int dstY, int dstW, int dstH);
 

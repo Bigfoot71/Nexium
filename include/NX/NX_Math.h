@@ -2847,27 +2847,27 @@ static inline NX_Quat NX_QuatFromAxisAngle(NX_Vec3 axis, float radians)
 /**
  * @brief Create a quaternion from Euler angles (pitch, yaw, roll).
  */
-HPAPI NX_Quat NX_QuatFromEuler(NX_Vec3 v);
+NXAPI NX_Quat NX_QuatFromEuler(NX_Vec3 v);
 
 /**
  * @brief Convert a quaternion to Euler angles (pitch, yaw, roll).
  */
-HPAPI NX_Vec3 NX_QuatToEuler(NX_Quat q);
+NXAPI NX_Vec3 NX_QuatToEuler(NX_Quat q);
 
 /**
  * @brief Create a quaternion from a 4x4 rotation matrix.
  */
-HPAPI NX_Quat NX_QuatFromMat4(const NX_Mat4* m);
+NXAPI NX_Quat NX_QuatFromMat4(const NX_Mat4* m);
 
 /**
  * @brief Convert a quaternion to a 4x4 rotation matrix.
  */
-HPAPI NX_Mat4 NX_QuatToMat4(NX_Quat q);
+NXAPI NX_Mat4 NX_QuatToMat4(NX_Quat q);
 
 /**
  * @brief Compute a quaternion that rotates from the world forward (-Z) to point from 'from' to 'to'.
  */
-HPAPI NX_Quat NX_QuatLookAt(NX_Vec3 from, NX_Vec3 to, NX_Vec3 up);
+NXAPI NX_Quat NX_QuatLookAt(NX_Vec3 from, NX_Vec3 to, NX_Vec3 up);
 
 /**
  * @brief Returns the forward direction (-Z) of the quaternion
@@ -2963,12 +2963,12 @@ static inline NX_Quat NX_QuatMul(NX_Quat a, NX_Quat b)
 /**
  * @brief Linear interpolation between two quaternions.
  */
-HPAPI NX_Quat NX_QuatLerp(NX_Quat a, NX_Quat b, float t);
+NXAPI NX_Quat NX_QuatLerp(NX_Quat a, NX_Quat b, float t);
 
 /**
  * @brief Spherical linear interpolation (slerp) between two quaternions.
  */
-HPAPI NX_Quat NX_QuatSLerp(NX_Quat a, NX_Quat b, float t);
+NXAPI NX_Quat NX_QuatSLerp(NX_Quat a, NX_Quat b, float t);
 
 /** @} */ // Quat
 
@@ -3008,57 +3008,57 @@ static inline NX_Mat4 NX_Mat3ToMat4(const NX_Mat3* mat3)
 /**
  * @brief Create 2D transformation matrix (TRS)
  */
-HPAPI NX_Mat3 NX_Mat3Transform2D(NX_Vec2 translation, float rotation, NX_Vec2 scale);
+NXAPI NX_Mat3 NX_Mat3Transform2D(NX_Vec2 translation, float rotation, NX_Vec2 scale);
 
 /**
  * @brief Create 2D translation matrix
  */
-HPAPI NX_Mat3 NX_Mat3Translate2D(NX_Vec2 translation);
+NXAPI NX_Mat3 NX_Mat3Translate2D(NX_Vec2 translation);
 
 /**
  * @brief Create 2D rotation matrix (around Z axis)
  */
-HPAPI NX_Mat3 NX_Mat3Rotate2D(float radians);
+NXAPI NX_Mat3 NX_Mat3Rotate2D(float radians);
 
 /**
  * @brief Create 2D scaling matrix
  */
-HPAPI NX_Mat3 NX_Mat3Scale2D(NX_Vec2 scale);
+NXAPI NX_Mat3 NX_Mat3Scale2D(NX_Vec2 scale);
 
 /**
  * @brief Create 3D rotation matrix around X axis
  */
-HPAPI NX_Mat3 NX_Mat3RotateX(float radians);
+NXAPI NX_Mat3 NX_Mat3RotateX(float radians);
 
 /**
  * @brief Create 3D rotation matrix around Y axis
  */
-HPAPI NX_Mat3 NX_Mat3RotateY(float radians);
+NXAPI NX_Mat3 NX_Mat3RotateY(float radians);
 
 /**
  * @brief Create 3D rotation matrix around Z axis
  */
-HPAPI NX_Mat3 NX_Mat3RotateZ(float radians);
+NXAPI NX_Mat3 NX_Mat3RotateZ(float radians);
 
 /**
  * @brief Create 3D rotation matrix around arbitrary axis
  */
-HPAPI NX_Mat3 NX_Mat3Rotate(NX_Vec3 axis, float radians);
+NXAPI NX_Mat3 NX_Mat3Rotate(NX_Vec3 axis, float radians);
 
 /**
  * @brief Create rotation matrix from Euler angles (XYZ order)
  */
-HPAPI NX_Mat3 NX_Mat3RotateXYZ(NX_Vec3 radians);
+NXAPI NX_Mat3 NX_Mat3RotateXYZ(NX_Vec3 radians);
 
 /**
  * @brief Transpose a 3x3 matrix
  */
-HPAPI NX_Mat3 NX_Mat3Transpose(const NX_Mat3* mat);
+NXAPI NX_Mat3 NX_Mat3Transpose(const NX_Mat3* mat);
 
 /**
  * @brief Compute determinant of 3x3 matrix
  */
-HPAPI float NX_Mat3Determinant(const NX_Mat3* mat);
+NXAPI float NX_Mat3Determinant(const NX_Mat3* mat);
 
 /**
  * @brief Compute trace of 3x3 matrix
@@ -3071,27 +3071,27 @@ static inline float NX_Mat3Trace(const NX_Mat3* mat)
 /**
  * @brief Invert a 3x3 matrix
  */
-HPAPI NX_Mat3 NX_Mat3Inverse(const NX_Mat3* mat);
+NXAPI NX_Mat3 NX_Mat3Inverse(const NX_Mat3* mat);
 
 /**
  * @brief Create normal matrix from 4x4 matrix
  */
-HPAPI NX_Mat3 NX_Mat3Normal(const NX_Mat4* mat);
+NXAPI NX_Mat3 NX_Mat3Normal(const NX_Mat4* mat);
 
 /**
  * @brief Add two 3x3 matrices
  */
-HPAPI NX_Mat3 NX_Mat3Add(const NX_Mat3* left, const NX_Mat3* right);
+NXAPI NX_Mat3 NX_Mat3Add(const NX_Mat3* left, const NX_Mat3* right);
 
 /**
  * @brief Subtract two 3x3 matrices
  */
-HPAPI NX_Mat3 NX_Mat3Sub(const NX_Mat3* left, const NX_Mat3* right);
+NXAPI NX_Mat3 NX_Mat3Sub(const NX_Mat3* left, const NX_Mat3* right);
 
 /**
  * @brief Multiply two 3x3 matrices
  */
-HPAPI NX_Mat3 NX_Mat3Mul(const NX_Mat3* left, const NX_Mat3* right);
+NXAPI NX_Mat3 NX_Mat3Mul(const NX_Mat3* left, const NX_Mat3* right);
 
 /** @} */ // Mat3
 
@@ -3105,107 +3105,107 @@ HPAPI NX_Mat3 NX_Mat3Mul(const NX_Mat3* left, const NX_Mat3* right);
 /**
  * @brief Create a translation matrix
  */
-HPAPI NX_Mat4 NX_Mat4Translate(NX_Vec3 v);
+NXAPI NX_Mat4 NX_Mat4Translate(NX_Vec3 v);
 
 /**
  * @brief Create a rotation matrix around an arbitrary axis
  */
-HPAPI NX_Mat4 NX_Mat4Rotate(NX_Vec3 axis, float radians);
+NXAPI NX_Mat4 NX_Mat4Rotate(NX_Vec3 axis, float radians);
 
 /**
  * @brief Create a rotation matrix around the X axis
  */
-HPAPI NX_Mat4 NX_Mat4RotateX(float radians);
+NXAPI NX_Mat4 NX_Mat4RotateX(float radians);
 
 /**
  * @brief Create a rotation matrix around the Y axis
  */
-HPAPI NX_Mat4 NX_Mat4RotateY(float radians);
+NXAPI NX_Mat4 NX_Mat4RotateY(float radians);
 
 /**
  * @brief Create a rotation matrix around the Z axis
  */
-HPAPI NX_Mat4 NX_Mat4RotateZ(float radians);
+NXAPI NX_Mat4 NX_Mat4RotateZ(float radians);
 
 /**
  * @brief Create a rotation matrix from Euler angles (XYZ order)
  */
-HPAPI NX_Mat4 NX_Mat4RotateXYZ(NX_Vec3 radians);
+NXAPI NX_Mat4 NX_Mat4RotateXYZ(NX_Vec3 radians);
 
 /**
  * @brief Create a rotation matrix from Euler angles (ZYX order)
  */
-HPAPI NX_Mat4 NX_Mat4RotateZYX(NX_Vec3 radians);
+NXAPI NX_Mat4 NX_Mat4RotateZYX(NX_Vec3 radians);
 
 /**
  * @brief Create a scaling matrix
  */
-HPAPI NX_Mat4 NX_Mat4Scale(NX_Vec3 scale);
+NXAPI NX_Mat4 NX_Mat4Scale(NX_Vec3 scale);
 
 /**
  * @brief Decompose a matrix into TRS
  */
-HPAPI NX_Transform NX_Mat4Decompose(const NX_Mat4* mat);
+NXAPI NX_Transform NX_Mat4Decompose(const NX_Mat4* mat);
 
 /**
  * @brief Create a perspective frustum projection matrix
  */
-HPAPI NX_Mat4 NX_Mat4Frustum(float left, float right, float bottom, float top, float znear, float zfar);
+NXAPI NX_Mat4 NX_Mat4Frustum(float left, float right, float bottom, float top, float znear, float zfar);
 
 /**
  * @brief Create a perspective projection matrix
  */
-HPAPI NX_Mat4 NX_Mat4Perspective(float fovy, float aspect, float znear, float zfar);
+NXAPI NX_Mat4 NX_Mat4Perspective(float fovy, float aspect, float znear, float zfar);
 
 /**
  * @brief Create an orthographic projection matrix
  */
-HPAPI NX_Mat4 NX_Mat4Ortho(float left, float right, float bottom, float top, float znear, float zfar);
+NXAPI NX_Mat4 NX_Mat4Ortho(float left, float right, float bottom, float top, float znear, float zfar);
 
 /**
  * @brief Create a look-at view matrix
  */
-HPAPI NX_Mat4 NX_Mat4LookAt(NX_Vec3 eye, NX_Vec3 target, NX_Vec3 up);
+NXAPI NX_Mat4 NX_Mat4LookAt(NX_Vec3 eye, NX_Vec3 target, NX_Vec3 up);
 
 /**
  * @brief Compute the determinant of a matrix
  */
-HPAPI float NX_Mat4Determinant(const NX_Mat4* mat);
+NXAPI float NX_Mat4Determinant(const NX_Mat4* mat);
 
 /**
  * @brief Transpose a matrix
  */
-HPAPI NX_Mat4 NX_Mat4Transpose(const NX_Mat4* mat);
+NXAPI NX_Mat4 NX_Mat4Transpose(const NX_Mat4* mat);
 
 /**
  * @brief Invert a matrix
  */
-HPAPI NX_Mat4 NX_Mat4Inverse(const NX_Mat4* mat);
+NXAPI NX_Mat4 NX_Mat4Inverse(const NX_Mat4* mat);
 
 /**
  * @brief Compute the trace of a matrix
  */
-HPAPI float NX_Mat4Trace(const NX_Mat4* mat);
+NXAPI float NX_Mat4Trace(const NX_Mat4* mat);
 
 /**
  * @brief Add two matrices
  */
-HPAPI NX_Mat4 NX_Mat4Add(const NX_Mat4* left, const NX_Mat4* right);
+NXAPI NX_Mat4 NX_Mat4Add(const NX_Mat4* left, const NX_Mat4* right);
 
 /**
  * @brief Subtract two matrices
  */
-HPAPI NX_Mat4 NX_Mat4Sub(const NX_Mat4* left, const NX_Mat4* right);
+NXAPI NX_Mat4 NX_Mat4Sub(const NX_Mat4* left, const NX_Mat4* right);
 
 /**
  * @brief Multiply two matrices
  */
-HPAPI NX_Mat4 NX_Mat4Mul(const NX_Mat4* NX_RESTRICT left, const NX_Mat4* NX_RESTRICT right);
+NXAPI NX_Mat4 NX_Mat4Mul(const NX_Mat4* NX_RESTRICT left, const NX_Mat4* NX_RESTRICT right);
 
 /**
  * @brief Multiply two arrays of matrices
  */
-HPAPI void NX_Mat4MulBatch(NX_Mat4* NX_RESTRICT results,
+NXAPI void NX_Mat4MulBatch(NX_Mat4* NX_RESTRICT results,
                            const NX_Mat4* NX_RESTRICT leftMatrices,
                            const NX_Mat4* NX_RESTRICT rightMatrices,
                            size_t count);
@@ -3220,13 +3220,13 @@ HPAPI void NX_Mat4MulBatch(NX_Mat4* NX_RESTRICT results,
  */
 
 /** Convert NX_Transform to a 4x4 matrix */
-HPAPI NX_Mat4 NX_TransformToMat4(const NX_Transform* transform);
+NXAPI NX_Mat4 NX_TransformToMat4(const NX_Transform* transform);
 
 /** Combine parent and child transform (parent first) */
-HPAPI NX_Transform NX_TransformCombine(const NX_Transform* parent, const NX_Transform* child);
+NXAPI NX_Transform NX_TransformCombine(const NX_Transform* parent, const NX_Transform* child);
 
 /** Linearly interpolate between two transforms (LERP for translation & scale, SLERP for rotation) */
-HPAPI NX_Transform NX_TransformLerp(const NX_Transform* a, const NX_Transform* b, float t);
+NXAPI NX_Transform NX_TransformLerp(const NX_Transform* a, const NX_Transform* b, float t);
 
 /** @} */ // Transform
 

@@ -338,7 +338,7 @@ extern "C" {
  * @return false if the program should close.
  * @note Can be used directly in the main loop: `while (NX_FrameStep())`.
  */
-HPAPI bool NX_FrameStep(void);
+NXAPI bool NX_FrameStep(void);
 
 /** @} */ // end of Update
 
@@ -362,24 +362,24 @@ double NX_GetCurrentTime(void);
  * @brief Gets the elapsed time since library initialization.
  * @return Elapsed time in seconds.
  */
-HPAPI double NX_GetElapsedTime(void);
+NXAPI double NX_GetElapsedTime(void);
 
 /**
  * @brief Gets the time taken by the last frame.
  * @return Frame time in seconds.
  */
-HPAPI double NX_GetFrameTime(void);
+NXAPI double NX_GetFrameTime(void);
 
 /**
  * @brief Sets the target frame rate (FPS).
  * @param fps Desired target FPS.
  */
-HPAPI void NX_SetTargetFPS(int fps);
+NXAPI void NX_SetTargetFPS(int fps);
 
 /**
  * @brief Gets the current frame rate (FPS).
  */
-HPAPI int NX_GetFPS(void);
+NXAPI int NX_GetFPS(void);
 
 /** @} */ // end of Time
 
@@ -403,36 +403,36 @@ HPAPI int NX_GetFPS(void);
  *
  * @note Adaptive VSync is not supported on all platforms or drivers.
  */
-HPAPI bool NX_SetVSync(int mode);
+NXAPI bool NX_SetVSync(int mode);
 
 /**
  * @brief Gets the display scaling factor.
  * @return Display scale (e.g., 1.0 for standard DPI, >1.0 for HiDPI/Retina).
  */
-HPAPI float NX_GetDisplayScale(void);
+NXAPI float NX_GetDisplayScale(void);
 
 /**
  * @brief Gets the display DPI (dots per inch).
  */
-HPAPI float NX_GetDisplayGetDPI(void);
+NXAPI float NX_GetDisplayGetDPI(void);
 
 /**
  * @brief Gets the current display index.
  * @return Display index, useful in multi-monitor setups.
  */
-HPAPI int NX_GetDisplayIndex(void);
+NXAPI int NX_GetDisplayIndex(void);
 
 /**
  * @brief Gets the display size in pixels.
  * @return Integer 2D vector (width, height).
  */
-HPAPI NX_IVec2 NX_GetDisplaySize(void);
+NXAPI NX_IVec2 NX_GetDisplaySize(void);
 
 /**
  * @brief Gets the display size in pixels as floats.
  * @return Float 2D vector (width, height).
  */
-HPAPI NX_Vec2 NX_GetDisplaySizeF(void);
+NXAPI NX_Vec2 NX_GetDisplaySizeF(void);
 
 /** @} */ // end of Display
 
@@ -446,147 +446,147 @@ HPAPI NX_Vec2 NX_GetDisplaySizeF(void);
  * @brief Gets the current window title.
  * @return A pointer to a null-terminated string containing the window title.
  */
-HPAPI const char* NX_GetWindowTitle(void);
+NXAPI const char* NX_GetWindowTitle(void);
 
 /**
  * @brief Sets the window title.
  * @param title The new window title as a null-terminated string.
  */
-HPAPI void NX_SetWindowTitle(const char* title);
+NXAPI void NX_SetWindowTitle(const char* title);
 
 /**
  * @brief Gets the window width in pixels.
  */
-HPAPI int NX_GetWindowWidth(void);
+NXAPI int NX_GetWindowWidth(void);
 
 /**
  * @brief Gets the window height in pixels.
  */
-HPAPI int NX_GetWindowHeight(void);
+NXAPI int NX_GetWindowHeight(void);
 
 /**
  * @brief Gets the window size in pixels.
  * @return Integer 2D vector (width, height).
  */
-HPAPI NX_IVec2 NX_GetWindowSize(void);
+NXAPI NX_IVec2 NX_GetWindowSize(void);
 
 /**
  * @brief Gets the window size in pixels as floats.
  * @return Float 2D vector (width, height).
  */
-HPAPI NX_Vec2 NX_GetWindowSizeF(void);
+NXAPI NX_Vec2 NX_GetWindowSizeF(void);
 
 /**
  * @brief Sets the window size in pixels.
  * @param w Width in pixels.
  * @param h Height in pixels.
  */
-HPAPI void NX_SetWindowSize(int w, int h);
+NXAPI void NX_SetWindowSize(int w, int h);
 
 /**
  * @brief Sets the minimum window size in pixels.
  * @param w Minimum width in pixels.
  * @param h Minimum height in pixels.
  */
-HPAPI void NX_SetWindowMinSize(int w, int h);
+NXAPI void NX_SetWindowMinSize(int w, int h);
 
 /**
  * @brief Sets the maximum window size in pixels.
  * @param w Maximum width in pixels.
  * @param h Maximum height in pixels.
  */
-HPAPI void NX_SetWindowMaxSize(int w, int h);
+NXAPI void NX_SetWindowMaxSize(int w, int h);
 
 /**
  * @brief Gets the window position on the screen.
  * @return Integer 2D vector (x, y).
  */
-HPAPI NX_IVec2 NX_GetWindowPosition(void);
+NXAPI NX_IVec2 NX_GetWindowPosition(void);
 
 /**
  * @brief Sets the window position on the screen.
  * @param x X coordinate of the top-left corner.
  * @param y Y coordinate of the top-left corner.
  */
-HPAPI void NX_SetWindowPosition(int x, int y);
+NXAPI void NX_SetWindowPosition(int x, int y);
 
 /**
  * @brief Checks if the window is currently fullscreen.
  * @return true if fullscreen, false otherwise.
  */
-HPAPI bool NX_IsWindowFullscreen(void);
+NXAPI bool NX_IsWindowFullscreen(void);
 
 /**
  * @brief Enables or disables fullscreen mode.
  * @param enabled true to enable fullscreen, false to restore windowed mode.
  */
-HPAPI void NX_SetWindowFullscreen(bool enabled);
+NXAPI void NX_SetWindowFullscreen(bool enabled);
 
 /**
  * @brief Checks if the window is resizable by the user.
  * @return true if resizable, false otherwise.
  */
-HPAPI bool NX_IsWindowResizable(void);
+NXAPI bool NX_IsWindowResizable(void);
 
 /**
  * @brief Enables or disables window resizing by the user.
  * @param resizable true to allow resizing, false to fix window size.
  */
-HPAPI void NX_SetWindowResizable(bool resizable);
+NXAPI void NX_SetWindowResizable(bool resizable);
 
 /**
  * @brief Checks if the window is currently visible.
  * @return true if visible, false otherwise.
  */
-HPAPI bool NX_IsWindowVisible(void);
+NXAPI bool NX_IsWindowVisible(void);
 
 /**
  * @brief Minimizes the window to the taskbar/dock.
  */
-HPAPI void NX_MinimizeWindow(void);
+NXAPI void NX_MinimizeWindow(void);
 
 /**
  * @brief Maximizes the window to occupy the available screen space.
  */
-HPAPI void NX_MaximizeWindow(void);
+NXAPI void NX_MaximizeWindow(void);
 
 /**
  * @brief Restores the window from minimized or maximized state.
  */
-HPAPI void NX_RestoreWindow(void);
+NXAPI void NX_RestoreWindow(void);
 
 /**
  * @brief Shows the window if it is hidden.
  */
-HPAPI void NX_ShowWindow(void);
+NXAPI void NX_ShowWindow(void);
 
 /**
  * @brief Hides the window from the screen without closing it.
  */
-HPAPI void NX_HideWindow(void);
+NXAPI void NX_HideWindow(void);
 
 /**
  * @brief Checks if the window currently has input focus.
  * @return true if focused, false otherwise.
  */
-HPAPI bool NX_IsWindowFocused(void);
+NXAPI bool NX_IsWindowFocused(void);
 
 /**
  * @brief Brings the window to the foreground and gives it focus.
  */
-HPAPI void NX_FocusWindow(void);
+NXAPI void NX_FocusWindow(void);
 
 /**
  * @brief Checks if the window has borders.
  * @return true if bordered, false otherwise.
  */
-HPAPI bool NX_IsWindowBordered(void);
+NXAPI bool NX_IsWindowBordered(void);
 
 /**
  * @brief Enables or disables window borders.
  * @param bordered true to show borders, false to remove them.
  */
-HPAPI void NX_SetWindowBordered(bool bordered);
+NXAPI void NX_SetWindowBordered(bool bordered);
 
 /** @} */ // end of Window
 
@@ -603,7 +603,7 @@ HPAPI void NX_SetWindowBordered(bool bordered);
  *
  * @return true if the cursor is grabbed, false otherwise.
  */
-HPAPI bool NX_IsCursorGrabbed(void);
+NXAPI bool NX_IsCursorGrabbed(void);
 
 /**
  * @brief Grabs or releases the cursor.
@@ -613,23 +613,23 @@ HPAPI bool NX_IsCursorGrabbed(void);
  *
  * @param grab true to grab the cursor, false to release it.
  */
-HPAPI void NX_GrabCursor(bool grab);
+NXAPI void NX_GrabCursor(bool grab);
 
 /**
  * @brief Shows the cursor.
  */
-HPAPI void NX_ShowCursor(void);
+NXAPI void NX_ShowCursor(void);
 
 /**
  * @brief Hides the cursor.
  */
-HPAPI void NX_HideCursor(void);
+NXAPI void NX_HideCursor(void);
 
 /**
  * @brief Checks if the cursor is currently visible.
  * @return true if visible, false otherwise.
  */
-HPAPI bool NX_IsCursorVisible(void);
+NXAPI bool NX_IsCursorVisible(void);
 
 /** @} */ // end of Cursor
 
@@ -647,7 +647,7 @@ HPAPI bool NX_IsCursorVisible(void);
  *
  * @param enabled true to enable capture, false to disable.
  */
-HPAPI void NX_CaptureMouse(bool enabled);
+NXAPI void NX_CaptureMouse(bool enabled);
 
 /**
  * @brief Checks if a mouse button is currently pressed.
@@ -655,7 +655,7 @@ HPAPI void NX_CaptureMouse(bool enabled);
  * @param button Mouse button to query.
  * @return true if the button is pressed, false otherwise.
  */
-HPAPI bool NX_IsMouseButtonPressed(NX_MouseButton button);
+NXAPI bool NX_IsMouseButtonPressed(NX_MouseButton button);
 
 /**
  * @brief Checks if a mouse button is currently released.
@@ -663,7 +663,7 @@ HPAPI bool NX_IsMouseButtonPressed(NX_MouseButton button);
  * @param button Mouse button to query.
  * @return true if the button is released, false otherwise.
  */
-HPAPI bool NX_IsMouseButtonReleased(NX_MouseButton button);
+NXAPI bool NX_IsMouseButtonReleased(NX_MouseButton button);
 
 /**
  * @brief Checks if a mouse button was just pressed this frame.
@@ -671,7 +671,7 @@ HPAPI bool NX_IsMouseButtonReleased(NX_MouseButton button);
  * @param button Mouse button to query.
  * @return true if the button was pressed this frame, false otherwise.
  */
-HPAPI bool NX_IsMouseButtonJustPressed(NX_MouseButton button);
+NXAPI bool NX_IsMouseButtonJustPressed(NX_MouseButton button);
 
 /**
  * @brief Checks if a mouse button was just released this frame.
@@ -679,28 +679,28 @@ HPAPI bool NX_IsMouseButtonJustPressed(NX_MouseButton button);
  * @param button Mouse button to query.
  * @return true if the button was released this frame, false otherwise.
  */
-HPAPI bool NX_IsMouseButtonJustReleased(NX_MouseButton button);
+NXAPI bool NX_IsMouseButtonJustReleased(NX_MouseButton button);
 
 /**
  * @brief Gets the current mouse position in window coordinates.
  *
  * @return Mouse position as a 2D vector (x, y).
  */
-HPAPI NX_Vec2 NX_GetMousePosition(void);
+NXAPI NX_Vec2 NX_GetMousePosition(void);
 
 /**
  * @brief Sets the mouse position in window coordinates.
  *
  * @param p Target position as a 2D vector (x, y).
  */
-HPAPI void NX_SetMousePosition(NX_Vec2 p);
+NXAPI void NX_SetMousePosition(NX_Vec2 p);
 
 /**
  * @brief Gets the mouse movement delta since the last frame.
  *
  * @return Movement delta as a 2D vector (x, y).
  */
-HPAPI NX_Vec2 NX_GetMouseDelta(void);
+NXAPI NX_Vec2 NX_GetMouseDelta(void);
 
 /**
  * @brief Gets the mouse wheel movement for the current frame.
@@ -710,7 +710,7 @@ HPAPI NX_Vec2 NX_GetMouseDelta(void);
  *
  * @return Mouse wheel movement as a 2D vector.
  */
-HPAPI NX_Vec2 NX_GetMouseWheel(void);
+NXAPI NX_Vec2 NX_GetMouseWheel(void);
 
 /** @} */ // end of Mouse
 
@@ -726,7 +726,7 @@ HPAPI NX_Vec2 NX_GetMouseWheel(void);
  * @param key Key to query.
  * @return true if the key is pressed, false otherwise.
  */
-HPAPI bool NX_IsKeyPressed(NX_Key key);
+NXAPI bool NX_IsKeyPressed(NX_Key key);
 
 /**
  * @brief Checks if a key is currently released.
@@ -734,7 +734,7 @@ HPAPI bool NX_IsKeyPressed(NX_Key key);
  * @param key Key to query.
  * @return true if the key is released, false otherwise.
  */
-HPAPI bool NX_IsKeyReleased(NX_Key key);
+NXAPI bool NX_IsKeyReleased(NX_Key key);
 
 /**
  * @brief Checks if a key was just pressed during the current frame.
@@ -742,7 +742,7 @@ HPAPI bool NX_IsKeyReleased(NX_Key key);
  * @param key Key to query.
  * @return true if the key was pressed this frame, false otherwise.
  */
-HPAPI bool NX_IsKeyJustPressed(NX_Key key);
+NXAPI bool NX_IsKeyJustPressed(NX_Key key);
 
 /**
  * @brief Checks if a key was just released during the current frame.
@@ -750,7 +750,7 @@ HPAPI bool NX_IsKeyJustPressed(NX_Key key);
  * @param key Key to query.
  * @return true if the key was released this frame, false otherwise.
  */
-HPAPI bool NX_IsKeyJustReleased(NX_Key key);
+NXAPI bool NX_IsKeyJustReleased(NX_Key key);
 
 /**
  * @brief Generates a 2D vector from four directional keys.
@@ -765,9 +765,9 @@ HPAPI bool NX_IsKeyJustReleased(NX_Key key);
  * @param right Key representing right movement.
  * @return 2D vector representing the combined input of the four keys.
  */
-HPAPI NX_Vec2 NX_GetKeyVec2(NX_Key up, NX_Key down, NX_Key left, NX_Key right);
+NXAPI NX_Vec2 NX_GetKeyVec2(NX_Key up, NX_Key down, NX_Key left, NX_Key right);
 
-HPAPI NX_Vec3 NX_GetKeyVec3(NX_Key forward, NX_Key backward, NX_Key left, NX_Key right);
+NXAPI NX_Vec3 NX_GetKeyVec3(NX_Key forward, NX_Key backward, NX_Key left, NX_Key right);
 
 /** @} */ // end of Keyboard
 
@@ -794,26 +794,26 @@ HPAPI NX_Vec3 NX_GetKeyVec3(NX_Key forward, NX_Key backward, NX_Key left, NX_Key
  * @param appendToEnd If true, add to end of search order; if false, add to beginning
  * @return True on success, false on failure
  */
-HPAPI bool NX_AddSearchPath(const char* path, bool appendToEnd);
+NXAPI bool NX_AddSearchPath(const char* path, bool appendToEnd);
 
 /**
  * @brief Remove directory or archive from search path
  * @param path Path that was previously added
  * @return True on success, false on failure
  */
-HPAPI bool NX_RemoveSearchPath(const char* path);
+NXAPI bool NX_RemoveSearchPath(const char* path);
 
 /**
  * @brief Get list of all search paths in order
  * @return Null-terminated array of strings, must be freed with NX_FreeSearchPaths()
  */
-HPAPI char** NX_GetSearchPaths(void);
+NXAPI char** NX_GetSearchPaths(void);
 
 /**
  * @brief Free search paths list returned by NX_GetSearchPaths()
  * @param paths Array to free
  */
-HPAPI void NX_FreeSearchPaths(char** paths);
+NXAPI void NX_FreeSearchPaths(char** paths);
 
 /**
  * @brief Mount archive to virtual file system
@@ -822,33 +822,33 @@ HPAPI void NX_FreeSearchPaths(char** paths);
  * @param appendToEnd If true, add to end of search order
  * @return True on success, false on failure
  */
-HPAPI bool NX_MountArchive(const char* archivePath, const char* mountPoint, bool appendToEnd);
+NXAPI bool NX_MountArchive(const char* archivePath, const char* mountPoint, bool appendToEnd);
 
 /**
  * @brief Unmount archive from virtual file system
  * @param archivePath Archive path that was previously mounted
  * @return True on success, false on failure
  */
-HPAPI bool NX_UnmountArchive(const char* archivePath);
+NXAPI bool NX_UnmountArchive(const char* archivePath);
 
 /**
  * @brief Get current write directory
  * @return Write directory path, or NULL if not set
  */
-HPAPI const char* NX_GetWriteDir(void);
+NXAPI const char* NX_GetWriteDir(void);
 
 /**
  * @brief Set write directory for file operations
  * @param path Physical directory path for writing files
  * @return True on success, false on failure
  */
-HPAPI bool NX_SetWriteDir(const char* path);
+NXAPI bool NX_SetWriteDir(const char* path);
 
 /**
  * @brief Get executable's base directory
  * @return Base directory path (read-only)
  */
-HPAPI const char* NX_GetBaseDir(void);
+NXAPI const char* NX_GetBaseDir(void);
 
 /**
  * @brief Get user preferences directory
@@ -856,7 +856,7 @@ HPAPI const char* NX_GetBaseDir(void);
  * @param app Application name
  * @return Preferences directory path (platform-specific)
  */
-HPAPI const char* NX_GetPrefDir(const char* org, const char* app);
+NXAPI const char* NX_GetPrefDir(const char* org, const char* app);
 
 /* --- File Information --- */
 
@@ -865,35 +865,35 @@ HPAPI const char* NX_GetPrefDir(const char* org, const char* app);
  * @param filePath Virtual file path
  * @return True if exists, false otherwise
  */
-HPAPI bool NX_FileExists(const char* filePath);
+NXAPI bool NX_FileExists(const char* filePath);
 
 /**
  * @brief Check if path is a directory
  * @param path Virtual path to check
  * @return True if directory, false otherwise
  */
-HPAPI bool NX_IsDirectory(const char* path);
+NXAPI bool NX_IsDirectory(const char* path);
 
 /**
  * @brief Check if path is a regular file
  * @param path Virtual path to check
  * @return True if file, false otherwise
  */
-HPAPI bool NX_IsFile(const char* path);
+NXAPI bool NX_IsFile(const char* path);
 
 /**
  * @brief Get file size without opening
  * @param filePath Virtual file path
  * @return File size in bytes, or 0 on error
  */
-HPAPI size_t NX_GetFileSize(const char* filePath);
+NXAPI size_t NX_GetFileSize(const char* filePath);
 
 /**
  * @brief Get real physical path of virtual file
  * @param filePath Virtual file path
  * @return Physical directory containing the file, or NULL if not found
  */
-HPAPI const char* NX_GetRealPath(const char* filePath);
+NXAPI const char* NX_GetRealPath(const char* filePath);
 
 /* --- Directory Operations --- */
 
@@ -902,27 +902,27 @@ HPAPI const char* NX_GetRealPath(const char* filePath);
  * @param dirPath Virtual directory path
  * @return Null-terminated array of filenames, must be freed with NX_FreeDirectoryList()
  */
-HPAPI char** NX_ListDirectory(const char* dirPath);
+NXAPI char** NX_ListDirectory(const char* dirPath);
 
 /**
  * @brief Free directory list returned by NX_ListDirectory()
  * @param list Array to free
  */
-HPAPI void NX_FreeDirectoryList(char** list);
+NXAPI void NX_FreeDirectoryList(char** list);
 
 /**
  * @brief Create directory in write directory
  * @param dirPath Virtual directory path
  * @return True on success, false on failure
  */
-HPAPI bool NX_CreateDirectory(const char* dirPath);
+NXAPI bool NX_CreateDirectory(const char* dirPath);
 
 /**
  * @brief Delete file from write directory
  * @param filePath Virtual file path
  * @return True on success, false on failure
  */
-HPAPI bool NX_DeleteFile(const char* filePath);
+NXAPI bool NX_DeleteFile(const char* filePath);
 
 /* --- File I/O --- */
 
@@ -932,14 +932,14 @@ HPAPI bool NX_DeleteFile(const char* filePath);
  * @param size Pointer to store file size
  * @return File data buffer (must be freed), or NULL on failure
  */
-HPAPI void* NX_LoadFile(const char* filePath, size_t* size);
+NXAPI void* NX_LoadFile(const char* filePath, size_t* size);
 
 /**
  * @brief Load text file into memory (null-terminated)
  * @param filePath Virtual file path
  * @return Text buffer (must be freed), or NULL on failure
  */
-HPAPI char* NX_LoadFileText(const char* filePath);
+NXAPI char* NX_LoadFileText(const char* filePath);
 
 /**
  * @brief Write binary data to file in write directory
@@ -948,7 +948,7 @@ HPAPI char* NX_LoadFileText(const char* filePath);
  * @param size Data size in bytes
  * @return True on success, false on failure
  */
-HPAPI bool NX_WriteFile(const char* filePath, const void* data, size_t size);
+NXAPI bool NX_WriteFile(const char* filePath, const void* data, size_t size);
 
 /**
  * @brief Write text data to file in write directory
@@ -957,7 +957,7 @@ HPAPI bool NX_WriteFile(const char* filePath, const void* data, size_t size);
  * @param size Data size in bytes
  * @return True on success, false on failure
  */
-HPAPI bool NX_WriteFileText(const char* filePath, const char* data, size_t size);
+NXAPI bool NX_WriteFileText(const char* filePath, const char* data, size_t size);
 
 /** @} */ // end of Keyboard
 
@@ -972,20 +972,20 @@ HPAPI bool NX_WriteFileText(const char* filePath, const char* data, size_t size)
  * @param text Null-terminated string to copy to the clipboard.
  * @return True if the text was successfully copied, false otherwise.
  */
-HPAPI bool NX_SetClipboardText(const char* text);
+NXAPI bool NX_SetClipboardText(const char* text);
 
 /**
  * @brief Get the current content of the system clipboard.
  * @return Null-terminated string from the clipboard, or NULL if empty.
  * @note The returned string may be invalidated on the next clipboard operation.
  */
-HPAPI const char* NX_GetClipboardText(void);
+NXAPI const char* NX_GetClipboardText(void);
 
 /**
  * @brief Check if the clipboard contains any text.
  * @return True if there is text available, false otherwise.
  */
-HPAPI bool NX_HasClipboardText(void);
+NXAPI bool NX_HasClipboardText(void);
 
 /** @} */ // end of Clipboard
 
@@ -999,14 +999,14 @@ HPAPI bool NX_HasClipboardText(void);
  * @brief Set the minimum log priority.
  * @param log Log level to set as minimum (messages below this level will be ignored).
  */
-HPAPI void NX_SetLogPriority(NX_LogLevel log);
+NXAPI void NX_SetLogPriority(NX_LogLevel log);
 
 /**
  * @brief Log a message with the specified log level.
  * @param log Log level for this message.
  * @param msg Null-terminated format string.
  */
-HPAPI void NX_Log(NX_LogLevel log, const char* msg, ...);
+NXAPI void NX_Log(NX_LogLevel log, const char* msg, ...);
 
 /**
  * @brief Log a message using a va_list.
@@ -1014,28 +1014,28 @@ HPAPI void NX_Log(NX_LogLevel log, const char* msg, ...);
  * @param msg Null-terminated format string.
  * @param args Variable argument list.
  */
-HPAPI void NX_LogVA(NX_LogLevel log, const char* msg, va_list args);
+NXAPI void NX_LogVA(NX_LogLevel log, const char* msg, va_list args);
 
 /** @brief Log a trace message */
-HPAPI void NX_LogT(const char* msg, ...);
+NXAPI void NX_LogT(const char* msg, ...);
 
 /** @brief Log a verbose message */
-HPAPI void NX_LogV(const char* msg, ...);
+NXAPI void NX_LogV(const char* msg, ...);
 
 /** @brief Log a debug message */
-HPAPI void NX_LogD(const char* msg, ...);
+NXAPI void NX_LogD(const char* msg, ...);
 
 /** @brief Log an info message */
-HPAPI void NX_LogI(const char* msg, ...);
+NXAPI void NX_LogI(const char* msg, ...);
 
 /** @brief Log a warning message */
-HPAPI void NX_LogW(const char* msg, ...);
+NXAPI void NX_LogW(const char* msg, ...);
 
 /** @brief Log an error message */
-HPAPI void NX_LogE(const char* msg, ...);
+NXAPI void NX_LogE(const char* msg, ...);
 
 /** @brief Log a fatal error message */
-HPAPI void NX_LogF(const char* msg, ...);
+NXAPI void NX_LogF(const char* msg, ...);
 
 /** @} */ // end of Logging
 
@@ -1050,7 +1050,7 @@ HPAPI void NX_LogF(const char* msg, ...);
  * @param size Number of bytes to allocate.
  * @return Pointer to the allocated memory, or NULL if allocation fails.
  */
-HPAPI void* NX_Malloc(size_t size);
+NXAPI void* NX_Malloc(size_t size);
 
 /**
  * @brief Allocates and zero-initializes an array.
@@ -1058,7 +1058,7 @@ HPAPI void* NX_Malloc(size_t size);
  * @param size Size of each element in bytes.
  * @return Pointer to the allocated memory, or NULL if allocation fails.
  */
-HPAPI void* NX_Calloc(size_t nmemb, size_t size);
+NXAPI void* NX_Calloc(size_t nmemb, size_t size);
 
 /**
  * @brief Resizes a previously allocated memory block.
@@ -1066,13 +1066,13 @@ HPAPI void* NX_Calloc(size_t nmemb, size_t size);
  * @param size New size in bytes.
  * @return Pointer to the reallocated memory, or NULL if allocation fails.
  */
-HPAPI void* NX_Realloc(void* ptr, size_t size);
+NXAPI void* NX_Realloc(void* ptr, size_t size);
 
 /**
  * @brief Frees a previously allocated memory block.
  * @param ptr Pointer to the memory block to free.
  */
-HPAPI void NX_Free(void* ptr);
+NXAPI void NX_Free(void* ptr);
 
 /** @} */ // end of Memory
 

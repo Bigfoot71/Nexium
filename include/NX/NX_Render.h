@@ -633,7 +633,7 @@ extern "C" {
  * @param image Pointer to the source image.
  * @return Pointer to a newly created NX_Texture, or NULL on failure.
  */
-HPAPI NX_Texture* NX_CreateTexture(const NX_Image* image);
+NXAPI NX_Texture* NX_CreateTexture(const NX_Image* image);
 
 /**
  * @brief Load a texture from a file and decode it for rendering.
@@ -643,7 +643,7 @@ HPAPI NX_Texture* NX_CreateTexture(const NX_Image* image);
  * @param filePath Path to the texture file
  * @return Pointer to a newly loaded NX_Texture ready for rendering, or NULL on failure
  */
-HPAPI NX_Texture* NX_LoadTexture(const char* filePath);
+NXAPI NX_Texture* NX_LoadTexture(const char* filePath);
 
 /**
  * @brief Load raw texture data from a file without decoding or conversion.
@@ -654,13 +654,13 @@ HPAPI NX_Texture* NX_LoadTexture(const char* filePath);
  * @param filePath Path to the texture file
  * @return Pointer to a newly loaded NX_Texture containing raw pixel data, or NULL on failure
  */
-HPAPI NX_Texture* NX_LoadTextureAsData(const char* filePath);
+NXAPI NX_Texture* NX_LoadTextureAsData(const char* filePath);
 
 /**
  * @brief Destroys a GPU texture and frees its resources.
  * @param texture Pointer to the NX_Texture to destroy.
  */
-HPAPI void NX_DestroyTexture(NX_Texture* texture);
+NXAPI void NX_DestroyTexture(NX_Texture* texture);
 
 /**
  * @brief Sets the default texture filter for newly created textures.
@@ -668,7 +668,7 @@ HPAPI void NX_DestroyTexture(NX_Texture* texture);
  * @note The default filter is NX_TEXTURE_FILTER_BILINEAR.
  * @note If NX_TEXTURE_FILTER_TRILINEAR is set, mipmaps will be generated automatically for all new textures.
  */
-HPAPI void NX_SetDefaultTextureFilter(NX_TextureFilter filter);
+NXAPI void NX_SetDefaultTextureFilter(NX_TextureFilter filter);
 
 /**
  * @brief Sets the default anisotropy level for newly created textures.
@@ -676,7 +676,7 @@ HPAPI void NX_SetDefaultTextureFilter(NX_TextureFilter filter);
  * @note Anisotropy may have no effect on GLES 3.2 depending on platform support.
  * @note The value is automatically clamped to the maximum supported by the platform.
  */
-HPAPI void NX_SetDefaultTextureAnisotropy(float anisotropy);
+NXAPI void NX_SetDefaultTextureAnisotropy(float anisotropy);
 
 /**
  * @brief Sets filtering, wrapping, and anisotropy parameters for a texture.
@@ -687,14 +687,14 @@ HPAPI void NX_SetDefaultTextureAnisotropy(float anisotropy);
  * @note Anisotropy may have no effect on GLES 3.2 depending on platform support.
  * @note The value is automatically clamped to the maximum supported by the platform.
  */
-HPAPI void NX_SetTextureParameters(NX_Texture* texture, NX_TextureFilter filter, NX_TextureWrap wrap, float anisotropy);
+NXAPI void NX_SetTextureParameters(NX_Texture* texture, NX_TextureFilter filter, NX_TextureWrap wrap, float anisotropy);
 
 /**
  * @brief Sets the texture filtering mode.
  * @param texture Pointer to the NX_Texture.
  * @param filter Texture filtering mode.
  */
-HPAPI void NX_SetTextureFilter(NX_Texture* texture, NX_TextureFilter filter);
+NXAPI void NX_SetTextureFilter(NX_Texture* texture, NX_TextureFilter filter);
 
 /**
  * @brief Sets the anisotropy level for a texture.
@@ -703,20 +703,20 @@ HPAPI void NX_SetTextureFilter(NX_Texture* texture, NX_TextureFilter filter);
  * @note Anisotropy may have no effect on GLES 3.2 depending on platform support.
  * @note The value is automatically clamped to the maximum supported by the platform.
  */
-HPAPI void NX_SetTextureAnisotropy(NX_Texture* texture, float anisotropy);
+NXAPI void NX_SetTextureAnisotropy(NX_Texture* texture, float anisotropy);
 
 /**
  * @brief Sets the texture wrapping mode.
  * @param texture Pointer to the NX_Texture.
  * @param wrap Texture wrapping mode.
  */
-HPAPI void NX_SetTextureWrap(NX_Texture* texture, NX_TextureWrap wrap);
+NXAPI void NX_SetTextureWrap(NX_Texture* texture, NX_TextureWrap wrap);
 
 /**
  * @brief Generates mipmaps for a texture.
  * @param texture Pointer to the NX_Texture.
  */
-HPAPI void NX_GenerateMipmap(NX_Texture* texture);
+NXAPI void NX_GenerateMipmap(NX_Texture* texture);
 
 /**
  * @brief Queries the dimensions of a texture.
@@ -724,7 +724,7 @@ HPAPI void NX_GenerateMipmap(NX_Texture* texture);
  * @param w Pointer to store the width.
  * @param h Pointer to store the height.
  */
-HPAPI void NX_QueryTexture(NX_Texture* texture, int* w, int* h);
+NXAPI void NX_QueryTexture(NX_Texture* texture, int* w, int* h);
 
 /** @} */ // end of Texture
 
@@ -742,7 +742,7 @@ HPAPI void NX_QueryTexture(NX_Texture* texture, int* w, int* h);
  * @param codepointCount Number of codepoints in the array.
  * @return Pointer to a newly loaded NX_Font.
  */
-HPAPI NX_Font* NX_LoadFont(const char* filePath, NX_FontType type, int baseSize, int* codepoints, int codepointCount);
+NXAPI NX_Font* NX_LoadFont(const char* filePath, NX_FontType type, int baseSize, int* codepoints, int codepointCount);
 
 /**
  * @brief Loads a font from memory.
@@ -754,13 +754,13 @@ HPAPI NX_Font* NX_LoadFont(const char* filePath, NX_FontType type, int baseSize,
  * @param codepointCount Number of codepoints in the array.
  * @return Pointer to a newly loaded NX_Font.
  */
-HPAPI NX_Font* NX_LoadFontFromMem(const void* fileData, size_t dataSize, NX_FontType type, int baseSize, int* codepoints, int codepointCount);
+NXAPI NX_Font* NX_LoadFontFromMem(const void* fileData, size_t dataSize, NX_FontType type, int baseSize, int* codepoints, int codepointCount);
 
 /**
  * @brief Destroys a font and frees its resources.
  * @param font Pointer to the NX_Font to destroy.
  */
-HPAPI void NX_DestroyFont(NX_Font* font);
+NXAPI void NX_DestroyFont(NX_Font* font);
 
 /**
  * @brief Measures the size of an array of codepoints in the given font.
@@ -771,7 +771,7 @@ HPAPI void NX_DestroyFont(NX_Font* font);
  * @param spacing Additional spacing between characters.
  * @return Width and height required to render the codepoints.
  */
-HPAPI NX_Vec2 NX_MeasureCodepoints(const NX_Font* font, const int* codepoints, int length, float fontSize, NX_Vec2 spacing);
+NXAPI NX_Vec2 NX_MeasureCodepoints(const NX_Font* font, const int* codepoints, int length, float fontSize, NX_Vec2 spacing);
 
 /**
  * @brief Measures the size of a text string in the given font.
@@ -781,7 +781,7 @@ HPAPI NX_Vec2 NX_MeasureCodepoints(const NX_Font* font, const int* codepoints, i
  * @param spacing Additional spacing between characters.
  * @return Width and height required to render the text.
  */
-HPAPI NX_Vec2 NX_MeasureText(const NX_Font* font, const char* text, float fontSize, NX_Vec2 spacing);
+NXAPI NX_Vec2 NX_MeasureText(const NX_Font* font, const char* text, float fontSize, NX_Vec2 spacing);
 
 /** @} */ // end of Font
 
@@ -796,20 +796,20 @@ HPAPI NX_Vec2 NX_MeasureText(const NX_Font* font, const char* text, float fontSi
  * @param h Height of the render texture in pixels.
  * @return Pointer to the newly created render texture, or NULL on failure.
  */
-HPAPI NX_RenderTexture* NX_CreateRenderTexture(int w, int h);
+NXAPI NX_RenderTexture* NX_CreateRenderTexture(int w, int h);
 
 /**
  * @brief Destroys a render texture.
  * @param target Pointer to the render texture to destroy.
  */
-HPAPI void NX_DestroyRenderTexture(NX_RenderTexture* target);
+NXAPI void NX_DestroyRenderTexture(NX_RenderTexture* target);
 
 /**
  * @brief Retrieves the color texture of a render texture.
  * @param target Pointer to the render texture.
  * @return Pointer to the color texture.
  */
-HPAPI NX_Texture* NX_GetRenderTexture(NX_RenderTexture* target);
+NXAPI NX_Texture* NX_GetRenderTexture(NX_RenderTexture* target);
 
 /**
  * @brief Blits a render texture to the screen.
@@ -820,7 +820,7 @@ HPAPI NX_Texture* NX_GetRenderTexture(NX_RenderTexture* target);
  * @param hDst Height of the destination rectangle.
  * @param linear If true, applies linear filtering when scaling; otherwise nearest-neighbor.
  */
-HPAPI void NX_BlitRenderTexture(const NX_RenderTexture* target, int xDst, int yDst, int wDst, int hDst, bool linear);
+NXAPI void NX_BlitRenderTexture(const NX_RenderTexture* target, int xDst, int yDst, int wDst, int hDst, bool linear);
 
 /** @} */ // end of RenderTexture
 
@@ -852,7 +852,7 @@ HPAPI void NX_BlitRenderTexture(const NX_RenderTexture* target, int xDst, int yD
  * @param fragCode Source code of the fragment shader stage (can be NULL if not used).
  * @return Pointer to the created NX_Shader, or NULL on failure.
  */
-HPAPI NX_Shader* NX_CreateShader(const char* vertCode, const char* fragCode);
+NXAPI NX_Shader* NX_CreateShader(const char* vertCode, const char* fragCode);
 
 /**
  * @brief Loads a custom 2D shader from GLSL source files.
@@ -863,14 +863,14 @@ HPAPI NX_Shader* NX_CreateShader(const char* vertCode, const char* fragCode);
  * @param fragFile Path to the fragment shader file (can be NULL if not used).
  * @return Pointer to the created NX_Shader, or NULL on failure.
  */
-HPAPI NX_Shader* NX_LoadShader(const char* vertFile, const char* fragFile);
+NXAPI NX_Shader* NX_LoadShader(const char* vertFile, const char* fragFile);
 
 /**
  * @brief Destroys a 2D shader and releases associated GPU resources.
  *
  * @param shader Pointer to the NX_Shader to destroy.
  */
-HPAPI void NX_DestroyShader(NX_Shader* shader);
+NXAPI void NX_DestroyShader(NX_Shader* shader);
 
 /**
  * @brief Assigns a texture to a 2D shader sampler.
@@ -889,7 +889,7 @@ HPAPI void NX_DestroyShader(NX_Shader* shader);
  * @note Up to 4 texture samplers are supported per shader. It is the user's
  *       responsibility to ensure the shader defines the corresponding sampler names.
  */
-HPAPI void NX_SetShaderTexture(NX_Shader* shader, int slot, const NX_Texture* texture);
+NXAPI void NX_SetShaderTexture(NX_Shader* shader, int slot, const NX_Texture* texture);
 
 /**
  * @brief Updates the static uniform buffer of a 2D shader.
@@ -906,7 +906,7 @@ HPAPI void NX_SetShaderTexture(NX_Shader* shader, int slot, const NX_Texture* te
  * @param size Size in bytes of the data to upload.
  * @param data Pointer to the data to upload.
  */
-HPAPI void NX_UpdateStaticShaderBuffer(NX_Shader* shader, size_t offset, size_t size, const void* data);
+NXAPI void NX_UpdateStaticShaderBuffer(NX_Shader* shader, size_t offset, size_t size, const void* data);
 
 /**
  * @brief Updates the dynamic uniform buffer of a 2D shader for the next draw call.
@@ -922,7 +922,7 @@ HPAPI void NX_UpdateStaticShaderBuffer(NX_Shader* shader, size_t offset, size_t 
  * @param size Size in bytes of the data to upload.
  * @param data Pointer to the data to upload.
  */
-HPAPI void NX_UpdateDynamicShaderBuffer(NX_Shader* shader, size_t size, const void* data);
+NXAPI void NX_UpdateDynamicShaderBuffer(NX_Shader* shader, size_t size, const void* data);
 
 /** @} */ // end of Shader
 
@@ -938,42 +938,42 @@ HPAPI void NX_UpdateDynamicShaderBuffer(NX_Shader* shader, size_t size, const vo
  *
  * @param target Render texture to draw into (can be NULL to render to the screen).
  */
-HPAPI void NX_Begin2D(NX_RenderTexture* target);
+NXAPI void NX_Begin2D(NX_RenderTexture* target);
 
 /**
  * @brief Ends 2D rendering.
  *
  * Flushes any pending 2D draw calls and restores previous rendering state.
  */
-HPAPI void NX_End2D(void);
+NXAPI void NX_End2D(void);
 
 /**
  * @brief Sets the default color for 2D drawing.
  * @param color Color to use for subsequent 2D drawing operations.
  * @note The default color is NX_WHITE.
  */
-HPAPI void NX_SetColor2D(NX_Color color);
+NXAPI void NX_SetColor2D(NX_Color color);
 
 /**
  * @brief Sets the default texture for 2D drawing.
  * @param texture Pointer to the NX_Texture to use.
  * @note The default texture (NULL) is a white texture.
  */
-HPAPI void NX_SetTexture2D(const NX_Texture* texture);
+NXAPI void NX_SetTexture2D(const NX_Texture* texture);
 
 /**
  * @brief Sets the default font for 2D drawing.
  * @param font Pointer to the NX_Font to use.
  * @note The default font (NULL) is Vera Sans rendered in SDF with a base size of 32.
  */
-HPAPI void NX_SetFont2D(const NX_Font* font);
+NXAPI void NX_SetFont2D(const NX_Font* font);
 
 /**
  * @brief Sets the default shader for 2D drawing.
  * @param font Pointer to the NX_Shader to use.
  * @note The default shader will be used if NULL.
  */
-HPAPI void NX_SetShader2D(NX_Shader* shader);
+NXAPI void NX_SetShader2D(NX_Shader* shader);
 
 /**
  * @brief Draws a filled triangle in 2D.
@@ -981,7 +981,7 @@ HPAPI void NX_SetShader2D(NX_Shader* shader);
  * @param p1 Second vertex of the triangle.
  * @param p2 Third vertex of the triangle.
  */
-HPAPI void NX_DrawTriangle2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2);
+NXAPI void NX_DrawTriangle2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2);
 
 /**
  * @brief Draws the border of a triangle in 2D.
@@ -990,28 +990,28 @@ HPAPI void NX_DrawTriangle2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2);
  * @param p2 Third vertex of the triangle.
  * @param thickness Border thickness in pixels.
  */
-HPAPI void NX_DrawTriangleBorder2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, float thickness);
+NXAPI void NX_DrawTriangleBorder2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, float thickness);
 
 /**
  * @brief Draws a list of 2D triangles.
  * @param triangles Array of NX_Vertex2D defining the triangles.
  * @param triangleCount Number of triangles in the array.
  */
-HPAPI void NX_DrawTriangleList2D(const NX_Vertex2D* triangles, int triangleCount);
+NXAPI void NX_DrawTriangleList2D(const NX_Vertex2D* triangles, int triangleCount);
 
 /**
  * @brief Draws a triangle strip in 2D.
  * @param vertices Array of NX_Vertex2D defining the strip.
  * @param count Number of vertices in the array.
  */
-HPAPI void NX_DrawTriangleStrip2D(const NX_Vertex2D* vertices, int count);
+NXAPI void NX_DrawTriangleStrip2D(const NX_Vertex2D* vertices, int count);
 
 /**
  * @brief Draws a triangle fan in 2D.
  * @param vertices Array of NX_Vertex2D defining the fan.
  * @param count Number of vertices in the array.
  */
-HPAPI void NX_DrawTriangleFan2D(const NX_Vertex2D* vertices, int count);
+NXAPI void NX_DrawTriangleFan2D(const NX_Vertex2D* vertices, int count);
 
 /**
  * @brief Draws a filled quadrilateral in 2D.
@@ -1020,7 +1020,7 @@ HPAPI void NX_DrawTriangleFan2D(const NX_Vertex2D* vertices, int count);
  * @param p2 Third vertex of the quad.
  * @param p3 Fourth vertex of the quad.
  */
-HPAPI void NX_DrawQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3);
+NXAPI void NX_DrawQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3);
 
 /**
  * @brief Draws the border of a quadrilateral in 2D.
@@ -1030,28 +1030,28 @@ HPAPI void NX_DrawQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3);
  * @param p3 Fourth vertex of the quad.
  * @param thickness Border thickness in pixels.
  */
-HPAPI void NX_DrawQuadBorder2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3, float thickness);
+NXAPI void NX_DrawQuadBorder2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3, float thickness);
 
 /**
  * @brief Draws a list of 2D quads.
  * @param quads Array of NX_Vertex2D defining the quads.
  * @param quadCount Number of quads in the array.
  */
-HPAPI void NX_DrawQuadList2D(const NX_Vertex2D* quads, int quadCount);
+NXAPI void NX_DrawQuadList2D(const NX_Vertex2D* quads, int quadCount);
 
 /**
  * @brief Draws a quad strip in 2D.
  * @param vertices Array of NX_Vertex2D defining the strip.
  * @param count Number of vertices in the array.
  */
-HPAPI void NX_DrawQuadStrip2D(const NX_Vertex2D* vertices, int count);
+NXAPI void NX_DrawQuadStrip2D(const NX_Vertex2D* vertices, int count);
 
 /**
  * @brief Draws a quad fan in 2D.
  * @param vertices Array of NX_Vertex2D defining the fan.
  * @param count Number of vertices in the array.
  */
-HPAPI void NX_DrawQuadFan2D(const NX_Vertex2D* vertices, int count);
+NXAPI void NX_DrawQuadFan2D(const NX_Vertex2D* vertices, int count);
 
 /**
  * @brief Draws a line segment in 2D.
@@ -1059,7 +1059,7 @@ HPAPI void NX_DrawQuadFan2D(const NX_Vertex2D* vertices, int count);
  * @param p1 End point of the line.
  * @param thickness Line thickness in pixels.
  */
-HPAPI void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness);
+NXAPI void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness);
 
 /**
  * @brief Draws a list of 2D line segments.
@@ -1067,7 +1067,7 @@ HPAPI void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness);
  * @param lineCount Number of line segments.
  * @param thickness Line thickness in pixels.
  */
-HPAPI void NX_DrawLineList2D(const NX_Vec2* lines, int lineCount, float thickness);
+NXAPI void NX_DrawLineList2D(const NX_Vec2* lines, int lineCount, float thickness);
 
 /**
  * @brief Draws a connected line strip in 2D.
@@ -1075,7 +1075,7 @@ HPAPI void NX_DrawLineList2D(const NX_Vec2* lines, int lineCount, float thicknes
  * @param count Number of points in the strip.
  * @param thickness Line thickness in pixels.
  */
-HPAPI void NX_DrawLineStrip2D(const NX_Vec2* points, int count, float thickness);
+NXAPI void NX_DrawLineStrip2D(const NX_Vec2* points, int count, float thickness);
 
 /**
  * @brief Draws a closed line loop in 2D.
@@ -1083,7 +1083,7 @@ HPAPI void NX_DrawLineStrip2D(const NX_Vec2* points, int count, float thickness)
  * @param count Number of points in the loop.
  * @param thickness Line thickness in pixels.
  */
-HPAPI void NX_DrawLineLoop2D(const NX_Vec2* points, int count, float thickness);
+NXAPI void NX_DrawLineLoop2D(const NX_Vec2* points, int count, float thickness);
 
 /**
  * @brief Draws a filled rectangle in 2D.
@@ -1092,7 +1092,7 @@ HPAPI void NX_DrawLineLoop2D(const NX_Vec2* points, int count, float thickness);
  * @param w Width of the rectangle.
  * @param h Height of the rectangle.
  */
-HPAPI void NX_DrawRect2D(float x, float y, float w, float h);
+NXAPI void NX_DrawRect2D(float x, float y, float w, float h);
 
 /**
  * @brief Draws the border of a rectangle in 2D.
@@ -1102,7 +1102,7 @@ HPAPI void NX_DrawRect2D(float x, float y, float w, float h);
  * @param h Height of the rectangle.
  * @param thickness Border thickness in pixels.
  */
-HPAPI void NX_DrawRectBorder2D(float x, float y, float w, float h, float thickness);
+NXAPI void NX_DrawRectBorder2D(float x, float y, float w, float h, float thickness);
 
 /**
  * @brief Draws a rectangle in 2D with rotation around a pivot point.
@@ -1112,7 +1112,7 @@ HPAPI void NX_DrawRectBorder2D(float x, float y, float w, float h, float thickne
  * @param rotation Rotation in radians.
  * @note The pivot is the point around which rotation occurs.
  */
-HPAPI void NX_DrawRectEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation);
+NXAPI void NX_DrawRectEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation);
 
 /**
  * @brief Draws the border of a rectangle in 2D with rotation around a pivot point.
@@ -1123,7 +1123,7 @@ HPAPI void NX_DrawRectEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float ro
  * @param thickness Border thickness in pixels.
  * @note The pivot is the point around which rotation occurs.
  */
-HPAPI void NX_DrawRectBorderEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation, float thickness);
+NXAPI void NX_DrawRectBorderEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation, float thickness);
 
 /**
  * @brief Draws a rectangle with rounded corners in 2D.
@@ -1134,7 +1134,7 @@ HPAPI void NX_DrawRectBorderEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, fl
  * @param radius Corner radius.
  * @param segments Number of segments to approximate the corners.
  */
-HPAPI void NX_DrawRectRounded2D(float x, float y, float w, float h, float radius, int segments);
+NXAPI void NX_DrawRectRounded2D(float x, float y, float w, float h, float radius, int segments);
 
 /**
  * @brief Draws the border of a rectangle with rounded corners in 2D.
@@ -1146,7 +1146,7 @@ HPAPI void NX_DrawRectRounded2D(float x, float y, float w, float h, float radius
  * @param segments Number of segments to approximate the corners.
  * @param thickness Border thickness in pixels.
  */
-HPAPI void NX_DrawRectRoundedBorder2D(float x, float y, float w, float h, float radius, int segments, float thickness);
+NXAPI void NX_DrawRectRoundedBorder2D(float x, float y, float w, float h, float radius, int segments, float thickness);
 
 /**
  * @brief Draws a rectangle with rounded corners and rotation around a pivot.
@@ -1157,7 +1157,7 @@ HPAPI void NX_DrawRectRoundedBorder2D(float x, float y, float w, float h, float 
  * @param radius Corner radius.
  * @note The pivot is the point around which rotation occurs.
  */
-HPAPI void NX_DrawRectRoundedEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation, float radius);
+NXAPI void NX_DrawRectRoundedEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation, float radius);
 
 /**
  * @brief Draws the border of a rectangle with rounded corners and rotation around a pivot.
@@ -1169,7 +1169,7 @@ HPAPI void NX_DrawRectRoundedEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, f
  * @param thickness Border thickness in pixels.
  * @note The pivot is the point around which rotation occurs.
  */
-HPAPI void NX_DrawRectRoundedBorderEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation, float radius, float thickness);
+NXAPI void NX_DrawRectRoundedBorderEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation, float radius, float thickness);
 
 /**
  * @brief Draws a filled circle in 2D.
@@ -1177,7 +1177,7 @@ HPAPI void NX_DrawRectRoundedBorderEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pi
  * @param radius Circle radius.
  * @param segments Number of segments to approximate the circle.
  */
-HPAPI void NX_DrawCircle2D(NX_Vec2 center, float radius, int segments);
+NXAPI void NX_DrawCircle2D(NX_Vec2 center, float radius, int segments);
 
 /**
  * @brief Draws the border of a circle in 2D.
@@ -1186,7 +1186,7 @@ HPAPI void NX_DrawCircle2D(NX_Vec2 center, float radius, int segments);
  * @param segments Number of segments to approximate the circle.
  * @param thickness Border thickness in pixels.
  */
-HPAPI void NX_DrawCircleBorder2D(NX_Vec2 p, float radius, int segments, float thickness);
+NXAPI void NX_DrawCircleBorder2D(NX_Vec2 p, float radius, int segments, float thickness);
 
 /**
  * @brief Draws a filled ellipse in 2D.
@@ -1194,7 +1194,7 @@ HPAPI void NX_DrawCircleBorder2D(NX_Vec2 p, float radius, int segments, float th
  * @param radius X and Y radii of the ellipse.
  * @param segments Number of segments to approximate the ellipse.
  */
-HPAPI void NX_DrawEllipse2D(NX_Vec2 center, NX_Vec2 radius, int segments);
+NXAPI void NX_DrawEllipse2D(NX_Vec2 center, NX_Vec2 radius, int segments);
 
 /**
  * @brief Draws the border of an ellipse in 2D.
@@ -1203,7 +1203,7 @@ HPAPI void NX_DrawEllipse2D(NX_Vec2 center, NX_Vec2 radius, int segments);
  * @param segments Number of segments to approximate the ellipse.
  * @param thickness Border thickness in pixels.
  */
-HPAPI void NX_DrawEllipseBorder2D(NX_Vec2 p, NX_Vec2 r, int segments, float thickness);
+NXAPI void NX_DrawEllipseBorder2D(NX_Vec2 p, NX_Vec2 r, int segments, float thickness);
 
 /**
  * @brief Draws a filled pie slice (sector) in 2D.
@@ -1213,7 +1213,7 @@ HPAPI void NX_DrawEllipseBorder2D(NX_Vec2 p, NX_Vec2 r, int segments, float thic
  * @param endAngle Ending angle in radians.
  * @param segments Number of segments to approximate the curve.
  */
-HPAPI void NX_DrawPieSlice2D(NX_Vec2 center, float radius, float startAngle, float endAngle, int segments);
+NXAPI void NX_DrawPieSlice2D(NX_Vec2 center, float radius, float startAngle, float endAngle, int segments);
 
 /**
  * @brief Draws the border of a pie slice (sector) in 2D.
@@ -1224,7 +1224,7 @@ HPAPI void NX_DrawPieSlice2D(NX_Vec2 center, float radius, float startAngle, flo
  * @param segments Number of segments to approximate the curve.
  * @param thickness Border thickness in pixels.
  */
-HPAPI void NX_DrawPieSliceBorder2D(NX_Vec2 center, float radius, float startAngle, float endAngle, int segments, float thickness);
+NXAPI void NX_DrawPieSliceBorder2D(NX_Vec2 center, float radius, float startAngle, float endAngle, int segments, float thickness);
 
 /**
  * @brief Draws a filled ring in 2D.
@@ -1233,7 +1233,7 @@ HPAPI void NX_DrawPieSliceBorder2D(NX_Vec2 center, float radius, float startAngl
  * @param outerRadius Outer radius.
  * @param segments Number of segments to approximate the ring.
  */
-HPAPI void NX_DrawRing2D(NX_Vec2 center, float innerRadius, float outerRadius, int segments);
+NXAPI void NX_DrawRing2D(NX_Vec2 center, float innerRadius, float outerRadius, int segments);
 
 /**
  * @brief Draws the border of a ring in 2D.
@@ -1243,7 +1243,7 @@ HPAPI void NX_DrawRing2D(NX_Vec2 center, float innerRadius, float outerRadius, i
  * @param segments Number of segments to approximate the ring.
  * @param thickness Border thickness in pixels.
  */
-HPAPI void NX_DrawRingBorder2D(NX_Vec2 center, float innerRadius, float outerRadius, int segments, float thickness);
+NXAPI void NX_DrawRingBorder2D(NX_Vec2 center, float innerRadius, float outerRadius, int segments, float thickness);
 
 /**
  * @brief Draws a filled ring arc in 2D.
@@ -1254,7 +1254,7 @@ HPAPI void NX_DrawRingBorder2D(NX_Vec2 center, float innerRadius, float outerRad
  * @param endAngle Ending angle in radians.
  * @param segments Number of segments to approximate the arc.
  */
-HPAPI void NX_DrawRingArc2D(NX_Vec2 center, float innerRadius, float outerRadius, float startAngle, float endAngle, int segments);
+NXAPI void NX_DrawRingArc2D(NX_Vec2 center, float innerRadius, float outerRadius, float startAngle, float endAngle, int segments);
 
 /**
  * @brief Draws the border of a ring arc in 2D.
@@ -1266,7 +1266,7 @@ HPAPI void NX_DrawRingArc2D(NX_Vec2 center, float innerRadius, float outerRadius
  * @param segments Number of segments to approximate the arc.
  * @param thickness Border thickness in pixels.
  */
-HPAPI void NX_DrawRingArcBorder2D(NX_Vec2 center, float innerRadius, float outerRadius, float startAngle, float endAngle, int segments, float thickness);
+NXAPI void NX_DrawRingArcBorder2D(NX_Vec2 center, float innerRadius, float outerRadius, float startAngle, float endAngle, int segments, float thickness);
 
 /**
  * @brief Draws an arc in 2D.
@@ -1277,7 +1277,7 @@ HPAPI void NX_DrawRingArcBorder2D(NX_Vec2 center, float innerRadius, float outer
  * @param segments Number of segments to approximate the curve.
  * @param thickness Arc thickness in pixels.
  */
-HPAPI void NX_DrawArc2D(NX_Vec2 center, float radius, float startAngle, float endAngle, int segments, float thickness);
+NXAPI void NX_DrawArc2D(NX_Vec2 center, float radius, float startAngle, float endAngle, int segments, float thickness);
 
 /**
  * @brief Draws a quadratic Bezier curve in 2D.
@@ -1287,7 +1287,7 @@ HPAPI void NX_DrawArc2D(NX_Vec2 center, float radius, float startAngle, float en
  * @param segments Number of segments to approximate the curve.
  * @param thickness Line thickness in pixels.
  */
-HPAPI void NX_DrawBezierQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, int segments, float thickness);
+NXAPI void NX_DrawBezierQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, int segments, float thickness);
 
 /**
  * @brief Draws a cubic Bezier curve in 2D.
@@ -1298,7 +1298,7 @@ HPAPI void NX_DrawBezierQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, int segments,
  * @param segments Number of segments to approximate the curve.
  * @param thickness Line thickness in pixels.
  */
-HPAPI void NX_DrawBezierCubic2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3, int segments, float thickness);
+NXAPI void NX_DrawBezierCubic2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3, int segments, float thickness);
 
 /**
  * @brief Draws a spline curve through a set of points in 2D.
@@ -1307,7 +1307,7 @@ HPAPI void NX_DrawBezierCubic2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3, 
  * @param segments Number of segments between each pair of points.
  * @param thickness Line thickness in pixels.
  */
-HPAPI void NX_DrawSpline2D(const NX_Vec2* points, int count, int segments, float thickness);
+NXAPI void NX_DrawSpline2D(const NX_Vec2* points, int count, int segments, float thickness);
 
 /**
  * @brief Draws a single Unicode codepoint in 2D.
@@ -1315,7 +1315,7 @@ HPAPI void NX_DrawSpline2D(const NX_Vec2* points, int count, int segments, float
  * @param position Position in 2D space.
  * @param fontSize Font size in pixels.
  */
-HPAPI void NX_DrawCodepoint2D(int codepoint, NX_Vec2 position, float fontSize);
+NXAPI void NX_DrawCodepoint2D(int codepoint, NX_Vec2 position, float fontSize);
 
 /**
  * @brief Draws an array of Unicode codepoints in 2D.
@@ -1325,7 +1325,7 @@ HPAPI void NX_DrawCodepoint2D(int codepoint, NX_Vec2 position, float fontSize);
  * @param fontSize Font size in pixels.
  * @param spacing Additional spacing between characters.
  */
-HPAPI void NX_DrawCodepoints2D(const int* codepoints, int length, NX_Vec2 position, float fontSize, NX_Vec2 spacing);
+NXAPI void NX_DrawCodepoints2D(const int* codepoints, int length, NX_Vec2 position, float fontSize, NX_Vec2 spacing);
 
 /**
  * @brief Draws a null-terminated text string in 2D.
@@ -1334,7 +1334,7 @@ HPAPI void NX_DrawCodepoints2D(const int* codepoints, int length, NX_Vec2 positi
  * @param fontSize Font size in pixels.
  * @param spacing Additional spacing between characters.
  */
-HPAPI void NX_DrawText2D(const char* text, NX_Vec2 position, float fontSize, NX_Vec2 spacing);
+NXAPI void NX_DrawText2D(const char* text, NX_Vec2 position, float fontSize, NX_Vec2 spacing);
 
 /** @} */ // end of Draw2D
 
@@ -1350,13 +1350,13 @@ HPAPI void NX_DrawText2D(const char* text, NX_Vec2 position, float fontSize, NX_
  * @param env Pointer to the environment to use (can be NULL to use the default environment).
  * @param target Render texture to draw into (can be NULL to render to the screen).
  */
-HPAPI void NX_Begin3D(const NX_Camera* camera, const NX_Environment* env, const NX_RenderTexture* target);
+NXAPI void NX_Begin3D(const NX_Camera* camera, const NX_Environment* env, const NX_RenderTexture* target);
 
 /**
  * @brief Finalizes 3D rendering.
  * Renders all accumulated draw calls, applies post-processing, and outputs to the final render target.
  */
-HPAPI void NX_End3D(void);
+NXAPI void NX_End3D(void);
 
 /**
  * @brief Draws a 3D mesh.
@@ -1364,7 +1364,7 @@ HPAPI void NX_End3D(void);
  * @param material Pointer to the material to use (can be NULL to use the default material).
  * @param transform Pointer to the transformation matrix (can be NULL to use identity).
  */
-HPAPI void NX_DrawMesh3D(const NX_Mesh* mesh, const NX_Material* material, const NX_Transform* transform);
+NXAPI void NX_DrawMesh3D(const NX_Mesh* mesh, const NX_Material* material, const NX_Transform* transform);
 
 /**
  * @brief Draws a 3D mesh with instanced rendering.
@@ -1380,7 +1380,7 @@ HPAPI void NX_DrawMesh3D(const NX_Mesh* mesh, const NX_Material* material, const
  *
  * @note No frustum culling is performed for instanced rendering.
  */
-HPAPI void NX_DrawMeshInstanced3D(const NX_Mesh* mesh, const NX_InstanceBuffer* instances, int instanceCount,
+NXAPI void NX_DrawMeshInstanced3D(const NX_Mesh* mesh, const NX_InstanceBuffer* instances, int instanceCount,
                                   const NX_Material* material, const NX_Transform* transform);
 
 /**
@@ -1389,7 +1389,7 @@ HPAPI void NX_DrawMeshInstanced3D(const NX_Mesh* mesh, const NX_InstanceBuffer* 
  * @param transform Pointer to the transformation matrix (can be NULL to use identity).
  * @note Draws all meshes contained in the model with their associated materials.
  */
-HPAPI void NX_DrawModel3D(const NX_Model* model, const NX_Transform* transform);
+NXAPI void NX_DrawModel3D(const NX_Model* model, const NX_Transform* transform);
 
 /**
  * @brief Draws a 3D model with instanced rendering.
@@ -1405,7 +1405,7 @@ HPAPI void NX_DrawModel3D(const NX_Model* model, const NX_Transform* transform);
  *
  * @note No frustum culling is performed for instanced rendering.
  */
-HPAPI void NX_DrawModelInstanced3D(const NX_Model* model, const NX_InstanceBuffer* instances,
+NXAPI void NX_DrawModelInstanced3D(const NX_Model* model, const NX_InstanceBuffer* instances,
                                    int instanceCount, const NX_Transform* transform);
 
 /** @} */ // end of Draw3D
@@ -1420,7 +1420,7 @@ HPAPI void NX_DrawModelInstanced3D(const NX_Model* model, const NX_InstanceBuffe
  * @return NX_Camera initialized at (0,0,0) looking forward with identity rotation.
  * @note Near plane = 0.05, Far plane = 4000.0, Vertical FOV = 60 degrees, Perspective projection.
  */
-HPAPI NX_Camera NX_GetDefaultCamera(void);
+NXAPI NX_Camera NX_GetDefaultCamera(void);
 
 /**
  * @brief Updates an orbital camera around a target point.
@@ -1430,7 +1430,7 @@ HPAPI NX_Camera NX_GetDefaultCamera(void);
  * @param height Height above the center point.
  * @param rotation Rotation around the center in radians.
  */
-HPAPI void NX_UpdateCameraOrbital(NX_Camera* camera, NX_Vec3 center, float distance, float height, float rotation);
+NXAPI void NX_UpdateCameraOrbital(NX_Camera* camera, NX_Vec3 center, float distance, float height, float rotation);
 
 /**
  * @brief Updates a free-moving camera with clamped pitch.
@@ -1441,7 +1441,7 @@ HPAPI void NX_UpdateCameraOrbital(NX_Camera* camera, NX_Vec3 center, float dista
  *        If negative, clamp is approximately -89/+89 degrees.
  *        Zero can be useful to make a Doom-like cameras.
  */
-HPAPI void NX_UpdateCameraFree(NX_Camera* camera, NX_Vec3 movement, NX_Vec3 rotation, float maxPitch);
+NXAPI void NX_UpdateCameraFree(NX_Camera* camera, NX_Vec3 movement, NX_Vec3 rotation, float maxPitch);
 
 /**
  * @brief Updates a first-person camera with clamped pitch.
@@ -1452,7 +1452,7 @@ HPAPI void NX_UpdateCameraFree(NX_Camera* camera, NX_Vec3 movement, NX_Vec3 rota
  *        If negative, clamp is approximately -89/+89 degrees.
  *        Zero can be useful to make a Doom-like cameras.
  */
-HPAPI void NX_UpdateCameraFPS(NX_Camera* camera, NX_Vec3 movement, NX_Vec2 rotation, float maxPitch);
+NXAPI void NX_UpdateCameraFPS(NX_Camera* camera, NX_Vec3 movement, NX_Vec2 rotation, float maxPitch);
 
 /**
  * @brief Applies a transformation matrix and optional offset to a camera.
@@ -1461,7 +1461,7 @@ HPAPI void NX_UpdateCameraFPS(NX_Camera* camera, NX_Vec3 movement, NX_Vec2 rotat
  * @param offset Optional positional offset applied after the transformation.
  * @note Useful for syncing the camera with a player or object while adding an offset.
  */
-HPAPI void NX_ApplyCameraTransform(NX_Camera* camera, NX_Mat4 transform, NX_Vec3 offset);
+NXAPI void NX_ApplyCameraTransform(NX_Camera* camera, NX_Mat4 transform, NX_Vec3 offset);
 
 /** @} */ // end of Camera
 
@@ -1513,7 +1513,7 @@ HPAPI void NX_ApplyCameraTransform(NX_Camera* camera, NX_Mat4 transform, NX_Vec3
  *   - exposure: 1.0
  *   - white point: 1.0
  */
-HPAPI NX_Environment NX_GetDefaultEnvironment(void);
+NXAPI NX_Environment NX_GetDefaultEnvironment(void);
 
 /** @} */ // end of Environment
 
@@ -1533,7 +1533,7 @@ HPAPI NX_Environment NX_GetDefaultEnvironment(void);
  * @return Pointer to a newly created NX_Cubemap.
  * @note On OpenGL ES, requested 32-bit formats may be downgraded to 16-bit depending on hardware support.
  */
-HPAPI NX_Cubemap* NX_CreateCubemap(int size, NX_PixelFormat format);
+NXAPI NX_Cubemap* NX_CreateCubemap(int size, NX_PixelFormat format);
 
 /**
  * @brief Load a cubemap from an image.
@@ -1554,7 +1554,7 @@ HPAPI NX_Cubemap* NX_CreateCubemap(int size, NX_PixelFormat format);
  *           [-Y]
  *           [-Z]
  */
-HPAPI NX_Cubemap* NX_LoadCubemapFromMem(const NX_Image* image);
+NXAPI NX_Cubemap* NX_LoadCubemapFromMem(const NX_Image* image);
 
 /**
  * @brief Loads a cubemap from a file.
@@ -1563,20 +1563,20 @@ HPAPI NX_Cubemap* NX_LoadCubemapFromMem(const NX_Image* image);
  * @note Cubemaps are used for skyboxes or to generate reflection probes.
  * @note Supported image layouts (auto-detected, same as NX_CreateCubemap).
  */
-HPAPI NX_Cubemap* NX_LoadCubemap(const char* filePath);
+NXAPI NX_Cubemap* NX_LoadCubemap(const char* filePath);
 
 /**
  * @brief Destroys a cubemap and frees its resources.
  * @param cubemap Pointer to the NX_Cubemap to destroy.
  */
-HPAPI void NX_DestroyCubemap(NX_Cubemap* cubemap);
+NXAPI void NX_DestroyCubemap(NX_Cubemap* cubemap);
 
 /**
  * @brief Generates a procedural skybox into a cubemap.
  * @param cubemap Destination cubemap to render into.
  * @param skybox Pointer to a skybox description (NX_Skybox).
  */
-HPAPI void NX_GenerateSkybox(NX_Cubemap* cubemap, const NX_Skybox* skybox);
+NXAPI void NX_GenerateSkybox(NX_Cubemap* cubemap, const NX_Skybox* skybox);
 
 /** @} */ // end of Cubemap
 
@@ -1591,7 +1591,7 @@ HPAPI void NX_GenerateSkybox(NX_Cubemap* cubemap, const NX_Skybox* skybox);
  * @return Pointer to a newly created NX_ReflectionProbe.
  * @note Reflection probes capture the environment for specular and diffuse image-based lighting.
  */
-HPAPI NX_ReflectionProbe* NX_CreateReflectionProbe(NX_Cubemap* cubemap);
+NXAPI NX_ReflectionProbe* NX_CreateReflectionProbe(NX_Cubemap* cubemap);
 
 /**
  * @brief Loads a reflection probe from a cubemap file.
@@ -1599,20 +1599,20 @@ HPAPI NX_ReflectionProbe* NX_CreateReflectionProbe(NX_Cubemap* cubemap);
  * @return Pointer to a newly loaded NX_ReflectionProbe.
  * @note The cubemap is used to generate specular and diffuse reflections.
  */
-HPAPI NX_ReflectionProbe* NX_LoadReflectionProbe(const char* filePath);
+NXAPI NX_ReflectionProbe* NX_LoadReflectionProbe(const char* filePath);
 
 /**
  * @brief Destroys a reflection probe and frees its resources.
  * @param probe Pointer to the NX_ReflectionProbe to destroy.
  */
-HPAPI void NX_DestroyReflectionProbe(NX_ReflectionProbe* probe);
+NXAPI void NX_DestroyReflectionProbe(NX_ReflectionProbe* probe);
 
 /**
  * @brief Updates an existing reflection probe from a new cubemap.
  * @param probe Pointer to the reflection probe to update.
  * @param cubemap Pointer to the new cubemap used for updating (cannot be NULL).
  */
-HPAPI void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap* cubemap);
+NXAPI void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap* cubemap);
 
 /** @} */ // end of ReflectionProbe
 
@@ -1654,7 +1654,7 @@ HPAPI void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap*
  * - cull mode: NX_CULL_BACK
  * - shader: NULL
  */
-HPAPI NX_Material NX_GetDefaultMaterial(void);
+NXAPI NX_Material NX_GetDefaultMaterial(void);
 
 /**
  * @brief Destroys all resources allocated within a material (e.g., textures).
@@ -1662,7 +1662,7 @@ HPAPI NX_Material NX_GetDefaultMaterial(void);
  * @note Only call this if you are certain the resources are no longer needed.
  * @note Do not call this if the resources are shared between multiple materials.
  */
-HPAPI void NX_DestroyMaterialResources(NX_Material* material);
+NXAPI void NX_DestroyMaterialResources(NX_Material* material);
 
 /** @} */ // end of Material
 
@@ -1693,7 +1693,7 @@ HPAPI void NX_DestroyMaterialResources(NX_Material* material);
  * @param fragCode Source code of the fragment shader stage (can be NULL if not used).
  * @return Pointer to the created NX_MaterialShader, or NULL on failure.
  */
-HPAPI NX_MaterialShader* NX_CreateMaterialShader(const char* vertCode, const char* fragCode);
+NXAPI NX_MaterialShader* NX_CreateMaterialShader(const char* vertCode, const char* fragCode);
 
 /**
  * @brief Loads a custom material shader from GLSL source files.
@@ -1704,14 +1704,14 @@ HPAPI NX_MaterialShader* NX_CreateMaterialShader(const char* vertCode, const cha
  * @param fragFile Path to the fragment shader file (can be NULL if not used).
  * @return Pointer to the created NX_MaterialShader, or NULL on failure.
  */
-HPAPI NX_MaterialShader* NX_LoadMaterialShader(const char* vertFile, const char* fragFile);
+NXAPI NX_MaterialShader* NX_LoadMaterialShader(const char* vertFile, const char* fragFile);
 
 /**
  * @brief Destroys a material shader and releases associated GPU resources.
  * 
  * @param shader Pointer to the NX_MaterialShader to destroy.
  */
-HPAPI void NX_DestroyMaterialShader(NX_MaterialShader* shader);
+NXAPI void NX_DestroyMaterialShader(NX_MaterialShader* shader);
 
 /**
  * @brief Assign a texture to a material shader sampler.
@@ -1730,7 +1730,7 @@ HPAPI void NX_DestroyMaterialShader(NX_MaterialShader* shader);
  * @note Up to 4 texture samplers are supported per shader. It is the user's
  *       responsibility to ensure the shader defines the corresponding sampler names.
  */
-HPAPI void NX_SetMaterialShaderTexture(NX_MaterialShader* shader, int slot, const NX_Texture* texture);
+NXAPI void NX_SetMaterialShaderTexture(NX_MaterialShader* shader, int slot, const NX_Texture* texture);
 
 /**
  * @brief Updates the static uniform buffer of a material shader.
@@ -1747,7 +1747,7 @@ HPAPI void NX_SetMaterialShaderTexture(NX_MaterialShader* shader, int slot, cons
  * @param size Size in bytes of the data to upload.
  * @param data Pointer to the data to upload.
  */
-HPAPI void NX_UpdateStaticMaterialShaderBuffer(NX_MaterialShader* shader, size_t offset, size_t size, const void* data);
+NXAPI void NX_UpdateStaticMaterialShaderBuffer(NX_MaterialShader* shader, size_t offset, size_t size, const void* data);
 
 /**
  * @brief Updates the dynamic uniform buffer of a material shader for the next draw call.
@@ -1763,7 +1763,7 @@ HPAPI void NX_UpdateStaticMaterialShaderBuffer(NX_MaterialShader* shader, size_t
  * @param size Size in bytes of the data to upload.
  * @param data Pointer to the data to upload.
  */
-HPAPI void NX_UpdateDynamicMaterialShaderBuffer(NX_MaterialShader* shader, size_t size, const void* data);
+NXAPI void NX_UpdateDynamicMaterialShaderBuffer(NX_MaterialShader* shader, size_t size, const void* data);
 
 /** @} */ // end of Material
 
@@ -1781,13 +1781,13 @@ HPAPI void NX_UpdateDynamicMaterialShaderBuffer(NX_MaterialShader* shader, size_
  * @return Pointer to a newly created NX_Mesh.
  * @note The function copies the data into internal buffers.
  */
-HPAPI NX_Mesh* NX_CreateMesh(const NX_Vertex3D* vertices, int vCount, const uint32_t* indices, int iCount);
+NXAPI NX_Mesh* NX_CreateMesh(const NX_Vertex3D* vertices, int vCount, const uint32_t* indices, int iCount);
 
 /**
  * @brief Destroys a 3D mesh and frees its resources.
  * @param mesh Pointer to the NX_Mesh to destroy.
  */
-HPAPI void NX_DestroyMesh(NX_Mesh* mesh);
+NXAPI void NX_DestroyMesh(NX_Mesh* mesh);
 
 /**
  * @brief Generates a quad mesh.
@@ -1796,7 +1796,7 @@ HPAPI void NX_DestroyMesh(NX_Mesh* mesh);
  * @param normal Normal vector for the quad surface.
  * @return Pointer to a newly generated NX_Mesh.
  */
-HPAPI NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_Vec2 subDiv, NX_Vec3 normal);
+NXAPI NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_Vec2 subDiv, NX_Vec3 normal);
 
 /**
  * @brief Generates a cube mesh.
@@ -1804,7 +1804,7 @@ HPAPI NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_Vec2 subDiv, NX_Vec3 normal);
  * @param subDiv Subdivision along each axis.
  * @return Pointer to a newly generated NX_Mesh.
  */
-HPAPI NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_Vec3 subDiv);
+NXAPI NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_Vec3 subDiv);
 
 /**
  * @brief Generates a sphere mesh.
@@ -1813,7 +1813,7 @@ HPAPI NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_Vec3 subDiv);
  * @param rings Number of rings (latitudinal divisions).
  * @return Pointer to a newly generated NX_Mesh.
  */
-HPAPI NX_Mesh* NX_GenMeshSphere(float radius, int slices, int rings);
+NXAPI NX_Mesh* NX_GenMeshSphere(float radius, int slices, int rings);
 
 /**
  * @brief Generates a cylinder mesh.
@@ -1826,7 +1826,7 @@ HPAPI NX_Mesh* NX_GenMeshSphere(float radius, int slices, int rings);
  * @param bottomCap Whether to generate the bottom cap.
  * @return Pointer to a newly generated NX_Mesh.
  */
-HPAPI NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, int slices, int rings, bool topCap, bool bottomCap);
+NXAPI NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, int slices, int rings, bool topCap, bool bottomCap);
 
 /**
  * @brief Generates a capsule mesh.
@@ -1836,21 +1836,21 @@ HPAPI NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float hei
  * @param rings Number of rings along the capsule.
  * @return Pointer to a newly generated NX_Mesh.
  */
-HPAPI NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings);
+NXAPI NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings);
 
 /**
  * @brief Uploads the mesh data currently stored in RAM to the GPU.
  * @param mesh Pointer to the NX_Mesh to update.
  * @note Useful after modifying vertices or indices to update the GPU buffers.
  */
-HPAPI void NX_UpdateMeshBuffer(NX_Mesh* mesh);
+NXAPI void NX_UpdateMeshBuffer(NX_Mesh* mesh);
 
 /**
  * @brief Recalculates the Axis-Aligned Bounding Box (AABB) of the mesh.
  * @param mesh Pointer to the NX_Mesh to update.
  * @note Should be called after modifying vertices or transformations.
  */
-HPAPI void NX_UpdateMeshAABB(NX_Mesh* mesh);
+NXAPI void NX_UpdateMeshAABB(NX_Mesh* mesh);
 
 /** @} */ // end of Mesh
 
@@ -1869,14 +1869,14 @@ HPAPI void NX_UpdateMeshAABB(NX_Mesh* mesh);
  *
  * @note The buffer's supported types cannot change after creation.
  */
-HPAPI NX_InstanceBuffer* NX_CreateInstanceBuffer(NX_InstanceData bitfield, size_t count);
+NXAPI NX_InstanceBuffer* NX_CreateInstanceBuffer(NX_InstanceData bitfield, size_t count);
 
 /**
  * @brief Destroy an instance buffer and free all associated GPU memory.
  *
  * @param buffer The instance buffer to destroy.
  */
-HPAPI void NX_DestroyInstanceBuffer(NX_InstanceBuffer* buffer);
+NXAPI void NX_DestroyInstanceBuffer(NX_InstanceBuffer* buffer);
 
 /**
  * @brief Reallocate the instance buffer to hold a new number of instances.
@@ -1887,7 +1887,7 @@ HPAPI void NX_DestroyInstanceBuffer(NX_InstanceBuffer* buffer);
  *
  * @note Only the size of the buffer changes. Types of instance data are immutable.
  */
-HPAPI void NX_ReallocInstanceBuffer(NX_InstanceBuffer* buffer, size_t count, bool keepData);
+NXAPI void NX_ReallocInstanceBuffer(NX_InstanceBuffer* buffer, size_t count, bool keepData);
 
 /**
  * @brief Update a specific type of instance data within the buffer.
@@ -1901,7 +1901,7 @@ HPAPI void NX_ReallocInstanceBuffer(NX_InstanceBuffer* buffer, size_t count, boo
  * @note The operation does nothing if the buffer does not support the requested type
  *       or if the range exceeds the currently allocated size.
  */
-HPAPI void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type, size_t offset, size_t count, const void* data);
+NXAPI void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type, size_t offset, size_t count, const void* data);
 
 /**
  * @brief Retrieve information about the instance buffer.
@@ -1910,7 +1910,7 @@ HPAPI void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData ty
  * @param bitfield Output pointer to receive the supported instance data types.
  * @param count    Output pointer to receive the current allocated instance count.
  */
-HPAPI void NX_QueryInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData* bitfield, size_t* count);
+NXAPI void NX_QueryInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData* bitfield, size_t* count);
 
 /** @} */ // end of InstanceBuffer
 
@@ -1924,14 +1924,14 @@ HPAPI void NX_QueryInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData* bi
  * @param value Scaling factor (e.g., 0.01 for meters to centimeters).
  * @note Only affects models loaded after this call and formats that support scaling.
  */
-HPAPI void NX_SetModelImportScale(float value);
+NXAPI void NX_SetModelImportScale(float value);
 
 /**
  * @brief Loads a 3D model from a file.
  * @param filePath Path to the model file.
  * @return Pointer to a newly loaded NX_Model containing meshes and materials.
  */
-HPAPI NX_Model* NX_LoadModel(const char* filePath);
+NXAPI NX_Model* NX_LoadModel(const char* filePath);
 
 /**
  * @brief Loads a 3D model from memory.
@@ -1940,20 +1940,20 @@ HPAPI NX_Model* NX_LoadModel(const char* filePath);
  * @param hint Hint on the model format (can be NULL).
  * @return Pointer to a newly loaded NX_Model containing meshes and materials.
  */
-HPAPI NX_Model* NX_LoadModelFromMemory(const void* data, size_t size, const char* hint);
+NXAPI NX_Model* NX_LoadModelFromMemory(const void* data, size_t size, const char* hint);
 
 /**
  * @brief Destroys a 3D model and frees its resources.
  * @param model Pointer to the NX_Model to destroy.
  */
-HPAPI void NX_DestroyModel(NX_Model* model);
+NXAPI void NX_DestroyModel(NX_Model* model);
 
 /**
  * @brief Updates the axis-aligned bounding box (AABB) of a model.
  * @param model Pointer to the NX_Model to update.
  * @param updateMeshAABBs If true, also updates each mesh's bounding box before updating the model AABB.
  */
-HPAPI void NX_UpdateModelAABB(NX_Model* model, bool updateMeshAABBs);
+NXAPI void NX_UpdateModelAABB(NX_Model* model, bool updateMeshAABBs);
 
 /**
  * @brief Scales the axis-aligned bounding box (AABB) of a model by a given factor.
@@ -1961,7 +1961,7 @@ HPAPI void NX_UpdateModelAABB(NX_Model* model, bool updateMeshAABBs);
  * @param scale Scaling factor to apply to the AABB.
  * @param scaleMeshAABBs If true, also scales the AABBs of each mesh before scaling the model AABB.
  */
-HPAPI void NX_ScaleModelAABB(NX_Model* model, float scale, bool scaleMeshAABBs);
+NXAPI void NX_ScaleModelAABB(NX_Model* model, float scale, bool scaleMeshAABBs);
 
 /**
  * @brief Loads animations from a model file.
@@ -1971,7 +1971,7 @@ HPAPI void NX_ScaleModelAABB(NX_Model* model, float scale, bool scaleMeshAABBs);
  * @return Pointer to an array of NX_ModelAnimation, or NULL on failure.
  * @note Free the returned array using NX_DestroyModelAnimations().
  */
-HPAPI NX_ModelAnimation** NX_LoadModelAnimations(const char* filePath, int* animCount, int targetFrameRate);
+NXAPI NX_ModelAnimation** NX_LoadModelAnimations(const char* filePath, int* animCount, int targetFrameRate);
 
 /**
  * @brief Loads animations from memory data.
@@ -1983,14 +1983,14 @@ HPAPI NX_ModelAnimation** NX_LoadModelAnimations(const char* filePath, int* anim
  * @return Pointer to an array of NX_ModelAnimation, or NULL on failure.
  * @note Free the returned array using NX_DestroyModelAnimations().
  */
-HPAPI NX_ModelAnimation** NX_LoadModelAnimationsFromMemory(const void* data, unsigned int size, const char* hint, int* animCount, int targetFrameRate);
+NXAPI NX_ModelAnimation** NX_LoadModelAnimationsFromMemory(const void* data, unsigned int size, const char* hint, int* animCount, int targetFrameRate);
 
 /**
  * @brief Frees memory allocated for model animations.
  * @param animations Pointer to the animation array to free.
  * @param animCount Number of animations in the array.
  */
-HPAPI void NX_DestroyModelAnimations(NX_ModelAnimation** animations, int animCount);
+NXAPI void NX_DestroyModelAnimations(NX_ModelAnimation** animations, int animCount);
 
 /**
  * @brief Finds a named animation in an array of animations.
@@ -1999,7 +1999,7 @@ HPAPI void NX_DestroyModelAnimations(NX_ModelAnimation** animations, int animCou
  * @param name Name of the animation to find (case-sensitive).
  * @return Pointer to the matching animation, or NULL if not found.
  */
-HPAPI NX_ModelAnimation* NX_GetModelAnimation(NX_ModelAnimation** animations, int animCount, const char* name);
+NXAPI NX_ModelAnimation* NX_GetModelAnimation(NX_ModelAnimation** animations, int animCount, const char* name);
 
 /** @} */ // end of Model
 
@@ -2014,27 +2014,27 @@ HPAPI NX_ModelAnimation* NX_GetModelAnimation(NX_ModelAnimation** animations, in
  * @return Pointer to a newly created NX_Light.
  * @note Lights are inactive by default after creation.
  */
-HPAPI NX_Light* NX_CreateLight(NX_LightType type);
+NXAPI NX_Light* NX_CreateLight(NX_LightType type);
 
 /**
  * @brief Destroys a light and frees its resources.
  * @param light Pointer to the NX_Light to destroy.
  */
-HPAPI void NX_DestroyLight(NX_Light* light);
+NXAPI void NX_DestroyLight(NX_Light* light);
 
 /**
  * @brief Checks if a light is active.
  * @param light Pointer to the NX_Light.
  * @return true if the light is active, false otherwise.
  */
-HPAPI bool NX_IsLightActive(const NX_Light* light);
+NXAPI bool NX_IsLightActive(const NX_Light* light);
 
 /**
  * @brief Activates or deactivates a light.
  * @param light Pointer to the NX_Light.
  * @param active true to enable, false to disable.
  */
-HPAPI void NX_SetLightActive(NX_Light* light, bool active);
+NXAPI void NX_SetLightActive(NX_Light* light, bool active);
 
 /**
  * @brief Gets the layer mask required for a light to be considered in the scene.
@@ -2042,7 +2042,7 @@ HPAPI void NX_SetLightActive(NX_Light* light, bool active);
  * @return Current layer mask.
  * @note Default is NX_LAYER_01. Changes take effect immediately.
  */
-HPAPI NX_Layer NX_GetLightLayerMask(const NX_Light* light);
+NXAPI NX_Layer NX_GetLightLayerMask(const NX_Light* light);
 
 /**
  * @brief Sets the layer mask required for a light to be considered in the scene.
@@ -2050,7 +2050,7 @@ HPAPI NX_Layer NX_GetLightLayerMask(const NX_Light* light);
  * @param layers Layer mask to set.
  * @note Default is NX_LAYER_01. Changes take effect immediately.
  */
-HPAPI void NX_SetLightLayerMask(NX_Light* light, NX_Layer layers);
+NXAPI void NX_SetLightLayerMask(NX_Light* light, NX_Layer layers);
 
 /**
  * @brief Gets the culling mask defining which meshes are lit by the light.
@@ -2058,7 +2058,7 @@ HPAPI void NX_SetLightLayerMask(NX_Light* light, NX_Layer layers);
  * @return Current culling mask.
  * @note Default is NX_LAYER_ALL. The GPU still processes the light, but masked meshes receive zero contribution.
  */
-HPAPI NX_Layer NX_GetLightCullMask(const NX_Light* light);
+NXAPI NX_Layer NX_GetLightCullMask(const NX_Light* light);
 
 /**
  * @brief Sets the culling mask defining which meshes are lit by the light.
@@ -2066,7 +2066,7 @@ HPAPI NX_Layer NX_GetLightCullMask(const NX_Light* light);
  * @param layers Layer mask to set.
  * @note Default is NX_LAYER_ALL. The GPU still processes the light, but masked meshes receive zero contribution.
  */
-HPAPI void NX_SetLightCullMask(NX_Light* light, NX_Layer layers);
+NXAPI void NX_SetLightCullMask(NX_Light* light, NX_Layer layers);
 
 /**
  * @brief Gets the light position.
@@ -2074,7 +2074,7 @@ HPAPI void NX_SetLightCullMask(NX_Light* light, NX_Layer layers);
  * @return Position of the light.
  * @note Ignored for directional lights. Default is NX_VEC3_ZERO.
  */
-HPAPI NX_Vec3 NX_GetLightPosition(const NX_Light* light);
+NXAPI NX_Vec3 NX_GetLightPosition(const NX_Light* light);
 
 /**
  * @brief Sets the light position.
@@ -2082,7 +2082,7 @@ HPAPI NX_Vec3 NX_GetLightPosition(const NX_Light* light);
  * @param position New position.
  * @note Ignored for directional lights. Default is NX_VEC3_ZERO.
  */
-HPAPI void NX_SetLightPosition(NX_Light* light, NX_Vec3 position);
+NXAPI void NX_SetLightPosition(NX_Light* light, NX_Vec3 position);
 
 /**
  * @brief Gets the light direction.
@@ -2090,7 +2090,7 @@ HPAPI void NX_SetLightPosition(NX_Light* light, NX_Vec3 position);
  * @return Direction of the light.
  * @note Ignored for point lights. Default is NX_VEC3_FORWARD.
  */
-HPAPI NX_Vec3 NX_GetLightDirection(const NX_Light* light);
+NXAPI NX_Vec3 NX_GetLightDirection(const NX_Light* light);
 
 /**
  * @brief Sets the light direction.
@@ -2098,7 +2098,7 @@ HPAPI NX_Vec3 NX_GetLightDirection(const NX_Light* light);
  * @param direction New direction.
  * @note Ignored for point lights. Default is NX_VEC3_FORWARD.
  */
-HPAPI void NX_SetLightDirection(NX_Light* light, NX_Vec3 direction);
+NXAPI void NX_SetLightDirection(NX_Light* light, NX_Vec3 direction);
 
 /**
  * @brief Gets the light color.
@@ -2106,7 +2106,7 @@ HPAPI void NX_SetLightDirection(NX_Light* light, NX_Vec3 direction);
  * @return Current light color.
  * @note Alpha is ignored. Default is NX_WHITE.
  */
-HPAPI NX_Color NX_GetLightColor(const NX_Light* light);
+NXAPI NX_Color NX_GetLightColor(const NX_Light* light);
 
 /**
  * @brief Sets the light color.
@@ -2114,7 +2114,7 @@ HPAPI NX_Color NX_GetLightColor(const NX_Light* light);
  * @param color New light color.
  * @note Alpha is ignored. Default is NX_WHITE.
  */
-HPAPI void NX_SetLightColor(NX_Light* light, NX_Color color);
+NXAPI void NX_SetLightColor(NX_Light* light, NX_Color color);
 
 /**
  * @brief Gets the light energy factor.
@@ -2122,7 +2122,7 @@ HPAPI void NX_SetLightColor(NX_Light* light, NX_Color color);
  * @return Energy multiplier applied to the light color.
  * @note Default is 1.0.
  */
-HPAPI float NX_GetLightEnergy(const NX_Light* light);
+NXAPI float NX_GetLightEnergy(const NX_Light* light);
 
 /**
  * @brief Sets the light energy factor.
@@ -2130,7 +2130,7 @@ HPAPI float NX_GetLightEnergy(const NX_Light* light);
  * @param energy Energy multiplier applied to the light color.
  * @note Default is 1.0.
  */
-HPAPI void NX_SetLightEnergy(NX_Light* light, float energy);
+NXAPI void NX_SetLightEnergy(NX_Light* light, float energy);
 
 /**
  * @brief Gets the specular reflection factor.
@@ -2138,7 +2138,7 @@ HPAPI void NX_SetLightEnergy(NX_Light* light, float energy);
  * @return Current specular factor.
  * @note Default is 0.5.
  */
-HPAPI float NX_GetLightSpecular(const NX_Light* light);
+NXAPI float NX_GetLightSpecular(const NX_Light* light);
 
 /**
  * @brief Sets the specular reflection factor.
@@ -2146,7 +2146,7 @@ HPAPI float NX_GetLightSpecular(const NX_Light* light);
  * @param specular New specular factor.
  * @note Default is 0.5.
  */
-HPAPI void NX_SetLightSpecular(NX_Light* light, float specular);
+NXAPI void NX_SetLightSpecular(NX_Light* light, float specular);
 
 /**
  * @brief Gets the maximum lighting range.
@@ -2154,7 +2154,7 @@ HPAPI void NX_SetLightSpecular(NX_Light* light, float specular);
  * @return Current range in world units.
  * @note Ignored for directional lights. Default is 16.0.
  */
-HPAPI float NX_GetLightRange(const NX_Light* light);
+NXAPI float NX_GetLightRange(const NX_Light* light);
 
 /**
  * @brief Sets the maximum lighting range.
@@ -2162,7 +2162,7 @@ HPAPI float NX_GetLightRange(const NX_Light* light);
  * @param range New range in world units.
  * @note Ignored for directional lights. Default is 16.0.
  */
-HPAPI void NX_SetLightRange(NX_Light* light, float range);
+NXAPI void NX_SetLightRange(NX_Light* light, float range);
 
 /**
  * @brief Gets the attenuation factor over the light range.
@@ -2170,7 +2170,7 @@ HPAPI void NX_SetLightRange(NX_Light* light, float range);
  * @return Current attenuation factor.
  * @note Ignored for directional lights. Default is 1.0.
  */
-HPAPI float NX_GetLightAttenuation(const NX_Light* light);
+NXAPI float NX_GetLightAttenuation(const NX_Light* light);
 
 /**
  * @brief Sets the attenuation factor over the light range.
@@ -2178,7 +2178,7 @@ HPAPI float NX_GetLightAttenuation(const NX_Light* light);
  * @param attenuation New attenuation factor.
  * @note Ignored for directional lights. Default is 1.0.
  */
-HPAPI void NX_SetLightAttenuation(NX_Light* light, float attenuation);
+NXAPI void NX_SetLightAttenuation(NX_Light* light, float attenuation);
 
 /**
  * @brief Gets the inner cutoff angle of a spotlight.
@@ -2186,7 +2186,7 @@ HPAPI void NX_SetLightAttenuation(NX_Light* light, float attenuation);
  * @return Inner cutoff angle in radians.
  * @note Used only for spotlights. Default is ~45°.
  */
-HPAPI float NX_GetLightInnerCutOff(const NX_Light* light);
+NXAPI float NX_GetLightInnerCutOff(const NX_Light* light);
 
 /**
  * @brief Sets the inner cutoff angle of a spotlight.
@@ -2194,7 +2194,7 @@ HPAPI float NX_GetLightInnerCutOff(const NX_Light* light);
  * @param radians Inner cutoff angle in radians.
  * @note Used only for spotlights. Default is ~45°.
  */
-HPAPI void NX_SetLightInnerCutOff(NX_Light* light, float radians);
+NXAPI void NX_SetLightInnerCutOff(NX_Light* light, float radians);
 
 /**
  * @brief Gets the outer cutoff angle of a spotlight.
@@ -2202,7 +2202,7 @@ HPAPI void NX_SetLightInnerCutOff(NX_Light* light, float radians);
  * @return Outer cutoff angle in radians.
  * @note Used only for spotlights. Default is ~90°.
  */
-HPAPI float NX_GetLightOuterCutOff(const NX_Light* light);
+NXAPI float NX_GetLightOuterCutOff(const NX_Light* light);
 
 /**
  * @brief Sets the outer cutoff angle of a spotlight.
@@ -2210,7 +2210,7 @@ HPAPI float NX_GetLightOuterCutOff(const NX_Light* light);
  * @param radians Outer cutoff angle in radians.
  * @note Used only for spotlights. Default is ~90°.
  */
-HPAPI void NX_SetLightOuterCutOff(NX_Light* light, float radians);
+NXAPI void NX_SetLightOuterCutOff(NX_Light* light, float radians);
 
 /**
  * @brief Sets both inner and outer cutoff angles of a spotlight.
@@ -2219,7 +2219,7 @@ HPAPI void NX_SetLightOuterCutOff(NX_Light* light, float radians);
  * @param outer Outer cutoff angle in radians.
  * @note Used only for spotlights. Default is ~45°–90°.
  */
-HPAPI void NX_SetLightCutOff(NX_Light* light, float inner, float outer);
+NXAPI void NX_SetLightCutOff(NX_Light* light, float inner, float outer);
 
 /**
  * @brief Checks if shadows are active for the light.
@@ -2227,7 +2227,7 @@ HPAPI void NX_SetLightCutOff(NX_Light* light, float inner, float outer);
  * @return True if shadows are active, false otherwise.
  * @note Shadows are disabled by default.
  */
-HPAPI bool NX_IsShadowActive(const NX_Light* light);
+NXAPI bool NX_IsShadowActive(const NX_Light* light);
 
 /**
  * @brief Enables or disables shadows for the light.
@@ -2235,7 +2235,7 @@ HPAPI bool NX_IsShadowActive(const NX_Light* light);
  * @param active True to enable shadows, false to disable.
  * @note Shadows are disabled by default.
  */
-HPAPI void NX_SetShadowActive(NX_Light* light, bool active);
+NXAPI void NX_SetShadowActive(NX_Light* light, bool active);
 
 /**
  * @brief Gets the shadow culling mask.
@@ -2244,7 +2244,7 @@ HPAPI void NX_SetShadowActive(NX_Light* light, bool active);
  * @note Unlike the light cull mask, meshes excluded here are completely omitted from shadow maps.
  * @note Changes are applied only on the next shadow map update.
  */
-HPAPI NX_Layer NX_GetShadowCullMask(const NX_Light* light);
+NXAPI NX_Layer NX_GetShadowCullMask(const NX_Light* light);
 
 /**
  * @brief Sets the shadow culling mask.
@@ -2253,7 +2253,7 @@ HPAPI NX_Layer NX_GetShadowCullMask(const NX_Light* light);
  * @note Unlike the light cull mask, meshes excluded here are completely omitted from shadow maps.
  * @note Changes are applied only on the next shadow map update.
  */
-HPAPI void NX_SetShadowCullMask(NX_Light* light, NX_Layer layers);
+NXAPI void NX_SetShadowCullMask(NX_Light* light, NX_Layer layers);
 
 /**
  * @brief Gets the shadow bleeding bias.
@@ -2261,7 +2261,7 @@ HPAPI void NX_SetShadowCullMask(NX_Light* light, NX_Layer layers);
  * @return Current bleeding bias value.
  * @note Helps reduce light bleeding near occluders. Default is 0.2.
  */
-HPAPI float NX_GetShadowBleedingBias(const NX_Light* light);
+NXAPI float NX_GetShadowBleedingBias(const NX_Light* light);
 
 /**
  * @brief Sets the shadow bleeding bias.
@@ -2269,7 +2269,7 @@ HPAPI float NX_GetShadowBleedingBias(const NX_Light* light);
  * @param bias New bleeding bias value.
  * @note Helps reduce light bleeding near occluders. Default is 0.2.
  */
-HPAPI void NX_SetShadowBleedingBias(NX_Light* light, float bias);
+NXAPI void NX_SetShadowBleedingBias(NX_Light* light, float bias);
 
 /**
  * @brief Gets the shadow softness factor.
@@ -2277,7 +2277,7 @@ HPAPI void NX_SetShadowBleedingBias(NX_Light* light, float bias);
  * @return Current softness value, expressed in texels.
  * @note Represents the penumbra radius. Default is 1 / shadowMapResolution.
  */
-HPAPI float NX_GetShadowSoftness(const NX_Light* light);
+NXAPI float NX_GetShadowSoftness(const NX_Light* light);
 
 /**
  * @brief Sets the shadow softness factor.
@@ -2285,7 +2285,7 @@ HPAPI float NX_GetShadowSoftness(const NX_Light* light);
  * @param softness New softness value, expressed in texels.
  * @note Represents the penumbra radius. Default is 1 / shadowMapResolution.
  */
-HPAPI void NX_SetShadowSoftness(NX_Light* light, float softness);
+NXAPI void NX_SetShadowSoftness(NX_Light* light, float softness);
 
 /**
  * @brief Gets the shadow lambda factor (EVSM).
@@ -2294,7 +2294,7 @@ HPAPI void NX_SetShadowSoftness(NX_Light* light, float softness);
  * @note Used only in EVSM mode (not in GLES profile which uses VSM).
  *       Default is 40 for directional lights and 20 for spot/omni lights.
  */
-HPAPI float NX_GetShadowLambda(const NX_Light* light);
+NXAPI float NX_GetShadowLambda(const NX_Light* light);
 
 /**
  * @brief Sets the shadow lambda factor (EVSM).
@@ -2303,14 +2303,14 @@ HPAPI float NX_GetShadowLambda(const NX_Light* light);
  * @note Used only in EVSM mode (not in GLES profile which uses VSM).
  *       Default is 40 for directional lights and 20 for spot/omni lights.
  */
-HPAPI void NX_SetShadowLambda(NX_Light* light, float lambda);
+NXAPI void NX_SetShadowLambda(NX_Light* light, float lambda);
 
 /**
  * @brief Gets the shadow map update mode.
  * @param light Pointer to the NX_Light.
  * @return Current shadow update mode.
  */
-HPAPI NX_ShadowUpdateMode NX_GetShadowUpdateMode(const NX_Light* light);
+NXAPI NX_ShadowUpdateMode NX_GetShadowUpdateMode(const NX_Light* light);
 
 /**
  * @brief Sets the shadow map update mode.
@@ -2318,7 +2318,7 @@ HPAPI NX_ShadowUpdateMode NX_GetShadowUpdateMode(const NX_Light* light);
  * @param mode Shadow update mode (Continuous, Interval, or Manual).
  * @note Controls when and how often the shadow map is refreshed.
  */
-HPAPI void NX_SetShadowUpdateMode(NX_Light* light, NX_ShadowUpdateMode mode);
+NXAPI void NX_SetShadowUpdateMode(NX_Light* light, NX_ShadowUpdateMode mode);
 
 /**
  * @brief Gets the shadow update interval.
@@ -2326,7 +2326,7 @@ HPAPI void NX_SetShadowUpdateMode(NX_Light* light, NX_ShadowUpdateMode mode);
  * @return Update interval in seconds.
  * @note Only relevant when update mode is set to Interval.
  */
-HPAPI float NX_GetShadowUpdateInterval(const NX_Light* light);
+NXAPI float NX_GetShadowUpdateInterval(const NX_Light* light);
 
 /**
  * @brief Sets the shadow update interval.
@@ -2334,7 +2334,7 @@ HPAPI float NX_GetShadowUpdateInterval(const NX_Light* light);
  * @param sec Interval in seconds between shadow updates.
  * @note Only relevant when update mode is set to Interval.
  */
-HPAPI void NX_SetShadowUpdateInterval(NX_Light* light, float sec);
+NXAPI void NX_SetShadowUpdateInterval(NX_Light* light, float sec);
 
 /**
  * @brief Forces an immediate shadow map update.
@@ -2342,7 +2342,7 @@ HPAPI void NX_SetShadowUpdateInterval(NX_Light* light, float sec);
  * @note The shadow map will be refreshed on the next rendering pass.
  *       Useful in Manual update mode, but also works with Interval mode.
  */
-HPAPI void NX_UpdateShadowMap(NX_Light* light);
+NXAPI void NX_UpdateShadowMap(NX_Light* light);
 
 /** @} */ // end of Light
 

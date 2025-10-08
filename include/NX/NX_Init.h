@@ -118,7 +118,7 @@ extern "C" {
  * @return Returns true if the library initialized successfully, false otherwise.
  *         If initialization fails, the reason will be logged.
  */
-HPAPI bool NX_Init(const char* title, int w, int h, NX_Flags flags);
+NXAPI bool NX_Init(const char* title, int w, int h, NX_Flags flags);
 
 /**
  * @brief Initialize the Nexium library with extended application description.
@@ -141,7 +141,7 @@ HPAPI bool NX_Init(const char* title, int w, int h, NX_Flags flags);
  *       automatically (e.g. defaults or compatibility), allowing you to
  *       inspect the updated values afterwards.
  */
-HPAPI bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc);
+NXAPI bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc);
 
 /**
  * @brief Shut down the library and cleanup resources
@@ -149,7 +149,7 @@ HPAPI bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc);
  * Properly shuts down Nexium, closes the window, and frees all allocated resources.
  * Should be called before program termination.
  */
-HPAPI void NX_Quit(void);
+NXAPI void NX_Quit(void);
 
 /** @} */ // end of Init
 

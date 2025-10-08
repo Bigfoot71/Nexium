@@ -14,18 +14,18 @@
 #       define __declspec(x) __attribute__((x))
 #   endif
 #   if defined(NX_BUILD_SHARED)
-#       define HPAPI __declspec(dllexport)
+#       define NXAPI __declspec(dllexport)
 #   elif defined(NX_USE_SHARED)
-#       define HPAPI __declspec(dllimport)
+#       define NXAPI __declspec(dllimport)
 #   endif
 #else
 #   if defined(NX_BUILD_SHARED)
-#       define HPAPI __attribute__((visibility("default")))
+#       define NXAPI __attribute__((visibility("default")))
 #   endif
 #endif
 
-#ifndef HPAPI
-#   define HPAPI extern
+#ifndef NXAPI
+#   define NXAPI extern
 #endif
 
 #ifndef NX_RESTRICT
