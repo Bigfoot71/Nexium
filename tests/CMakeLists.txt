@@ -30,6 +30,7 @@ add_hyperion_test("nx-bloom" "${NX_ROOT_PATH}/tests/bloom.c")
 add_hyperion_test("nx-ssao" "${NX_ROOT_PATH}/tests/ssao.c")
 add_hyperion_test("nx-fog" "${NX_ROOT_PATH}/tests/fog.c")
 add_hyperion_test("nx-pbr" "${NX_ROOT_PATH}/tests/pbr.c")
+add_hyperion_test("nx-sponza" "${NX_ROOT_PATH}/tests/sponza.c")
 
 if(WIN32)
     set(vendored_dirs
