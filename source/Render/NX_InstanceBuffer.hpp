@@ -85,7 +85,8 @@ inline void NX_InstanceBuffer::setBufferState(NX_InstanceData bitfield, bool ena
 
 inline const gpu::Buffer* NX_InstanceBuffer::getBuffer(NX_InstanceData type) const
 {
-    return &mBuffers[helper::bitScanForward(type)].buffer;
+    const BufferInfo& info = mBuffers[helper::bitScanForward(type)];
+    return info.buffer.isValid() ? &info.buffer : nullptr;
 }
 
 inline const gpu::Buffer* NX_InstanceBuffer::getEnabledBuffer(NX_InstanceData type) const
