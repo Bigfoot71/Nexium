@@ -103,16 +103,13 @@ NX_Shader::NX_Shader(const char* vert, const char* frag)
 void NX_Shader::updateStaticBuffer(size_t offset, size_t size, const void* data)
 {
     if (!mStaticBuffer.isValid()) {
-        NX_INTERNAL_LOG(E, 
-            "RENDER: Failed to upload data to the static uniform buffer of shader;"
-            "No static buffer was declared for this shader"
-        );
+        NX_INTERNAL_LOG(E, "RENDER: Cannot upload; no static buffer for this shader.");
+        return;
     }
 
     if (offset + size > mStaticBuffer.size()) {
         NX_INTERNAL_LOG(E, 
-            "RENDER: Failed to upload data to the static uniform buffer of shader;"
-            "offset + size (%zu) exceeds size of static buffer (%zu)",
+            "RENDER: Upload out of bounds (%zu > buffer size %zu).",
             offset + size, mStaticBuffer.size()
         );
         return;
@@ -124,18 +121,12 @@ void NX_Shader::updateStaticBuffer(size_t offset, size_t size, const void* data)
 void NX_Shader::updateDynamicBuffer(size_t size, const void* data)
 {
     if (!mDynamicBuffer.buffer.isValid()) {
-        NX_INTERNAL_LOG(W, 
-            "RENDER: Failed to upload data to the dynamic uniform buffer of shader; "
-            "No dynamic buffer was declared for this shader"
-        );
+        NX_INTERNAL_LOG(W, "RENDER: Cannot upload; no dynamic buffer for this shader.");
         return;
     }
 
-    if (size % 16 != 0) /* std140 requirement */ {
-        NX_INTERNAL_LOG(W, 
-            "RENDER: Failed to upload data to the dynamic uniform buffer of shader; "
-            "The size of the data sent must be a multiple of 16"
-        );
+    if (size % 16 != 0) { /* std140 requirement */
+        NX_INTERNAL_LOG(W, "RENDER: Upload size must be a multiple of 16 (std140 layout).");
         return;
     }
 
@@ -154,8 +145,7 @@ void NX_Shader::updateDynamicBuffer(size_t size, const void* data)
         }
         if (newSize > maxUBOSize) {
             NX_INTERNAL_LOG(E,
-                "RENDER: Failed to upload data to the dynamic uniform buffer of shader; "
-                "The required buffer size ({} bytes) exceeds the GPU limit for uniform buffers ({} bytes).",
+                "RENDER: Upload failed; required size (%zu bytes) exceeds GPU uniform buffer limit (%zu bytes).",
                 newSize, maxUBOSize
             );
             return;
