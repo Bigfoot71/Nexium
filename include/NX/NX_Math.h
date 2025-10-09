@@ -3375,6 +3375,9 @@ inline NX_Vec3 operator*(const NX_Vec3& lhs, const NX_Vec3& rhs) { return NX_Vec
 inline NX_Vec4 operator*(const NX_Vec4& lhs, const NX_Vec4& rhs) { return NX_Vec4Mul(lhs, rhs); }
 inline NX_Color operator*(const NX_Color& lhs, const NX_Color& rhs) { return NX_ColorMul(lhs, rhs); }
 
+// Vector * Quaternion (transformation)
+inline NX_Vec3 operator*(const NX_Vec3& lhs, const NX_Quat& rhs) { return NX_Vec3Rotate(lhs, rhs); }
+
 // Vector * Matrix 3x3 (transformation)
 inline NX_Vec2 operator*(const NX_Vec2& lhs, const NX_Mat3& rhs) { return NX_Vec2TransformByMat3(lhs, &rhs); }
 inline NX_Vec3 operator*(const NX_Vec3& lhs, const NX_Mat3& rhs) { return NX_Vec3TransformByMat3(lhs, &rhs); }
@@ -3407,6 +3410,8 @@ inline const NX_Vec2& operator*=(NX_Vec2& lhs, const NX_Vec2& rhs) { lhs = NX_Ve
 inline const NX_Vec3& operator*=(NX_Vec3& lhs, const NX_Vec3& rhs) { lhs = NX_Vec3Mul(lhs, rhs); return lhs; }
 inline const NX_Vec4& operator*=(NX_Vec4& lhs, const NX_Vec4& rhs) { lhs = NX_Vec4Mul(lhs, rhs); return lhs; }
 inline const NX_Color& operator*=(NX_Color& lhs, const NX_Color& rhs) { lhs = NX_ColorMul(lhs, rhs); return lhs; }
+
+inline const NX_Vec3& operator*=(NX_Vec3& lhs, const NX_Quat& rhs) { lhs = NX_Vec3Rotate(lhs, rhs); return lhs; }
 
 inline const NX_Vec2& operator*=(NX_Vec2& lhs, const NX_Mat3& rhs) { lhs = NX_Vec2TransformByMat3(lhs, &rhs); return lhs; }
 inline const NX_Vec3& operator*=(NX_Vec3& lhs, const NX_Mat3& rhs) { lhs = NX_Vec3TransformByMat3(lhs, &rhs); return lhs; }
