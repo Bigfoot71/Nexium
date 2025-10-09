@@ -1438,7 +1438,7 @@ NXAPI void NX_UpdateCameraOrbital(NX_Camera* camera, NX_Vec3 center, float dista
  * @brief Updates a free-moving camera with clamped pitch.
  * @param camera Pointer to the camera to update.
  * @param movement Movement vector to apply.
- * @param rotation Rotation vector to apply (in radians).
+ * @param rotation Rotation vector (pitch/yaw/roll) in radians.
  * @param maxPitch Maximum pitch (around X) in radians.
  *        If negative, clamp is approximately -89/+89 degrees.
  *        Zero can be useful to make a Doom-like cameras.
@@ -1449,12 +1449,12 @@ NXAPI void NX_UpdateCameraFree(NX_Camera* camera, NX_Vec3 movement, NX_Vec3 rota
  * @brief Updates a first-person camera with clamped pitch.
  * @param camera Pointer to the camera to update.
  * @param movement Movement vector to apply.
- * @param rotation Rotation vector (pitch/yaw) in radians.
+ * @param rotation Rotation vector (pitch/yaw/roll) in radians.
  * @param maxPitch Maximum pitch (around X) in radians.
  *        If negative, clamp is approximately -89/+89 degrees.
  *        Zero can be useful to make a Doom-like cameras.
  */
-NXAPI void NX_UpdateCameraFPS(NX_Camera* camera, NX_Vec3 movement, NX_Vec2 rotation, float maxPitch);
+NXAPI void NX_UpdateCameraFPS(NX_Camera* camera, NX_Vec3 movement, NX_Vec3 rotation, float maxPitch);
 
 /**
  * @brief Applies a transformation matrix and optional offset to a camera.
