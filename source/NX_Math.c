@@ -47,26 +47,9 @@ NX_Quat NX_QuatFromEuler(NX_Vec3 v)
 NX_Vec3 NX_QuatToEuler(NX_Quat q)
 {
     NX_Vec3 angles;
-
-    // Pitch (X axis)
-    float sinp = 2.0f * (q.w * q.x - q.y * q.z);
-    if (fabsf(sinp) >= 1.0f) {
-        angles.x = copysignf(NX_PI * 0.5f, sinp);
-    }
-    else {
-        angles.x = asinf(sinp);
-    }
-
-    // Yaw (Y axis)
-    float sinYcosP = 2.0f * (q.w * q.y + q.x * q.z);
-    float cosYcosP = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
-    angles.y = atan2f(sinYcosP, cosYcosP);
-
-    // Roll (Z axis)
-    float sinRcosP = 2.0f * (q.w * q.z + q.x * q.y);
-    float cosRcosP = 1.0f - 2.0f * (q.x * q.x + q.z * q.z);
-    angles.z = atan2f(sinRcosP, cosRcosP);
-
+    angles.x = NX_QuatPitch(q);
+    angles.y = NX_QuatYaw(q);
+    angles.z = NX_QuatRoll(q);
     return angles;
 }
 

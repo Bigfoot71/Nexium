@@ -2855,6 +2855,38 @@ NXAPI NX_Quat NX_QuatFromEuler(NX_Vec3 v);
 NXAPI NX_Vec3 NX_QuatToEuler(NX_Quat q);
 
 /**
+ * @brief Get the pitch (X-axis rotation) from a quaternion.
+ */
+static inline float NX_QuatPitch(NX_Quat q)
+{
+    float sinp = 2.0f * (q.w * q.x - q.y * q.z);
+    if (fabsf(sinp) >= 1.0f) {
+        return copysignf(NX_PI * 0.5f, sinp);
+    }
+    return asinf(sinp);
+}
+
+/**
+ * @brief Get the yaw (Y-axis rotation) from a quaternion.
+ */
+static inline float NX_QuatYaw(NX_Quat q)
+{
+    float sinYcosP = 2.0f * (q.w * q.y + q.x * q.z);
+    float cosYcosP = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+    return atan2f(sinYcosP, cosYcosP);
+}
+
+/**
+ * @brief Get the roll (Z-axis rotation) from a quaternion.
+ */
+static inline float NX_QuatRoll(NX_Quat q)
+{
+    float sinRcosP = 2.0f * (q.w * q.z + q.x * q.y);
+    float cosRcosP = 1.0f - 2.0f * (q.x * q.x + q.z * q.z);
+    return atan2f(sinRcosP, cosRcosP);
+}
+
+/**
  * @brief Create a quaternion from a 4x4 rotation matrix.
  */
 NXAPI NX_Quat NX_QuatFromMat4(const NX_Mat4* m);
