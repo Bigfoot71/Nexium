@@ -1906,6 +1906,42 @@ NXAPI void NX_ReallocInstanceBuffer(NX_InstanceBuffer* buffer, size_t count, boo
 NXAPI void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type, size_t offset, size_t count, const void* data);
 
 /**
+ * @brief Map the entire instance data of a specific type for CPU write access.
+ *
+ * @param buffer The instance buffer to map.
+ * @param type The type of instance data to map. Must be supported by this buffer.
+ * @return Pointer to the mapped memory, or NULL if the buffer/type is invalid.
+ *
+ * @note After writing, call NX_UnmapInstanceBuffer to unmap the buffer before NX_End3D.
+ */
+NXAPI void* NX_MapInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type);
+
+/**
+ * @brief Map a subrange of a specific instance data type for CPU write access.
+ *
+ * @param buffer The instance buffer to map.
+ * @param type The type of instance data to map. Must be supported by this buffer.
+ * @param offset Index of the first instance to map.
+ * @param count Number of instances to map.
+ * @return Pointer to the mapped memory corresponding to the requested range,
+ *         or NULL if the buffer/type is invalid or the range is out of bounds.
+ *
+ * @note After writing, call NX_UnmapInstanceBuffer to unmap the buffer before NX_End3D.
+ */
+NXAPI void* NX_MapInstanceBufferRange(NX_InstanceBuffer* buffer, NX_InstanceData type, size_t offset, size_t count);
+
+/**
+ * @brief Unmap a previously mapped instance data type.
+ *
+ * @param buffer The instance buffer to unmap.
+ * @param type The type of instance data that was previously mapped.
+ *
+ * @note Must be called after NX_MapInstanceBuffer or NX_MapInstanceBufferRange
+ *       before rendering using this buffer.
+ */
+NXAPI void NX_UnmapInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type);
+
+/**
  * @brief Retrieve information about the instance buffer.
  *
  * @param buffer   The instance buffer to query.

@@ -27,6 +27,11 @@ public:
     void update(NX_InstanceData type, size_t offset, size_t count, const void* data);
     void realloc(size_t capacity, bool keepData);
 
+    /** Buffer mapping */
+    void* map(NX_InstanceData type);
+    void* mapRange(NX_InstanceData type, size_t offset, size_t count);
+    void unmap(NX_InstanceData type);
+
     /** Get buffer pointer (nullptr if not valid) */
     const gpu::Buffer* getBuffer(NX_InstanceData type) const;
     
@@ -99,6 +104,46 @@ inline void NX_InstanceBuffer::realloc(size_t count, bool keepData)
     }
 
     mAllocatedCount = count;
+}
+
+inline void* NX_InstanceBuffer::map(NX_InstanceData type)
+{
+    type = helper::bitScanForward(type);
+    gpu::Buffer& buffer = mBuffers[type];
+
+    if (!buffer.isValid()) {
+        NX_INTERNAL_LOG(E, "RENDER: Cannot map instance buffer; type '%s' is not initialized.", TypeNames[type]);
+        return nullptr;
+    }
+
+    return buffer.map(GL_MAP_WRITE_BIT);
+}
+
+inline void* NX_InstanceBuffer::mapRange(NX_InstanceData type, size_t offset, size_t count)
+{
+    type = helper::bitScanForward(type);
+    gpu::Buffer& buffer = mBuffers[type];
+
+    offset *= TypeSizes[type];
+    count *= TypeSizes[type];
+
+    if (!buffer.isValid()) {
+        NX_INTERNAL_LOG(E, "RENDER: Cannot map instance buffer range; type '%s' is not initialized.", TypeNames[type]);
+        return nullptr;
+    }
+
+    if (offset + count > buffer.size()) {
+        NX_INTERNAL_LOG(E, "RENDER: Map range out of bounds for type '%s' (offset %zu + count %zu > buffer size %zu).",
+                        TypeNames[type], offset, count, buffer.size());
+        return nullptr;
+    }
+
+    return buffer.mapRange(offset, count, GL_MAP_WRITE_BIT);
+}
+
+inline void NX_InstanceBuffer::unmap(NX_InstanceData type)
+{
+    mBuffers[helper::bitScanForward(type)].unmap();
 }
 
 inline const gpu::Buffer* NX_InstanceBuffer::getBuffer(NX_InstanceData type) const

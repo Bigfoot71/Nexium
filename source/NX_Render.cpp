@@ -2771,6 +2771,21 @@ void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type, si
     buffer->update(type, offset, count, data);
 }
 
+void* NX_MapInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type)
+{
+    return buffer->map(type);
+}
+
+void* NX_MapInstanceBufferRange(NX_InstanceBuffer* buffer, NX_InstanceData type, size_t offset, size_t count)
+{
+    return buffer->mapRange(type, offset, count);
+}
+
+void NX_UnmapInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type)
+{
+    buffer->unmap(type);
+}
+
 void NX_QueryInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData* bitfield, size_t* count)
 {
     if (bitfield) *bitfield = buffer->instanceFlags();
