@@ -1712,7 +1712,7 @@ void NX_UpdateCameraFPS(NX_Camera* camera, NX_Vec3 movement, NX_Vec3 rotation, f
 
     /* --- Translation --- */
 
-    NX_Quat yawOnly = NX_QuatFromEuler((NX_Vec3){ 0.0f, euler.y, 0.0f });
+    NX_Quat yawOnly = NX_QuatFromEuler(NX_VEC3(0.0f, euler.y, 0.0f));
 
     NX_Vec3 forward = NX_Vec3Rotate(NX_VEC3_FORWARD, yawOnly);
     NX_Vec3 right   = NX_Vec3Rotate(NX_VEC3_RIGHT,   yawOnly);
