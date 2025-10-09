@@ -14,6 +14,8 @@
 #include "./Core/NX_CoreState.hpp"
 #include "NX/NX_Math.h"
 #include "SDL3/SDL_clipboard.h"
+#include "SDL3/SDL_pixels.h"
+#include "SDL3/SDL_surface.h"
 
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_stdinc.h>
@@ -204,6 +206,54 @@ const char* NX_GetWindowTitle(void)
 void NX_SetWindowTitle(const char* title)
 {
     SDL_SetWindowTitle(gCore->window(), title);
+}
+
+void NX_SetWindowIcon(const NX_Image* icon)
+{
+    if (icon == nullptr || icon->pixels == nullptr) {
+        NX_INTERNAL_LOG(E, "CORE: Failed to set window icon; Invalid icon data");
+        return;
+    }
+
+    SDL_PixelFormat format;
+    int bpp;
+
+    switch (icon->format) {
+    case NX_PIXEL_FORMAT_RGB8:
+        format = SDL_PIXELFORMAT_RGB24, bpp = 3;
+        break;
+    case NX_PIXEL_FORMAT_RGBA8:
+        format = SDL_PIXELFORMAT_RGBA32, bpp = 4;
+        break;
+    case NX_PIXEL_FORMAT_RGB16F:
+        format = SDL_PIXELFORMAT_RGB48_FLOAT, bpp = 6;
+        break;
+    case NX_PIXEL_FORMAT_RGBA16F:
+        format = SDL_PIXELFORMAT_RGBA64_FLOAT, bpp = 8;
+        break;
+    case NX_PIXEL_FORMAT_RGB32F:
+        format = SDL_PIXELFORMAT_RGB96_FLOAT, bpp = 12;
+        break;
+    case NX_PIXEL_FORMAT_RGBA32F:
+        format = SDL_PIXELFORMAT_RGBA128_FLOAT, bpp = 16;
+        break;
+    default:
+        NX_INTERNAL_LOG(E, "CORE: Failed to set window icon; Unsupported format");
+        return;
+    }
+
+    SDL_Surface* surface = SDL_CreateSurfaceFrom(icon->w, icon->h, format, 
+                                                 icon->pixels, bpp * icon->w);
+    if (surface == nullptr) {
+        NX_INTERNAL_LOG(E, "CORE: Failed to set window icon; %s", SDL_GetError());
+        return;
+    }
+
+    if (!SDL_SetWindowIcon(gCore->window(), surface)) {
+        NX_INTERNAL_LOG(E, "CORE: Failed to set window icon; %s", SDL_GetError());
+    }
+
+    SDL_DestroySurface(surface);
 }
 
 int NX_GetWindowWidth(void)

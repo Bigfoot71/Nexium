@@ -10,6 +10,7 @@
 #define NX_CORE_H
 
 #include "./NX_Platform.h"
+#include "./NX_Image.h"
 #include "./NX_Math.h"
 
 #include <stdint.h>
@@ -453,6 +454,13 @@ NXAPI const char* NX_GetWindowTitle(void);
  * @param title The new window title as a null-terminated string.
  */
 NXAPI void NX_SetWindowTitle(const char* title);
+
+/**
+ * @brief Sets the window icon.
+ * @param icon Image to use as icon. Must be in RGB8, RGBA8, RGB16F, RGBA16F, RGB32F, or RGBA32F format.
+ * @note The icon data is copied, the original image can be freed after this call.
+ */
+NXAPI void NX_SetWindowIcon(const NX_Image* icon);
 
 /**
  * @brief Gets the window width in pixels.
