@@ -20,13 +20,16 @@ namespace render {
 
 class PoolTexture {
 public:
+    /** Texture management */
     NX_Texture* createTexture(const NX_Image& image, NX_TextureWrap wrap);
     NX_Texture* createTexture(const NX_Image& image);
     void destroyTexture(NX_Texture* texture);
 
+    /** Render texture management */
     NX_RenderTexture* createRenderTexture(int w, int h);
     void destroyRenderTexture(NX_RenderTexture* renderTexture);
 
+    /** Default parameters */
     void setDefaultFilter(NX_TextureFilter filter);
     void setDefaultAnisotropy(float anisotropy);
 
