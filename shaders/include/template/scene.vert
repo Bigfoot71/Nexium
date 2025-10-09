@@ -12,10 +12,10 @@
 
 /* === Constants === */
 
-#define TIME            uFrame.elapsedTime
-#define VARYINGF        vUsr.data4f
-#define VARYINGI        vUsr.data4i
-#define INSTANCE_DATA   iCustom
+#define TIME                uFrame.elapsedTime
+#define VARYINGF            vUsr.data4f
+#define VARYINGI            vUsr.data4i
+#define INSTANCE_CUSTOM     iCustom
 
 /* === Outputs === */
 

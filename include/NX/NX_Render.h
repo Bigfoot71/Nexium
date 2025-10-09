@@ -63,13 +63,11 @@ typedef uint16_t NX_Layer;
  */
 typedef uint8_t NX_InstanceData;
 
-#define NX_INSTANCE_DATA_POSITION   (1 << 0)    ///< Instance data contains positions (NX_Vec3).
-#define NX_INSTANCE_DATA_ROTATION   (1 << 1)    ///< Instance data contains rotations (NX_Quat).
-#define NX_INSTANCE_DATA_SCALE      (1 << 2)    ///< Instance data contains scales (NX_Vec3).
-#define NX_INSTANCE_DATA_COLOR      (1 << 3)    ///< Instance data contains colors (NX_Color).
-#define NX_INSTANCE_DATA_CUSTOM     (1 << 4)    /**< Instance data contains custom vectors (NX_Vec4).\
-                                                  *  Currently not used. Reserved for future extensions.\
-                                                  */
+#define NX_INSTANCE_POSITION   (1 << 0)    ///< Instance data contains positions (NX_Vec3).
+#define NX_INSTANCE_ROTATION   (1 << 1)    ///< Instance data contains rotations (NX_Quat).
+#define NX_INSTANCE_SCALE      (1 << 2)    ///< Instance data contains scales (NX_Vec3).
+#define NX_INSTANCE_COLOR      (1 << 3)    ///< Instance data contains colors (NX_Color).
+#define NX_INSTANCE_CUSTOM     (1 << 4)    ///< Instance data contains custom data (NX_Vec4).
 
 /**
  * @brief Extra flags for NX_Environment specifying rendering behaviors.

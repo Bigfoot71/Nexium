@@ -30,9 +30,9 @@ int main(void)
         );
     }
 
-    NX_InstanceBuffer* instances = NX_CreateInstanceBuffer(NX_INSTANCE_DATA_POSITION | NX_INSTANCE_DATA_COLOR, INSTANCE_COUNT);
-    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_POSITION, 0, INSTANCE_COUNT, positions);
-    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_COLOR, 0, INSTANCE_COUNT, colors);
+    NX_InstanceBuffer* instances = NX_CreateInstanceBuffer(NX_INSTANCE_POSITION | NX_INSTANCE_COLOR, INSTANCE_COUNT);
+    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_POSITION, 0, INSTANCE_COUNT, positions);
+    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_COLOR, 0, INSTANCE_COUNT, colors);
 
     NX_Light* light = NX_CreateLight(NX_LIGHT_DIR);
     NX_SetLightDirection(light, NX_VEC3(-1, -1, -1));

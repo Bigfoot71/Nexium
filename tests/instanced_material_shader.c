@@ -26,7 +26,7 @@ int main(void)
     material.shader = shader;
 
     NX_InstanceBuffer* instances = NX_CreateInstanceBuffer(
-        NX_INSTANCE_DATA_POSITION | NX_INSTANCE_DATA_COLOR | NX_INSTANCE_DATA_CUSTOM,
+        NX_INSTANCE_POSITION | NX_INSTANCE_COLOR | NX_INSTANCE_CUSTOM,
         NUM_INSTANCES
     );
 
@@ -42,9 +42,9 @@ int main(void)
         }
     }
 
-    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_POSITION, 0, NUM_INSTANCES, iPositions);
-    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_COLOR, 0, NUM_INSTANCES, iColors);
-    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_DATA_CUSTOM, 0, NUM_INSTANCES, iData);
+    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_POSITION, 0, NUM_INSTANCES, iPositions);
+    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_COLOR, 0, NUM_INSTANCES, iColors);
+    NX_UpdateInstanceBuffer(instances, NX_INSTANCE_CUSTOM, 0, NUM_INSTANCES, iData);
 
     NX_Camera camera = NX_GetDefaultCamera();
     NX_Environment env = NX_GetDefaultEnvironment();

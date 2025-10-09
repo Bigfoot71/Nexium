@@ -249,11 +249,11 @@ inline NX_VertexBuffer::NX_VertexBuffer(const NX_Vertex3D* vertices, int vCount,
 inline void NX_VertexBuffer::bindInstances(const NX_InstanceBuffer& instances)
 {
     mVAO.bindVertexBuffers({
-        { 1, instances.getBuffer(NX_INSTANCE_DATA_POSITION) },
-        { 2, instances.getBuffer(NX_INSTANCE_DATA_ROTATION) },
-        { 3, instances.getBuffer(NX_INSTANCE_DATA_SCALE) },
-        { 4, instances.getBuffer(NX_INSTANCE_DATA_COLOR) },
-        { 5, instances.getBuffer(NX_INSTANCE_DATA_CUSTOM) }
+        { 1, instances.getBuffer(NX_INSTANCE_POSITION) },
+        { 2, instances.getBuffer(NX_INSTANCE_ROTATION) },
+        { 3, instances.getBuffer(NX_INSTANCE_SCALE) },
+        { 4, instances.getBuffer(NX_INSTANCE_COLOR) },
+        { 5, instances.getBuffer(NX_INSTANCE_CUSTOM) }
     });
 }
 

@@ -49,11 +49,11 @@ private:
     };
 
     static constexpr const char* TypeNames[] = {
-        "NX_INSTANCE_DATA_POSITION",
-        "NX_INSTANCE_DATA_ROTATION",
-        "NX_INSTANCE_DATA_SCALE",
-        "NX_INSTANCE_DATA_COLOR",
-        "NX_INSTANCE_DATA_CUSTOM"
+        "NX_INSTANCE_POSITION",
+        "NX_INSTANCE_ROTATION",
+        "NX_INSTANCE_SCALE",
+        "NX_INSTANCE_COLOR",
+        "NX_INSTANCE_CUSTOM"
     };
 
 private:

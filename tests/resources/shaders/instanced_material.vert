@@ -2,7 +2,7 @@
 
 void vertex()
 {
-    float scale = 0.5 + sin(M_PI * TIME + INSTANCE_DATA.y) * 0.5;
-    VARYINGI.x = int(INSTANCE_DATA.x) % 5;
+    float scale = 0.5 + sin(M_PI * TIME + INSTANCE_CUSTOM.y) * 0.5;
+    VARYINGI.x = int(INSTANCE_CUSTOM.x) % 5;
     POSITION *= 0.5 + scale;
 }
