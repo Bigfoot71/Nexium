@@ -1659,7 +1659,7 @@ NXAPI void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap*
 NXAPI NX_Material NX_GetDefaultMaterial(void);
 
 /**
- * @brief Destroys all resources allocated within a material (e.g., textures).
+ * @brief Destroys all resources allocated within a material (e.g., textures, shaders).
  * @param material Pointer to the NX_Material to clean up.
  * @note Only call this if you are certain the resources are no longer needed.
  * @note Do not call this if the resources are shared between multiple materials.

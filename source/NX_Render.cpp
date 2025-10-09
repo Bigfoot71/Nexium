@@ -1899,6 +1899,7 @@ void NX_DestroyMaterialResources(NX_Material* material)
     NX_DestroyTexture(material->emission.texture);
     NX_DestroyTexture(material->orm.texture);
     NX_DestroyTexture(material->normal.texture);
+    NX_DestroyMaterialShader(material->shader);
 }
 
 /* === MaterialShader - Public API === */
