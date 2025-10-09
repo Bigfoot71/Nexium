@@ -452,7 +452,7 @@ NX_Vec2 NX_GetKeyVec2(NX_Key up, NX_Key down, NX_Key left, NX_Key right)
 NX_Vec3 NX_GetKeyVec3(NX_Key forward, NX_Key backward, NX_Key left, NX_Key right)
 {
     int x = gCore->currentKey(right) - gCore->currentKey(left);
-    int z = gCore->currentKey(forward) - gCore->currentKey(backward);
+    int z = gCore->currentKey(backward) - gCore->currentKey(forward);
 
     return NX_Vec3Normalize(NX_VEC3(x, 0, z));
 }
