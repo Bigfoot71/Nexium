@@ -135,7 +135,7 @@ layout(location = 1) out vec4 FragNormal;
 
 /* === Fragment Override === */
 
-#include "../include/template/scene.frag"
+#include "../override/scene.frag"
 
 /* === Lighting Functions === */
 

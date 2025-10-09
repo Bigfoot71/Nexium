@@ -40,7 +40,7 @@ layout(location = 0) out vec4 FragColor;
 
 /* === Fragments Override === */
 
-#include "../include/template/shape.frag"
+#include "../override/shape.frag"
 
 /* === Program === */
 

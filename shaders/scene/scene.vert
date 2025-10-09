@@ -94,7 +94,7 @@ layout(location = 10) out VaryUser {
 
 /* === Vertex Override === */
 
-#include "../include/template/scene.vert"
+#include "../override/scene.vert"
 
 /* === Helper Functions === */
 

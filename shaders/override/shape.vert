@@ -8,7 +8,7 @@
 
 /* === Includes === */
 
-#include "../math.glsl"
+#include "../include/math.glsl"
 
 /* === Constants === */
 

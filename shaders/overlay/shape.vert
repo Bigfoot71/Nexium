@@ -36,7 +36,7 @@ layout(location = 4) out flat ivec4 vUsrData4i;
 
 /* === Vertex Override === */
 
-#include "../include/template/shape.vert"
+#include "../override/shape.vert"
 
 /* === Program === */
 
