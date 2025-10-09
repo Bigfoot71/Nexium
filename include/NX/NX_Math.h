@@ -568,7 +568,8 @@ static inline float NX_Saturate(float x)
 static inline int NX_WrapInt(int value, int min, int max)
 {
     int range = max - min;
-    return min + (value - min) % range;
+    int offset = (value - min) % range;
+    return min + offset + (offset < 0 ? range : 0);
 }
 
 /**
@@ -577,17 +578,16 @@ static inline int NX_WrapInt(int value, int min, int max)
 static inline float NX_Wrap(float value, float min, float max)
 {
     float range = max - min;
-    return min + fmodf(value - min, range);
+    float offset = value - min;
+    return min + offset - range * floorf(offset / range);
 }
 
 /**
- * @brief Wrap radians to [-Pi, Pi]
+ * @brief Wrap radians to [-Pi, Pi)
  */
 static inline float NX_WrapRadians(float radians)
 {
-    float wrapped = fmodf(radians + NX_PI, NX_TAU);
-    if (wrapped < 0.0f) wrapped += NX_TAU;
-    return wrapped - NX_PI;
+    return NX_Wrap(radians, -NX_PI, +NX_PI);
 }
 
 /**
