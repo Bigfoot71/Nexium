@@ -1664,7 +1664,7 @@ void NX_UpdateCameraOrbital(NX_Camera* camera, NX_Vec3 center, float distance, f
 
 void NX_UpdateCameraFree(NX_Camera* camera, NX_Vec3 movement, NX_Vec3 rotation, float maxPitch)
 {
-    /* --- Rotation --- */
+    /* --- Rotation (Euler) --- */
 
     NX_Vec3 euler = NX_QuatToEuler(camera->rotation);
 
@@ -1674,6 +1674,8 @@ void NX_UpdateCameraFree(NX_Camera* camera, NX_Vec3 movement, NX_Vec3 rotation, 
 
     if (maxPitch < 0.0f) maxPitch = NX_PI * 0.49f;
     euler.x = NX_CLAMP(euler.x, -maxPitch, maxPitch);
+    euler.y = NX_WrapRadians(euler.y);
+    euler.z = NX_WrapRadians(euler.z);
 
     camera->rotation = NX_QuatFromEuler(euler);
 
@@ -1681,46 +1683,45 @@ void NX_UpdateCameraFree(NX_Camera* camera, NX_Vec3 movement, NX_Vec3 rotation, 
 
     NX_Vec3 forward = NX_Vec3Rotate(NX_VEC3_FORWARD, camera->rotation);
     NX_Vec3 right   = NX_Vec3Rotate(NX_VEC3_RIGHT,   camera->rotation);
-    NX_Vec3 up      = NX_VEC3_UP;
+    NX_Vec3 up      = NX_Vec3Rotate(NX_VEC3_UP,      camera->rotation);
 
     NX_Vec3 deltaPos = NX_VEC3_ZERO;
-    deltaPos = NX_Vec3MulAdd(forward, movement.z, deltaPos);
-    deltaPos = NX_Vec3MulAdd(right, movement.x, deltaPos);
-    deltaPos = NX_Vec3MulAdd(up, movement.y, deltaPos);
+    deltaPos = NX_Vec3MulAdd(forward, -movement.z, deltaPos);
+    deltaPos = NX_Vec3MulAdd(right,    movement.x, deltaPos);
+    deltaPos = NX_Vec3MulAdd(up,       movement.y, deltaPos);
 
     camera->position = NX_Vec3Add(camera->position, deltaPos);
 }
 
-void NX_UpdateCameraFPS(NX_Camera* camera, NX_Vec3 movement, NX_Vec2 rotation, float maxPitch)
+void NX_UpdateCameraFPS(NX_Camera* camera, NX_Vec3 movement, NX_Vec3 rotation, float maxPitch)
 {
-    /* --- Rotation --- */
+    /* --- Rotation (Euler) --- */
 
     NX_Vec3 euler = NX_QuatToEuler(camera->rotation);
 
     euler.x += rotation.x;
     euler.y += rotation.y;
+    euler.z += rotation.z;
 
     if (maxPitch < 0.0f) maxPitch = NX_PI * 0.49f;
     euler.x = NX_CLAMP(euler.x, -maxPitch, maxPitch);
+    euler.y = NX_WrapRadians(euler.y);
+    euler.z = NX_WrapRadians(euler.z);
 
     camera->rotation = NX_QuatFromEuler(euler);
 
     /* --- Translation --- */
 
-    NX_Vec3 forward = NX_Vec3Rotate(NX_VEC3_FORWARD, camera->rotation);
-    forward.y = 0.0f;
-    forward = NX_Vec3Normalize(forward);
+    NX_Quat yawOnly = NX_QuatFromEuler((NX_Vec3){ 0.0f, euler.y, 0.0f });
 
-    NX_Vec3 right = NX_Vec3Rotate(NX_VEC3_RIGHT, camera->rotation);
-    right.y = 0.0f;
-    right = NX_Vec3Normalize(right);
-
-    NX_Vec3 up = NX_VEC3_UP;
+    NX_Vec3 forward = NX_Vec3Rotate(NX_VEC3_FORWARD, yawOnly);
+    NX_Vec3 right   = NX_Vec3Rotate(NX_VEC3_RIGHT,   yawOnly);
+    NX_Vec3 up      = NX_VEC3_UP;
 
     NX_Vec3 deltaPos = NX_VEC3_ZERO;
-    deltaPos = NX_Vec3MulAdd(forward, movement.z, deltaPos);
-    deltaPos = NX_Vec3MulAdd(right, movement.x, deltaPos);
-    deltaPos = NX_Vec3MulAdd(up, movement.y, deltaPos);
+    deltaPos = NX_Vec3MulAdd(forward, -movement.z, deltaPos);
+    deltaPos = NX_Vec3MulAdd(right,    movement.x, deltaPos);
+    deltaPos = NX_Vec3MulAdd(up,       movement.y, deltaPos);
 
     camera->position = NX_Vec3Add(camera->position, deltaPos);
 }
