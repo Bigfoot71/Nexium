@@ -672,7 +672,6 @@ NX_Transform NX_Mat4Decompose(const NX_Mat4* mat)
     return t;
 }
 
-
 NX_Mat4 NX_Mat4Frustum(float left, float right, float bottom, float top, float znear, float zfar)
 {
     NX_Mat4 result = { 0 };
