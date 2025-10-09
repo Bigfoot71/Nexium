@@ -2012,17 +2012,17 @@ static inline NX_Vec3 NX_Vec3Normalize(NX_Vec3 v)
  */
 static inline NX_Vec3 NX_Vec3Rotate(NX_Vec3 v, NX_Quat q)
 {
-    float w = q.w, x = q.x, y = q.y, z = q.z;
-    float vx = v.x, vy = v.y, vz = v.z;
+    NX_Vec3 qv = { q.x, q.y, q.z };
 
-    float tx = 2.0f * (y * vz - z * vy);
-    float ty = 2.0f * (z * vx - x * vz);
-    float tz = 2.0f * (x * vy - y * vx);
+    NX_Vec3 t;
+    t.x = 2.0f * (qv.y * v.z - qv.z * v.y);
+    t.y = 2.0f * (qv.z * v.x - qv.x * v.z);
+    t.z = 2.0f * (qv.x * v.y - qv.y * v.x);
 
     NX_Vec3 res;
-    res.x = vx + w * tx + (y * tz - z * ty);
-    res.y = vy + w * ty + (z * tx - x * tz);
-    res.z = vz + w * tz + (x * ty - y * tx);
+    res.x = v.x + q.w * t.x + (qv.y * t.z - qv.z * t.y);
+    res.y = v.y + q.w * t.y + (qv.z * t.x - qv.x * t.z);
+    res.z = v.z + q.w * t.z + (qv.x * t.y - qv.y * t.x);
 
     return res;
 }
