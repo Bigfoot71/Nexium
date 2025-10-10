@@ -116,7 +116,7 @@ inline void* NX_InstanceBuffer::map(NX_InstanceData type)
         return nullptr;
     }
 
-    return buffer.map(GL_MAP_WRITE_BIT);
+    return buffer.map(GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 }
 
 inline void* NX_InstanceBuffer::mapRange(NX_InstanceData type, size_t offset, size_t count)
@@ -138,7 +138,7 @@ inline void* NX_InstanceBuffer::mapRange(NX_InstanceData type, size_t offset, si
         return nullptr;
     }
 
-    return buffer.mapRange(offset, count, GL_MAP_WRITE_BIT);
+    return buffer.mapRange(offset, count, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
 }
 
 inline void NX_InstanceBuffer::unmap(NX_InstanceData type)
