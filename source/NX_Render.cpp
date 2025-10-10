@@ -8,6 +8,7 @@
 
 #include <NX/NX_Render.h>
 #include <NX/NX_Image.h>
+#include <NX/NX_Core.h>
 #include <NX/NX_Math.h>
 
 #include "./Core/NX_InternalLog.hpp"
@@ -17,7 +18,6 @@
 #include "./Render/NX_Texture.hpp"
 #include "./Render/NX_Font.hpp"
 #include "./Detail/Helper.hpp"
-#include "NX/NX_Core.h"
 
 /* === Texture - Public API === */
 

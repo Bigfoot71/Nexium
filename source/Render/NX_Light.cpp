@@ -11,7 +11,6 @@
 #include "./Scene/LightManager.hpp"
 #include "./Scene/DrawCall.hpp"
 #include "./Scene/DrawData.hpp"
-#include "NX/NX_Render.h"
 
 /* === Public Implementation === */
 

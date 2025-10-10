@@ -8,13 +8,13 @@
 
 #include <NX/NX_Image.h>
 #include <NX/NX_Core.h>
+#include <NX/NX_Math.h>
 
 #include <SDL3/SDL_stdinc.h>
 #include <stdint.h>
 #include <fp16.h>
 
 #include "./Core/NX_InternalLog.hpp"
-#include "NX/NX_Math.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_NO_STDIO

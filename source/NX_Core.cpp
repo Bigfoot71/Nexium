@@ -7,17 +7,16 @@
  */
 
 #include <NX/NX_Core.h>
-#include <NX/NX_Rand.h>
+#include <NX/NX_Math.h>
 
 #include "./Render/NX_RenderState.hpp"
 #include "./Audio/NX_AudioState.hpp"
 #include "./Core/NX_CoreState.hpp"
-#include "NX/NX_Math.h"
-#include "SDL3/SDL_clipboard.h"
-#include "SDL3/SDL_pixels.h"
-#include "SDL3/SDL_surface.h"
 
 #include <SDL3/SDL_filesystem.h>
+#include <SDL3/SDL_clipboard.h>
+#include <SDL3/SDL_surface.h>
+#include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_video.h>

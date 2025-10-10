@@ -1,6 +1,5 @@
 #include <NX/Nexium.h>
 #include "./common.h"
-#include "NX/NX_Render.h"
 
 int main(void)
 {

@@ -12,7 +12,7 @@
 #include "../../Detail/Util/ObjectPool.hpp"
 #include "../NX_InstanceBuffer.hpp"
 #include "../NX_VertexBuffer.hpp"
-#include "NX/NX_Render.h"
+#include <NX/NX_Render.h>
 #include <cfloat>
 
 namespace render {
