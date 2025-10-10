@@ -1,169 +1,68 @@
 #ifndef NX_RENDER_MATERIAL_SHADER_HPP
 #define NX_RENDER_MATERIAL_SHADER_HPP
 
+#include "./Core/ShaderOverride.hpp"
 #include <NX/NX_Render.h>
 
-#include "../Detail/Util/DynamicArray.hpp"
-#include "../Detail/Util/String.hpp"
+/* === Shader Traits Specialization === */
 
-#include "../Detail/GPU/Pipeline.hpp"
-#include "../Detail/GPU/Program.hpp"
-#include "../Detail/GPU/Buffer.hpp"
-
-#include <array>
+/**
+ * Defines the shader variants of NX_MaterialShader.
+ */
+template <>
+struct render::ShaderTraits<NX_MaterialShader> {
+    enum Variant {
+        SCENE_LIT,        // Full PBR/Phong lighting
+        SCENE_UNLIT,      // No lighting, just albedo
+        SCENE_WIREFRAME,  // Wireframe rendering
+        SCENE_PREPASS,    // Depth/normal prepass
+        SCENE_SHADOW,     // Shadow map generation
+        VARIANT_COUNT
+    };
+};
 
 /* === Declaration === */
 
-class NX_MaterialShader {
+class NX_MaterialShader : public render::ShaderOverride<NX_MaterialShader> {
 public:
-    enum Shader { SCENE_LIT, SCENE_UNLIT, SCENE_WIREFRAME, SCENE_PREPASS, SCENE_SHADOW, SHADER_COUNT };
-    enum Sampler { SAMPLER_0, SAMPLER_1, SAMPLER_2, SAMPLER_3, SAMPLER_COUNT, };
-    enum Uniform { STATIC_UNIFORM, DYNAMIC_UNIFORM, UNIFORM_COUNT };
+    /** Type aliases for convenience */
+    using Variant = render::ShaderTraits<NX_MaterialShader>::Variant;
 
 public:
-    using TextureArray = std::array<const gpu::Texture*, SAMPLER_COUNT>;
-
-public:
+    /** Create default material shader with built-in shaders */
     NX_MaterialShader();
-    NX_MaterialShader(const char* vertex, const char* fragment);
+    
+    /** Create custom material shader with user-provided code */
+    NX_MaterialShader(const char* vertexCode, const char* fragmentCode);
 
-    /** Texture getter/setter */
-    void getTextures(TextureArray& textures);
-    void setTexture(int slot, const gpu::Texture* texture);
-
-    /** Uniform buffer uploading functions */
-    void updateStaticBuffer(size_t offset, size_t size, const void* data);
-    void updateDynamicBuffer(size_t size, const void* data);
-
-    /** Binding functions */
-    void bindUniformBuffers(const gpu::Pipeline& pipeline, int dynamicRangeIndex);
-    void bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures, const gpu::Texture& defaultTexture);
-
-    /** Dynamic buffer management */
-    void clearDynamicBuffer();
-
-    /** Getters */
-    gpu::Program& program(NX_ShadingMode shading);
-    gpu::Program& program(Shader shader);
-    int dynamicRangeIndex() const;
+    /** Get the appropriate shader program for a given shading mode */
+    gpu::Program& programFromShadingMode(NX_ShadingMode shading);
 
 private:
-    /** Used at construction to generate final shader code */
-    void insertUserCode(util::String& source, const char* dst, const char* src);
-
-    /** Conversion helpers */
-    static Shader shaderFromShadingMode(NX_ShadingMode shading);
-
-private:
-    /** Built-in sampler names */
-    static constexpr const char* SamplerName[SAMPLER_COUNT] = {
-        "Texture0", "Texture1", "Texture2", "Texture3",
-    };
-
-    /** Built-in uniform block names */
-    static constexpr const char* UniformName[UNIFORM_COUNT] = {
-        "StaticBuffer", "DynamicBuffer"
-    };
-
-    /** Built-in uniform block binding points */
-    static constexpr int SamplerBinding[SAMPLER_COUNT] {
-        31, 30, 29, 28,
-    };
-
-    /** Built-in uniform block binding points */
-    static constexpr int UniformBinding[UNIFORM_COUNT] {
-        15, 14
-    };
-
-private:
-    struct DynamicBuffer {
-        struct Range { size_t offset, size; };
-        util::DynamicArray<Range> ranges{};
-        int currentRangeIndex{};
-        size_t currentOffset{};
-        gpu::Buffer buffer{};
-    };
-
-    struct SamplerSlot {
-        const gpu::Texture* texture{};
-        bool exists{};
-    };
-
-private:
-    std::array<gpu::Program, SHADER_COUNT> mPrograms{};
-    std::array<SamplerSlot, SAMPLER_COUNT> mTextures{};
-    DynamicBuffer mDynamicBuffer{};
-    gpu::Buffer mStaticBuffer{};
+    /** Convert engine shading mode to internal shader variant */
+    static Variant variantFromShadingMode(NX_ShadingMode shading);
 };
 
-/* === Public Implementation === */
+/* === Inline Implementation === */
 
-inline void NX_MaterialShader::getTextures(TextureArray& textures)
+inline gpu::Program& NX_MaterialShader::programFromShadingMode(NX_ShadingMode shading)
 {
-    for (int i = 0; i < SAMPLER_COUNT; i++) {
-        textures[i] = mTextures[i].texture;
-    }
+    return ShaderOverride::program(variantFromShadingMode(shading));
 }
 
-inline void NX_MaterialShader::setTexture(int slot, const gpu::Texture* texture)
-{
-    if (slot < 0 || slot >= SAMPLER_COUNT) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to set material shader texture at slot %i/%i; Exceeds the number of slot", slot, SAMPLER_COUNT);
-        return;
-    }
-
-    if (!mTextures[slot].exists) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to set material shader texture at slot %i/%i; This slot is not defined in the material shader", slot, SAMPLER_COUNT);
-        return;
-    }
-
-    mTextures[slot].texture = texture;
-}
-
-inline void NX_MaterialShader::clearDynamicBuffer()
-{
-    mDynamicBuffer.currentOffset = 0;
-    mDynamicBuffer.ranges.clear();
-}
-
-inline gpu::Program& NX_MaterialShader::program(NX_ShadingMode shading)
-{
-    return mPrograms[shaderFromShadingMode(shading)];
-}
-
-inline gpu::Program& NX_MaterialShader::program(Shader shader)
-{
-    return mPrograms[shader];
-}
-
-inline int NX_MaterialShader::dynamicRangeIndex() const
-{
-    return mDynamicBuffer.currentRangeIndex;
-}
-
-/* === Private Implementation === */
-
-inline void NX_MaterialShader::insertUserCode(util::String& source, const char* dst, const char* src)
-{
-    if (src == nullptr) return;
-    if (size_t pos = source.find(dst); pos != std::string::npos) {
-        source.replace(pos, SDL_strlen(dst), src);
-    }
-}
-
-inline NX_MaterialShader::Shader NX_MaterialShader::shaderFromShadingMode(NX_ShadingMode shading)
+inline NX_MaterialShader::Variant 
+NX_MaterialShader::variantFromShadingMode(NX_ShadingMode shading)
 {
     switch (shading) {
     case NX_SHADING_LIT:
-        return SCENE_LIT;
+        return Variant::SCENE_LIT;
     case NX_SHADING_UNLIT:
-        return SCENE_UNLIT;
+        return Variant::SCENE_UNLIT;
     case NX_SHADING_WIREFRAME:
-        return SCENE_WIREFRAME;
+        return Variant::SCENE_WIREFRAME;
     default:
-        break;
+        return Variant::SCENE_LIT;
     }
-    return SCENE_LIT;
 }
 
 #endif // NX_RENDER_MATERIAL_SHADER_HPP

@@ -316,7 +316,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
     {
         NX_MaterialShader& shader = mPrograms.materialShader(call.material().shader);
 
-        pipeline.useProgram(shader.program(NX_MaterialShader::SCENE_SHADOW));
+        pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_SHADOW));
 
         shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());

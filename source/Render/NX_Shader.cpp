@@ -17,10 +17,10 @@ NX_Shader::NX_Shader()
 
     /* --- Link all programs --- */
 
-    mPrograms[SHAPE_COLOR]   = gpu::Program(vertShape, fragShapeColor);
-    mPrograms[SHAPE_TEXTURE] = gpu::Program(vertShape, fragShapeTexture);
-    mPrograms[TEXT_BITMAP]   = gpu::Program(vertShape, fragTextBitmap);
-    mPrograms[TEXT_SDF]      = gpu::Program(vertShape, fragTextSDF);
+    mPrograms[Variant::SHAPE_COLOR]   = gpu::Program(vertShape, fragShapeColor);
+    mPrograms[Variant::SHAPE_TEXTURE] = gpu::Program(vertShape, fragShapeTexture);
+    mPrograms[Variant::TEXT_BITMAP]   = gpu::Program(vertShape, fragTextBitmap);
+    mPrograms[Variant::TEXT_SDF]      = gpu::Program(vertShape, fragTextSDF);
 }
 
 NX_Shader::NX_Shader(const char* vert, const char* frag)
@@ -50,15 +50,15 @@ NX_Shader::NX_Shader(const char* vert, const char* frag)
 
     /* --- Link all programs --- */
 
-    mPrograms[SHAPE_COLOR]   = gpu::Program(vertShape, fragShapeColor);
-    mPrograms[SHAPE_TEXTURE] = gpu::Program(vertShape, fragShapeTexture);
-    mPrograms[TEXT_BITMAP]   = gpu::Program(vertShape, fragTextBitmap);
-    mPrograms[TEXT_SDF]      = gpu::Program(vertShape, fragTextSDF);
+    mPrograms[Variant::SHAPE_COLOR]   = gpu::Program(vertShape, fragShapeColor);
+    mPrograms[Variant::SHAPE_TEXTURE] = gpu::Program(vertShape, fragShapeTexture);
+    mPrograms[Variant::TEXT_BITMAP]   = gpu::Program(vertShape, fragTextBitmap);
+    mPrograms[Variant::TEXT_SDF]      = gpu::Program(vertShape, fragTextSDF);
 
     /* --- Collect uniform block sizes and setup bindings --- */
 
     size_t bufferSize[UNIFORM_COUNT] = {};
-    for (int i = 0; i < SHADER_COUNT; ++i) {
+    for (int i = 0; i < VariantCount; ++i) {
         auto& program = mPrograms[i];
         for (int j = 0; j < UNIFORM_COUNT; ++j) {
             int blockIndex = program.getUniformBlockIndex(UniformName[j]);
@@ -88,7 +88,7 @@ NX_Shader::NX_Shader(const char* vert, const char* frag)
     /* --- Setup texture samplers --- */
 
     gpu::Pipeline([this](const gpu::Pipeline& pipeline) {
-        for (int i = 0; i < SHADER_COUNT; ++i) {
+        for (int i = 0; i < VariantCount; ++i) {
             pipeline.useProgram(mPrograms[i]);
             for (int j = 0; j < SAMPLER_COUNT; ++j) {
                 int loc = mPrograms[i].getUniformLocation(SamplerName[j]);
@@ -98,92 +98,4 @@ NX_Shader::NX_Shader(const char* vert, const char* frag)
             }
         }
     });
-}
-
-void NX_Shader::updateStaticBuffer(size_t offset, size_t size, const void* data)
-{
-    if (!mStaticBuffer.isValid()) {
-        NX_INTERNAL_LOG(E, "RENDER: Cannot upload; no static buffer for this shader.");
-        return;
-    }
-
-    if (offset + size > mStaticBuffer.size()) {
-        NX_INTERNAL_LOG(E, 
-            "RENDER: Upload out of bounds (%zu > buffer size %zu).",
-            offset + size, mStaticBuffer.size()
-        );
-        return;
-    }
-
-    mStaticBuffer.upload(offset, size, data);
-}
-
-void NX_Shader::updateDynamicBuffer(size_t size, const void* data)
-{
-    if (!mDynamicBuffer.buffer.isValid()) {
-        NX_INTERNAL_LOG(W, "RENDER: Cannot upload; no dynamic buffer for this shader.");
-        return;
-    }
-
-    if (size % 16 != 0) { /* std140 requirement */
-        NX_INTERNAL_LOG(W, "RENDER: Upload size must be a multiple of 16 (std140 layout).");
-        return;
-    }
-
-    size_t alignment = gpu::Pipeline::uniformBufferOffsetAlignment();
-    size_t alignedOffset = NX_ALIGN_UP(mDynamicBuffer.currentOffset, alignment);
-
-    size_t requiredSize = alignedOffset + size;
-    size_t currentSize = mDynamicBuffer.buffer.size();
-    size_t maxUBOSize = static_cast<size_t>(gpu::Pipeline::maxUniformBufferSize());
-
-    if (requiredSize > currentSize) {
-        size_t newSize = NX_ALIGN_UP(2 * currentSize, alignment);
-        while (newSize < requiredSize) {
-            newSize *= 2;
-            newSize = NX_ALIGN_UP(newSize, alignment);
-        }
-        if (newSize > maxUBOSize) {
-            NX_INTERNAL_LOG(E,
-                "RENDER: Upload failed; required size (%zu bytes) exceeds GPU uniform buffer limit (%zu bytes).",
-                newSize, maxUBOSize
-            );
-            return;
-        }
-        mDynamicBuffer.buffer.realloc(newSize, true);
-    }
-
-    mDynamicBuffer.currentRangeIndex = static_cast<int>(mDynamicBuffer.ranges.size());
-    mDynamicBuffer.ranges.emplace_back(alignedOffset, size);
-
-    mDynamicBuffer.buffer.upload(alignedOffset, size, data);
-    mDynamicBuffer.currentOffset = alignedOffset + size;
-}
-
-void NX_Shader::bindUniformBuffers(const gpu::Pipeline& pipeline, int dynamicRangeIndex)
-{
-    if (mStaticBuffer.isValid()) {
-        pipeline.bindUniform(
-            UniformBinding[STATIC_UNIFORM],
-            mStaticBuffer
-        );
-    }
-
-    if (mDynamicBuffer.buffer.isValid() && dynamicRangeIndex >= 0) {
-        pipeline.bindUniform(
-            UniformBinding[DYNAMIC_UNIFORM],
-            mDynamicBuffer.buffer,
-            mDynamicBuffer.ranges[dynamicRangeIndex].offset,
-            mDynamicBuffer.ranges[dynamicRangeIndex].size
-        );
-    }
-}
-
-void NX_Shader::bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures, const gpu::Texture& defaultTexture)
-{
-    for (int i = 0; i < SAMPLER_COUNT; i++) {
-        if (mTextures[i].exists) {
-            pipeline.bindTexture(SamplerBinding[i], textures[i] ? *textures[i] : defaultTexture);
-        }
-    }
 }

@@ -273,7 +273,7 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         const NX_Material& mat = call.material();
 
         NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
-        pipeline.useProgram(shader.program(NX_MaterialShader::SCENE_PREPASS));
+        pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_PREPASS));
 
         shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
@@ -347,7 +347,7 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         const NX_Material& mat = call.material();
 
         NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
-        pipeline.useProgram(shader.program(call.material().shading));
+        pipeline.useProgram(shader.programFromShadingMode(call.material().shading));
 
         shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
