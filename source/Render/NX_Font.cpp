@@ -9,8 +9,7 @@
 #include "./NX_Font.hpp"
 
 #include "../Core/NX_InternalLog.hpp"
-#include "NX/NX_Macros.h"
-#include "NX/NX_Render.h"
+#include <NX/NX_Render.h>
 
 /* === FreeType Includes === */
 
