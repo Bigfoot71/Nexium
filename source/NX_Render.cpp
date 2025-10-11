@@ -1944,7 +1944,7 @@ void NX_UpdateDynamicMaterialShaderBuffer(NX_MaterialShader* shader, size_t size
 
 /* === Mesh - Public API === */
 
-NX_Mesh* NX_CreateMesh(const NX_Vertex3D* vertices, int vCount, const uint32_t* indices, int iCount)
+NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int vCount, const uint32_t* indices, int iCount)
 {
     /* --- Validation of parameters --- */
 
@@ -1966,7 +1966,7 @@ NX_Mesh* NX_CreateMesh(const NX_Vertex3D* vertices, int vCount, const uint32_t* 
 
     /* --- Mesh creation --- */
 
-    NX_Mesh* mesh = gRender->meshes.createMesh(vCopy, vCount, iCopy, iCount, true);
+    NX_Mesh* mesh = gRender->meshes.createMesh(type, vCopy, vCount, iCopy, iCount, true);
     if (mesh == nullptr) {
         SDL_free(vCopy);
         SDL_free(iCopy);
@@ -2078,7 +2078,13 @@ NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_Vec2 subDiv, NX_Vec3 normal)
 
     /* --- Mesh creation and finalization --- */
 
-    NX_Mesh* mesh = gRender->meshes.createMesh(vertices, vertexCount, indices, indexCount, true);
+    NX_Mesh* mesh = gRender->meshes.createMesh(
+        NX_PRIMITIVE_TRIANGLES,
+        vertices, vertexCount,
+        indices, indexCount,
+        true
+    );
+
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);
@@ -2213,7 +2219,13 @@ NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_Vec3 subDiv)
 
     /* --- Mesh creation and finalization --- */
 
-    NX_Mesh* mesh = gRender->meshes.createMesh(vertices, vertexCount, indices, indexCount, true);
+    NX_Mesh* mesh = gRender->meshes.createMesh(
+        NX_PRIMITIVE_TRIANGLES,
+        vertices, vertexCount,
+        indices, indexCount,
+        true
+    );
+
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);
@@ -2307,7 +2319,13 @@ NX_Mesh* NX_GenMeshSphere(float radius, int slices, int rings)
 
     /* --- Mesh creation and finalization --- */
 
-    NX_Mesh* mesh = gRender->meshes.createMesh(vertices, vertexCount, indices, indexCount, true);
+    NX_Mesh* mesh = gRender->meshes.createMesh(
+        NX_PRIMITIVE_TRIANGLES,
+        vertices, vertexCount,
+        indices, indexCount,
+        true
+    );
+
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);
@@ -2491,7 +2509,13 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
 
     /* --- Mesh creation and finalization --- */
 
-    NX_Mesh* mesh = gRender->meshes.createMesh(vertices, vertexCount, indices, indexCount, true);
+    NX_Mesh* mesh = gRender->meshes.createMesh(
+        NX_PRIMITIVE_TRIANGLES,
+        vertices, vertexCount,
+        indices, indexCount,
+        true
+    );
+
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);
@@ -2706,7 +2730,13 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
 
     /* --- Mesh creation and finalization --- */
 
-    NX_Mesh* mesh = gRender->meshes.createMesh(vertices, vertexCount, indices, indexCount, true);
+    NX_Mesh* mesh = gRender->meshes.createMesh(
+        NX_PRIMITIVE_TRIANGLES,
+        vertices, vertexCount,
+        indices, indexCount,
+        true
+    );
+
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);

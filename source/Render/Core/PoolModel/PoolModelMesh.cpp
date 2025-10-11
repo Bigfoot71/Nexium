@@ -260,7 +260,13 @@ NX_Mesh* PoolModel::processMesh(const aiMesh* mesh, const NX_Mat4& transform)
 
     /* --- Create the mesh in the pool and return it --- */
 
-    NX_Mesh* modelMesh = mPoolMesh.createMesh(vertices, vertexCount, indices, indexCount, aabb, true);
+    NX_Mesh* modelMesh = mPoolMesh.createMesh(
+        NX_PRIMITIVE_TRIANGLES,
+        vertices, vertexCount,
+        indices, indexCount,
+        true
+    );
+
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);

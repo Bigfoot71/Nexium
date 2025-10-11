@@ -115,11 +115,22 @@ typedef enum NX_TextureWrap {
  * @brief Defines the type of font used for rendering.
  */
 typedef enum NX_FontType {
-    NX_FONT_NORMAL,             ///< Standard vector font, anti-aliased, general-purpose text.
-    NX_FONT_LIGHT,              ///< Light/thin vector font, finer strokes, good for small UI text.
-    NX_FONT_MONO,               ///< Monochrome bitmap font, pixel-perfect, very fast to load.
-    NX_FONT_SDF                 ///< Signed Distance Field font, scalable, smooth rendering at arbitrary sizes.
+    NX_FONT_NORMAL,                 ///< Standard vector font, anti-aliased, general-purpose text.
+    NX_FONT_LIGHT,                  ///< Light/thin vector font, finer strokes, good for small UI text.
+    NX_FONT_MONO,                   ///< Monochrome bitmap font, pixel-perfect, very fast to load.
+    NX_FONT_SDF                     ///< Signed Distance Field font, scalable, smooth rendering at arbitrary sizes.
 } NX_FontType;
+
+/**
+ * @brief Defines the geometric primitive type.
+ */
+typedef enum NX_PrimitiveType {
+    NX_PRIMITIVE_POINTS,            ///< Each vertex represents a single point.
+    NX_PRIMITIVE_LINES,             ///< Each pair of vertices forms an independent line segment.
+    NX_PRIMITIVE_LINE_STRIP,        ///< Connected series of line segments sharing vertices.
+    NX_PRIMITIVE_TRIANGLES,         ///< Each set of three vertices forms an independent triangle.
+    NX_PRIMITIVE_TRIANGLE_STRIP     ///< Connected strip of triangles sharing vertices.
+} NX_PrimitiveType;
 
 /**
  * @brief Defines billboard modes for 3D objects.
@@ -270,6 +281,14 @@ typedef enum NX_Tonemap {
 /* === Handlers === */
 
 /**
+ * @brief Opaque handle to a GPU texture.
+ *
+ * Represents a 2D image stored on the GPU.
+ * Can be used for material maps or UI elements.
+ */
+typedef struct NX_Texture NX_Texture;
+
+/**
  * @brief Opaque handle to a render texture.
  *
  * Represents a render texture containing a depth color target.
@@ -289,14 +308,6 @@ typedef struct NX_VertexBuffer NX_VertexBuffer;
  * Represents per-instance data stored on the GPU, used for instanced rendering.
  */
 typedef struct NX_InstanceBuffer NX_InstanceBuffer;
-
-/**
- * @brief Opaque handle to a GPU texture.
- *
- * Represents a 2D image stored on the GPU.
- * Can be used for material maps or UI elements.
- */
-typedef struct NX_Texture NX_Texture;
 
 /**
  * @brief Opaque handle to a cubemap texture.
@@ -503,6 +514,7 @@ typedef struct NX_Mesh {
 
     NX_ShadowCastMode shadowCastMode;   ///< Shadow casting mode for the mesh.
     NX_ShadowFaceMode shadowFaceMode;   ///< Which faces are rendered into the shadow map.
+    NX_PrimitiveType primitiveType;     ///< Type of primitive that constitutes the vertices.
     NX_BoundingBox aabb;                ///< Axis-Aligned Bounding Box in local space.
     NX_Layer layerMask;                 ///< Bitfield indicating the rendering layer(s) of this mesh.
 
@@ -1774,6 +1786,7 @@ NXAPI void NX_UpdateDynamicMaterialShaderBuffer(NX_MaterialShader* shader, size_
 
 /**
  * @brief Creates a 3D mesh by copying vertex and index data.
+ * @param type Type of primitive that constitutes the vertices.
  * @param vertices Pointer to the vertex array (cannot be NULL).
  * @param vCount Number of vertices.
  * @param indices Pointer to the index array (can be NULL).
@@ -1781,7 +1794,7 @@ NXAPI void NX_UpdateDynamicMaterialShaderBuffer(NX_MaterialShader* shader, size_
  * @return Pointer to a newly created NX_Mesh.
  * @note The function copies the data into internal buffers.
  */
-NXAPI NX_Mesh* NX_CreateMesh(const NX_Vertex3D* vertices, int vCount, const uint32_t* indices, int iCount);
+NXAPI NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int vCount, const uint32_t* indices, int iCount);
 
 /**
  * @brief Destroys a 3D mesh and frees its resources.

@@ -26,8 +26,8 @@ public:
     void destroyInstanceBuffer(NX_InstanceBuffer* buffer);
 
     /** Mesh functions */
-    NX_Mesh* createMesh(NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, const NX_BoundingBox& aabb, bool upload);
-    NX_Mesh* createMesh(NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, bool upload);
+    NX_Mesh* createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, const NX_BoundingBox& aabb, bool upload);
+    NX_Mesh* createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, bool upload);
     void destroyMesh(NX_Mesh* mesh);
     void updateMesh(NX_Mesh* mesh);
 
@@ -55,7 +55,7 @@ inline void PoolMesh::destroyInstanceBuffer(NX_InstanceBuffer* buffer)
     mInstanceBuffers.destroy(buffer);
 }
 
-inline NX_Mesh* PoolMesh::createMesh(NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, const NX_BoundingBox& aabb, bool upload)
+inline NX_Mesh* PoolMesh::createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, const NX_BoundingBox& aabb, bool upload)
 {
     SDL_assert(vertices != nullptr && vCount > 0);
 
@@ -89,14 +89,16 @@ inline NX_Mesh* PoolMesh::createMesh(NX_Vertex3D* vertices, int vCount, uint32_t
     mesh->vertexCount = vCount;
     mesh->indexCount = iCount;
 
-    mesh->aabb = aabb;
-
+    mesh->shadowCastMode = NX_SHADOW_CAST_ENABLED;
+    mesh->shadowFaceMode = NX_SHADOW_FACE_AUTO;
     mesh->layerMask = NX_LAYER_01;
+    mesh->primitiveType = type;
+    mesh->aabb = aabb;
 
     return mesh;
 }
 
-inline NX_Mesh* PoolMesh::createMesh(NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, bool upload)
+inline NX_Mesh* PoolMesh::createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, bool upload)
 {
     SDL_assert(vertices != nullptr && vCount > 0);
 
@@ -122,7 +124,7 @@ inline NX_Mesh* PoolMesh::createMesh(NX_Vertex3D* vertices, int vCount, uint32_t
 
     /* --- Create the mesh --- */
 
-    return createMesh(vertices, vCount, indices, iCount, { min, max }, upload);
+    return createMesh(type, vertices, vCount, indices, iCount, { min, max }, upload);
 }
 
 inline void PoolMesh::destroyMesh(NX_Mesh* mesh)

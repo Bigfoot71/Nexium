@@ -129,14 +129,35 @@ inline void DrawCall::draw(const gpu::Pipeline& pipeline, const NX_InstanceBuffe
         mMesh.buffer->bindInstances(*instances);
     }
 
+    GLenum primitive = GL_TRIANGLES;
+    switch (mMesh.primitiveType) {
+    case NX_PRIMITIVE_POINTS:
+        primitive = GL_POINTS;
+        break;
+    case NX_PRIMITIVE_LINES:
+        primitive = GL_LINES;
+        break;
+    case NX_PRIMITIVE_LINE_STRIP:
+        primitive = GL_LINE_STRIP;
+        break;
+    case NX_PRIMITIVE_TRIANGLES:
+        primitive = GL_TRIANGLES;
+        break;
+    case NX_PRIMITIVE_TRIANGLE_STRIP:
+        primitive = GL_LINE_STRIP;
+        break;
+    default:
+        break;
+    }
+
     if (hasEBO) {
         useInstancing ? 
-            pipeline.drawElementsInstanced(GL_TRIANGLES, GL_UNSIGNED_INT, mMesh.indexCount, instanceCount) :
-            pipeline.drawElements(GL_TRIANGLES, GL_UNSIGNED_INT, mMesh.indexCount);
+            pipeline.drawElementsInstanced(primitive, GL_UNSIGNED_INT, mMesh.indexCount, instanceCount) :
+            pipeline.drawElements(primitive, GL_UNSIGNED_INT, mMesh.indexCount);
     } else {
         useInstancing ?
-            pipeline.drawInstanced(GL_TRIANGLES, mMesh.vertexCount, instanceCount) :
-            pipeline.draw(GL_TRIANGLES, mMesh.vertexCount);
+            pipeline.drawInstanced(primitive, mMesh.vertexCount, instanceCount) :
+            pipeline.draw(primitive, mMesh.vertexCount);
     }
 
     if (useInstancing) {
