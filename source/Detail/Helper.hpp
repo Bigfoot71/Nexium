@@ -9,9 +9,9 @@
 #ifndef NX_DETAIL_HELPER_HPP
 #define NX_DETAIL_HELPER_HPP
 
+#include <SDL3/SDL_stdinc.h>
 #include <NX/NX_BitUtils.h>
 #include <NX/NX_Macros.h>
-#include <SDL3/SDL_stdinc.h>
 #include <type_traits>
 
 #if defined(_MSVC_VER)
