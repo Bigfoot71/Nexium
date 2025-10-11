@@ -12,6 +12,7 @@
 #include "../../Detail/Util/ObjectPool.hpp"
 #include "../NX_InstanceBuffer.hpp"
 #include "../NX_VertexBuffer.hpp"
+#include "../NX_DynamicMesh.hpp"
 #include <NX/NX_Render.h>
 #include <cfloat>
 
@@ -21,39 +22,28 @@ namespace render {
 
 class PoolMesh {
 public:
-    /** Instance buffer functions */
-    NX_InstanceBuffer* createInstanceBuffer(NX_InstanceData bitfield, size_t count);
-    void destroyInstanceBuffer(NX_InstanceBuffer* buffer);
-
     /** Mesh functions */
     NX_Mesh* createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, const NX_BoundingBox& aabb, bool upload);
     NX_Mesh* createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, bool upload);
     void destroyMesh(NX_Mesh* mesh);
     void updateMesh(NX_Mesh* mesh);
 
+    /** Dynamic mesh functions */
+    NX_DynamicMesh* createDynamicMesh(size_t initialCapacity);
+    void destroyDynamicMesh(NX_DynamicMesh* immediateMesh);
+
+    /** Instance buffer functions */
+    NX_InstanceBuffer* createInstanceBuffer(NX_InstanceData bitfield, size_t count);
+    void destroyInstanceBuffer(NX_InstanceBuffer* buffer);
+
 private:
-    util::ObjectPool<NX_InstanceBuffer, 128> mInstanceBuffers{};
+    util::ObjectPool<NX_InstanceBuffer, 64> mInstanceBuffers{};
     util::ObjectPool<NX_VertexBuffer, 512> mVertexBuffers{};
+    util::ObjectPool<NX_DynamicMesh, 32> mDynamicMeshes{};
     util::ObjectPool<NX_Mesh, 512> mMeshes{};
 };
 
 /* === Public Implementation === */
-
-inline NX_InstanceBuffer* PoolMesh::createInstanceBuffer(NX_InstanceData bitfield, size_t count)
-{
-    NX_InstanceBuffer* instances = mInstanceBuffers.create(bitfield, count);
-    if (!instances) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to create instance buffer; Object pool issue");
-        return nullptr;
-    }
-
-    return instances;
-}
-
-inline void PoolMesh::destroyInstanceBuffer(NX_InstanceBuffer* buffer)
-{
-    mInstanceBuffers.destroy(buffer);
-}
 
 inline NX_Mesh* PoolMesh::createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, const NX_BoundingBox& aabb, bool upload)
 {
@@ -148,6 +138,40 @@ inline void PoolMesh::updateMesh(NX_Mesh* mesh)
 
     mesh->buffer->vbo().upload(0, mesh->vertexCount * sizeof(NX_Vertex3D), mesh->vertices);
     mesh->buffer->ebo().upload(0, mesh->indexCount * sizeof(uint32_t), mesh->indices);
+}
+
+inline NX_DynamicMesh* PoolMesh::createDynamicMesh(size_t initialCapacity)
+{
+    NX_DynamicMesh* mesh = mDynamicMeshes.create(initialCapacity);
+    if (!mesh) {
+        NX_INTERNAL_LOG(E, "RENDER: Failed to create dynamic mesh; Object pool issue");
+        return nullptr;
+    }
+
+    return mesh;
+}
+
+inline void PoolMesh::destroyDynamicMesh(NX_DynamicMesh* immediateMesh)
+{
+    if (immediateMesh != nullptr) {
+        mDynamicMeshes.destroy(immediateMesh);
+    }
+}
+
+inline NX_InstanceBuffer* PoolMesh::createInstanceBuffer(NX_InstanceData bitfield, size_t count)
+{
+    NX_InstanceBuffer* instances = mInstanceBuffers.create(bitfield, count);
+    if (!instances) {
+        NX_INTERNAL_LOG(E, "RENDER: Failed to create instance buffer; Object pool issue");
+        return nullptr;
+    }
+
+    return instances;
+}
+
+inline void PoolMesh::destroyInstanceBuffer(NX_InstanceBuffer* buffer)
+{
+    mInstanceBuffers.destroy(buffer);
 }
 
 } // namespace render

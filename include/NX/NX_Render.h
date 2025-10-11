@@ -310,6 +310,13 @@ typedef struct NX_VertexBuffer NX_VertexBuffer;
 typedef struct NX_InstanceBuffer NX_InstanceBuffer;
 
 /**
+ * @brief Opaque handle to a GPU dynamic mesh.
+ *
+ * Represents a mesh whose vertex data can be modified or rebuilt each frame.
+ */
+typedef struct NX_DynamicMesh NX_DynamicMesh;
+
+/**
  * @brief Opaque handle to a cubemap texture.
  *
  * Cubemaps are used for skyboxes or for generating reflection probes.
@@ -1396,6 +1403,34 @@ NXAPI void NX_DrawMeshInstanced3D(const NX_Mesh* mesh, const NX_InstanceBuffer* 
                                   const NX_Material* material, const NX_Transform* transform);
 
 /**
+ * @brief Draws a 3D dynamic mesh.
+ *
+ * Renders a mesh whose vertex data can change every frame.
+ *
+ * @param dynMesh Pointer to the dynamic mesh to draw (cannot be NULL).
+ * @param material Pointer to the material to use (can be NULL to use the default material).
+ * @param transform Pointer to the transformation matrix (can be NULL to use identity).
+ */
+NXAPI void NX_DrawDynamicMesh3D(const NX_DynamicMesh* dynMesh, const NX_Material* material, const NX_Transform* transform);
+
+/**
+ * @brief Draws a 3D dynamic mesh with instanced rendering.
+ *
+ * Renders the given dynamic mesh multiple times in a single draw call using per-instance data.
+ *
+ * @param dynMesh Pointer to the dynamic mesh to draw (cannot be NULL).
+ * @param instances Pointer to the instance buffer containing per-instance attributes (cannot be NULL).
+ * @param instanceCount Number of instances to render (must be > 0).
+ * @param material Pointer to the material to use (can be NULL to use the default material).
+ * @param transform Pointer to the base transformation matrix applied to all instances
+ *                  (can be NULL to use identity).
+ *
+ * @note No frustum culling is performed for instanced rendering.
+ */
+NXAPI void NX_DrawDynamicMeshInstanced3D(const NX_DynamicMesh* dynMesh, const NX_InstanceBuffer* instances, int instanceCount,
+                                         const NX_Material* material, const NX_Transform* transform);
+
+/**
  * @brief Draws a 3D model.
  * @param model Pointer to the model to draw (cannot be NULL).
  * @param transform Pointer to the transformation matrix (can be NULL to use identity).
@@ -1866,6 +1901,124 @@ NXAPI void NX_UpdateMeshBuffer(NX_Mesh* mesh);
 NXAPI void NX_UpdateMeshAABB(NX_Mesh* mesh);
 
 /** @} */ // end of Mesh
+
+/**
+ * @defgroup DynamicMesh Dynamic Mesh Functions
+ * @{
+ */
+
+/**
+ * @brief Creates a dynamic mesh.
+ *
+ * Create a dynamic mesh that can be rebuilt each frame.
+ *
+ * @param initialCapacity Initial number of vertices to pre-allocate (must be > 0).
+ *                        This value is only informative; memory will be reallocated if needed.
+ * @return Pointer to a new NX_DynamicMesh, or NULL if creation fails.
+ */
+NXAPI NX_DynamicMesh* NX_CreateDynamicMesh(size_t initialCapacity);
+
+/**
+ * @brief Destroys a dynamic mesh.
+ *
+ * Releases all GPU and CPU resources associated with the mesh.
+ *
+ * @param dynMesh Pointer to the dynamic mesh to destroy.
+ */
+NXAPI void NX_DestroyDynamicMesh(NX_DynamicMesh* dynMesh);
+
+/**
+ * @brief Begins recording geometry for a dynamic mesh.
+ *
+ * All previous geometry is overridden. The primitive type can change between frames.
+ *
+ * @param dynMesh Pointer to the dynamic mesh (cannot be NULL).
+ * @param type Primitive type to use for the new geometry.
+ */
+NXAPI void NX_BeginDynamicMesh(NX_DynamicMesh* dynMesh, NX_PrimitiveType type);
+
+/**
+ * @brief Ends recording and uploads geometry to the GPU.
+ *
+ * Reallocates memory on the GPU if necessary.
+ *
+ * @param dynMesh Pointer to the dynamic mesh (cannot be NULL).
+ */
+NXAPI void NX_EndDynamicMesh(NX_DynamicMesh* dynMesh);
+
+/**
+ * @brief Sets the texture coordinate for the next vertex.
+ *
+ * @param dynMesh Pointer to the dynamic mesh (cannot be NULL).
+ * @param texcoord 2D texture coordinate to assign.
+ */
+NXAPI void NX_SetDynamicMeshTexCoord(NX_DynamicMesh* dynMesh, NX_Vec2 texcoord);
+
+/**
+ * @brief Sets the normal vector for the next vertex.
+ *
+ * @param dynMesh Pointer to the dynamic mesh (cannot be NULL).
+ * @param normal 3D normal vector to assign.
+ */
+NXAPI void NX_SetDynamicMeshNormal(NX_DynamicMesh* dynMesh, NX_Vec3 normal);
+
+/**
+ * @brief Sets the tangent vector for the next vertex.
+ *
+ * @param dynMesh Pointer to the dynamic mesh (cannot be NULL).
+ * @param tangent 4D tangent vector to assign.
+ */
+NXAPI void NX_SetDynamicMeshTangent(NX_DynamicMesh* dynMesh, NX_Vec4 tangent);
+
+/**
+ * @brief Sets the color for the next vertex.
+ *
+ * @param dynMesh Pointer to the dynamic mesh (cannot be NULL).
+ * @param color RGBA color to assign.
+ */
+NXAPI void NX_SetDynamicMeshColor(NX_DynamicMesh* dynMesh, NX_Color color);
+
+/**
+ * @brief Adds a vertex to the dynamic mesh.
+ *
+ * The current attributes (position, normal, tangent, texcoord, color) are used.
+ *
+ * @param dynMesh Pointer to the dynamic mesh (cannot be NULL).
+ * @param position 3D position of the vertex.
+ */
+NXAPI void NX_AddDynamicMeshVertex(NX_DynamicMesh* dynMesh, NX_Vec3 position);
+
+/**
+ * @brief Sets the shadow casting mode for a dynamic mesh.
+ *
+ * Default is NX_SHADOW_CAST_ENABLED.
+ *
+ * @param dynMesh Pointer to the dynamic mesh (cannot be NULL).
+ * @param mode Shadow casting mode to apply.
+ */
+NXAPI void NX_SetDynamicMeshShadowCastMode(NX_DynamicMesh* dynMesh, NX_ShadowCastMode mode);
+
+/**
+ * @brief Sets the shadow face mode for a dynamic mesh.
+ *
+ * Default is NX_SHADOW_FACE_AUTO.
+ *
+ * @param dynMesh Pointer to the dynamic mesh (cannot be NULL).
+ * @param mode Shadow face mode to apply.
+ */
+NXAPI void NX_SetDynamicMeshShadowFaceMode(NX_DynamicMesh* dynMesh, NX_ShadowFaceMode mode);
+
+/**
+ * @brief Sets the layer mask for a dynamic mesh.
+ *
+ * Default is NX_LAYER_01.
+ *
+ * @param dynMesh Pointer to the dynamic mesh (cannot be NULL).
+ * @param mask Layer mask to assign.
+ */
+NXAPI void NX_SetDynamicMeshLayerMask(NX_DynamicMesh* dynMesh, NX_Layer mask);
+
+/** @} */ // end of DynamicMesh
 
 /**
  * @defgroup InstanceBuffer Instance Buffer Functions

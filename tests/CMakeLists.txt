@@ -15,6 +15,7 @@ add_hyperion_test("nx-instanced-material-shader" "${NX_ROOT_PATH}/tests/instance
 add_hyperion_test("nx-skybox-procedural" "${NX_ROOT_PATH}/tests/skybox_procedural.c")
 add_hyperion_test("nx-material-shader" "${NX_ROOT_PATH}/tests/material_shader.c")
 add_hyperion_test("nx-render-texture" "${NX_ROOT_PATH}/tests/render_texture.c")
+add_hyperion_test("nx-dynamic-mesh" "${NX_ROOT_PATH}/tests/dynamic_mesh.c")
 add_hyperion_test("nx-shading-mode" "${NX_ROOT_PATH}/tests/shading_mode.c")
 add_hyperion_test("nx-custom-pass" "${NX_ROOT_PATH}/tests/custom_pass.c")
 add_hyperion_test("nx-animation" "${NX_ROOT_PATH}/tests/animation.c")

@@ -54,7 +54,7 @@ inline void RenderableBuffer::upload(const DrawData& data, const DrawCall& call)
         .matModel = data.matrix(),
         .matNormal = NX_Mat3ToMat4(&data.normal()),
         .boneOffset = data.boneMatrixOffset(),
-        .layerMask = call.mesh().layerMask,
+        .layerMask = call.layerMask(),
         .instancing = data.useInstancing(),
         .skinning = data.useSkinning(),
     };

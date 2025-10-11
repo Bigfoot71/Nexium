@@ -155,12 +155,12 @@ void Scene::end()
     /* --- View layer/furstum culling --- */
 
     mDrawCalls.remove_if([this](const DrawCall& call) {
-        if ((mFrustum.cullMask() & call.mesh().layerMask) == 0) {
+        if ((mFrustum.cullMask() & call.layerMask()) == 0) {
             return true;
         }
         const DrawData& data = mDrawData[call.drawDataIndex()];
         if (!data.useInstancing() && mEnvironment.hasFlags(NX_ENV_VIEW_FRUSTUM_CULLING)) {
-            return !mFrustum.containsObb(call.mesh().aabb, data.transform());
+            return !mFrustum.containsObb(call.aabb(), data.transform());
         }
         return false;
     });
@@ -170,8 +170,8 @@ void Scene::end()
     if (mEnvironment.hasFlags(NX_ENV_SORT_OPAQUE)) {
         mDrawCalls.sort(DrawCall::Category::OPAQUE,
             [this](const DrawCall& a, const DrawCall& b) {
-                float maxDistA = mFrustum.getDistanceSquaredToCenterPoint(a.mesh().aabb, mDrawData[a.drawDataIndex()].matrix());
-                float maxDistB = mFrustum.getDistanceSquaredToCenterPoint(b.mesh().aabb, mDrawData[b.drawDataIndex()].matrix());
+                float maxDistA = mFrustum.getDistanceSquaredToCenterPoint(a.aabb(), mDrawData[a.drawDataIndex()].matrix());
+                float maxDistB = mFrustum.getDistanceSquaredToCenterPoint(b.aabb(), mDrawData[b.drawDataIndex()].matrix());
                 return maxDistA < maxDistB;
             }
         );
@@ -180,8 +180,8 @@ void Scene::end()
     if (mEnvironment.hasFlags(NX_ENV_SORT_TRANSPARENT)) {
         mDrawCalls.sort(DrawCall::Category::TRANSPARENT,
             [this](const DrawCall& a, const DrawCall& b) {
-                float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.mesh().aabb, mDrawData[a.drawDataIndex()].matrix());
-                float maxDistB = mFrustum.getDistanceSquaredToFarthestPoint(b.mesh().aabb, mDrawData[b.drawDataIndex()].matrix());
+                float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.aabb(), mDrawData[a.drawDataIndex()].matrix());
+                float maxDistB = mFrustum.getDistanceSquaredToFarthestPoint(b.aabb(), mDrawData[b.drawDataIndex()].matrix());
                 return maxDistA > maxDistB;
             }
         );

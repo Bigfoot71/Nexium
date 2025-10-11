@@ -330,7 +330,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         pipeline.bindUniform(3, params.renderableBuffer.buffer());
         pipeline.bindUniform(4, params.materialBuffer.buffer());
 
-        switch (call.mesh().shadowFaceMode) {
+        switch (call.shadowFaceMode()) {
         case NX_SHADOW_FACE_AUTO:
             switch (call.material().cull) {
             case NX_CULL_BACK:
@@ -407,8 +407,8 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                 for (const DrawCall& call : params.drawCalls.categories(
                     DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
                 {
-                    if (call.mesh().shadowCastMode == NX_SHADOW_CAST_DISABLED) continue;
-                    if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
+                    if (call.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
+                    if ((light.shadowCullMask() & call.layerMask()) == 0) continue;
 
                     if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.drawDataIndex()])) {
                         draw(pipeline, call, params.drawData[call.drawDataIndex()]);
@@ -438,8 +438,8 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                 for (const DrawCall& call : params.drawCalls.categories(
                     DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
                 {
-                    if (call.mesh().shadowCastMode == NX_SHADOW_CAST_DISABLED) continue;
-                    if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
+                    if (call.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
+                    if ((light.shadowCullMask() & call.layerMask()) == 0) continue;
 
                     if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.drawDataIndex()])) {
                         draw(pipeline, call, params.drawData[call.drawDataIndex()]);
@@ -471,8 +471,8 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     for (const DrawCall& call : params.drawCalls.categories(
                         DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
                     {
-                        if (call.mesh().shadowCastMode == NX_SHADOW_CAST_DISABLED) continue;
-                        if ((light.shadowCullMask() & call.mesh().layerMask) == 0) continue;
+                        if (call.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
+                        if ((light.shadowCullMask() & call.layerMask()) == 0) continue;
 
                         if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.drawDataIndex()], iFace)) {
                             draw(pipeline, call, params.drawData[call.drawDataIndex()]);

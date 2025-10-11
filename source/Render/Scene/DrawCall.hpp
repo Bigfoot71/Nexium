@@ -16,6 +16,10 @@
 #include "../../Detail/GPU/Pipeline.hpp"
 #include "../NX_MaterialShader.hpp"
 #include "../NX_VertexBuffer.hpp"
+#include "../NX_DynamicMesh.hpp"
+#include "NX/NX_Macros.h"
+
+#include <variant>
 
 namespace scene {
 
@@ -31,7 +35,9 @@ public:
     };
 
 public:
-    DrawCall(int dataIndex, const NX_Mesh& mesh, const NX_Material& material);
+    /** Constructors */
+    template<typename T_Mesh>
+    DrawCall(int dataIndex, T_Mesh& mesh, const NX_Material& material);
 
     /** Draw call category management */
     static Category category(const NX_Material& material);
@@ -39,7 +45,10 @@ public:
 
     /** Internal draw call data */
     const NX_Material& material() const;
-    const NX_Mesh& mesh() const;
+    NX_ShadowCastMode shadowCastMode() const;
+    NX_ShadowFaceMode shadowFaceMode() const;
+    const NX_BoundingBox& aabb() const;
+    NX_Layer layerMask() const;
 
     /** External draw call data */
     const NX_MaterialShader::TextureArray& materialShaderTextures() const;
@@ -51,8 +60,8 @@ public:
 
 private:
     /** Object to draw */
+    std::variant<const NX_Mesh*, const NX_DynamicMesh*> mMesh;
     NX_Material mMaterial;
-    const NX_Mesh& mMesh;
 
     /** Additionnal data */
     NX_MaterialShader::TextureArray mTextures;  //< Array containing the textures linked to the material shader at the time of draw (if any)
@@ -66,8 +75,9 @@ using BucketDrawCalls = util::BucketArray<DrawCall, DrawCall::Category, DrawCall
 
 /* === Public Implementation === */
 
-inline DrawCall::DrawCall(int dataIndex, const NX_Mesh& mesh, const NX_Material& material)
-    : mMaterial(material), mMesh(mesh), mDynamicRangeIndex(-1), mDrawDataIndex(dataIndex)
+template<typename T_Mesh>
+inline DrawCall::DrawCall(int dataIndex, T_Mesh& mesh, const NX_Material& material)
+    : mMaterial(material), mMesh(&mesh), mDynamicRangeIndex(-1), mDrawDataIndex(dataIndex)
 {
     if (material.shader != nullptr) {
         mDynamicRangeIndex = material.shader->dynamicRangeIndex();
@@ -77,14 +87,10 @@ inline DrawCall::DrawCall(int dataIndex, const NX_Mesh& mesh, const NX_Material&
 
 inline DrawCall::Category DrawCall::category(const NX_Material& material)
 {
-    if (material.depth.prePass) {
-        return PREPASS;
-    }
-
+    if (material.depth.prePass) return PREPASS;
     if (material.blend != NX_BLEND_OPAQUE) {
         return TRANSPARENT;
     }
-
     return OPAQUE;
 }
 
@@ -98,9 +104,40 @@ inline const NX_Material& DrawCall::material() const
     return mMaterial;
 }
 
-inline const NX_Mesh& DrawCall::mesh() const
+inline NX_ShadowCastMode DrawCall::shadowCastMode() const
 {
-    return mMesh;
+    switch (mMesh.index()) {
+    case 0: [[likely]] return std::get<0>(mMesh)->shadowCastMode;
+    case 1: [[unlikely]] return std::get<1>(mMesh)->shadowCastMode;
+    default: NX_UNREACHABLE(); break;
+    }
+}
+
+inline NX_ShadowFaceMode DrawCall::shadowFaceMode() const
+{
+    switch (mMesh.index()) {
+    case 0: [[likely]] return std::get<0>(mMesh)->shadowFaceMode;
+    case 1: [[unlikely]] return std::get<1>(mMesh)->shadowFaceMode;
+    default: NX_UNREACHABLE(); break;
+    }
+}
+
+inline const NX_BoundingBox& DrawCall::aabb() const
+{
+    switch (mMesh.index()) {
+    case 0: [[likely]] return std::get<0>(mMesh)->aabb;
+    case 1: [[unlikely]] return std::get<1>(mMesh)->aabb();
+    default: NX_UNREACHABLE(); break;
+    }
+}
+
+inline NX_Layer DrawCall::layerMask() const
+{
+    switch (mMesh.index()) {
+    case 0: [[likely]] return std::get<0>(mMesh)->layerMask;
+    case 1: [[unlikely]] return std::get<1>(mMesh)->layerMask;
+    default: NX_UNREACHABLE(); break;
+    }
 }
 
 inline const NX_MaterialShader::TextureArray& DrawCall::materialShaderTextures() const
@@ -120,17 +157,44 @@ inline int DrawCall::drawDataIndex() const
 
 inline void DrawCall::draw(const gpu::Pipeline& pipeline, const NX_InstanceBuffer* instances, int instanceCount) const
 {
-    pipeline.bindVertexArray(mMesh.buffer->vao());
+    NX_PrimitiveType primitiveType = NX_PRIMITIVE_TRIANGLES;
+    NX_VertexBuffer* buffer = nullptr;
+    size_t vertexCount = 0;
+    size_t indexCount = 0;
+
+    switch (mMesh.index()) {
+    case 0: [[likely]]
+        {
+            const NX_Mesh* mesh = std::get<0>(mMesh);
+            primitiveType = mesh->primitiveType;
+            vertexCount = mesh->vertexCount;
+            indexCount = mesh->indexCount;
+            buffer = mesh->buffer;
+        }
+        break;
+    case 1: [[unlikely]]
+        {
+            const NX_DynamicMesh* mesh = std::get<1>(mMesh);
+            primitiveType = mesh->primitiveType();
+            vertexCount = mesh->vertexCount();
+            buffer = &mesh->buffer();
+        }
+        break;
+    default:
+        NX_UNREACHABLE();
+        break;
+    }
 
     bool useInstancing = (instances && instanceCount > 0);
-    bool hasEBO = mMesh.buffer->ebo().isValid();
+    bool hasEBO = buffer->ebo().isValid();
 
+    pipeline.bindVertexArray(buffer->vao());
     if (useInstancing) {
-        mMesh.buffer->bindInstances(*instances);
+        buffer->bindInstances(*instances);
     }
 
     GLenum primitive = GL_TRIANGLES;
-    switch (mMesh.primitiveType) {
+    switch (primitiveType) {
     case NX_PRIMITIVE_POINTS:
         primitive = GL_POINTS;
         break;
@@ -152,16 +216,16 @@ inline void DrawCall::draw(const gpu::Pipeline& pipeline, const NX_InstanceBuffe
 
     if (hasEBO) {
         useInstancing ? 
-            pipeline.drawElementsInstanced(primitive, GL_UNSIGNED_INT, mMesh.indexCount, instanceCount) :
-            pipeline.drawElements(primitive, GL_UNSIGNED_INT, mMesh.indexCount);
+            pipeline.drawElementsInstanced(primitive, GL_UNSIGNED_INT, indexCount, instanceCount) :
+            pipeline.drawElements(primitive, GL_UNSIGNED_INT, indexCount);
     } else {
         useInstancing ?
-            pipeline.drawInstanced(primitive, mMesh.vertexCount, instanceCount) :
-            pipeline.draw(primitive, mMesh.vertexCount);
+            pipeline.drawInstanced(primitive, vertexCount, instanceCount) :
+            pipeline.draw(primitive, vertexCount);
     }
 
     if (useInstancing) {
-        mMesh.buffer->unbindInstances();
+        buffer->unbindInstances();
     }
 }
 

@@ -43,7 +43,8 @@ public:
     void end();
 
     /** Push draw call functions */
-    void drawMesh(const NX_Mesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform);
+    template <typename T_Mesh>
+    void drawMesh(const T_Mesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform);
     void drawModel(const NX_Model& model, const NX_InstanceBuffer* instances, int instanceCount, const NX_Transform& transform);
 
     const LightManager& lights() const;
@@ -119,7 +120,8 @@ private:
 
 /* === Public Implementation === */
 
-inline void Scene::drawMesh(const NX_Mesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform)
+template <typename T_Mesh>
+inline void Scene::drawMesh(const T_Mesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform)
 {
     int dataIndex = mDrawData.size();
     mDrawData.emplace_back(transform, instances, instanceCount);

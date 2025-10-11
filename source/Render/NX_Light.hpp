@@ -997,7 +997,7 @@ inline bool NX_Light::isInsideShadowFrustum(const scene::DrawCall& call, const s
     // - For omni lights, valid faces are 0 through 5.
     SDL_assert((mType != NX_LIGHT_OMNI && face == 0) || (mType == NX_LIGHT_OMNI && face < 5));
 
-    return mShadowData.frustum[face].containsObb(call.mesh().aabb, data.transform());
+    return mShadowData.frustum[face].containsObb(call.aabb(), data.transform());
 }
 
 inline void NX_Light::fillShadowGPU(ShadowGPU* shadow) const

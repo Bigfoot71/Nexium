@@ -1628,6 +1628,25 @@ void NX_DrawMeshInstanced3D(const NX_Mesh* mesh, const NX_InstanceBuffer* instan
     );
 }
 
+void NX_DrawDynamicMesh3D(const NX_DynamicMesh* dynMesh, const NX_Material* material, const NX_Transform* transform)
+{
+    gRender->scene.drawMesh(
+        *dynMesh, nullptr, 0,
+        material ? *material : NX_GetDefaultMaterial(),
+        transform ? *transform : NX_TRANSFORM_IDENTITY
+    );
+}
+
+void NX_DrawDynamicMeshInstanced3D(const NX_DynamicMesh* dynMesh, const NX_InstanceBuffer* instances, int instanceCount,
+                                   const NX_Material* material, const NX_Transform* transform)
+{
+    gRender->scene.drawMesh(
+        *dynMesh, instances, instanceCount,
+        material ? *material : NX_GetDefaultMaterial(),
+        transform ? *transform : NX_TRANSFORM_IDENTITY
+    );
+}
+
 void NX_DrawModel3D(const NX_Model* model, const NX_Transform* transform)
 {
     gRender->scene.drawModel(*model, nullptr, 0, transform ? *transform : NX_TRANSFORM_IDENTITY);
@@ -2777,6 +2796,68 @@ void NX_UpdateMeshAABB(NX_Mesh* mesh)
             mesh->aabb.max = NX_Vec3Max(mesh->aabb.max, pos);
         }
     }
+}
+
+/* === DnyamicMesh - Public API === */
+
+NX_DynamicMesh* NX_CreateDynamicMesh(size_t initialCapacity)
+{
+    return gRender->meshes.createDynamicMesh(initialCapacity);
+}
+
+void NX_DestroyDynamicMesh(NX_DynamicMesh* dynMesh)
+{
+    gRender->meshes.destroyDynamicMesh(dynMesh);
+}
+
+void NX_BeginDynamicMesh(NX_DynamicMesh* dynMesh, NX_PrimitiveType type)
+{
+    dynMesh->begin(type);
+}
+
+void NX_EndDynamicMesh(NX_DynamicMesh* dynMesh)
+{
+    dynMesh->end();
+}
+
+void NX_SetDynamicMeshTexCoord(NX_DynamicMesh* dynMesh, NX_Vec2 texcoord)
+{
+    dynMesh->setTexCoord(texcoord);
+}
+
+void NX_SetDynamicMeshNormal(NX_DynamicMesh* dynMesh, NX_Vec3 normal)
+{
+    dynMesh->setNormal(normal);
+}
+
+void NX_SetDynamicMeshTangent(NX_DynamicMesh* dynMesh, NX_Vec4 tangent)
+{
+    dynMesh->setTangent(tangent);
+}
+
+void NX_SetDynamicMeshColor(NX_DynamicMesh* dynMesh, NX_Color color)
+{
+    dynMesh->setColor(color);
+}
+
+void NX_AddDynamicMeshVertex(NX_DynamicMesh* dynMesh, NX_Vec3 position)
+{
+    dynMesh->addVertex(position);
+}
+
+void NX_SetDynamicMeshShadowCastMode(NX_DynamicMesh* dynMesh, NX_ShadowCastMode mode)
+{
+    dynMesh->shadowCastMode = mode;
+}
+
+void NX_SetDynamicMeshShadowFaceMode(NX_DynamicMesh* dynMesh, NX_ShadowFaceMode mode)
+{
+    dynMesh->shadowFaceMode = mode;
+}
+
+void NX_SetDynamicMeshLayerMask(NX_DynamicMesh* dynMesh, NX_Layer mask)
+{
+    dynMesh->layerMask = mask;
 }
 
 /* === InstanceBuffer - Public API === */
