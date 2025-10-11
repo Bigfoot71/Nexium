@@ -47,6 +47,7 @@
 #define NX_VEC3_FORWARD     NX_VEC3( 0,  0, -1)
 #define NX_VEC3_BACK        NX_VEC3( 0,  0,  1)
 
+#define NX_VEC4_IDENTITY    NX_VEC4( 0, 0, 0, 1)
 #define NX_VEC4_ZERO        NX_VEC4( 0, 0, 0, 0)
 #define NX_VEC4_ONE         NX_VEC4( 1, 1, 1, 1)
 
