@@ -639,17 +639,9 @@ static inline float NX_Step(float edge, float x)
 }
 
 /**
- * @brief Sign of integer: -1, 0, 1
- */
-static inline int NX_Sign(int x)
-{
-    return (x > 0) - (x < 0);
-}
-
-/**
  * @brief Approximate equality for floats with epsilon
  */
-static inline int NX_Approx(float a, float b, float epsilon)
+static inline bool NX_Approx(float a, float b, float epsilon)
 {
     return fabsf(a - b) < epsilon;
 }
