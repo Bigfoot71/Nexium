@@ -23,8 +23,8 @@ namespace render {
 class PoolMesh {
 public:
     /** Mesh functions */
-    NX_Mesh* createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, const NX_BoundingBox& aabb, bool upload);
-    NX_Mesh* createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, bool upload);
+    NX_Mesh* createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vertexCount, uint32_t* indices, int indexCount, const NX_BoundingBox& aabb, bool upload);
+    NX_Mesh* createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vertexCount, uint32_t* indices, int indexCount, bool upload);
     void destroyMesh(NX_Mesh* mesh);
     void updateMesh(NX_Mesh* mesh);
 
@@ -45,9 +45,11 @@ private:
 
 /* === Public Implementation === */
 
-inline NX_Mesh* PoolMesh::createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, const NX_BoundingBox& aabb, bool upload)
+inline NX_Mesh* PoolMesh::createMesh(
+    NX_PrimitiveType type, NX_Vertex3D* vertices, int vertexCount,
+    uint32_t* indices, int indexCount, const NX_BoundingBox& aabb, bool upload)
 {
-    SDL_assert(vertices != nullptr && vCount > 0);
+    SDL_assert(vertices != nullptr && vertexCount > 0);
 
     /* --- Reserve the object in the pool --- */
 
@@ -60,7 +62,7 @@ inline NX_Mesh* PoolMesh::createMesh(NX_PrimitiveType type, NX_Vertex3D* vertice
     /* --- Creating the GPU vertex buffer --- */
 
     if (upload) {
-        mesh->buffer = mVertexBuffers.create(vertices, vCount, indices, iCount);
+        mesh->buffer = mVertexBuffers.create(vertices, vertexCount, indices, indexCount);
         if (mesh->buffer == nullptr) {
             NX_INTERNAL_LOG(E, "RENDER: Failed to load mesh; Object pool issue when creating vertex buffer");
             mMeshes.destroy(mesh);
@@ -76,8 +78,8 @@ inline NX_Mesh* PoolMesh::createMesh(NX_PrimitiveType type, NX_Vertex3D* vertice
     mesh->vertices = vertices;
     mesh->indices = indices;
 
-    mesh->vertexCount = vCount;
-    mesh->indexCount = iCount;
+    mesh->vertexCount = vertexCount;
+    mesh->indexCount = indexCount;
 
     mesh->shadowCastMode = NX_SHADOW_CAST_ENABLED;
     mesh->shadowFaceMode = NX_SHADOW_FACE_AUTO;
@@ -88,9 +90,11 @@ inline NX_Mesh* PoolMesh::createMesh(NX_PrimitiveType type, NX_Vertex3D* vertice
     return mesh;
 }
 
-inline NX_Mesh* PoolMesh::createMesh(NX_PrimitiveType type, NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount, bool upload)
+inline NX_Mesh* PoolMesh::createMesh(
+    NX_PrimitiveType type, NX_Vertex3D* vertices, int vertexCount,
+    uint32_t* indices, int indexCount, bool upload)
 {
-    SDL_assert(vertices != nullptr && vCount > 0);
+    SDL_assert(vertices != nullptr && vertexCount > 0);
 
     /* --- Calculate the bounding box --- */
 
@@ -98,14 +102,14 @@ inline NX_Mesh* PoolMesh::createMesh(NX_PrimitiveType type, NX_Vertex3D* vertice
     NX_Vec3 max = NX_VEC3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
     if (indices) {
-        for (int i = 0; i < iCount; i++) {
+        for (int i = 0; i < indexCount; i++) {
             const NX_Vec3& pos = vertices[indices[i]].position;
             min = NX_Vec3Min(min, pos);
             max = NX_Vec3Max(max, pos);
         }
     }
     else {
-        for (int i = 0; i < vCount; i++) {
+        for (int i = 0; i < vertexCount; i++) {
             const NX_Vec3& pos = vertices[i].position;
             min = NX_Vec3Min(min, pos);
             max = NX_Vec3Max(max, pos);
@@ -114,7 +118,10 @@ inline NX_Mesh* PoolMesh::createMesh(NX_PrimitiveType type, NX_Vertex3D* vertice
 
     /* --- Create the mesh --- */
 
-    return createMesh(type, vertices, vCount, indices, iCount, { min, max }, upload);
+    return createMesh(
+        type, vertices, vertexCount, indices, indexCount,
+        { min, max }, upload
+    );
 }
 
 inline void PoolMesh::destroyMesh(NX_Mesh* mesh)

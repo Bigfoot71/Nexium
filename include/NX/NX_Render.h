@@ -1823,13 +1823,26 @@ NXAPI void NX_UpdateDynamicMaterialShaderBuffer(NX_MaterialShader* shader, size_
  * @brief Creates a 3D mesh by copying vertex and index data.
  * @param type Type of primitive that constitutes the vertices.
  * @param vertices Pointer to the vertex array (cannot be NULL).
- * @param vCount Number of vertices.
+ * @param vertexCount Number of vertices.
  * @param indices Pointer to the index array (can be NULL).
- * @param iCount Number of indices.
+ * @param indexCount Number of indices.
  * @return Pointer to a newly created NX_Mesh.
  * @note The function copies the data into internal buffers.
  */
-NXAPI NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int vCount, const uint32_t* indices, int iCount);
+NXAPI NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int vertexCount, const uint32_t* indices, int indexCount);
+
+/**
+ * @brief Creates a 3D mesh by taking ownership of pre-allocated vertex and index arrays.
+ * @param type Type of primitive that constitutes the vertices.
+ * @param vertices Pointer to a pre-allocated vertex array (cannot be NULL).
+ * @param vertexCount Number of vertices in the array.
+ * @param indices Pointer to a pre-allocated index array (can be NULL).
+ * @param indexCount Number of indices in the array.
+ * @return Pointer to a newly created NX_Mesh.
+ * @note The caller **must not free** the arrays after passing them to this function.
+ *       Use NX_CreateMesh() if you prefer the mesh to copy the data instead.
+ */
+NXAPI NX_Mesh* NX_CreateMeshFrom(NX_PrimitiveType type, NX_Vertex3D* vertices, int vertexCount, uint32_t* indices, int indexCount);
 
 /**
  * @brief Destroys a 3D mesh and frees its resources.

@@ -1963,29 +1963,34 @@ void NX_UpdateDynamicMaterialShaderBuffer(NX_MaterialShader* shader, size_t size
 
 /* === Mesh - Public API === */
 
-NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int vCount, const uint32_t* indices, int iCount)
+NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int vertexCount, const uint32_t* indices, int indexCount)
 {
     /* --- Validation of parameters --- */
 
-    if (vertices == nullptr || vCount == 0) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to load mesh; Vertices and their count cannot be null");
+    if (vertices == nullptr || vertexCount == 0) {
+        NX_INTERNAL_LOG(E, "RENDER: Failed to create mesh; Vertices and their count cannot be null");
         return nullptr;
     }
 
     /* --- Copies of input data --- */
 
-    NX_Vertex3D* vCopy = static_cast<NX_Vertex3D*>(SDL_malloc(vCount * sizeof(NX_Vertex3D)));
-    SDL_memcpy(vCopy, vertices, vCount * sizeof(NX_Vertex3D));
+    NX_Vertex3D* vCopy = static_cast<NX_Vertex3D*>(SDL_malloc(vertexCount * sizeof(NX_Vertex3D)));
+    SDL_memcpy(vCopy, vertices, vertexCount * sizeof(NX_Vertex3D));
 
     uint32_t* iCopy = nullptr;
-    if (indices != nullptr && iCount > 0) {
-        iCopy = static_cast<uint32_t*>(SDL_malloc(iCount * sizeof(uint32_t)));
-        SDL_memcpy(iCopy, indices, iCount * sizeof(uint32_t));
+    if (indices != nullptr && indexCount > 0) {
+        iCopy = static_cast<uint32_t*>(SDL_malloc(indexCount * sizeof(uint32_t)));
+        SDL_memcpy(iCopy, indices, indexCount * sizeof(uint32_t));
     }
 
     /* --- Mesh creation --- */
 
-    NX_Mesh* mesh = gRender->meshes.createMesh(type, vCopy, vCount, iCopy, iCount, true);
+    NX_Mesh* mesh = gRender->meshes.createMesh(
+        type, vCopy, vertexCount,
+        iCopy, indexCount,
+        true
+    );
+
     if (mesh == nullptr) {
         SDL_free(vCopy);
         SDL_free(iCopy);
@@ -1993,6 +1998,20 @@ NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int v
     }
 
     return mesh;
+}
+
+NX_Mesh* NX_CreateMeshFrom(NX_PrimitiveType type, NX_Vertex3D* vertices, int vertexCount, uint32_t* indices, int indexCount)
+{
+    if (vertices == nullptr || vertexCount == 0) {
+        NX_INTERNAL_LOG(E, "RENDER: Failed to vertex mesh; Vertices and their count cannot be null");
+        return nullptr;
+    }
+
+    return gRender->meshes.createMesh(
+        type, vertices, vertexCount,
+        indices, indexCount,
+        true
+    );
 }
 
 void NX_DestroyMesh(NX_Mesh* mesh)
