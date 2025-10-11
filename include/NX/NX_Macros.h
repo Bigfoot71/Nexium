@@ -93,4 +93,17 @@
 #    define NX_ASSERT(cond) ((void)0)
 #endif
 
+/**
+ * @brief Marks a code path as unreachable.
+ *
+ * Triggers an NX_ASSERT(false) in debug builds if executed.
+ */
+#if defined(__clang__) || defined(__GNUC__)
+#  define NX_UNREACHABLE() do { NX_ASSERT(false); __builtin_unreachable(); } while(0)
+#elif defined(_MSC_VER)
+#  define NX_UNREACHABLE() do { NX_ASSERT(false); __assume(false); } while(0)
+#else
+#  define NX_UNREACHABLE() do { NX_ASSERT(false); abort(); } while(0)
+#endif
+
 #endif // NX_MACROS_H
