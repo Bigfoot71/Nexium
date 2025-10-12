@@ -186,18 +186,38 @@ NX_Mat3 NX_Mat3Transform2D(NX_Vec2 translation, float rotation, NX_Vec2 scale)
     float s = sinf(rotation);
 
     NX_Mat3 result;
-    result.m00 = c * scale.x;  result.m01 = -s * scale.x; result.m02 = translation.x;
-    result.m10 = s * scale.y;  result.m11 =  c * scale.y; result.m12 = translation.y;
-    result.m20 = 0.0f;         result.m21 =  0.0f;        result.m22 = 1.0f;
+
+    result.m00 =  c * scale.x;
+    result.m01 =  s * scale.x;
+    result.m02 =  0.0f;
+
+    result.m10 = -s * scale.y;
+    result.m11 =  c * scale.y;
+    result.m12 =  0.0f;
+
+    result.m20 =  translation.x;
+    result.m21 =  translation.y;
+    result.m22 =  1.0f;
+
     return result;
 }
 
 NX_Mat3 NX_Mat3Translate2D(NX_Vec2 translation)
 {
     NX_Mat3 result;
-    result.m00 = 1.0f; result.m01 = 0.0f; result.m02 = translation.x;
-    result.m10 = 0.0f; result.m11 = 1.0f; result.m12 = translation.y;
-    result.m20 = 0.0f; result.m21 = 0.0f; result.m22 = 1.0f;
+
+    result.m00 = 1.0f;
+    result.m01 = 0.0f;
+    result.m02 = 0.0f;
+
+    result.m10 = 0.0f;
+    result.m11 = 1.0f;
+    result.m12 = 0.0f;
+
+    result.m20 = translation.x;
+    result.m21 = translation.y;
+    result.m22 = 1.0f;
+
     return result;
 }
 
@@ -207,18 +227,38 @@ NX_Mat3 NX_Mat3Rotate2D(float radians)
     float s = sinf(radians);
 
     NX_Mat3 result;
-    result.m00 = c;    result.m01 = -s;   result.m02 = 0.0f;
-    result.m10 = s;    result.m11 =  c;   result.m12 = 0.0f;
-    result.m20 = 0.0f; result.m21 = 0.0f; result.m22 = 1.0f;
+
+    result.m00 = c;
+    result.m01 = s;
+    result.m02 = 0.0f;
+
+    result.m10 = -s;
+    result.m11 = c;
+    result.m12 = 0.0f;
+
+    result.m20 = 0.0f;
+    result.m21 = 0.0f;
+    result.m22 = 1.0f;
+
     return result;
 }
 
 NX_Mat3 NX_Mat3Scale2D(NX_Vec2 scale)
 {
     NX_Mat3 result;
-    result.m00 = scale.x; result.m01 = 0.0f;    result.m02 = 0.0f;
-    result.m10 = 0.0f;    result.m11 = scale.y; result.m12 = 0.0f;
-    result.m20 = 0.0f;    result.m21 = 0.0f;    result.m22 = 1.0f;
+
+    result.m00 = scale.x;
+    result.m01 = 0.0f;
+    result.m02 = 0.0f;
+
+    result.m10 = 0.0f;
+    result.m11 = scale.y;
+    result.m12 = 0.0f;
+
+    result.m20 = 0.0f;
+    result.m21 = 0.0f;
+    result.m22 = 1.0f;
+
     return result;
 }
 
@@ -228,9 +268,19 @@ NX_Mat3 NX_Mat3RotateX(float radians)
     float s = sinf(radians);
 
     NX_Mat3 result;
-    result.m00 = 1.0f; result.m01 = 0.0f; result.m02 = 0.0f;
-    result.m10 = 0.0f; result.m11 = c;    result.m12 = -s;
-    result.m20 = 0.0f; result.m21 = s;    result.m22 = c;
+
+    result.m00 = 1.0f;
+    result.m01 = 0.0f;
+    result.m02 = 0.0f;
+
+    result.m10 = 0.0f;
+    result.m11 = c;
+    result.m12 = s;
+
+    result.m20 = 0.0f;
+    result.m21 = -s;
+    result.m22 = c;
+
     return result;
 }
 
@@ -240,9 +290,19 @@ NX_Mat3 NX_Mat3RotateY(float radians)
     float s = sinf(radians);
 
     NX_Mat3 result;
-    result.m00 = c;    result.m01 = 0.0f; result.m02 = s;
-    result.m10 = 0.0f; result.m11 = 1.0f; result.m12 = 0.0f;
-    result.m20 = -s;   result.m21 = 0.0f; result.m22 = c;
+
+    result.m00 = c;
+    result.m01 = 0.0f;
+    result.m02 = -s;
+
+    result.m10 = 0.0f;
+    result.m11 = 1.0f;
+    result.m12 = 0.0f;
+
+    result.m20 = s;
+    result.m21 = 0.0f;
+    result.m22 = c;
+
     return result;
 }
 
@@ -252,9 +312,19 @@ NX_Mat3 NX_Mat3RotateZ(float radians)
     float s = sinf(radians);
 
     NX_Mat3 result;
-    result.m00 = c;    result.m01 = -s;   result.m02 = 0.0f;
-    result.m10 = s;    result.m11 = c;    result.m12 = 0.0f;
-    result.m20 = 0.0f; result.m21 = 0.0f; result.m22 = 1.0f;
+
+    result.m00 = c;
+    result.m01 = s;
+    result.m02 = 0.0f;
+
+    result.m10 = -s;
+    result.m11 = c;
+    result.m12 = 0.0f;
+
+    result.m20 = 0.0f;
+    result.m21 = 0.0f;
+    result.m22 = 1.0f;
+
     return result;
 }
 
@@ -284,15 +354,15 @@ NX_Mat3 NX_Mat3Rotate(NX_Vec3 axis, float radians)
 
     NX_Mat3 result;
     result.m00 = xx * oneMinusC + c;
-    result.m01 = xy * oneMinusC - z * s;
-    result.m02 = xz * oneMinusC + y * s;
+    result.m01 = xy * oneMinusC + z * s;
+    result.m02 = xz * oneMinusC - y * s;
 
-    result.m10 = xy * oneMinusC + z * s;
+    result.m10 = xy * oneMinusC - z * s;
     result.m11 = yy * oneMinusC + c;
-    result.m12 = yz * oneMinusC - x * s;
+    result.m12 = yz * oneMinusC + x * s;
 
-    result.m20 = xz * oneMinusC - y * s;
-    result.m21 = yz * oneMinusC + x * s;
+    result.m20 = xz * oneMinusC + y * s;
+    result.m21 = yz * oneMinusC - x * s;
     result.m22 = zz * oneMinusC + c;
 
     return result;
@@ -306,15 +376,15 @@ NX_Mat3 NX_Mat3RotateXYZ(NX_Vec3 radians)
 
     NX_Mat3 result;
     result.m00 = cy * cz;
-    result.m01 = -cy * sz;
-    result.m02 = sy;
+    result.m01 = cy * sz;
+    result.m02 = -sy;
 
-    result.m10 = sx * sy * cz + cx * sz;
-    result.m11 = -sx * sy * sz + cx * cz;
-    result.m12 = -sx * cy;
+    result.m10 = sx * sy * cz - cx * sz;
+    result.m11 = sx * sy * sz + cx * cz;
+    result.m12 = sx * cy;
 
-    result.m20 = -cx * sy * cz + sx * sz;
-    result.m21 = cx * sy * sz + sx * cz;
+    result.m20 = cx * sy * cz + sx * sz;
+    result.m21 = cx * sy * sz - sx * cz;
     result.m22 = cx * cy;
 
     return result;
