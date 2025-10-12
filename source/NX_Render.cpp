@@ -33,8 +33,11 @@ NX_Texture* NX_CreateTexture(const NX_Image* image)
 NX_Texture* NX_LoadTexture(const char* filePath)
 {
     NX_Image image = NX_LoadImage(filePath);
+    if (image.pixels == nullptr) return nullptr;
+
     NX_Texture* texture = NX_CreateTexture(&image);
     NX_DestroyImage(&image);
+
     return texture;
 }
 
@@ -1736,8 +1739,11 @@ NX_Cubemap* NX_LoadCubemapFromMem(const NX_Image* image)
 NX_Cubemap* NX_LoadCubemap(const char* filePath)
 {
     NX_Image image = NX_LoadImage(filePath);
+    if (image.pixels == nullptr) return nullptr;
+
     NX_Cubemap* cubemap = NX_LoadCubemapFromMem(&image);
     NX_DestroyImage(&image);
+
     return cubemap;
 }
 
@@ -1755,10 +1761,7 @@ void NX_GenerateSkybox(NX_Cubemap* cubemap, const NX_Skybox* skybox)
 
 NX_ReflectionProbe* NX_CreateReflectionProbe(NX_Cubemap* cubemap)
 {
-    if (cubemap != nullptr) {
-        return gRender->cubemaps.createReflectionProbe(*cubemap);
-    }
-    return nullptr;
+    return gRender->cubemaps.createReflectionProbe(*cubemap);
 }
 
 NX_ReflectionProbe* NX_LoadReflectionProbe(const char* filePath)
