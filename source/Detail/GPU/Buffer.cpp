@@ -194,7 +194,7 @@ void* Buffer::mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access) no
         return nullptr;
     }
 
-    if (!isValidMapRangeAccess(access)) {
+    if (!isValidMapAccess(access)) {
         NX_INTERNAL_LOG(E, "GPU: Invalid map range access: 0x%x", access);
         return nullptr;
     }

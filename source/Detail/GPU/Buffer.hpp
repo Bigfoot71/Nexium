@@ -76,8 +76,7 @@ private:
     /** Static helpers */
     static bool isValidTarget(GLenum target) noexcept;
     static bool isValidUsage(GLenum usage) noexcept;
-    static bool isValidMapAccess(GLenum access) noexcept;
-    static bool isValidMapRangeAccess(GLbitfield access) noexcept;
+    static bool isValidMapAccess(GLbitfield access) noexcept;
     static const char* targetToString(GLenum target) noexcept;
     static const char* usageToString(GLenum usage) noexcept;
 };
@@ -227,19 +226,7 @@ inline bool Buffer::isValidUsage(GLenum usage) noexcept
     }
 }
 
-inline bool Buffer::isValidMapAccess(GLenum access) noexcept
-{
-    switch (access) {
-    case GL_READ_ONLY:
-    case GL_WRITE_ONLY:
-    case GL_READ_WRITE:
-        return true;
-    default:
-        return false;
-    }
-}
-
-inline bool Buffer::isValidMapRangeAccess(GLbitfield access) noexcept
+inline bool Buffer::isValidMapAccess(GLbitfield access) noexcept
 {
     // Must have at least one of READ or WRITE
     if (!(access & (GL_MAP_READ_BIT | GL_MAP_WRITE_BIT))) {
