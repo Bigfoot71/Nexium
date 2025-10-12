@@ -73,6 +73,13 @@
 
 #define NX_QUAT_IDENTITY    NX_QUAT( 1, 0, 0, 0)
 
+#define NX_MAT3_IDENTITY        \
+    NX_MAT3_T {                 \
+        1.0f, 0.0f, 0.0f,       \
+        0.0f, 1.0f, 0.0f,       \
+        0.0f, 0.0f, 1.0f,       \
+    }
+
 #define NX_MAT4_IDENTITY        \
     NX_MAT4_T {                 \
         1.0f, 0.0f, 0.0f, 0.0f, \
