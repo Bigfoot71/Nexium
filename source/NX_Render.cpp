@@ -223,119 +223,158 @@ void NX_SetShader2D(NX_Shader* shader)
     gRender->overlay.setShader(shader);
 }
 
-void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int pointCount)
+void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int pointCount, float thickness)
 {
     switch (type) {
     case NX_PRIMITIVE_POINTS:
+        thickness *= 0.5f;
         for (int i = 0; i < pointCount; i++) {
-            NX_DrawPixel2D(points[i]);
+            NX_DrawQuad2D(
+                points[i] + NX_VEC2(-thickness, -thickness),
+                points[i] + NX_VEC2(+thickness, -thickness),
+                points[i] + NX_VEC2(+thickness, +thickness),
+                points[i] + NX_VEC2(-thickness, +thickness)
+            );
         }
         break;
     case NX_PRIMITIVE_LINES:
         for (int i = 0; i < pointCount; i += 2) {
-            NX_DrawLine2D(points[i], points[i + 1], 1.0f);
+            NX_DrawLine2D(points[i], points[i + 1], thickness);
         }
         break;
     case NX_PRIMITIVE_LINE_STRIP:
         for (int i = 0; i < pointCount - 1; i++) {
-            NX_DrawLine2D(points[i], points[i + 1], 1.0f);
+            NX_DrawLine2D(points[i], points[i + 1], thickness);
         }
         break;
     case NX_PRIMITIVE_LINE_LOOP:
         for (int i = 0; i < pointCount; i++) {
-            NX_DrawLine2D(points[i], points[(i + 1) % pointCount], 1.0f);
+            NX_DrawLine2D(points[i], points[(i + 1) % pointCount], thickness);
         }
         break;
     case NX_PRIMITIVE_TRIANGLES:
-        for (int i = 0; i < pointCount; i += 3) {
-            NX_DrawTriangle2D(points[i], points[i + 1], points[i + 2]);
+        if (thickness <= 0.0f) {
+            for (int i = 0; i < pointCount; i += 3) {
+                NX_DrawTriangle2D(points[i], points[i + 1], points[i + 2]);
+            }
+        }
+        else {
+            for (int i = 0; i < pointCount; i += 3) {
+                NX_DrawLine2D(points[i + 0], points[i + 1], thickness);
+                NX_DrawLine2D(points[i + 1], points[i + 2], thickness);
+                NX_DrawLine2D(points[i + 2], points[i + 0], thickness);
+            }
         }
         break;
     case NX_PRIMITIVE_TRIANGLE_STRIP:
-        for (int i = 0; i < pointCount - 2; i++) {
-            if (i % 2 == 0) {
-                NX_DrawTriangle2D(points[i], points[i + 1], points[i + 2]);
+        if (thickness <= 0.0f) {
+            for (int i = 0; i < pointCount - 2; i++) {
+                if (i % 2 == 0) {
+                    NX_DrawTriangle2D(points[i], points[i + 1], points[i + 2]);
+                } else {
+                    NX_DrawTriangle2D(points[i + 1], points[i], points[i + 2]);
+                }
             }
-            else {
-                NX_DrawTriangle2D(points[i + 1], points[i], points[i + 2]);
+        }
+        else {
+            NX_DrawLine2D(points[0], points[1], thickness);
+            for (int i = 0; i < pointCount - 2; i++) {
+                NX_DrawLine2D(points[i], points[i + 2], thickness);
             }
+            NX_DrawLine2D(points[pointCount - 2], points[pointCount - 1], thickness);
         }
         break;
     case NX_PRIMITIVE_TRIANGLE_FAN:
-        for (int i = 1; i < pointCount - 1; i++) {
-            NX_DrawTriangle2D(points[0], points[i], points[i + 1]);
+        if (thickness <= 0.0f) {
+            for (int i = 1; i < pointCount - 1; i++) {
+                NX_DrawTriangle2D(points[0], points[i], points[i + 1]);
+            }
+        }
+        else {
+            for (int i = 1; i < pointCount - 1; i++) {
+                NX_DrawLine2D(points[i], points[i + 1], thickness);
+            }
+            NX_DrawLine2D(points[1], points[pointCount - 1], thickness);
         }
         break;
     }
 }
 
-void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int vertexCount)
+void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int vertexCount, float thickness)
 {
     switch (type) {
     case NX_PRIMITIVE_POINTS:
+        thickness *= 0.5f;
         for (int i = 0; i < vertexCount; i++) {
-            NX_DrawPixel2D(vertices[i].position);
+            NX_DrawQuad2D(
+                vertices[i].position + NX_VEC2(-thickness, -thickness),
+                vertices[i].position + NX_VEC2(+thickness, -thickness),
+                vertices[i].position + NX_VEC2(+thickness, +thickness),
+                vertices[i].position + NX_VEC2(-thickness, +thickness)
+            );
         }
         break;
     case NX_PRIMITIVE_LINES:
         for (int i = 0; i < vertexCount; i += 2) {
-            NX_DrawLineEx2D(&vertices[i], &vertices[i + 1], 1.0f);
+            NX_DrawLineEx2D(&vertices[i], &vertices[i + 1], thickness);
         }
         break;
     case NX_PRIMITIVE_LINE_STRIP:
         for (int i = 0; i < vertexCount - 1; i++) {
-            NX_DrawLineEx2D(&vertices[i], &vertices[i + 1], 1.0f);
+            NX_DrawLineEx2D(&vertices[i], &vertices[i + 1], thickness);
         }
         break;
     case NX_PRIMITIVE_LINE_LOOP:
         for (int i = 0; i < vertexCount; i++) {
-            NX_DrawLineEx2D(&vertices[i], &vertices[(i + 1) % vertexCount], 1.0f);
+            NX_DrawLineEx2D(&vertices[i], &vertices[(i + 1) % vertexCount], thickness);
         }
         break;
     case NX_PRIMITIVE_TRIANGLES:
-        for (int i = 0; i < vertexCount; i += 3) {
-            NX_DrawTriangleEx2D(&vertices[i], &vertices[i + 1], &vertices[i + 2]);
+        if (thickness <= 0.0f) {
+            for (int i = 0; i < vertexCount; i += 3) {
+                NX_DrawTriangleEx2D(&vertices[i], &vertices[i + 1], &vertices[i + 2]);
+            }
+        }
+        else {
+            for (int i = 0; i < vertexCount; i += 3) {
+                NX_DrawLineEx2D(&vertices[i + 0], &vertices[i + 1], thickness);
+                NX_DrawLineEx2D(&vertices[i + 1], &vertices[i + 2], thickness);
+                NX_DrawLineEx2D(&vertices[i + 2], &vertices[i + 0], thickness);
+            }
         }
         break;
     case NX_PRIMITIVE_TRIANGLE_STRIP:
-        for (int i = 0; i < vertexCount - 2; i++) {
-            if (i % 2 == 0) {
-                NX_DrawTriangleEx2D(&vertices[i], &vertices[i + 1], &vertices[i + 2]);
+        if (thickness <= 0.0f) {
+            for (int i = 0; i < vertexCount - 2; i++) {
+                if (i % 2 == 0) {
+                    NX_DrawTriangleEx2D(&vertices[i], &vertices[i + 1], &vertices[i + 2]);
+                } else {
+                    NX_DrawTriangleEx2D(&vertices[i + 1], &vertices[i], &vertices[i + 2]);
+                }
             }
-            else {
-                NX_DrawTriangleEx2D(&vertices[i + 1], &vertices[i], &vertices[i + 2]);
+        }
+        else {
+            NX_DrawLineEx2D(&vertices[0], &vertices[1], thickness);
+            for (int i = 0; i < vertexCount - 2; i++) {
+                NX_DrawLineEx2D(&vertices[i], &vertices[i + 2], thickness);
             }
+            NX_DrawLineEx2D(&vertices[vertexCount - 2], &vertices[vertexCount - 1], thickness);
         }
         break;
     case NX_PRIMITIVE_TRIANGLE_FAN:
-        for (int i = 1; i < vertexCount - 1; i++) {
-            NX_DrawTriangleEx2D(&vertices[0], &vertices[i], &vertices[i + 1]);
+        if (thickness <= 0.0f) {
+            for (int i = 1; i < vertexCount - 1; i++) {
+                NX_DrawTriangleEx2D(&vertices[0], &vertices[i], &vertices[i + 1]);
+            }
+        }
+        else {
+            for (int i = 1; i < vertexCount - 1; i++) {
+                NX_DrawLineEx2D(&vertices[i], &vertices[i + 1], thickness);
+            }
+            NX_DrawLineEx2D(&vertices[1], &vertices[vertexCount - 1], thickness);
         }
         break;
     }
-}
-
-void NX_DrawPixel2D(NX_Vec2 p0)
-{
-    gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 6, 6);
-
-    uint16_t baseIndex = gRender->overlay.nextVertexIndex();
-
-    gRender->overlay.addVertex(p0.x,     p0.y,     0.0f, 0.0f);
-    gRender->overlay.addVertex(p0.x + 1, p0.y,     1.0f, 0.0f);
-    gRender->overlay.addVertex(p0.x,     p0.y + 1, 0.0f, 1.0f);
-
-    gRender->overlay.addVertex(p0.x + 1, p0.y,     1.0f, 0.0f);
-    gRender->overlay.addVertex(p0.x + 1, p0.y + 1, 1.0f, 1.0f);
-    gRender->overlay.addVertex(p0.x,     p0.y + 1, 0.0f, 1.0f);
-
-    gRender->overlay.addIndex(baseIndex + 0);
-    gRender->overlay.addIndex(baseIndex + 1);
-    gRender->overlay.addIndex(baseIndex + 2);
-
-    gRender->overlay.addIndex(baseIndex + 3);
-    gRender->overlay.addIndex(baseIndex + 4);
-    gRender->overlay.addIndex(baseIndex + 5);
 }
 
 void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness)

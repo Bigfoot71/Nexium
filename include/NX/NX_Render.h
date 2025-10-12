@@ -1000,26 +1000,27 @@ NXAPI void NX_SetShader2D(NX_Shader* shader);
  * @param type The type of primitive (points, lines, triangles, etc).
  * @param points Array of 2D points defining the shape.
  * @param pointCount Number of points in the array.
+ * @param thickness For points: controls point size.
+ *                  For lines: controls line thickness.
+ *                  For triangles: if > 0.0f, only the edges are drawn.
+ *                  For triangle strips or fans: only the outer edges are drawn if > 0.0f.
  * @note This is the high-level, simpler version for drawing shapes without custom vertex attributes.
- *       If you need per-vertex color or texture coordinates, use NX_DrawShapeEx2D instead.
+ *       For per-vertex color or texture coordinates, use NX_DrawShapeEx2D instead.
  */
-NXAPI void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int pointCount);
+NXAPI void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int pointCount, float thickness);
 
 /**
  * @brief Draws a 2D shape using an array of vertices and a specified primitive type.
  * @param type The type of primitive (points, lines, triangles, etc).
  * @param vertices Array of NX_Vertex2D defining the vertices.
  * @param vertexCount Number of vertices in the array.
- * @note This is the low-level drawing function; for most UI use cases, prefer the higher-level primitives.
+ * @param thickness For points: controls point size.
+ *                  For lines: controls line thickness.
+ *                  For triangles: if > 0.0f, only the edges are drawn.
+ *                  For triangle strips or fans: only the outer edges are drawn if > 0.0f.
+ * @note This is the low-level drawing function; for most UI use cases, prefer the higher-level NX_DrawShape2D.
  */
-NXAPI void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int vertexCount);
-
-/**
- * @brief Draws a single pixel at the specified position.
- * @param p0 Position of the pixel in 2D.
- * @warning Present for compatibility only; you should almost never need to use this unless you are certain.
- */
-void NX_DrawPixel2D(NX_Vec2 p0);
+NXAPI void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int vertexCount, float thickness);
 
 /**
  * @brief Draws a line segment in 2D.
