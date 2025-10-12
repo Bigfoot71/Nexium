@@ -49,7 +49,7 @@ Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, NX_AppD
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_2D,
-            .internalFormat = GL_RG16F,
+            .internalFormat = GL_RGB8,
             .data = nullptr,
             .width = desc.render3D.resolution.x,
             .height = desc.render3D.resolution.y

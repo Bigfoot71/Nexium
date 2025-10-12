@@ -541,7 +541,7 @@ void main()
 
     /* --- Store normals --- */
 
-    FragNormal = vec4(vec2(M_EncodeOctahedral(N)), vec2(1.0));
+    FragNormal = vec4(vec3(N), 1.0);
 
     /* DEBUG: Tiles */
 

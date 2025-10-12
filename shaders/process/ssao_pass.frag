@@ -86,7 +86,7 @@ void main()
 
     /* --- Get and decode current normal, then transform to view space --- */
 
-    vec3 normal = M_DecodeOctahedral(texture(uTexNormal, vTexCoord).rg);
+    vec3 normal = texture(uTexNormal, vTexCoord).rgb;
     normal = normalize(mat3(uFrustum.view) * normal);
 
     /* --- Calculate screen-space noise scale --- */

@@ -136,5 +136,5 @@ void main()
     color = mix(uEnv.fogColor, color, fogFactor);
 
     FragColor = vec4(color, ALBEDO.a);
-    FragNormal = vec4(vec2(M_EncodeOctahedral(N)), vec2(1.0));
+    FragNormal = vec4(vec3(N), vec2(1.0));
 }

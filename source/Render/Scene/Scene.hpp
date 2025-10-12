@@ -99,9 +99,9 @@ private:
     LightManager mLights;
 
     /** Scene render targets */
-    gpu::Texture mTargetSceneColor{};
-    gpu::Texture mTargetSceneNormal{};
-    gpu::Texture mTargetSceneDepth{};
+    gpu::Texture mTargetSceneColor{};       //< RGBA16F
+    gpu::Texture mTargetSceneNormal{};      //< RGB8
+    gpu::Texture mTargetSceneDepth{};       //< D24
     gpu::Framebuffer mFramebufferScene{};
 
     /** Mip chain */
