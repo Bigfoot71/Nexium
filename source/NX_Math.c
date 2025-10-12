@@ -6,6 +6,7 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
+#include <SDL3/SDL_stdinc.h>
 #include <NX/NX_Math.h>
 
 /* === Quaternion Functions === */
@@ -179,6 +180,11 @@ NX_Quat NX_QuatSLerp(NX_Quat a, NX_Quat b, float t)
 }
 
 /* === Matrix 3x3 Functions === */
+
+bool NX_IsMat3Identity(const NX_Mat3* mat)
+{
+    return (SDL_memcmp(mat, &NX_MAT3_IDENTITY, sizeof(NX_Mat3)) == 0);
+}
 
 NX_Mat3 NX_Mat3Transform2D(NX_Vec2 translation, float rotation, NX_Vec2 scale)
 {
@@ -508,6 +514,11 @@ NX_Mat3 NX_Mat3Mul(const NX_Mat3* left, const NX_Mat3* right)
 }
 
 /* === Matrix 4x4 Functions === */
+
+bool NX_IsMat4Identity(const NX_Mat4* mat)
+{
+    return (SDL_memcmp(mat, &NX_MAT4_IDENTITY, sizeof(NX_Mat4)) == 0);
+}
 
 NX_Mat4 NX_Mat4Translate(NX_Vec3 v)
 {

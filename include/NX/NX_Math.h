@@ -3013,6 +3013,11 @@ NXAPI NX_Quat NX_QuatSLerp(NX_Quat a, NX_Quat b, float t);
  */
 
 /**
+ * @brief Checks if the matrix is ​​an identity
+ */
+NXAPI bool NX_IsMat3Identity(const NX_Mat3* mat);
+
+/**
  * @brief Extract upper-left 3x3 from a 4x4 matrix
  */
 static inline NX_Mat3 NX_Mat3FromMat4(const NX_Mat4* mat4)
@@ -3133,6 +3138,11 @@ NXAPI NX_Mat3 NX_Mat3Mul(const NX_Mat3* left, const NX_Mat3* right);
  *  Functions for creating and manipulating 4x4 matrices (NX_Mat4).
  *  @{
  */
+
+/**
+ * @brief Checks if the matrix is ​​an identity
+ */
+NXAPI bool NX_IsMat4Identity(const NX_Mat4* mat);
 
 /**
  * @brief Create a translation matrix
