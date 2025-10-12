@@ -9,15 +9,17 @@
 #ifndef NX_RENDER_HELPER_HPP
 #define NX_RENDER_HELPER_HPP
 
+#include "../../Detail/GPU/Pipeline.hpp"
 #include "../../Core/NX_CoreState.hpp"
 
+#include <NX/NX_Render.h>
 #include <NX/NX_Image.h>
 #include <NX/NX_Math.h>
 #include <glad/gles2.h>
 
 namespace render {
 
-/* === Format Helpers === */
+/* === GL Enum Helpers === */
 
 inline GLenum getInternalFormat(NX_PixelFormat format, bool framebuffer)
 {
@@ -63,6 +65,115 @@ inline GLenum getInternalFormat(NX_PixelFormat format, bool framebuffer)
     }
 
     return internalFormat;
+}
+
+inline GLenum getPrimitiveType(NX_PrimitiveType type)
+{
+    switch (type) {
+    case NX_PRIMITIVE_POINTS:
+        return GL_POINTS;
+    case NX_PRIMITIVE_LINES:
+        return GL_LINES;
+    case NX_PRIMITIVE_LINE_STRIP:
+        return GL_LINE_STRIP;
+    case NX_PRIMITIVE_LINE_LOOP:
+        return GL_LINE_LOOP;
+    case NX_PRIMITIVE_TRIANGLES:
+        return GL_TRIANGLES;
+    case NX_PRIMITIVE_TRIANGLE_STRIP:
+        return GL_TRIANGLE_STRIP;
+    case NX_PRIMITIVE_TRIANGLE_FAN:
+        return GL_TRIANGLE_FAN;
+    default:
+        break;
+    }
+
+    return GL_TRIANGLES;
+}
+
+inline gpu::CullMode getCullMode(NX_CullMode mode)
+{
+    switch (mode) {
+    case NX_CULL_BACK:
+        return gpu::CullMode::Back;
+        break;
+    case NX_CULL_FRONT:
+        return gpu::CullMode::Front;
+        break;
+    case NX_CULL_NONE:
+        return gpu::CullMode::Disabled;
+    default:
+        break;
+    }
+
+    return gpu::CullMode::Back;
+}
+
+inline gpu::CullMode getCullMode(NX_ShadowFaceMode shadow, NX_CullMode mode)
+{
+    switch (shadow) {
+    case NX_SHADOW_FACE_AUTO:
+        switch (mode) {
+        case NX_CULL_BACK:
+            return gpu::CullMode::Back;
+        case NX_CULL_FRONT:
+            return gpu::CullMode::Front;
+        case NX_CULL_NONE:
+            return gpu::CullMode::Disabled;
+    default:
+        break;
+        }
+        break;
+    case NX_SHADOW_FACE_FRONT:
+        return gpu::CullMode::Back;
+    case NX_SHADOW_FACE_BACK:
+        return gpu::CullMode::Front;
+    case NX_SHADOW_FACE_BOTH:
+        return gpu::CullMode::Disabled;
+    default:
+        break;
+    }
+
+    return gpu::CullMode::Back;
+}
+
+inline gpu::BlendMode getBlendMode(NX_BlendMode mode)
+{
+    switch (mode) {
+    case NX_BLEND_OPAQUE:
+        return gpu::BlendMode::Disabled;
+        break;
+    case NX_BLEND_ALPHA:
+        return gpu::BlendMode::Alpha;
+        break;
+    case NX_BLEND_ADD:
+        return gpu::BlendMode::AddAlpha;
+        break;
+    case NX_BLEND_MUL:
+        return gpu::BlendMode::Multiply;
+    default:
+        break;
+    }
+
+    return gpu::BlendMode::Disabled;
+}
+
+inline gpu::DepthFunc getDepthFunc(NX_DepthTest func)
+{
+    switch (func) {
+    case NX_DEPTH_TEST_LESS:
+        return gpu::DepthFunc::Less;
+        break;
+    case NX_DEPTH_TEST_GREATER:
+        return gpu::DepthFunc::Greater;
+        break;
+    case NX_DEPTH_TEST_ALWAYS:
+        return gpu::DepthFunc::Always;
+    default:
+        break;
+    }
+
+    return gpu::DepthFunc::Less;
 }
 
 /* === Cubemap Helpers === */

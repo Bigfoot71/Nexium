@@ -317,6 +317,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         NX_MaterialShader& shader = mPrograms.materialShader(call.material().shader);
 
         pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_SHADOW));
+        pipeline.setCullMode(render::getCullMode(call.shadowFaceMode(), call.material().cull));
 
         shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
@@ -329,31 +330,6 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
         pipeline.bindUniform(3, params.renderableBuffer.buffer());
         pipeline.bindUniform(4, params.materialBuffer.buffer());
-
-        switch (call.shadowFaceMode()) {
-        case NX_SHADOW_FACE_AUTO:
-            switch (call.material().cull) {
-            case NX_CULL_BACK:
-                pipeline.setCullMode(gpu::CullMode::Back);
-                break;
-            case NX_CULL_FRONT:
-                pipeline.setCullMode(gpu::CullMode::Front);
-                break;
-            case NX_CULL_NONE:
-                pipeline.setCullMode(gpu::CullMode::Disabled);
-                break;
-            }
-            break;
-        case NX_SHADOW_FACE_FRONT:
-            pipeline.setCullMode(gpu::CullMode::Back);
-            break;
-        case NX_SHADOW_FACE_BACK:
-            pipeline.setCullMode(gpu::CullMode::Front);
-            break;
-        case NX_SHADOW_FACE_BOTH:
-            pipeline.setCullMode(gpu::CullMode::Disabled);
-            break;
-        }
 
         call.draw(pipeline, data.instances(), data.instanceCount());
     };

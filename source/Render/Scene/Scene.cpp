@@ -278,29 +278,8 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
-        switch (mat.depth.test) {
-        case NX_DEPTH_TEST_LESS:
-            pipeline.setDepthFunc(gpu::DepthFunc::Less);
-            break;
-        case NX_DEPTH_TEST_GREATER:
-            pipeline.setDepthFunc(gpu::DepthFunc::Greater);
-            break;
-        case NX_DEPTH_TEST_ALWAYS:
-            pipeline.setDepthFunc(gpu::DepthFunc::Always);
-            break;
-        }
-
-        switch (mat.cull) {
-        case NX_CULL_NONE:
-            pipeline.setCullMode(gpu::CullMode::Disabled);
-            break;
-        case NX_CULL_BACK:
-            pipeline.setCullMode(gpu::CullMode::Back);
-            break;
-        case NX_CULL_FRONT:
-            pipeline.setCullMode(gpu::CullMode::Front);
-            break;
-        }
+        pipeline.setDepthFunc(render::getDepthFunc(mat.depth.test));
+        pipeline.setCullMode(render::getCullMode(mat.cull));
 
         mMaterialBuffer.upload(mat);
         mRenderableBuffer.upload(data, call);
@@ -352,49 +331,9 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
 
-        if (mat.depth.prePass) {
-            pipeline.setDepthFunc(gpu::DepthFunc::Equal);
-        }
-        else {
-            switch (mat.depth.test) {
-            case NX_DEPTH_TEST_LESS:
-                pipeline.setDepthFunc(gpu::DepthFunc::Less);
-                break;
-            case NX_DEPTH_TEST_GREATER:
-                pipeline.setDepthFunc(gpu::DepthFunc::Greater);
-                break;
-            case NX_DEPTH_TEST_ALWAYS:
-                pipeline.setDepthFunc(gpu::DepthFunc::Always);
-                break;
-            }
-        }
-
-        switch (mat.blend) {
-        case NX_BLEND_OPAQUE:
-            pipeline.setBlendMode(gpu::BlendMode::Disabled);
-            break;
-        case NX_BLEND_ALPHA:
-            pipeline.setBlendMode(gpu::BlendMode::Alpha);
-            break;
-        case NX_BLEND_ADD:
-            pipeline.setBlendMode(gpu::BlendMode::AddAlpha);
-            break;
-        case NX_BLEND_MUL:
-            pipeline.setBlendMode(gpu::BlendMode::Multiply);
-            break;
-        }
-
-        switch (mat.cull) {
-        case NX_CULL_NONE:
-            pipeline.setCullMode(gpu::CullMode::Disabled);
-            break;
-        case NX_CULL_BACK:
-            pipeline.setCullMode(gpu::CullMode::Back);
-            break;
-        case NX_CULL_FRONT:
-            pipeline.setCullMode(gpu::CullMode::Front);
-            break;
-        }
+        pipeline.setDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : render::getDepthFunc(mat.depth.test));
+        pipeline.setBlendMode(render::getBlendMode(mat.blend));
+        pipeline.setCullMode(render::getCullMode(mat.cull));
 
         mMaterialBuffer.upload(mat);
         mRenderableBuffer.upload(data, call);

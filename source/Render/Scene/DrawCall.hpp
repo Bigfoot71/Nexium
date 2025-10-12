@@ -9,15 +9,17 @@
 #ifndef NX_SCENE_DRAW_CALL_HPP
 #define NX_SCENE_DRAW_CALL_HPP
 
+#include <NX/NX_Macros.h>
 #include <NX/NX_Render.h>
 #include <NX/NX_Math.h>
 
 #include "../../Detail/Util/BucketArray.hpp"
 #include "../../Detail/GPU/Pipeline.hpp"
+#include "../Core/Helper.hpp"
+
 #include "../NX_MaterialShader.hpp"
 #include "../NX_VertexBuffer.hpp"
 #include "../NX_DynamicMesh.hpp"
-#include "NX/NX_Macros.h"
 
 #include <variant>
 
@@ -185,39 +187,13 @@ inline void DrawCall::draw(const gpu::Pipeline& pipeline, const NX_InstanceBuffe
         break;
     }
 
+    GLenum primitive = render::getPrimitiveType(primitiveType);
     bool useInstancing = (instances && instanceCount > 0);
     bool hasEBO = buffer->ebo().isValid();
 
     pipeline.bindVertexArray(buffer->vao());
     if (useInstancing) {
         buffer->bindInstances(*instances);
-    }
-
-    GLenum primitive = GL_TRIANGLES;
-    switch (primitiveType) {
-    case NX_PRIMITIVE_POINTS:
-        primitive = GL_POINTS;
-        break;
-    case NX_PRIMITIVE_LINES:
-        primitive = GL_LINES;
-        break;
-    case NX_PRIMITIVE_LINE_STRIP:
-        primitive = GL_LINE_STRIP;
-        break;
-    case NX_PRIMITIVE_LINE_LOOP:
-        primitive = GL_LINE_LOOP;
-        break;
-    case NX_PRIMITIVE_TRIANGLES:
-        primitive = GL_TRIANGLES;
-        break;
-    case NX_PRIMITIVE_TRIANGLE_STRIP:
-        primitive = GL_TRIANGLE_STRIP;
-        break;
-    case NX_PRIMITIVE_TRIANGLE_FAN:
-        primitive = GL_TRIANGLE_FAN;
-        break;
-    default:
-        break;
     }
 
     if (hasEBO) {
