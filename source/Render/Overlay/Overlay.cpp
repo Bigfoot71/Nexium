@@ -56,6 +56,10 @@ Overlay::Overlay(render::ProgramCache& programs, render::AssetCache& assets, NX_
     if (desc.render2D.sampleCount > 1) {
         mFramebuffer.setSampleCount(desc.render2D.sampleCount);
     }
+
+    /* --- Push default transform --- */
+
+    mMatrixStack.push_back(NX_MAT3_IDENTITY);
 }
 
 void Overlay::clear()

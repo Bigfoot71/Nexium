@@ -61,7 +61,7 @@ Here’s a checklist of the major features that are still missing:
 - [x] Fog effect
 - [x] Custom post-processing shaders
 - [x] Custom material shaders
-- [ ] More flexible 2D rendering
+- [x] More flexible 2D rendering
 - [ ] Gamepad support
 - [ ] Audio spatialization
 

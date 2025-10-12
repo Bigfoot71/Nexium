@@ -10,7 +10,7 @@
 #define NX_RENDER_OVERLAY_HPP
 
 #include "../NX_Font.hpp"
-#include "./DrawCall.hpp"
+#include <NX/NX_Math.h>
 
 #include "../../Detail/Util/StaticArray.hpp"
 #include "../../Detail/Util/ObjectRing.hpp"
@@ -23,6 +23,7 @@
 
 #include "../NX_RenderTexture.hpp"
 #include "../NX_Texture.hpp"
+#include "./DrawCall.hpp"
 
 namespace overlay {
 
@@ -41,6 +42,8 @@ public:
 
     /** Getters */
     const NX_Color& currentColor() const;
+    const NX_Font& currentFont() const;
+    uint16_t nextVertexIndex() const;
 
     /** Setters */
     void setRenderTexture(const NX_RenderTexture* target);
@@ -49,6 +52,13 @@ public:
     void setFont(const NX_Font* font);
     void setShader(NX_Shader* shader);
     void setColor(NX_Color color);
+
+    /** Transform stack */
+    void push();
+    void pop();
+    void translate(const NX_Vec2& translation);
+    void rotate(float radians);
+    void scale(const NX_Vec2& scale);
 
     /** Adding data */
     void addVertex(float x, float y, float u, float v);
@@ -60,12 +70,11 @@ public:
     void flush();
     void blit();
 
-    /** Infos */
-    uint16_t nextVertexIndex() const;
-    const NX_Font& currentFont() const;
-
     /** Draw call report */
     void ensureDrawCall(DrawCall::Mode mode, int vertices, int indices);
+
+    /** Helpers */
+    float toPixelSize(float unit);
 
 private:
     /** GPU vertex buffer */
@@ -96,6 +105,9 @@ private:
     gpu::Framebuffer mFramebuffer{};
     gpu::Texture mTargetColor{};
 
+    /** Transform stack */
+    util::StaticArray<NX_Mat3, 16> mMatrixStack{};
+
     /** Current State */
     NX_Color mCurrentColor = NX_WHITE;
     NX_Shader* mCurrentShader = nullptr;
@@ -113,6 +125,16 @@ private:
 inline const NX_Color& Overlay::currentColor() const
 {
     return mCurrentColor;
+}
+
+inline const NX_Font& Overlay::currentFont() const
+{
+    return mCurrentFont ? *mCurrentFont : mAssets.font();
+}
+
+inline uint16_t Overlay::nextVertexIndex() const
+{
+    return static_cast<uint16_t>(mVertices.size());
 }
 
 inline void Overlay::setRenderTexture(const NX_RenderTexture* target)
@@ -152,16 +174,54 @@ inline void Overlay::setColor(NX_Color color)
     mCurrentColor = color;
 }
 
+inline void Overlay::push()
+{
+    if (!mMatrixStack.push_back(*mMatrixStack.back())) {
+        NX_INTERNAL_LOG(E, "RENDER: Transformation 2D stack overflow");
+    }
+}
+
+inline void Overlay::pop()
+{
+    if (mMatrixStack.size() > 1) {
+        mMatrixStack.pop_back();
+    }
+}
+
+inline void Overlay::translate(const NX_Vec2& translation)
+{
+    NX_Mat3& mat = *mMatrixStack.back();
+    mat = mat * NX_Mat3Translate2D(translation);
+}
+
+inline void Overlay::rotate(float radians)
+{
+    NX_Mat3& mat = *mMatrixStack.back();
+    mat = mat * NX_Mat3Rotate2D(radians);
+}
+
+inline void Overlay::scale(const NX_Vec2& scale)
+{
+    NX_Mat3& mat = *mMatrixStack.back();
+    mat = mat * NX_Mat3Scale2D(scale);
+}
+
 inline void Overlay::addVertex(float x, float y, float u, float v)
 {
     SDL_assert(mVertices.size() < MaxVertices);
-    mVertices.emplace_back(NX_VEC2(x, y), NX_VEC2(u, v), mCurrentColor);
+    mVertices.emplace_back(
+        NX_VEC2(x, y) * (*mMatrixStack.back()),
+        NX_VEC2(u, v), mCurrentColor
+    );
 }
 
 inline void Overlay::addVertex(const NX_Vertex2D& vertex)
 {
     SDL_assert(mVertices.size() < MaxVertices);
-    mVertices.emplace_back(vertex);
+    mVertices.emplace_back(
+        vertex.position * (*mMatrixStack.back()),
+        vertex.texcoord, vertex.color
+    );
 }
 
 inline void Overlay::addIndex(uint16_t index)
@@ -169,16 +229,6 @@ inline void Overlay::addIndex(uint16_t index)
     SDL_assert(mIndices.size() < MaxIndices);
     mIndices.emplace_back(index);
     mDrawCalls.back()->count++;
-}
-
-inline uint16_t Overlay::nextVertexIndex() const
-{
-    return static_cast<uint16_t>(mVertices.size());
-}
-
-inline const NX_Font& Overlay::currentFont() const
-{
-    return mCurrentFont ? *mCurrentFont : mAssets.font();
 }
 
 inline void Overlay::ensureDrawCall(DrawCall::Mode mode, int vertices, int indices)
@@ -242,6 +292,18 @@ inline void Overlay::ensureDrawCall(DrawCall::Mode mode, int vertices, int indic
         mDrawCalls.emplace_back(mCurrentShader, mCurrentFont, mIndices.size());
         break;
     }
+}
+
+inline float Overlay::toPixelSize(float unit)
+{
+    if (!NX_IsMat3Identity(mMatrixStack.back())) {
+        const NX_Mat3& mat = *mMatrixStack.back();
+        float scaleX = sqrtf(mat.m00 * mat.m00 + mat.m01 * mat.m01);
+        float scaleY = sqrtf(mat.m10 * mat.m10 + mat.m11 * mat.m11);
+        float avgScale = (scaleX + scaleY) * 0.5f;
+        unit /= avgScale;
+    }
+    return unit;
 }
 
 /* === Overlay::VertexBuffer - Implementation === */

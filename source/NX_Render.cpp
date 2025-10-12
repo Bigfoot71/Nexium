@@ -223,11 +223,41 @@ void NX_SetShader2D(NX_Shader* shader)
     gRender->overlay.setShader(shader);
 }
 
+void NX_Push2D(void)
+{
+    gRender->overlay.push();
+}
+
+void NX_Pop2D(void)
+{
+    gRender->overlay.pop();
+}
+
+void NX_Translate2D(NX_Vec2 translation)
+{
+    gRender->overlay.translate(translation);
+}
+
+void NX_Rotate2D(float radians)
+{
+    gRender->overlay.rotate(radians);
+}
+
+void NX_Scale2D(NX_Vec2 scale)
+{
+    gRender->overlay.scale(scale);
+}
+
 void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int pointCount, float thickness)
 {
+    if (thickness > 0.0f) {
+        // Convert thickness to pixels and negate it to avoid doing a redundant conversion
+        thickness = -gRender->overlay.toPixelSize(thickness);
+    }
+
     switch (type) {
     case NX_PRIMITIVE_POINTS:
-        thickness = NX_MAX(thickness, 1.0f) * 0.5f;
+        thickness *= 0.5f;
         for (int i = 0; i < pointCount; i++) {
             NX_DrawQuad2D(
                 points[i] + NX_VEC2(-thickness, -thickness),
@@ -238,25 +268,22 @@ void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int pointCount
         }
         break;
     case NX_PRIMITIVE_LINES:
-        thickness = NX_MAX(thickness, 1.0f);
         for (int i = 0; i < pointCount; i += 2) {
             NX_DrawLine2D(points[i], points[i + 1], thickness);
         }
         break;
     case NX_PRIMITIVE_LINE_STRIP:
-        thickness = NX_MAX(thickness, 1.0f);
         for (int i = 0; i < pointCount - 1; i++) {
             NX_DrawLine2D(points[i], points[i + 1], thickness);
         }
         break;
     case NX_PRIMITIVE_LINE_LOOP:
-        thickness = NX_MAX(thickness, 1.0f);
         for (int i = 0; i < pointCount; i++) {
             NX_DrawLine2D(points[i], points[(i + 1) % pointCount], thickness);
         }
         break;
     case NX_PRIMITIVE_TRIANGLES:
-        if (thickness <= 0.0f) {
+        if (thickness == 0.0f) {
             for (int i = 0; i < pointCount; i += 3) {
                 NX_DrawTriangle2D(points[i], points[i + 1], points[i + 2]);
             }
@@ -270,7 +297,7 @@ void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int pointCount
         }
         break;
     case NX_PRIMITIVE_TRIANGLE_STRIP:
-        if (thickness <= 0.0f) {
+        if (thickness == 0.0f) {
             for (int i = 0; i < pointCount - 2; i++) {
                 if (i % 2 == 0) {
                     NX_DrawTriangle2D(points[i], points[i + 1], points[i + 2]);
@@ -288,7 +315,7 @@ void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int pointCount
         }
         break;
     case NX_PRIMITIVE_TRIANGLE_FAN:
-        if (thickness <= 0.0f) {
+        if (thickness == 0.0f) {
             for (int i = 1; i < pointCount - 1; i++) {
                 NX_DrawTriangle2D(points[0], points[i], points[i + 1]);
             }
@@ -305,9 +332,14 @@ void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int pointCount
 
 void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int vertexCount, float thickness)
 {
+    if (thickness > 0.0f) {
+        // Convert thickness to pixels and negate it to avoid doing a redundant conversion
+        thickness = -gRender->overlay.toPixelSize(thickness);
+    }
+
     switch (type) {
     case NX_PRIMITIVE_POINTS:
-        thickness = NX_MAX(thickness, 1.0f) * 0.5f;
+        thickness *= 0.5f;
         for (int i = 0; i < vertexCount; i++) {
             NX_DrawQuad2D(
                 vertices[i].position + NX_VEC2(-thickness, -thickness),
@@ -318,25 +350,22 @@ void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int ve
         }
         break;
     case NX_PRIMITIVE_LINES:
-        thickness = NX_MAX(thickness, 1.0f);
         for (int i = 0; i < vertexCount; i += 2) {
             NX_DrawLineEx2D(&vertices[i], &vertices[i + 1], thickness);
         }
         break;
     case NX_PRIMITIVE_LINE_STRIP:
-        thickness = NX_MAX(thickness, 1.0f);
         for (int i = 0; i < vertexCount - 1; i++) {
             NX_DrawLineEx2D(&vertices[i], &vertices[i + 1], thickness);
         }
         break;
     case NX_PRIMITIVE_LINE_LOOP:
-        thickness = NX_MAX(thickness, 1.0f);
         for (int i = 0; i < vertexCount; i++) {
             NX_DrawLineEx2D(&vertices[i], &vertices[(i + 1) % vertexCount], thickness);
         }
         break;
     case NX_PRIMITIVE_TRIANGLES:
-        if (thickness <= 0.0f) {
+        if (thickness == 0.0f) {
             for (int i = 0; i < vertexCount; i += 3) {
                 NX_DrawTriangleEx2D(&vertices[i], &vertices[i + 1], &vertices[i + 2]);
             }
@@ -350,7 +379,7 @@ void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int ve
         }
         break;
     case NX_PRIMITIVE_TRIANGLE_STRIP:
-        if (thickness <= 0.0f) {
+        if (thickness == 0.0f) {
             for (int i = 0; i < vertexCount - 2; i++) {
                 if (i % 2 == 0) {
                     NX_DrawTriangleEx2D(&vertices[i], &vertices[i + 1], &vertices[i + 2]);
@@ -368,7 +397,7 @@ void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int ve
         }
         break;
     case NX_PRIMITIVE_TRIANGLE_FAN:
-        if (thickness <= 0.0f) {
+        if (thickness == 0.0f) {
             for (int i = 1; i < vertexCount - 1; i++) {
                 NX_DrawTriangleEx2D(&vertices[0], &vertices[i], &vertices[i + 1]);
             }
@@ -395,7 +424,19 @@ void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness)
 
 void NX_DrawLineEx2D(const NX_Vertex2D* v0, const NX_Vertex2D* v1, float thickness)
 {
+    // NOTE: We draw the lines with quads for compatibility reasons
     gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 4, 6);
+
+    /* --- Calculation of pixel thickness if necessary --- */
+
+    if (thickness > 0.0f) {
+        thickness = gRender->overlay.toPixelSize(thickness);
+    }
+    else {
+        thickness = -thickness;
+    }
+
+    /* --- Calculation of the offset required in each direction --- */
 
     const NX_Vec2& p0 = v0->position;
     const NX_Vec2& p1 = v1->position;
@@ -405,6 +446,8 @@ void NX_DrawLineEx2D(const NX_Vertex2D* v0, const NX_Vertex2D* v1, float thickne
     float ny = +d.x * thickness * 0.5f;
 
     uint16_t baseIndex = gRender->overlay.nextVertexIndex();
+
+    /* --- Adding vertices and indices --- */
 
     gRender->overlay.addVertex(NX_Vertex2D{
         .position = p0 + NX_VEC2(nx, ny),
@@ -528,6 +571,11 @@ void NX_DrawRectBorder2D(float x, float y, float w, float h, float thickness)
     NX_Vertex2D v2 = { .position = {x + w, y + h}, .texcoord = {1.0f, 1.0f}, .color = color };
     NX_Vertex2D v3 = { .position = {x,     y + h}, .texcoord = {0.0f, 1.0f}, .color = color };
 
+    if (thickness > 0.0f) {
+        // Convert thickness to pixels and negate it to avoid doing a redundant conversion
+        thickness = -gRender->overlay.toPixelSize(thickness);
+    }
+
     NX_DrawLineEx2D(&v0, &v1, thickness);
     NX_DrawLineEx2D(&v1, &v2, thickness);
     NX_DrawLineEx2D(&v2, &v3, thickness);
@@ -625,17 +673,25 @@ void NX_DrawRectRounded2D(float x, float y, float w, float h, float radius, int 
 
 void NX_DrawRectRoundedBorder2D(float x, float y, float w, float h, float radius, int segments, float thickness)
 {
+    /* --- Calculation of the minimum radius required per corner --- */
+
     radius = fminf(radius, fminf(w * 0.5f, h * 0.5f));
 
     if (radius <= 0.0f) {
-        NX_Vec2 corners[4] = {
-            {x, y}, {x + w, y}, {x + w, y + h}, {x, y + h}
-        };
-        for (int i = 0; i < 4; i++) {
-            NX_DrawLine2D(corners[i], corners[(i + 1) % 4], thickness);
-        }
+        NX_DrawRectBorder2D(x, y, w, h, thickness);
         return;
     }
+
+    /* --- Calculation of pixel thickness if necessary --- */
+
+    if (thickness > 0.0f) {
+        thickness = gRender->overlay.toPixelSize(thickness);
+    }
+    else {
+        thickness = -thickness;
+    }
+
+    /* --- Pre-calculation ​​and declaration of the draw call that will be made */
 
     float halfThickness = thickness * 0.5f;
     float innerRadius = fmaxf(0.0f, radius - halfThickness);
@@ -781,6 +837,11 @@ void NX_DrawCircleBorder2D(NX_Vec2 p, float radius, int segments, float thicknes
 {
     if (segments < 3) segments = 32;
 
+    if (thickness > 0.0f) {
+        // Convert thickness to pixels and negate it to avoid doing a redundant conversion
+        thickness = -gRender->overlay.toPixelSize(thickness);
+    }
+
     float delta = NX_TAU / segments;
     float cosDelta = cosf(delta);
     float sinDelta = sinf(delta);
@@ -854,6 +915,11 @@ void NX_DrawEllipseBorder2D(NX_Vec2 p, NX_Vec2 r, int segments, float thickness)
 {
     if (segments < 3) segments = 32;
 
+    if (thickness > 0.0f) {
+        // Convert thickness to pixels and negate it to avoid doing a redundant conversion
+        thickness = -gRender->overlay.toPixelSize(thickness);
+    }
+
     float delta = NX_TAU / segments;
     float cosDelta = cosf(delta);
     float sinDelta = sinf(delta);
@@ -921,6 +987,11 @@ void NX_DrawPieSlice2D(NX_Vec2 center, float radius, float startAngle, float end
 void NX_DrawPieSliceBorder2D(NX_Vec2 center, float radius, float startAngle, float endAngle, int segments, float thickness)
 {
     if (segments < 1) segments = 16;
+
+    if (thickness > 0.0f) {
+        // Convert thickness to pixels and negate it to avoid doing a redundant conversion
+        thickness = -gRender->overlay.toPixelSize(thickness);
+    }
 
     float angleDiff = endAngle - startAngle;
     angleDiff = NX_WrapRadians(angleDiff);
@@ -1008,6 +1079,11 @@ void NX_DrawRingBorder2D(NX_Vec2 center, float innerRadius, float outerRadius, i
 {
     if (segments < 3) segments = 32;
     if (innerRadius >= outerRadius) return;
+
+    if (thickness > 0.0f) {
+        // Convert thickness to pixels and negate it to avoid doing a redundant conversion
+        thickness = -gRender->overlay.toPixelSize(thickness);
+    }
 
     float deltaAngle = NX_TAU / segments;
     float cosDelta = cosf(deltaAngle);
@@ -1099,6 +1175,11 @@ void NX_DrawRingArcBorder2D(NX_Vec2 center, float innerRadius, float outerRadius
     if (segments < 1) segments = 16;
     if (innerRadius >= outerRadius) return;
 
+    if (thickness > 0.0f) {
+        // Convert thickness to pixels and negate it to avoid doing a redundant conversion
+        thickness = -gRender->overlay.toPixelSize(thickness);
+    }
+
     float angleDiff = endAngle - startAngle;
     angleDiff = NX_WrapRadians(angleDiff);
     if (angleDiff < 0.0f) angleDiff += NX_TAU;
@@ -1143,6 +1224,11 @@ void NX_DrawArc2D(NX_Vec2 center, float radius,
 {
     if (segments < 1) segments = 16;
 
+    if (thickness > 0.0f) {
+        // Convert thickness to pixels and negate it to avoid doing a redundant conversion
+        thickness = -gRender->overlay.toPixelSize(thickness);
+    }
+
     float angleDiff = endAngle - startAngle;
     angleDiff = NX_WrapRadians(angleDiff);
     if (angleDiff < 0.0f) angleDiff += NX_TAU;
@@ -1178,6 +1264,11 @@ void NX_DrawBezierQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, int segments, float
 {
     if (segments < 1) segments = 20;
 
+    if (thickness > 0.0f) {
+        // Convert thickness to pixels and negate it to avoid doing a redundant conversion
+        thickness = -gRender->overlay.toPixelSize(thickness);
+    }
+
     float dt = 1.0f / segments;
     float dt2 = dt * dt;
 
@@ -1211,6 +1302,11 @@ void NX_DrawBezierQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, int segments, float
 void NX_DrawBezierCubic2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3, int segments, float thickness)
 {
     if (segments < 1) segments = 30;
+
+    if (thickness > 0.0f) {
+        // Convert thickness to pixels and negate it to avoid doing a redundant conversion
+        thickness = -gRender->overlay.toPixelSize(thickness);
+    }
 
     float dt  = 1.0f / segments;
     float dt2 = dt * dt;
@@ -1259,6 +1355,11 @@ void NX_DrawSpline2D(const NX_Vec2* points, int count, int segments, float thick
 {
     if (count < 4) return;
     if (segments < 1) segments = 20;
+
+    if (thickness > 0.0f) {
+        // Convert thickness to pixels and negate it to avoid doing a redundant conversion
+        thickness = -gRender->overlay.toPixelSize(thickness);
+    }
 
     for (int i = 1; i < count - 2; i++) {
         NX_Vec2 p0 = points[i - 1];

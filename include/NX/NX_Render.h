@@ -996,14 +996,43 @@ NXAPI void NX_SetFont2D(const NX_Font* font);
 NXAPI void NX_SetShader2D(NX_Shader* shader);
 
 /**
+ * @brief Pushes the current 2D transformation matrix onto the stack.
+ * @note Maximum stack depth is 16 matrices.
+ */
+NXAPI void NX_Push2D(void);
+
+/**
+ * @brief Pops the current 2D transformation matrix from the stack.
+ */
+NXAPI void NX_Pop2D(void);
+
+/**
+ * @brief Applies a translation to the current 2D transformation.
+ * @param translation Translation vector in x and y.
+ */
+NXAPI void NX_Translate2D(NX_Vec2 translation);
+
+/**
+ * @brief Applies a rotation to the current 2D transformation.
+ * @param radians Rotation angle in radians.
+ */
+NXAPI void NX_Rotate2D(float radians);
+
+/**
+ * @brief Applies a scale to the current 2D transformation.
+ * @param scale Scale factors in x and y.
+ */
+NXAPI void NX_Scale2D(NX_Vec2 scale);
+
+/**
  * @brief Draws a 2D shape using an array of 2D points and a specified primitive type.
  * @param type The type of primitive (points, lines, triangles, etc).
  * @param points Array of 2D points defining the shape.
  * @param pointCount Number of points in the array.
  * @param thickness For points: controls point size.
  *                  For lines: controls line thickness.
- *                  For triangles: if > 0.0f, only the edges are drawn.
- *                  For triangle strips or fans: only the outer edges are drawn if > 0.0f.
+ *                  For triangles: if != 0.0f, only the edges are drawn.
+ *                  For triangle strips or fans: only the outer edges are drawn if != 0.0f.
  * @note This is the high-level, simpler version for drawing shapes without custom vertex attributes.
  *       For per-vertex color or texture coordinates, use NX_DrawShapeEx2D instead.
  */
@@ -1016,8 +1045,8 @@ NXAPI void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int poin
  * @param vertexCount Number of vertices in the array.
  * @param thickness For points: controls point size.
  *                  For lines: controls line thickness.
- *                  For triangles: if > 0.0f, only the edges are drawn.
- *                  For triangle strips or fans: only the outer edges are drawn if > 0.0f.
+ *                  For triangles: if != 0.0f, only the edges are drawn.
+ *                  For triangle strips or fans: only the outer edges are drawn if != 0.0f.
  * @note This is the low-level drawing function; for most UI use cases, prefer the higher-level NX_DrawShape2D.
  */
 NXAPI void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int vertexCount, float thickness);
@@ -1026,7 +1055,7 @@ NXAPI void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, 
  * @brief Draws a line segment in 2D.
  * @param p0 Start point of the line.
  * @param p1 End point of the line.
- * @param thickness Line thickness in pixels.
+ * @param thickness Line thickness: positive = pixels, negative = scaled by transformation.
  */
 NXAPI void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness);
 
@@ -1034,7 +1063,7 @@ NXAPI void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness);
  * @brief Draws a line segment in 2D using custom vertex data.
  * @param v0 First vertex of the line, including color/texcoord.
  * @param v1 Second vertex of the line.
- * @param thickness Line thickness in pixels.
+ * @param thickness Line thickness: positive = pixels, negative = scaled by transformation.
  * @note Allows specifying per-vertex color or texture coordinates.
  */
 NXAPI void NX_DrawLineEx2D(const NX_Vertex2D* v0, const NX_Vertex2D* v1, float thickness);
@@ -1090,7 +1119,7 @@ NXAPI void NX_DrawRect2D(float x, float y, float w, float h);
  * @param y Y-coordinate of the rectangle's top-left corner.
  * @param w Width of the rectangle.
  * @param h Height of the rectangle.
- * @param thickness Border thickness in pixels.
+ * @param thickness Border thickness: positive = pixels, negative = scaled by transformation.
  */
 NXAPI void NX_DrawRectBorder2D(float x, float y, float w, float h, float thickness);
 
@@ -1113,7 +1142,7 @@ NXAPI void NX_DrawRectRounded2D(float x, float y, float w, float h, float radius
  * @param h Height of the rectangle.
  * @param radius Corner radius.
  * @param segments Number of segments to approximate the corners.
- * @param thickness Border thickness in pixels.
+ * @param thickness Border thickness: positive = pixels, negative = scaled by transformation.
  */
 NXAPI void NX_DrawRectRoundedBorder2D(float x, float y, float w, float h, float radius, int segments, float thickness);
 
@@ -1130,7 +1159,7 @@ NXAPI void NX_DrawCircle2D(NX_Vec2 center, float radius, int segments);
  * @param p Center position of the circle.
  * @param radius Circle radius.
  * @param segments Number of segments to approximate the circle.
- * @param thickness Border thickness in pixels.
+ * @param thickness Border thickness: positive = pixels, negative = scaled by transformation.
  */
 NXAPI void NX_DrawCircleBorder2D(NX_Vec2 p, float radius, int segments, float thickness);
 
@@ -1147,7 +1176,7 @@ NXAPI void NX_DrawEllipse2D(NX_Vec2 center, NX_Vec2 radius, int segments);
  * @param p Center position of the ellipse.
  * @param r X and Y radii of the ellipse.
  * @param segments Number of segments to approximate the ellipse.
- * @param thickness Border thickness in pixels.
+ * @param thickness Border thickness: positive = pixels, negative = scaled by transformation.
  */
 NXAPI void NX_DrawEllipseBorder2D(NX_Vec2 p, NX_Vec2 r, int segments, float thickness);
 
@@ -1168,7 +1197,7 @@ NXAPI void NX_DrawPieSlice2D(NX_Vec2 center, float radius, float startAngle, flo
  * @param startAngle Starting angle in radians.
  * @param endAngle Ending angle in radians.
  * @param segments Number of segments to approximate the curve.
- * @param thickness Border thickness in pixels.
+ * @param thickness Border thickness: positive = pixels, negative = scaled by transformation.
  */
 NXAPI void NX_DrawPieSliceBorder2D(NX_Vec2 center, float radius, float startAngle, float endAngle, int segments, float thickness);
 
@@ -1187,7 +1216,7 @@ NXAPI void NX_DrawRing2D(NX_Vec2 center, float innerRadius, float outerRadius, i
  * @param innerRadius Inner radius.
  * @param outerRadius Outer radius.
  * @param segments Number of segments to approximate the ring.
- * @param thickness Border thickness in pixels.
+ * @param thickness Border thickness: positive = pixels, negative = scaled by transformation.
  */
 NXAPI void NX_DrawRingBorder2D(NX_Vec2 center, float innerRadius, float outerRadius, int segments, float thickness);
 
@@ -1210,7 +1239,7 @@ NXAPI void NX_DrawRingArc2D(NX_Vec2 center, float innerRadius, float outerRadius
  * @param startAngle Starting angle in radians.
  * @param endAngle Ending angle in radians.
  * @param segments Number of segments to approximate the arc.
- * @param thickness Border thickness in pixels.
+ * @param thickness Border thickness: positive = pixels, negative = scaled by transformation.
  */
 NXAPI void NX_DrawRingArcBorder2D(NX_Vec2 center, float innerRadius, float outerRadius, float startAngle, float endAngle, int segments, float thickness);
 
@@ -1221,7 +1250,7 @@ NXAPI void NX_DrawRingArcBorder2D(NX_Vec2 center, float innerRadius, float outer
  * @param startAngle Starting angle in radians.
  * @param endAngle Ending angle in radians.
  * @param segments Number of segments to approximate the curve.
- * @param thickness Arc thickness in pixels.
+ * @param thickness Arc thickness: positive = pixels, negative = scaled by transformation.
  */
 NXAPI void NX_DrawArc2D(NX_Vec2 center, float radius, float startAngle, float endAngle, int segments, float thickness);
 
@@ -1231,7 +1260,7 @@ NXAPI void NX_DrawArc2D(NX_Vec2 center, float radius, float startAngle, float en
  * @param p1 Control point.
  * @param p2 End point.
  * @param segments Number of segments to approximate the curve.
- * @param thickness Line thickness in pixels.
+ * @param thickness Line thickness: positive = pixels, negative = scaled by transformation.
  */
 NXAPI void NX_DrawBezierQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, int segments, float thickness);
 
@@ -1242,7 +1271,7 @@ NXAPI void NX_DrawBezierQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, int segments,
  * @param p2 Second control point.
  * @param p3 End point.
  * @param segments Number of segments to approximate the curve.
- * @param thickness Line thickness in pixels.
+ * @param thickness Line thickness: positive = pixels, negative = scaled by transformation.
  */
 NXAPI void NX_DrawBezierCubic2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3, int segments, float thickness);
 
@@ -1251,7 +1280,7 @@ NXAPI void NX_DrawBezierCubic2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3, 
  * @param points Array of points defining the spline.
  * @param count Number of points.
  * @param segments Number of segments between each pair of points.
- * @param thickness Line thickness in pixels.
+ * @param thickness Line thickness: positive = pixels, negative = scaled by transformation.
  */
 NXAPI void NX_DrawSpline2D(const NX_Vec2* points, int count, int segments, float thickness);
 
