@@ -64,22 +64,23 @@ mat4 M_TransformToMat4(vec3 position, vec4 rotation, vec3 scale)
     );
 }
 
-mat3 M_OrthonormalBasis(vec3 N)
+mat3 M_OrthonormalBasis(vec3 n)
 {
-    // Frisvad's method for generating a stable orthonormal basis
-    // See: https://backend.orbit.dtu.dk/ws/portalfiles/portal/126824972/onb_frisvad_jgt2012_v2.pdf
-    vec3 T, B;
-    if (N.z < -0.9999999) {
-        T = vec3(0.0, -1.0, 0.0);
-        B = vec3(-1.0, 0.0, 0.0);
-    }
-    else {
-        float a = 1.0 / (1.0 + N.z);
-        float b = -N.x * N.y * a;
-        T = vec3(1.0 - N.x * N.x * a, b, -N.x);
-        B = vec3(b, 1.0 - N.y * N.y * a, -N.y);
-    }
-    return mat3(T, B, N);
+    // Previously we used Frisvad's method to generate a stable orthonormal basis
+    // SEE: https://backend.orbit.dtu.dk/ws/portalfiles/portal/126824972/onb_frisvad_jgt2012_v2.pdf
+
+    // However, it can cause visible artifacts (eg. bright pixels on the -Z face of irradiance cubemaps)
+    // So now we use the revised method by Duff et al., it's more accurate, though slightly slower
+    // SEE: https://graphics.pixar.com/library/OrthonormalB/paper.pdf
+
+    float sgn = n.z >= 0.0 ? 1.0 : -1.0;
+    float a = -1.0 / (sgn + n.z);
+    float b = n.x * n.y * a;
+
+    vec3 t = vec3(1.0 + sgn * n.x * n.x * a, sgn * b, -sgn * n.x);
+    vec3 bt = vec3(b, sgn + n.y * n.y * a, -n.y);
+
+    return mat3(t, bt, n);
 }
 
 vec2 M_OctahedronWrap(vec2 val)
