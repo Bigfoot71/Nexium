@@ -303,14 +303,13 @@ void LightManager::computeClusters(const ProcessParams& params)
 
 void LightManager::renderShadowMaps(const ProcessParams& params)
 {
-    /* --- Early exit if no active light --- */
+    /* --- Early exit if no shadows to render --- */
 
-    int shadowCount = (mActiveShadowCubeCount + mActiveShadow2DCount);
-    if (shadowCount == 0) {
+    if (mActiveShadowCubeCount + mActiveShadow2DCount == 0) {
         return;
     }
 
-    /* --- Lambda for drawing calls --- */
+    /* --- Lambda for drawing shadow geometry --- */
 
     const auto draw = [this, &params](const gpu::Pipeline& pipeline, const DrawCall& call, const DrawData& data)
     {
@@ -321,38 +320,66 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
         shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
-
-        const NX_Texture* texture = call.material().albedo.texture;
-        pipeline.bindTexture(0, mAssets.textureOrWhite(texture));
+        pipeline.bindTexture(0, mAssets.textureOrWhite(call.material().albedo.texture));
 
         params.renderableBuffer.upload(data, call);
         params.materialBuffer.upload(call.material());
-
         pipeline.bindUniform(3, params.renderableBuffer.buffer());
         pipeline.bindUniform(4, params.materialBuffer.buffer());
 
         call.draw(pipeline, data.instances(), data.instanceCount());
     };
 
-    /* --- Pipeline initialization --- */
+    /* --- Lambda for shadow uniform setup --- */
+
+    const auto setupShadowUniform = [this, &params](gpu::Pipeline& pipeline, NX_Light& light, int faceIndex = -1)
+    {
+        mFrameShadowUniform->uploadObject(FrameShadowUniform {
+            .lightViewProj = (faceIndex >= 0) ? light.viewProj(faceIndex) : light.viewProj(),
+            .lightPosition = light.position(),
+            .shadowLambda = light.shadowLambda(),
+            .farPlane = light.range(),
+            .elapsedTime = static_cast<float>(NX_GetElapsedTime())
+        });
+        pipeline.bindUniform(0, *mFrameShadowUniform);
+    };
+
+    /* --- Lambda for rendering draw calls for a light --- */
+
+    const auto renderDrawCalls = [this, &params, &draw](gpu::Pipeline& pipeline, const NX_Light& light, int faceIndex = -1)
+    {
+        const bool frustumCulling = params.environment.hasFlags(NX_ENV_SHADOW_FRUSTUM_CULLING);
+
+        for (const DrawCall& call : params.drawCalls.categories(DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
+        {
+            if (call.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
+            if ((light.shadowCullMask() & call.layerMask()) == 0) continue;
+
+            const DrawData& data = params.drawData[call.drawDataIndex()];
+
+            if (frustumCulling) {
+                bool inFrustum = (faceIndex >= 0)
+                    ? light.isInsideShadowFrustum(call, data, faceIndex) 
+                    : light.isInsideShadowFrustum(call, data);
+                if (!inFrustum) continue;
+            }
+
+            draw(pipeline, call, data);
+        }
+    };
+
+    /* --- Setup pipeline --- */
 
     gpu::Pipeline pipeline;
-
     pipeline.setViewport(0, 0, mShadowResolution, mShadowResolution);
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
-
-    /* --- Bind UBOs and SSBOs --- */
-
     pipeline.bindStorage(0, params.boneBuffer.buffer());
     pipeline.bindUniform(1, params.viewFrustum.buffer());
     pipeline.bindUniform(2, params.environment.buffer());
 
-    /* --- Iterates through all lights with shadows active --- */
+    /* --- Render shadows for each active light --- */
 
-    const bool frustumCulling = params.environment.hasFlags(NX_ENV_SHADOW_FRUSTUM_CULLING);
-
-    int updatedCubeCount = 0;
-    int updated2DCount = 0;
+    int updatedCubeCount = 0, updated2DCount = 0;
 
     for (NX_Light& light : mLights)
     {
@@ -360,114 +387,43 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             continue;
         }
 
-        float rangeSq = NX_POW2(light.range());
-
         switch (light.type()) {
-        case NX_LIGHT_DIR:
-            {
+            case NX_LIGHT_DIR:
+            case NX_LIGHT_SPOT: {
                 updated2DCount++;
-
-                mFrameShadowUniform->uploadObject(FrameShadowUniform {
-                    .lightViewProj = light.viewProj(),
-                    .lightPosition = light.position(),
-                    .shadowLambda = light.shadowLambda(),
-                    .farPlane = light.range(),
-                    .elapsedTime = static_cast<float>(NX_GetElapsedTime())
-                });
-                pipeline.bindUniform(0, *mFrameShadowUniform);
+                setupShadowUniform(pipeline, light);
 
                 pipeline.bindFramebuffer(mFramebufferShadow2D);
                 mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
                 pipeline.clear(mFramebufferShadow2D, NX_COLOR_1(FLT_MAX));
 
-                for (const DrawCall& call : params.drawCalls.categories(
-                    DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
-                {
-                    if (call.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
-                    if ((light.shadowCullMask() & call.layerMask()) == 0) continue;
-
-                    if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.drawDataIndex()])) {
-                        draw(pipeline, call, params.drawData[call.drawDataIndex()]);
-                    }
-                }
-
+                renderDrawCalls(pipeline, light);
                 mFrameShadowUniform.rotate();
+                break;
             }
-            break;
-        case NX_LIGHT_SPOT:
-            {
-                updated2DCount++;
-
-                mFrameShadowUniform->uploadObject(FrameShadowUniform {
-                    .lightViewProj = light.viewProj(),
-                    .lightPosition = light.position(),
-                    .shadowLambda = light.shadowLambda(),
-                    .farPlane = light.range(),
-                    .elapsedTime = static_cast<float>(NX_GetElapsedTime())
-                });
-                pipeline.bindUniform(0, *mFrameShadowUniform);
-
-                pipeline.bindFramebuffer(mFramebufferShadow2D);
-                mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
-                pipeline.clear(mFramebufferShadow2D, NX_COLOR_1(FLT_MAX));
-
-                for (const DrawCall& call : params.drawCalls.categories(
-                    DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
-                {
-                    if (call.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
-                    if ((light.shadowCullMask() & call.layerMask()) == 0) continue;
-
-                    if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.drawDataIndex()])) {
-                        draw(pipeline, call, params.drawData[call.drawDataIndex()]);
-                    }
-                }
-
-                mFrameShadowUniform.rotate();
-            }
-            break;
-        case NX_LIGHT_OMNI:
-            {
+            case NX_LIGHT_OMNI: {
                 updatedCubeCount++;
                 pipeline.bindFramebuffer(mFramebufferShadowCube);
 
-                for (int iFace = 0; iFace < 6; iFace++)
-                {
-                    mFrameShadowUniform->uploadObject(FrameShadowUniform {
-                        .lightViewProj = light.viewProj(iFace),
-                        .lightPosition = light.position(),
-                        .shadowLambda = light.shadowLambda(),
-                        .farPlane = light.range(),
-                        .elapsedTime = static_cast<float>(NX_GetElapsedTime())
-                    });
-                    pipeline.bindUniform(0, *mFrameShadowUniform);
+                for (int iFace = 0; iFace < 6; iFace++) {
+                    setupShadowUniform(pipeline, light, iFace);
 
                     mFramebufferShadowCube.setColorAttachmentTarget(0, light.shadowMapIndex(), iFace);
                     pipeline.clear(mFramebufferShadowCube, NX_COLOR_1(FLT_MAX));
 
-                    for (const DrawCall& call : params.drawCalls.categories(
-                        DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
-                    {
-                        if (call.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
-                        if ((light.shadowCullMask() & call.layerMask()) == 0) continue;
-
-                        if (!frustumCulling || light.isInsideShadowFrustum(call, params.drawData[call.drawDataIndex()], iFace)) {
-                            draw(pipeline, call, params.drawData[call.drawDataIndex()]);
-                        }
-                    }
-
+                    renderDrawCalls(pipeline, light, iFace);
                     mFrameShadowUniform.rotate();
                 }
+                break;
             }
-            break;
         }
     }
 
-    /* --- Update mipmaps if necessary --- */
+    /* --- Generate mipmaps if needed --- */
 
     if (mShadowMapCubeArray.numLevels() > 1 && updatedCubeCount > 0) {
         mShadowMapCubeArray.generateMipmap();
     }
-
     if (mShadowMap2DArray.numLevels() > 1 && updated2DCount > 0) {
         mShadowMap2DArray.generateMipmap();
     }
