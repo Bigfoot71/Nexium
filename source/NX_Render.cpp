@@ -223,7 +223,53 @@ void NX_SetShader2D(NX_Shader* shader)
     gRender->overlay.setShader(shader);
 }
 
-void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int vertexCount)
+void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int pointCount)
+{
+    switch (type) {
+    case NX_PRIMITIVE_POINTS:
+        for (int i = 0; i < pointCount; i++) {
+            NX_DrawPixel2D(points[i]);
+        }
+        break;
+    case NX_PRIMITIVE_LINES:
+        for (int i = 0; i < pointCount; i += 2) {
+            NX_DrawLine2D(points[i], points[i + 1], 1.0f);
+        }
+        break;
+    case NX_PRIMITIVE_LINE_STRIP:
+        for (int i = 0; i < pointCount - 1; i++) {
+            NX_DrawLine2D(points[i], points[i + 1], 1.0f);
+        }
+        break;
+    case NX_PRIMITIVE_LINE_LOOP:
+        for (int i = 0; i < pointCount; i++) {
+            NX_DrawLine2D(points[i], points[(i + 1) % pointCount], 1.0f);
+        }
+        break;
+    case NX_PRIMITIVE_TRIANGLES:
+        for (int i = 0; i < pointCount; i += 3) {
+            NX_DrawTriangle2D(points[i], points[i + 1], points[i + 2]);
+        }
+        break;
+    case NX_PRIMITIVE_TRIANGLE_STRIP:
+        for (int i = 0; i < pointCount - 2; i++) {
+            if (i % 2 == 0) {
+                NX_DrawTriangle2D(points[i], points[i + 1], points[i + 2]);
+            }
+            else {
+                NX_DrawTriangle2D(points[i + 1], points[i], points[i + 2]);
+            }
+        }
+        break;
+    case NX_PRIMITIVE_TRIANGLE_FAN:
+        for (int i = 1; i < pointCount - 1; i++) {
+            NX_DrawTriangle2D(points[0], points[i], points[i + 1]);
+        }
+        break;
+    }
+}
+
+void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int vertexCount)
 {
     switch (type) {
     case NX_PRIMITIVE_POINTS:
