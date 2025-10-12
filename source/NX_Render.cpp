@@ -439,7 +439,7 @@ void NX_DrawRectBorder2D(float x, float y, float w, float h, float thickness)
 
     NX_DrawLineEx2D(&v0, &v1, thickness);
     NX_DrawLineEx2D(&v1, &v2, thickness);
-    NX_DrawLineEx2D(&v1, &v2, thickness);
+    NX_DrawLineEx2D(&v2, &v3, thickness);
     NX_DrawLineEx2D(&v3, &v0, thickness);
 }
 
