@@ -223,6 +223,70 @@ void NX_SetShader2D(NX_Shader* shader)
     gRender->overlay.setShader(shader);
 }
 
+void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness)
+{
+    gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 4, 6);
+
+    float dx = p1.x - p0.x;
+    float dy = p1.y - p0.y;
+    float len_sq = dx * dx + dy * dy;
+
+    if (len_sq < 1e-6f) {
+        return;
+    }
+
+    float invLen = 1.0f / sqrtf(len_sq);
+
+    dx *= invLen;
+    dy *= invLen;
+
+    float nx = -dy * thickness * 0.5f;
+    float ny = +dx * thickness * 0.5f;
+
+    uint16_t baseIndex = gRender->overlay.nextVertexIndex();
+
+    gRender->overlay.addVertex(p0.x + nx, p0.y + ny, 0.0f, 0.0f);
+    gRender->overlay.addVertex(p0.x - nx, p0.y - ny, 1.0f, 0.0f);
+    gRender->overlay.addVertex(p1.x - nx, p1.y - ny, 1.0f, 1.0f);
+    gRender->overlay.addVertex(p1.x + nx, p1.y + ny, 0.0f, 1.0f);
+
+    // Triangle 1: 0, 1, 2
+    gRender->overlay.addIndex(baseIndex + 0);
+    gRender->overlay.addIndex(baseIndex + 1);
+    gRender->overlay.addIndex(baseIndex + 2);
+
+    // Triangle 2: 0, 2, 3
+    gRender->overlay.addIndex(baseIndex + 0);
+    gRender->overlay.addIndex(baseIndex + 2);
+    gRender->overlay.addIndex(baseIndex + 3);
+}
+
+void NX_DrawLineList2D(const NX_Vec2* lines, int lineCount, float thickness)
+{
+    if (lineCount <= 0) return;
+    for (int i = 0; i < lineCount; i++) {
+        const NX_Vec2* line = &lines[i * 2];
+        NX_DrawLine2D(line[0], line[1], thickness);
+    }
+}
+
+void NX_DrawLineStrip2D(const NX_Vec2* points, int count, float thickness)
+{
+    if (count < 2) return;
+    for (int i = 0; i < count - 1; i++) {
+        NX_DrawLine2D(points[i], points[i + 1], thickness);
+    }
+}
+
+void NX_DrawLineLoop2D(const NX_Vec2* points, int count, float thickness)
+{
+    if (count < 2) return;
+    for (int i = 0; i < count - 1; i++) {
+        NX_DrawLine2D(points[i], points[i + 1], thickness);
+    }
+    NX_DrawLine2D(points[count - 1], points[0], thickness);
+}
+
 void NX_DrawTriangle2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2)
 {
     gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 3, 3);
@@ -382,70 +446,6 @@ void NX_DrawQuadFan2D(const NX_Vertex2D* vertices, int count)
         gRender->overlay.addIndex(baseIndex + 2);
         gRender->overlay.addIndex(baseIndex + 3);
     }
-}
-
-void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness)
-{
-    gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 4, 6);
-
-    float dx = p1.x - p0.x;
-    float dy = p1.y - p0.y;
-    float len_sq = dx * dx + dy * dy;
-
-    if (len_sq < 1e-6f) {
-        return;
-    }
-
-    float invLen = 1.0f / sqrtf(len_sq);
-
-    dx *= invLen;
-    dy *= invLen;
-
-    float nx = -dy * thickness * 0.5f;
-    float ny = +dx * thickness * 0.5f;
-
-    uint16_t baseIndex = gRender->overlay.nextVertexIndex();
-
-    gRender->overlay.addVertex(p0.x + nx, p0.y + ny, 0.0f, 0.0f);
-    gRender->overlay.addVertex(p0.x - nx, p0.y - ny, 1.0f, 0.0f);
-    gRender->overlay.addVertex(p1.x - nx, p1.y - ny, 1.0f, 1.0f);
-    gRender->overlay.addVertex(p1.x + nx, p1.y + ny, 0.0f, 1.0f);
-
-    // Triangle 1: 0, 1, 2
-    gRender->overlay.addIndex(baseIndex + 0);
-    gRender->overlay.addIndex(baseIndex + 1);
-    gRender->overlay.addIndex(baseIndex + 2);
-
-    // Triangle 2: 0, 2, 3
-    gRender->overlay.addIndex(baseIndex + 0);
-    gRender->overlay.addIndex(baseIndex + 2);
-    gRender->overlay.addIndex(baseIndex + 3);
-}
-
-void NX_DrawLineList2D(const NX_Vec2* lines, int lineCount, float thickness)
-{
-    if (lineCount <= 0) return;
-    for (int i = 0; i < lineCount; i++) {
-        const NX_Vec2* line = &lines[i * 2];
-        NX_DrawLine2D(line[0], line[1], thickness);
-    }
-}
-
-void NX_DrawLineStrip2D(const NX_Vec2* points, int count, float thickness)
-{
-    if (count < 2) return;
-    for (int i = 0; i < count - 1; i++) {
-        NX_DrawLine2D(points[i], points[i + 1], thickness);
-    }
-}
-
-void NX_DrawLineLoop2D(const NX_Vec2* points, int count, float thickness)
-{
-    if (count < 2) return;
-    for (int i = 0; i < count - 1; i++) {
-        NX_DrawLine2D(points[i], points[i + 1], thickness);
-    }
-    NX_DrawLine2D(points[count - 1], points[0], thickness);
 }
 
 void NX_DrawRect2D(float x, float y, float w, float h)
