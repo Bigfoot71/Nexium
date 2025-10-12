@@ -128,8 +128,10 @@ typedef enum NX_PrimitiveType {
     NX_PRIMITIVE_POINTS,            ///< Each vertex represents a single point.
     NX_PRIMITIVE_LINES,             ///< Each pair of vertices forms an independent line segment.
     NX_PRIMITIVE_LINE_STRIP,        ///< Connected series of line segments sharing vertices.
+    NX_PRIMITIVE_LINE_LOOP,
     NX_PRIMITIVE_TRIANGLES,         ///< Each set of three vertices forms an independent triangle.
-    NX_PRIMITIVE_TRIANGLE_STRIP     ///< Connected strip of triangles sharing vertices.
+    NX_PRIMITIVE_TRIANGLE_STRIP,    ///< Connected strip of triangles sharing vertices.
+    NX_PRIMITIVE_TRIANGLE_FAN
 } NX_PrimitiveType;
 
 /**
@@ -994,6 +996,39 @@ NXAPI void NX_SetFont2D(const NX_Font* font);
 NXAPI void NX_SetShader2D(NX_Shader* shader);
 
 /**
+ * @brief Draws a 2D shape using an array of vertices and a specified primitive type.
+ * @param type The type of primitive (points, lines, triangles, etc).
+ * @param vertices Array of NX_Vertex2D defining the vertices.
+ * @param vertexCount Number of vertices in the array.
+ * @note This is the low-level drawing function; for most UI use cases, prefer the higher-level primitives.
+ */
+NXAPI void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int vertexCount);
+
+/**
+ * @brief Draws a single pixel at the specified position.
+ * @param p0 Position of the pixel in 2D.
+ * @warning Present for compatibility only; you should almost never need to use this unless you are certain.
+ */
+void NX_DrawPixel2D(NX_Vec2 p0);
+
+/**
+ * @brief Draws a line segment in 2D.
+ * @param p0 Start point of the line.
+ * @param p1 End point of the line.
+ * @param thickness Line thickness in pixels.
+ */
+NXAPI void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness);
+
+/**
+ * @brief Draws a line segment in 2D using custom vertex data.
+ * @param v0 First vertex of the line, including color/texcoord.
+ * @param v1 Second vertex of the line.
+ * @param thickness Line thickness in pixels.
+ * @note Allows specifying per-vertex color or texture coordinates.
+ */
+NXAPI void NX_DrawLineEx2D(const NX_Vertex2D* v0, const NX_Vertex2D* v1, float thickness);
+
+/**
  * @brief Draws a filled triangle in 2D.
  * @param p0 First vertex of the triangle.
  * @param p1 Second vertex of the triangle.
@@ -1002,34 +1037,13 @@ NXAPI void NX_SetShader2D(NX_Shader* shader);
 NXAPI void NX_DrawTriangle2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2);
 
 /**
- * @brief Draws the border of a triangle in 2D.
- * @param p0 First vertex of the triangle.
- * @param p1 Second vertex of the triangle.
- * @param p2 Third vertex of the triangle.
- * @param thickness Border thickness in pixels.
+ * @brief Draws a filled triangle in 2D using custom vertex data.
+ * @param v0 First vertex of the triangle, including color/texcoord.
+ * @param v1 Second vertex of the triangle.
+ * @param v2 Third vertex of the triangle.
+ * @note Allows specifying per-vertex color or texture coordinates.
  */
-NXAPI void NX_DrawTriangleBorder2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, float thickness);
-
-/**
- * @brief Draws a list of 2D triangles.
- * @param triangles Array of NX_Vertex2D defining the triangles.
- * @param triangleCount Number of triangles in the array.
- */
-NXAPI void NX_DrawTriangleList2D(const NX_Vertex2D* triangles, int triangleCount);
-
-/**
- * @brief Draws a triangle strip in 2D.
- * @param vertices Array of NX_Vertex2D defining the strip.
- * @param count Number of vertices in the array.
- */
-NXAPI void NX_DrawTriangleStrip2D(const NX_Vertex2D* vertices, int count);
-
-/**
- * @brief Draws a triangle fan in 2D.
- * @param vertices Array of NX_Vertex2D defining the fan.
- * @param count Number of vertices in the array.
- */
-NXAPI void NX_DrawTriangleFan2D(const NX_Vertex2D* vertices, int count);
+NXAPI void NX_DrawTriangleEx2D(const NX_Vertex2D* v0, const NX_Vertex2D* v1, const NX_Vertex2D* v2);
 
 /**
  * @brief Draws a filled quadrilateral in 2D.
@@ -1041,67 +1055,14 @@ NXAPI void NX_DrawTriangleFan2D(const NX_Vertex2D* vertices, int count);
 NXAPI void NX_DrawQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3);
 
 /**
- * @brief Draws the border of a quadrilateral in 2D.
- * @param p0 First vertex of the quad.
- * @param p1 Second vertex of the quad.
- * @param p2 Third vertex of the quad.
- * @param p3 Fourth vertex of the quad.
- * @param thickness Border thickness in pixels.
+ * @brief Draws a filled quadrilateral in 2D using custom vertex data.
+ * @param v0 First vertex of the quad, including color/texcoord.
+ * @param v1 Second vertex of the quad.
+ * @param v2 Third vertex of the quad.
+ * @param v3 Fourth vertex of the quad.
+ * @note Allows specifying per-vertex color or texture coordinates.
  */
-NXAPI void NX_DrawQuadBorder2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3, float thickness);
-
-/**
- * @brief Draws a list of 2D quads.
- * @param quads Array of NX_Vertex2D defining the quads.
- * @param quadCount Number of quads in the array.
- */
-NXAPI void NX_DrawQuadList2D(const NX_Vertex2D* quads, int quadCount);
-
-/**
- * @brief Draws a quad strip in 2D.
- * @param vertices Array of NX_Vertex2D defining the strip.
- * @param count Number of vertices in the array.
- */
-NXAPI void NX_DrawQuadStrip2D(const NX_Vertex2D* vertices, int count);
-
-/**
- * @brief Draws a quad fan in 2D.
- * @param vertices Array of NX_Vertex2D defining the fan.
- * @param count Number of vertices in the array.
- */
-NXAPI void NX_DrawQuadFan2D(const NX_Vertex2D* vertices, int count);
-
-/**
- * @brief Draws a line segment in 2D.
- * @param p0 Start point of the line.
- * @param p1 End point of the line.
- * @param thickness Line thickness in pixels.
- */
-NXAPI void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness);
-
-/**
- * @brief Draws a list of 2D line segments.
- * @param lines Array of points defining the line segments (2 points per line).
- * @param lineCount Number of line segments.
- * @param thickness Line thickness in pixels.
- */
-NXAPI void NX_DrawLineList2D(const NX_Vec2* lines, int lineCount, float thickness);
-
-/**
- * @brief Draws a connected line strip in 2D.
- * @param points Array of points defining the strip.
- * @param count Number of points in the strip.
- * @param thickness Line thickness in pixels.
- */
-NXAPI void NX_DrawLineStrip2D(const NX_Vec2* points, int count, float thickness);
-
-/**
- * @brief Draws a closed line loop in 2D.
- * @param points Array of points defining the loop.
- * @param count Number of points in the loop.
- * @param thickness Line thickness in pixels.
- */
-NXAPI void NX_DrawLineLoop2D(const NX_Vec2* points, int count, float thickness);
+NXAPI void NX_DrawQuadEx2D(const NX_Vertex2D* v0, const NX_Vertex2D* v1, const NX_Vertex2D* v2, const NX_Vertex2D* v3);
 
 /**
  * @brief Draws a filled rectangle in 2D.
@@ -1121,27 +1082,6 @@ NXAPI void NX_DrawRect2D(float x, float y, float w, float h);
  * @param thickness Border thickness in pixels.
  */
 NXAPI void NX_DrawRectBorder2D(float x, float y, float w, float h, float thickness);
-
-/**
- * @brief Draws a rectangle in 2D with rotation around a pivot point.
- * @param center Center position of the rectangle.
- * @param size Width and height of the rectangle.
- * @param pivot Normalized pivot point [0..1] from top-left corner.
- * @param rotation Rotation in radians.
- * @note The pivot is the point around which rotation occurs.
- */
-NXAPI void NX_DrawRectEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation);
-
-/**
- * @brief Draws the border of a rectangle in 2D with rotation around a pivot point.
- * @param center Center position of the rectangle.
- * @param size Width and height of the rectangle.
- * @param pivot Normalized pivot point [0..1] from top-left corner.
- * @param rotation Rotation in radians.
- * @param thickness Border thickness in pixels.
- * @note The pivot is the point around which rotation occurs.
- */
-NXAPI void NX_DrawRectBorderEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation, float thickness);
 
 /**
  * @brief Draws a rectangle with rounded corners in 2D.
@@ -1165,29 +1105,6 @@ NXAPI void NX_DrawRectRounded2D(float x, float y, float w, float h, float radius
  * @param thickness Border thickness in pixels.
  */
 NXAPI void NX_DrawRectRoundedBorder2D(float x, float y, float w, float h, float radius, int segments, float thickness);
-
-/**
- * @brief Draws a rectangle with rounded corners and rotation around a pivot.
- * @param center Center position of the rectangle.
- * @param size Width and height of the rectangle.
- * @param pivot Normalized pivot point [0..1] from top-left corner.
- * @param rotation Rotation in radians.
- * @param radius Corner radius.
- * @note The pivot is the point around which rotation occurs.
- */
-NXAPI void NX_DrawRectRoundedEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation, float radius);
-
-/**
- * @brief Draws the border of a rectangle with rounded corners and rotation around a pivot.
- * @param center Center position of the rectangle.
- * @param size Width and height of the rectangle.
- * @param pivot Normalized pivot point [0..1] from top-left corner.
- * @param rotation Rotation in radians.
- * @param radius Corner radius.
- * @param thickness Border thickness in pixels.
- * @note The pivot is the point around which rotation occurs.
- */
-NXAPI void NX_DrawRectRoundedBorderEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation, float radius, float thickness);
 
 /**
  * @brief Draws a filled circle in 2D.

@@ -204,11 +204,17 @@ inline void DrawCall::draw(const gpu::Pipeline& pipeline, const NX_InstanceBuffe
     case NX_PRIMITIVE_LINE_STRIP:
         primitive = GL_LINE_STRIP;
         break;
+    case NX_PRIMITIVE_LINE_LOOP:
+        primitive = GL_LINE_LOOP;
+        break;
     case NX_PRIMITIVE_TRIANGLES:
         primitive = GL_TRIANGLES;
         break;
     case NX_PRIMITIVE_TRIANGLE_STRIP:
-        primitive = GL_LINE_STRIP;
+        primitive = GL_TRIANGLE_STRIP;
+        break;
+    case NX_PRIMITIVE_TRIANGLE_FAN:
+        primitive = GL_TRIANGLE_FAN;
         break;
     default:
         break;

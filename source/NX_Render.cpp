@@ -223,32 +223,121 @@ void NX_SetShader2D(NX_Shader* shader)
     gRender->overlay.setShader(shader);
 }
 
-void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness)
+void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int vertexCount)
 {
-    gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 4, 6);
-
-    float dx = p1.x - p0.x;
-    float dy = p1.y - p0.y;
-    float len_sq = dx * dx + dy * dy;
-
-    if (len_sq < 1e-6f) {
-        return;
+    switch (type) {
+    case NX_PRIMITIVE_POINTS:
+        for (int i = 0; i < vertexCount; i++) {
+            NX_DrawPixel2D(vertices[i].position);
+        }
+        break;
+    case NX_PRIMITIVE_LINES:
+        for (int i = 0; i < vertexCount; i += 2) {
+            NX_DrawLineEx2D(&vertices[i], &vertices[i + 1], 1.0f);
+        }
+        break;
+    case NX_PRIMITIVE_LINE_STRIP:
+        for (int i = 0; i < vertexCount - 1; i++) {
+            NX_DrawLineEx2D(&vertices[i], &vertices[i + 1], 1.0f);
+        }
+        break;
+    case NX_PRIMITIVE_LINE_LOOP:
+        for (int i = 0; i < vertexCount; i++) {
+            NX_DrawLineEx2D(&vertices[i], &vertices[(i + 1) % vertexCount], 1.0f);
+        }
+        break;
+    case NX_PRIMITIVE_TRIANGLES:
+        for (int i = 0; i < vertexCount; i += 3) {
+            NX_DrawTriangleEx2D(&vertices[i], &vertices[i + 1], &vertices[i + 2]);
+        }
+        break;
+    case NX_PRIMITIVE_TRIANGLE_STRIP:
+        for (int i = 0; i < vertexCount - 2; i++) {
+            if (i % 2 == 0) {
+                NX_DrawTriangleEx2D(&vertices[i], &vertices[i + 1], &vertices[i + 2]);
+            }
+            else {
+                NX_DrawTriangleEx2D(&vertices[i + 1], &vertices[i], &vertices[i + 2]);
+            }
+        }
+        break;
+    case NX_PRIMITIVE_TRIANGLE_FAN:
+        for (int i = 1; i < vertexCount - 1; i++) {
+            NX_DrawTriangleEx2D(&vertices[0], &vertices[i], &vertices[i + 1]);
+        }
+        break;
     }
+}
 
-    float invLen = 1.0f / sqrtf(len_sq);
-
-    dx *= invLen;
-    dy *= invLen;
-
-    float nx = -dy * thickness * 0.5f;
-    float ny = +dx * thickness * 0.5f;
+void NX_DrawPixel2D(NX_Vec2 p0)
+{
+    gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 6, 6);
 
     uint16_t baseIndex = gRender->overlay.nextVertexIndex();
 
-    gRender->overlay.addVertex(p0.x + nx, p0.y + ny, 0.0f, 0.0f);
-    gRender->overlay.addVertex(p0.x - nx, p0.y - ny, 1.0f, 0.0f);
-    gRender->overlay.addVertex(p1.x - nx, p1.y - ny, 1.0f, 1.0f);
-    gRender->overlay.addVertex(p1.x + nx, p1.y + ny, 0.0f, 1.0f);
+    gRender->overlay.addVertex(p0.x,     p0.y,     0.0f, 0.0f);
+    gRender->overlay.addVertex(p0.x + 1, p0.y,     1.0f, 0.0f);
+    gRender->overlay.addVertex(p0.x,     p0.y + 1, 0.0f, 1.0f);
+
+    gRender->overlay.addVertex(p0.x + 1, p0.y,     1.0f, 0.0f);
+    gRender->overlay.addVertex(p0.x + 1, p0.y + 1, 1.0f, 1.0f);
+    gRender->overlay.addVertex(p0.x,     p0.y + 1, 0.0f, 1.0f);
+
+    gRender->overlay.addIndex(baseIndex + 0);
+    gRender->overlay.addIndex(baseIndex + 1);
+    gRender->overlay.addIndex(baseIndex + 2);
+
+    gRender->overlay.addIndex(baseIndex + 3);
+    gRender->overlay.addIndex(baseIndex + 4);
+    gRender->overlay.addIndex(baseIndex + 5);
+}
+
+void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness)
+{
+    const NX_Color& color = gRender->overlay.currentColor();
+
+    NX_Vertex2D v0 = { .position = p0, .texcoord = NX_VEC2_ZERO, .color = color };
+    NX_Vertex2D v1 = { .position = p1, .texcoord = NX_VEC2_ONE, .color = color };
+
+    NX_DrawLineEx2D(&v0, &v1, thickness);
+}
+
+void NX_DrawLineEx2D(const NX_Vertex2D* v0, const NX_Vertex2D* v1, float thickness)
+{
+    gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 4, 6);
+
+    const NX_Vec2& p0 = v0->position;
+    const NX_Vec2& p1 = v1->position;
+
+    NX_Vec2 d = NX_Vec2Direction(p0, p1);
+    float nx = -d.y * thickness * 0.5f;
+    float ny = +d.x * thickness * 0.5f;
+
+    uint16_t baseIndex = gRender->overlay.nextVertexIndex();
+
+    gRender->overlay.addVertex(NX_Vertex2D{
+        .position = p0 + NX_VEC2(nx, ny),
+        .texcoord = v0->texcoord,
+        .color = v0->color
+    });
+
+    gRender->overlay.addVertex(NX_Vertex2D{
+        .position = p0 - NX_VEC2(nx, ny),
+        .texcoord = v0->texcoord,
+        .color = v0->color
+    });
+
+    gRender->overlay.addVertex(NX_Vertex2D{
+        .position = p1 - NX_VEC2(nx, ny),
+        .texcoord = v1->texcoord,
+        .color = v1->color
+    });
+
+    gRender->overlay.addVertex(NX_Vertex2D{
+        .position = p1 + NX_VEC2(nx, ny),
+        .texcoord = v1->texcoord,
+        .color = v1->color
+    });
 
     // Triangle 1: 0, 1, 2
     gRender->overlay.addIndex(baseIndex + 0);
@@ -261,117 +350,54 @@ void NX_DrawLine2D(NX_Vec2 p0, NX_Vec2 p1, float thickness)
     gRender->overlay.addIndex(baseIndex + 3);
 }
 
-void NX_DrawLineList2D(const NX_Vec2* lines, int lineCount, float thickness)
-{
-    if (lineCount <= 0) return;
-    for (int i = 0; i < lineCount; i++) {
-        const NX_Vec2* line = &lines[i * 2];
-        NX_DrawLine2D(line[0], line[1], thickness);
-    }
-}
-
-void NX_DrawLineStrip2D(const NX_Vec2* points, int count, float thickness)
-{
-    if (count < 2) return;
-    for (int i = 0; i < count - 1; i++) {
-        NX_DrawLine2D(points[i], points[i + 1], thickness);
-    }
-}
-
-void NX_DrawLineLoop2D(const NX_Vec2* points, int count, float thickness)
-{
-    if (count < 2) return;
-    for (int i = 0; i < count - 1; i++) {
-        NX_DrawLine2D(points[i], points[i + 1], thickness);
-    }
-    NX_DrawLine2D(points[count - 1], points[0], thickness);
-}
-
 void NX_DrawTriangle2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2)
+{
+    const NX_Color& color = gRender->overlay.currentColor();
+
+    NX_Vertex2D v0 = { .position = p0, .texcoord = NX_VEC2(0.0f, 0.0f), .color = color };
+    NX_Vertex2D v1 = { .position = p1, .texcoord = NX_VEC2(0.5f, 0.5f), .color = color };
+    NX_Vertex2D v2 = { .position = p2, .texcoord = NX_VEC2(1.0f, 1.0f), .color = color };
+
+    NX_DrawTriangleEx2D(&v0, &v1, &v2);
+}
+
+void NX_DrawTriangleEx2D(const NX_Vertex2D* v0, const NX_Vertex2D* v1, const NX_Vertex2D* v2)
 {
     gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 3, 3);
 
     uint16_t baseIndex = gRender->overlay.nextVertexIndex();
 
-    gRender->overlay.addVertex(p0.x, p0.y, 0.0f, 0.0f);
-    gRender->overlay.addVertex(p1.x, p1.y, 0.5f, 1.0f);
-    gRender->overlay.addVertex(p2.x, p2.y, 1.0f, 0.0f);
+    gRender->overlay.addVertex(*v0);
+    gRender->overlay.addVertex(*v1);
+    gRender->overlay.addVertex(*v2);
 
     gRender->overlay.addIndex(baseIndex + 0);
     gRender->overlay.addIndex(baseIndex + 1);
     gRender->overlay.addIndex(baseIndex + 2);
 }
 
-void NX_DrawTriangleBorder2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, float thickness)
-{
-    NX_DrawLine2D(p0, p1, thickness);
-    NX_DrawLine2D(p1, p2, thickness);
-    NX_DrawLine2D(p2, p0, thickness);
-}
-
-void NX_DrawTriangleList2D(const NX_Vertex2D* triangles, int triangleCount)
-{
-    if (triangleCount <= 0) return;
-    for (int i = 0; i < triangleCount; i++) {
-        gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 3, 3);
-        uint16_t baseIndex = gRender->overlay.nextVertexIndex();
-        const NX_Vertex2D* tri = &triangles[i * 3];
-        for (int j = 0; j < 3; j++) {
-            gRender->overlay.addVertex(tri[j]);
-        }
-        gRender->overlay.addIndex(baseIndex + 0);
-        gRender->overlay.addIndex(baseIndex + 1);
-        gRender->overlay.addIndex(baseIndex + 2);
-    }
-}
-
-void NX_DrawTriangleStrip2D(const NX_Vertex2D* vertices, int count)
-{
-    if (count < 3) return;
-    for (int i = 0; i < count - 2; i++) {
-        gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 3, 3);
-        uint16_t baseIndex = gRender->overlay.nextVertexIndex();
-        if (i % 2 == 0) {
-            gRender->overlay.addVertex(vertices[i]);
-            gRender->overlay.addVertex(vertices[i + 1]);
-            gRender->overlay.addVertex(vertices[i + 2]);
-        }
-        else {
-            gRender->overlay.addVertex(vertices[i]);
-            gRender->overlay.addVertex(vertices[i + 2]);
-            gRender->overlay.addVertex(vertices[i + 1]);
-        }
-        gRender->overlay.addIndex(baseIndex + 0);
-        gRender->overlay.addIndex(baseIndex + 1);
-        gRender->overlay.addIndex(baseIndex + 2);
-    }
-}
-
-void NX_DrawTriangleFan2D(const NX_Vertex2D* vertices, int count)
-{
-    if (count < 3) return;
-    for (int i = 1; i < count - 1; i++) {
-        gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 3, 3);
-        uint16_t baseIndex = gRender->overlay.nextVertexIndex();
-        gRender->overlay.addVertex(vertices[0]);
-        gRender->overlay.addVertex(vertices[i]);
-        gRender->overlay.addVertex(vertices[i + 1]);
-        gRender->overlay.addIndex(baseIndex + 0);
-        gRender->overlay.addIndex(baseIndex + 1);
-        gRender->overlay.addIndex(baseIndex + 2);
-    }
-}
-
 void NX_DrawQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3)
+{
+    const NX_Color& color = gRender->overlay.currentColor();
+
+    NX_Vertex2D v0 = { .position = p0, .texcoord = NX_VEC2(0.0f, 0.0f), .color = color };
+    NX_Vertex2D v1 = { .position = p1, .texcoord = NX_VEC2(1.0f, 0.0f), .color = color };
+    NX_Vertex2D v2 = { .position = p2, .texcoord = NX_VEC2(1.0f, 1.0f), .color = color };
+    NX_Vertex2D v3 = { .position = p3, .texcoord = NX_VEC2(0.0f, 1.0f), .color = color };
+
+    NX_DrawQuadEx2D(&v0, &v1, &v2, &v3);
+}
+
+void NX_DrawQuadEx2D(const NX_Vertex2D* v0, const NX_Vertex2D* v1, const NX_Vertex2D* v2, const NX_Vertex2D* v3)
 {
     gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 4, 6);
 
     uint16_t baseIndex = gRender->overlay.nextVertexIndex();
 
-    gRender->overlay.addVertex(p0.x, p0.y, 0.0f, 0.0f);
-    gRender->overlay.addVertex(p1.x, p1.y, 1.0f, 0.0f);
-    gRender->overlay.addVertex(p2.x, p2.y, 1.0f, 1.0f);
-    gRender->overlay.addVertex(p3.x, p3.y, 0.0f, 1.0f);
+    gRender->overlay.addVertex(*v0);
+    gRender->overlay.addVertex(*v1);
+    gRender->overlay.addVertex(*v2);
+    gRender->overlay.addVertex(*v3);
 
     gRender->overlay.addIndex(baseIndex + 0);
     gRender->overlay.addIndex(baseIndex + 1);
@@ -382,169 +408,39 @@ void NX_DrawQuad2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3)
     gRender->overlay.addIndex(baseIndex + 3);
 }
 
-void NX_DrawQuadBorder2D(NX_Vec2 p0, NX_Vec2 p1, NX_Vec2 p2, NX_Vec2 p3, float thickness)
-{
-    NX_DrawLine2D(p0, p1, thickness);
-    NX_DrawLine2D(p1, p2, thickness);
-    NX_DrawLine2D(p2, p3, thickness);
-    NX_DrawLine2D(p3, p0, thickness);
-}
-
-void NX_DrawQuadList2D(const NX_Vertex2D* quads, int quadCount)
-{
-    if (quadCount <= 0) return;
-    for (int i = 0; i < quadCount; i++) {
-        gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 4, 6);
-        uint16_t baseIndex = gRender->overlay.nextVertexIndex();
-        const NX_Vertex2D* quad = &quads[i * 4];
-        for (int j = 0; j < 4; j++) {
-            gRender->overlay.addVertex(quad[j]);
-        }
-        gRender->overlay.addIndex(baseIndex + 0);
-        gRender->overlay.addIndex(baseIndex + 1);
-        gRender->overlay.addIndex(baseIndex + 2);
-        gRender->overlay.addIndex(baseIndex + 0);
-        gRender->overlay.addIndex(baseIndex + 2);
-        gRender->overlay.addIndex(baseIndex + 3);
-    }
-}
-
-void NX_DrawQuadStrip2D(const NX_Vertex2D* vertices, int count)
-{
-    if (count < 4 || count % 2 != 0) return;
-    for (int i = 0; i < count - 2; i += 2) {
-        gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 4, 6);
-        uint16_t baseIndex = gRender->overlay.nextVertexIndex();
-        gRender->overlay.addVertex(vertices[i]);
-        gRender->overlay.addVertex(vertices[i + 1]);
-        gRender->overlay.addVertex(vertices[i + 3]);
-        gRender->overlay.addVertex(vertices[i + 2]);
-        gRender->overlay.addIndex(baseIndex + 0);
-        gRender->overlay.addIndex(baseIndex + 1);
-        gRender->overlay.addIndex(baseIndex + 2);
-        gRender->overlay.addIndex(baseIndex + 0);
-        gRender->overlay.addIndex(baseIndex + 2);
-        gRender->overlay.addIndex(baseIndex + 3);
-    }
-}
-
-void NX_DrawQuadFan2D(const NX_Vertex2D* vertices, int count)
-{
-    if (count < 4) return;
-    for (int i = 1; i < count - 2; i += 2) {
-        if (i + 2 >= count) break;
-        gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 4, 6);
-        uint16_t baseIndex = gRender->overlay.nextVertexIndex();
-        gRender->overlay.addVertex(vertices[0]);
-        gRender->overlay.addVertex(vertices[i]);
-        gRender->overlay.addVertex(vertices[i + 1]);
-        gRender->overlay.addVertex(vertices[i + 2]);
-        gRender->overlay.addIndex(baseIndex + 0);
-        gRender->overlay.addIndex(baseIndex + 1);
-        gRender->overlay.addIndex(baseIndex + 2);
-        gRender->overlay.addIndex(baseIndex + 0);
-        gRender->overlay.addIndex(baseIndex + 2);
-        gRender->overlay.addIndex(baseIndex + 3);
-    }
-}
-
 void NX_DrawRect2D(float x, float y, float w, float h)
 {
-    NX_DrawQuad2D(
-        NX_VEC2(x, y),
-        NX_VEC2(x + w, y),
-        NX_VEC2(x + w, y + h),
-        NX_VEC2(x, y + h)
-    );
+    gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, 4, 6);
+
+    uint16_t baseIndex = gRender->overlay.nextVertexIndex();
+
+    gRender->overlay.addVertex(x, y, 0.0f, 0.0f);
+    gRender->overlay.addVertex(x + w, y, 1.0f, 0.0f);
+    gRender->overlay.addVertex(x + w, y + h, 1.0f, 1.0f);
+    gRender->overlay.addVertex(x, y + h, 0.0f, 1.0f);
+
+    gRender->overlay.addIndex(baseIndex + 0);
+    gRender->overlay.addIndex(baseIndex + 1);
+    gRender->overlay.addIndex(baseIndex + 2);
+
+    gRender->overlay.addIndex(baseIndex + 0);
+    gRender->overlay.addIndex(baseIndex + 2);
+    gRender->overlay.addIndex(baseIndex + 3);
 }
 
 void NX_DrawRectBorder2D(float x, float y, float w, float h, float thickness)
 {
-    NX_DrawQuadBorder2D(
-        NX_VEC2(x, y),
-        NX_VEC2(x + w, y),
-        NX_VEC2(x + w, y + h),
-        NX_VEC2(x, y + h),
-        thickness
-    );
-}
+    const NX_Color& color = gRender->overlay.currentColor();
 
-void NX_DrawRectEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation)
-{
-    float halfW = size.x * 0.5f;
-    float halfH = size.y * 0.5f;
+    NX_Vertex2D v0 = { .position = {x,     y},     .texcoord = {0.0f, 0.0f}, .color = color };
+    NX_Vertex2D v1 = { .position = {x + w, y},     .texcoord = {1.0f, 0.0f}, .color = color };
+    NX_Vertex2D v2 = { .position = {x + w, y + h}, .texcoord = {1.0f, 1.0f}, .color = color };
+    NX_Vertex2D v3 = { .position = {x,     y + h}, .texcoord = {0.0f, 1.0f}, .color = color };
 
-    float pivotOffsetX = (pivot.x - 0.5f) * size.x;
-    float pivotOffsetY = (pivot.y - 0.5f) * size.y;
-
-    NX_Vec2 adjustedCenter = {
-        center.x - pivotOffsetX,
-        center.y - pivotOffsetY
-    };
-
-    float cosR = cosf(rotation);
-    float sinR = sinf(rotation);
-
-    NX_Vec2 tl = {
-        adjustedCenter.x + (-halfW * cosR - -halfH * sinR),
-        adjustedCenter.y + (-halfW * sinR + -halfH * cosR)
-    };
-
-    NX_Vec2 tr = {
-        adjustedCenter.x + ( halfW * cosR - -halfH * sinR),
-        adjustedCenter.y + ( halfW * sinR + -halfH * cosR)
-    };
-
-    NX_Vec2 br = {
-        adjustedCenter.x + ( halfW * cosR -  halfH * sinR),
-        adjustedCenter.y + ( halfW * sinR +  halfH * cosR)
-    };
-
-    NX_Vec2 bl = {
-        adjustedCenter.x + (-halfW * cosR -  halfH * sinR),
-        adjustedCenter.y + (-halfW * sinR +  halfH * cosR)
-    };
-
-    NX_DrawQuad2D(tl, tr, br, bl);
-}
-
-void NX_DrawRectBorderEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation, float thickness)
-{
-    float halfW = size.x * 0.5f;
-    float halfH = size.y * 0.5f;
-
-    float pivotOffsetX = (pivot.x - 0.5f) * size.x;
-    float pivotOffsetY = (pivot.y - 0.5f) * size.y;
-
-    NX_Vec2 adjustedCenter = {
-        center.x - pivotOffsetX,
-        center.y - pivotOffsetY
-    };
-
-    float cosR = cosf(rotation);
-    float sinR = sinf(rotation);
-
-    NX_Vec2 tl = {
-        adjustedCenter.x + (-halfW * cosR - -halfH * sinR),
-        adjustedCenter.y + (-halfW * sinR + -halfH * cosR)
-    };
-
-    NX_Vec2 tr = {
-        adjustedCenter.x + ( halfW * cosR - -halfH * sinR),
-        adjustedCenter.y + ( halfW * sinR + -halfH * cosR)
-    };
-
-    NX_Vec2 br = {
-        adjustedCenter.x + ( halfW * cosR -  halfH * sinR),
-        adjustedCenter.y + ( halfW * sinR +  halfH * cosR)
-    };
-
-    NX_Vec2 bl = {
-        adjustedCenter.x + (-halfW * cosR -  halfH * sinR),
-        adjustedCenter.y + (-halfW * sinR +  halfH * cosR)
-    };
-
-    NX_DrawQuadBorder2D(tl, tr, br, bl, thickness);
+    NX_DrawLineEx2D(&v0, &v1, thickness);
+    NX_DrawLineEx2D(&v1, &v2, thickness);
+    NX_DrawLineEx2D(&v1, &v2, thickness);
+    NX_DrawLineEx2D(&v3, &v0, thickness);
 }
 
 void NX_DrawRectRounded2D(float x, float y, float w, float h, float radius, int segments)
@@ -570,10 +466,10 @@ void NX_DrawRectRounded2D(float x, float y, float w, float h, float radius, int 
     /* --- Corner centers and angle data --- */
 
     float cornerData[4][4] = {
-        {x + radius, y + radius, NX_PI, NX_PI * 1.5f},          // Top-left
-        {x + w - radius, y + radius, NX_PI * 1.5f, NX_PI * 2.0f}, // Top-right
-        {x + w - radius, y + h - radius, 0.0f, NX_PI * 0.5f},     // Bottom-right
-        {x + radius, y + h - radius, NX_PI * 0.5f, NX_PI}         // Bottom-left
+        {x + radius, y + radius, NX_PI, NX_PI * 1.5f},              // Top-left
+        {x + w - radius, y + radius, NX_PI * 1.5f, NX_PI * 2.0f},   // Top-right
+        {x + w - radius, y + h - radius, 0.0f, NX_PI * 0.5f},       // Bottom-right
+        {x + radius, y + h - radius, NX_PI * 0.5f, NX_PI}           // Bottom-left
     };
 
     /* --- Corner generation --- */
@@ -747,182 +643,6 @@ void NX_DrawRectRoundedBorder2D(float x, float y, float w, float h, float radius
         }
         currentIndex += 4;
     }
-}
-
-void NX_DrawRectRoundedEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation, float radius)
-{
-    // For rotated rectangles, a tessellation approach is used
-    // because it is complex to transform the arcs directly
-
-    float maxRadius = fminf(size.x * 0.5f, size.y * 0.5f);
-    radius = fminf(radius, maxRadius);
-
-    float pivotOffsetX = (pivot.x - 0.5f) * size.x;
-    float pivotOffsetY = (pivot.y - 0.5f) * size.y;
-
-    NX_Vec2 adjustedCenter = {
-        center.x - pivotOffsetX,
-        center.y - pivotOffsetY
-    };
-
-    #define SEGMENTS 8
-    #define TOTAL_POINTS (4 * SEGMENTS)
-
-    NX_Vec2 points[TOTAL_POINTS];
-
-    float halfW = size.x * 0.5f;
-    float halfH = size.y * 0.5f;
-
-    float cosR = cosf(rotation);
-    float sinR = sinf(rotation);
-
-    float angleStep = (NX_PI * 0.5f) / (SEGMENTS - 1);
-    float cosStep = cosf(angleStep);
-    float sinStep = sinf(angleStep);
-
-    int pointIndex = 0;
-
-    for (int corner = 0; corner < 4; corner++) {
-        float cornerX, cornerY, startAngle;
-        switch (corner) {
-            case 0: // Top-left
-                cornerX = -halfW + radius;
-                cornerY = -halfH + radius;
-                startAngle = NX_PI;
-                break;
-            case 1: // Top-right
-                cornerX = halfW - radius;
-                cornerY = -halfH + radius;
-                startAngle = NX_PI * 1.5f;
-                break;
-            case 2: // Bottom-right
-                cornerX = halfW - radius;
-                cornerY = halfH - radius;
-                startAngle = 0;
-                break;
-            case 3: // Bottom-left
-                cornerX = -halfW + radius;
-                cornerY = halfH - radius;
-                startAngle = NX_PI * 0.5f;
-                break;
-        }
-
-        float cosCurrent = cosf(startAngle);
-        float sinCurrent = sinf(startAngle);
-
-        for (int i = 0; i < SEGMENTS; i++) {
-            float localX = cornerX + radius * cosCurrent;
-            float localY = cornerY + radius * sinCurrent;
-
-            float rotX = localX * cosR - localY * sinR;
-            float rotY = localX * sinR + localY * cosR;
-
-            points[pointIndex].x = adjustedCenter.x + rotX;
-            points[pointIndex].y = adjustedCenter.y + rotY;
-            pointIndex++;
-
-            if (i < SEGMENTS - 1) {
-                float newCos = cosCurrent * cosStep - sinCurrent * sinStep;
-                float newSin = sinCurrent * cosStep + cosCurrent * sinStep;
-                cosCurrent = newCos;
-                sinCurrent = newSin;
-            }
-        }
-    }
-
-    for (int i = 1; i < TOTAL_POINTS - 1; i++) {
-        NX_DrawTriangle2D(points[0], points[i], points[i + 1]);
-    }
-
-    #undef TOTAL_POINTS
-    #undef SEGMENTS
-}
-
-void NX_DrawRectRoundedBorderEx2D(NX_Vec2 center, NX_Vec2 size, NX_Vec2 pivot, float rotation, float radius, float thickness)
-{
-    float maxRadius = fminf(size.x * 0.5f, size.y * 0.5f);
-    radius = fminf(radius, maxRadius);
-
-    float pivotOffsetX = (pivot.x - 0.5f) * size.x;
-    float pivotOffsetY = (pivot.y - 0.5f) * size.y;
-
-    NX_Vec2 adjustedCenter = {
-        center.x - pivotOffsetX,
-        center.y - pivotOffsetY
-    };
-
-    #define SEGMENTS 8
-    #define TOTAL_POINTS (4 * SEGMENTS)
-
-    NX_Vec2 points[TOTAL_POINTS];
-
-    float halfW = size.x * 0.5f;
-    float halfH = size.y * 0.5f;
-
-    float cosR = cosf(rotation);
-    float sinR = sinf(rotation);
-
-    float angleStep = (NX_PI * 0.5f) / (SEGMENTS - 1);
-    float cosStep = cosf(angleStep);
-    float sinStep = sinf(angleStep);
-
-    int pointIndex = 0;
-
-    for (int corner = 0; corner < 4; corner++) {
-        float cornerX, cornerY, startAngle;
-        switch (corner) {
-        case 0:
-            cornerX = -halfW + radius;
-            cornerY = -halfH + radius;
-            startAngle = NX_PI;
-            break;
-        case 1:
-            cornerX = halfW - radius;
-            cornerY = -halfH + radius;
-            startAngle = NX_PI * 1.5f;
-            break;
-        case 2:
-            cornerX = halfW - radius;
-            cornerY = halfH - radius;
-            startAngle = 0;
-            break;
-        case 3:
-            cornerX = -halfW + radius;
-            cornerY = halfH - radius;
-            startAngle = NX_PI * 0.5f;
-            break;
-        }
-
-        float cosCurrent = cosf(startAngle);
-        float sinCurrent = sinf(startAngle);
-
-        for (int i = 0; i < SEGMENTS; i++) {
-            float localX = cornerX + radius * cosCurrent;
-            float localY = cornerY + radius * sinCurrent;
-
-            float rotX = localX * cosR - localY * sinR;
-            float rotY = localX * sinR + localY * cosR;
-
-            points[pointIndex].x = adjustedCenter.x + rotX;
-            points[pointIndex].y = adjustedCenter.y + rotY;
-            pointIndex++;
-
-            if (i < SEGMENTS - 1) {
-                float newCos = cosCurrent * cosStep - sinCurrent * sinStep;
-                float newSin = sinCurrent * cosStep + cosCurrent * sinStep;
-                cosCurrent = newCos;
-                sinCurrent = newSin;
-            }
-        }
-    }
-
-    for (int i = 0; i < TOTAL_POINTS; i++) {
-        int next = (i + 1) % TOTAL_POINTS;
-        NX_DrawLine2D(points[i], points[next], thickness);
-    }
-
-    #undef TOTAL_POINTS
-    #undef SEGMENTS
 }
 
 void NX_DrawCircle2D(NX_Vec2 center, float radius, int segments)

@@ -39,6 +39,9 @@ public:
     Overlay(const Overlay&) = delete;
     Overlay& operator=(const Overlay&) = delete;
 
+    /** Getters */
+    const NX_Color& currentColor() const;
+
     /** Setters */
     void setRenderTexture(const NX_RenderTexture* target);
     void setProjection(const NX_Mat4& projection);
@@ -106,6 +109,11 @@ private:
 };
 
 /* === Public Implementation === */
+
+inline const NX_Color& Overlay::currentColor() const
+{
+    return mCurrentColor;
+}
 
 inline void Overlay::setRenderTexture(const NX_RenderTexture* target)
 {

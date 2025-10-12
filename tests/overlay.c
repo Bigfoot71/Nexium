@@ -86,8 +86,8 @@ int main(void)
             NX_SetTexture2D(texture);
             NX_SetColor2D(NX_WHITE);
             {
-                if ((int)(NX_GetElapsedTime() / 3.0f) % 2 == 0) {
-                    NX_DrawRectEx2D(NX_VEC2(127, 350), NX_VEC2_1(128), NX_VEC2(0.5f, 0.5f), NX_TAU / 3.0f * NX_GetElapsedTime());
+                if ((int)(NX_GetElapsedTime()) % 2 == 0) {
+                    NX_DrawRect2D(63, 286, 128, 128);
                 }
                 else {
                     NX_DrawCircle2D(NX_VEC2(127, 350), 64, 32);
