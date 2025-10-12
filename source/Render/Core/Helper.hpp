@@ -201,7 +201,7 @@ inline NX_Mat4 getCubeView(int face, const NX_Vec3& eye = NX_VEC3_ZERO)
     return NX_Mat4LookAt(eye, eye + dirs[face], ups[face]);
 }
 
-inline NX_Mat4 getCubeProj(float near = 0.25f, float far = 2.5f)
+inline NX_Mat4 getCubeProj(float near = 0.1f, float far = 10.0f)
 {
     return NX_Mat4Perspective(NX_PI / 2.0f, 1.0f, near, far);
 }
