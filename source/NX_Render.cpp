@@ -227,7 +227,7 @@ void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int pointCount
 {
     switch (type) {
     case NX_PRIMITIVE_POINTS:
-        thickness *= 0.5f;
+        thickness = NX_MAX(thickness, 1.0f) * 0.5f;
         for (int i = 0; i < pointCount; i++) {
             NX_DrawQuad2D(
                 points[i] + NX_VEC2(-thickness, -thickness),
@@ -238,16 +238,19 @@ void NX_DrawShape2D(NX_PrimitiveType type, const NX_Vec2* points, int pointCount
         }
         break;
     case NX_PRIMITIVE_LINES:
+        thickness = NX_MAX(thickness, 1.0f);
         for (int i = 0; i < pointCount; i += 2) {
             NX_DrawLine2D(points[i], points[i + 1], thickness);
         }
         break;
     case NX_PRIMITIVE_LINE_STRIP:
+        thickness = NX_MAX(thickness, 1.0f);
         for (int i = 0; i < pointCount - 1; i++) {
             NX_DrawLine2D(points[i], points[i + 1], thickness);
         }
         break;
     case NX_PRIMITIVE_LINE_LOOP:
+        thickness = NX_MAX(thickness, 1.0f);
         for (int i = 0; i < pointCount; i++) {
             NX_DrawLine2D(points[i], points[(i + 1) % pointCount], thickness);
         }
@@ -304,7 +307,7 @@ void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int ve
 {
     switch (type) {
     case NX_PRIMITIVE_POINTS:
-        thickness *= 0.5f;
+        thickness = NX_MAX(thickness, 1.0f) * 0.5f;
         for (int i = 0; i < vertexCount; i++) {
             NX_DrawQuad2D(
                 vertices[i].position + NX_VEC2(-thickness, -thickness),
@@ -315,16 +318,19 @@ void NX_DrawShapeEx2D(NX_PrimitiveType type, const NX_Vertex2D* vertices, int ve
         }
         break;
     case NX_PRIMITIVE_LINES:
+        thickness = NX_MAX(thickness, 1.0f);
         for (int i = 0; i < vertexCount; i += 2) {
             NX_DrawLineEx2D(&vertices[i], &vertices[i + 1], thickness);
         }
         break;
     case NX_PRIMITIVE_LINE_STRIP:
+        thickness = NX_MAX(thickness, 1.0f);
         for (int i = 0; i < vertexCount - 1; i++) {
             NX_DrawLineEx2D(&vertices[i], &vertices[i + 1], thickness);
         }
         break;
     case NX_PRIMITIVE_LINE_LOOP:
+        thickness = NX_MAX(thickness, 1.0f);
         for (int i = 0; i < vertexCount; i++) {
             NX_DrawLineEx2D(&vertices[i], &vertices[(i + 1) % vertexCount], thickness);
         }
