@@ -340,7 +340,6 @@ embed_shaders(${PROJECT_NAME}
     "${NX_ROOT_PATH}/shaders/scene/scene.vert"
     "${NX_ROOT_PATH}/shaders/scene/scene_lit.frag"
     "${NX_ROOT_PATH}/shaders/scene/scene_unlit.frag"
-    "${NX_ROOT_PATH}/shaders/scene/scene_wireframe.geom"
     "${NX_ROOT_PATH}/shaders/scene/scene_shadow.frag"
     "${NX_ROOT_PATH}/shaders/scene/bloom_post.frag"
     "${NX_ROOT_PATH}/shaders/scene/ssao_post.frag"

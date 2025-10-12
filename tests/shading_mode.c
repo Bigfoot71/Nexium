@@ -37,7 +37,7 @@ int main(void)
         CMN_UpdateCamera(&camera, NX_VEC3_ZERO, 5.0f, 2.5f);
 
         if (NX_IsKeyJustPressed(NX_KEY_SPACE)) {
-            material.shading = (material.shading + 1) % 3;
+            material.shading = (material.shading + 1) % 2;
         }
 
         NX_Begin3D(&camera, NULL, NULL);

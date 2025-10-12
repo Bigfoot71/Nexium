@@ -14,7 +14,6 @@ struct render::ShaderTraits<NX_MaterialShader> {
     enum Variant {
         SCENE_LIT,        // Full PBR/Phong lighting
         SCENE_UNLIT,      // No lighting, just albedo
-        SCENE_WIREFRAME,  // Wireframe rendering
         SCENE_PREPASS,    // Depth/normal prepass
         SCENE_SHADOW,     // Shadow map generation
         VARIANT_COUNT
@@ -58,11 +57,11 @@ NX_MaterialShader::variantFromShadingMode(NX_ShadingMode shading)
         return Variant::SCENE_LIT;
     case NX_SHADING_UNLIT:
         return Variant::SCENE_UNLIT;
-    case NX_SHADING_WIREFRAME:
-        return Variant::SCENE_WIREFRAME;
     default:
-        return Variant::SCENE_LIT;
+        break;
     }
+
+    return Variant::SCENE_LIT;
 }
 
 #endif // NX_RENDER_MATERIAL_SHADER_HPP

@@ -151,7 +151,6 @@ typedef enum NX_BillboardMode {
 typedef enum NX_ShadingMode {
     NX_SHADING_LIT,             ///< Standard lighting and shading applied.
     NX_SHADING_UNLIT,           ///< No lighting, renders with flat color.
-    NX_SHADING_WIREFRAME        ///< Renders only mesh edges in wireframe mode.
 } NX_ShadingMode;
 
 /**

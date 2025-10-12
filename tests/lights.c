@@ -1,5 +1,6 @@
 #include <NX/Nexium.h>
 #include "./common.h"
+#include "NX/NX_Render.h"
 
 int main(void)
 {
@@ -17,7 +18,7 @@ int main(void)
     NX_Mesh* sphere = NX_GenMeshSphere(0.1f, 16, 8);
 
     NX_Material matSphere = NX_GetDefaultMaterial();
-    matSphere.shading = NX_SHADING_WIREFRAME;
+    matSphere.shading = NX_SHADING_UNLIT;
 
     NX_Light* lights[128];
     for (int i = 0; i < NX_ARRAY_SIZE(lights); i++) {
