@@ -128,10 +128,10 @@ typedef enum NX_PrimitiveType {
     NX_PRIMITIVE_POINTS,            ///< Each vertex represents a single point.
     NX_PRIMITIVE_LINES,             ///< Each pair of vertices forms an independent line segment.
     NX_PRIMITIVE_LINE_STRIP,        ///< Connected series of line segments sharing vertices.
-    NX_PRIMITIVE_LINE_LOOP,
+    NX_PRIMITIVE_LINE_LOOP,         ///< Closed loop of connected line segments.
     NX_PRIMITIVE_TRIANGLES,         ///< Each set of three vertices forms an independent triangle.
     NX_PRIMITIVE_TRIANGLE_STRIP,    ///< Connected strip of triangles sharing vertices.
-    NX_PRIMITIVE_TRIANGLE_FAN
+    NX_PRIMITIVE_TRIANGLE_FAN       ///< Fan of triangles sharing the first vertex.
 } NX_PrimitiveType;
 
 /**
