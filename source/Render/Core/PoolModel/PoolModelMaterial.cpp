@@ -8,6 +8,7 @@
 
 #include "../PoolModel.hpp"
 #include "./AssimpHelper.hpp"
+#include "NX/NX_Render.h"
 
 #include <assimp/GltfMaterial.h>
 
@@ -380,18 +381,21 @@ bool PoolModel::processMaterials(NX_Model* model, const aiScene* scene)
             modelMaterial.orm.metalness = 1.0f;
         }
 
-        /* --- Handle cull mode from two-sided property --- */
-
-        bool twoSided;
-        if (material->Get(AI_MATKEY_TWOSIDED, twoSided) == AI_SUCCESS) {
-            if (twoSided) modelMaterial.cull = NX_CULL_NONE;
-        }
-
         /* --- Handle glTF alpha cutoff --- */
 
         float alphaCutOff;
         if (material->Get(AI_MATKEY_GLTF_ALPHACUTOFF, alphaCutOff) == AI_SUCCESS) {
             modelMaterial.alphaCutOff = alphaCutOff;
+            modelMaterial.depth.prePass = true;
+        }
+
+        /* --- Handle shading mode --- */
+
+        aiShadingMode shadingMode{};
+        if (material->Get(AI_MATKEY_SHADING_MODEL, shadingMode) == AI_SUCCESS) {
+            if (shadingMode == aiShadingMode_Unlit) {
+                modelMaterial.shading = NX_SHADING_UNLIT;
+            }
         }
 
         /* --- Handle glTF alpha mode --- */
@@ -421,6 +425,13 @@ bool PoolModel::processMaterials(NX_Model* model, const aiScene* scene)
             default:
                 break;
             }
+        }
+
+        /* --- Handle cull mode from two-sided property --- */
+
+        bool twoSided;
+        if (material->Get(AI_MATKEY_TWOSIDED, twoSided) == AI_SUCCESS) {
+            if (twoSided) modelMaterial.cull = NX_CULL_NONE;
         }
     }
 
