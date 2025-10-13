@@ -447,12 +447,12 @@ typedef struct NX_Environment {
     } sky;
 
     struct {
+        NX_Fog mode;                ///< fog mode
         float density;              ///< fog density
         float start;                ///< fog start distance (linear only)
         float end;                  ///< fog end distance (linear only)
         float skyAffect;            ///< influence of sky color on the fog
         NX_Color color;             ///< fog color
-        NX_Fog mode;                ///< fog mode
     } fog;
 
     struct {
@@ -464,11 +464,12 @@ typedef struct NX_Environment {
     } ssao;
 
     struct {
+        NX_Bloom mode;              ///< Mode used to combine the bloom effect with the scene.
         float threshold;            ///< HDR threshold used for bloom extraction.
         float softThreshold;        ///< Softening factor applied during prefiltering.
         float filterRadius;         ///< Radius of the blur filter used for bloom spreading.
         float strength;             ///< Intensity of the bloom effect when blended with the scene.
-        NX_Bloom mode;              ///< Mode used to combine the bloom effect with the scene.
+        float levels[8];            ///< Bloom contribution factors, lower levels give a local effect, higher levels a global one.
     } bloom;
 
     struct {
@@ -1489,12 +1490,12 @@ NXAPI void NX_ApplyCameraTransform(NX_Camera* camera, NX_Mat4 transform, NX_Vec3
  *   - specular contribution: 1.0
  *   - diffuse contribution: 1.0
  * - fog:
+ *   - mode: NX_FOG_DISABLED
  *   - density: 0.01
  *   - start: 5.0
  *   - end: 50.0
  *   - skyAffect 0.5
  *   - color: NX_GRAY
- *   - mode: NX_FOG_DISABLED
  * - ssao:
  *   - intensity: 1.0
  *   - radius: 0.5
@@ -1502,11 +1503,20 @@ NXAPI void NX_ApplyCameraTransform(NX_Camera* camera, NX_Mat4 transform, NX_Vec3
  *   - bias: 0.025
  *   - enabled: false
  * - bloom:
+ *   - mode: NX_BLOOM_DISABLED
  *   - threshold: 0.0
  *   - softThreshold: 0.5
  *   - filterRadius: 0.0
  *   - strength: 0.05
- *   - mode: disabled
+ *   - levels:
+ *     - [0]: 0.0
+ *     - [1]: 0.0
+ *     - [2]: 0.0
+ *     - [3]: 1.0
+ *     - [4]: 0.0
+ *     - [5]: 1.0
+ *     - [6]: 0.0
+ *     - [7]: 0.0
  * - global adjustments:
  *   - brightness: 1.0
  *   - contrast: 1.0

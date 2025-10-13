@@ -2,6 +2,9 @@
 #define NX_SCENE_ENVIRONMENT_HPP
 
 #include <NX/NX_Render.h>
+#include <NX/NX_Macros.h>
+
+#include "../../Detail/Util/DynamicArray.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
 
 namespace scene {
@@ -10,14 +13,18 @@ namespace scene {
 
 class Environment {
 public:
+    /** Constructors */
     Environment();
-    void update(const NX_Environment& env);
+
+    /** Update methods */
+    void update(const NX_Environment& env, int bloomMipCount);
 
     /** Textures */
     const NX_Cubemap* skyCubemap() const;
     const NX_ReflectionProbe* skyProbe() const;
 
     /** CPU data */
+    const util::DynamicArray<float>& bloomLevels() const;
     bool hasFlags(NX_EnvironmentFlag flags) const;
     const NX_BoundingBox& bounds() const;
     const NX_Color& background() const;
@@ -66,10 +73,13 @@ private:
     NX_Cubemap* mSkyCubemap;
     NX_ReflectionProbe* mSkyProbe;
 
-    /** CPU data */
+    /** Scene data */
     NX_EnvironmentFlag mFlags;
     NX_BoundingBox mBounds;
     NX_Color mBackground;
+
+    /** Post processing data */
+    util::DynamicArray<float> mBloomLevels;
     NX_Tonemap mTonemapMode;
     NX_Bloom mBloomMode;
     bool mSsaoEnabled;
@@ -84,7 +94,7 @@ inline Environment::Environment()
     : mBuffer(GL_UNIFORM_BUFFER, sizeof(GPUData), nullptr, GL_DYNAMIC_DRAW)
 { }
 
-inline void Environment::update(const NX_Environment& env)
+inline void Environment::update(const NX_Environment& env, int bloomMipCount)
 {
     /* --- Store textures --- */
 
@@ -97,13 +107,33 @@ inline void Environment::update(const NX_Environment& env)
     mBounds = env.bounds;
     mBackground = env.background;
 
+    // Pre-multiply background with fog
     if (env.fog.mode != NX_FOG_DISABLED) {
         mBackground = NX_ColorLerp(mBackground, env.fog.color, env.fog.skyAffect);
     }
 
+    // Calculation of physical bloom level factors
+    if (env.bloom.mode != NX_BLOOM_DISABLED) {
+        mBloomLevels.clear();
+        if (!mBloomLevels.reserve(bloomMipCount)) {
+            NX_INTERNAL_LOG(W, "RENDER: Failed to reserve space for bloom mip factors");
+        }
+        for (uint32_t i = 0; i < bloomMipCount; ++i) {
+            float t = float(i) / float(bloomMipCount - 1); // 0 -> 1
+            float mapped = t * (int(NX_ARRAY_SIZE(env.bloom.levels)) - 1);
+            uint32_t idx0 = uint32_t(mapped);
+            uint32_t idx1 = NX_MIN(idx0 + 1, uint32_t(NX_ARRAY_SIZE(env.bloom.levels) - 1));
+            float frac = mapped - idx0;
+            mBloomLevels.emplace_back(
+                env.bloom.levels[idx0] * (1.0f - frac) +
+                env.bloom.levels[idx1] * frac
+            );
+        }
+    }
+
     mTonemapMode = env.tonemap.mode;
-    mBloomMode = env.bloom.mode;
     mSsaoEnabled = env.ssao.enabled;
+    mBloomMode = env.bloom.mode;
 
     /* --- Get all GPU data --- */
 
@@ -154,6 +184,11 @@ inline const NX_Cubemap* Environment::skyCubemap() const
 inline const NX_ReflectionProbe* Environment::skyProbe() const
 {
     return mSkyProbe;
+}
+
+inline const util::DynamicArray<float>& Environment::bloomLevels() const
+{
+    return mBloomLevels;
 }
 
 inline bool Environment::hasFlags(NX_EnvironmentFlag flags) const

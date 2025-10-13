@@ -22,6 +22,7 @@
 
 #include <shaders/bilateral_blur.frag.h>
 #include <shaders/downsampling.frag.h>
+#include <shaders/screen_quad.frag.h>
 #include <shaders/upsampling.frag.h>
 #include <shaders/bloom_post.frag.h>
 #include <shaders/ssao_pass.frag.h>
@@ -285,6 +286,20 @@ gpu::Program& ProgramCache::overlay()
     );
 
     return mOverlay;
+}
+
+gpu::Program& ProgramCache::screenQuad()
+{
+    if (mScreenQuad.isValid()) {
+        return mScreenQuad;
+    }
+
+    mScreenQuad = gpu::Program(
+        mVertexShaderScreen,
+        gpu::Shader(GL_FRAGMENT_SHADER, SCREEN_QUAD_FRAG)
+    );
+
+    return mScreenQuad;
 }
 
 } // namespace render

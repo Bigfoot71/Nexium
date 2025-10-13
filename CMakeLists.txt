@@ -330,6 +330,7 @@ embed_shaders(${PROJECT_NAME}
     "${NX_ROOT_PATH}/shaders/process/upsampling.frag"
     "${NX_ROOT_PATH}/shaders/process/bilateral_blur.frag"
     "${NX_ROOT_PATH}/shaders/process/ssao_pass.frag"
+    "${NX_ROOT_PATH}/shaders/process/screen_quad.frag"
     "${NX_ROOT_PATH}/shaders/overlay/shape.vert"
     "${NX_ROOT_PATH}/shaders/overlay/shape.frag"
     "${NX_ROOT_PATH}/shaders/overlay/overlay.frag"

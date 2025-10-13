@@ -61,6 +61,9 @@ public:
     NX_Shader& shader(NX_Shader* shader);
     gpu::Program& overlay();
 
+    /** Generic programs */
+    gpu::Program& screenQuad();
+
 private:
     /** Shader pools */
     util::ObjectPool<NX_MaterialShader, 32> mMaterialShaders;
@@ -89,6 +92,9 @@ private:
     /** Overlay programs */
     NX_Shader mShader{};
     gpu::Program mOverlay{};
+
+    /** Generic programs */
+    gpu::Program mScreenQuad{};
 
 private:
     gpu::Shader mVertexShaderScreen;

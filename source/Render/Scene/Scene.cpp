@@ -122,7 +122,7 @@ void Scene::begin(const NX_Camera& camera, const NX_Environment& env, const NX_R
     /* --- Update managers --- */
 
     mFrustum.update(camera, mTargetInfo.aspect);
-    mEnvironment.update(env);
+    mEnvironment.update(env, mMipChain.numLevels());
 }
 
 void Scene::end()
@@ -425,8 +425,6 @@ const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
 
 const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
 {
-    // TODO: Add control over the number of levels used for bloom calculation
-
     gpu::Pipeline pipeline;
 
     /* --- Bind common stuff --- */
@@ -440,11 +438,8 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
 
     pipeline.setUniformFloat2(0, NX_IVec2Rcp(mTargetSceneColor.dimensions()));
 
-    mMipChain.downsample(pipeline, 0, [&](uint32_t targetLevel, uint32_t sourceLevel) {
+    mMipChain.downsample(pipeline, 0, [&](int targetLevel, int sourceLevel) {
         pipeline.setUniformInt1(2, targetLevel);
-        if (targetLevel > 0) {
-            mMipChain.setMipLevelRange(sourceLevel, sourceLevel);
-        }
         pipeline.draw(GL_TRIANGLES, 3);
         pipeline.setUniformFloat2(0, NX_IVec2Rcp(mMipChain.dimensions(targetLevel)));
         if (targetLevel == 0) {
@@ -452,23 +447,26 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
         }
     });
 
+    /* --- Apply bloom level factors --- */
+
+    pipeline.useProgram(mPrograms.screenQuad());
+    pipeline.setBlendMode(gpu::BlendMode::Multiply);
+
+    mMipChain.iterate(pipeline, [&](int targetLevel) {
+        pipeline.setUniformFloat4(0, NX_VEC4_1(mEnvironment.bloomLevels()[targetLevel]));
+        pipeline.draw(GL_TRIANGLES, 3);
+    });
+
     /* --- Upsampling of the source --- */
 
     pipeline.useProgram(mPrograms.upsampling());
     pipeline.setBlendMode(gpu::BlendMode::Additive);
 
-    mMipChain.upsample(pipeline, [&](uint32_t targetLevel, uint32_t sourceLevel) {
-        mMipChain.setMipLevelRange(sourceLevel, sourceLevel);
+    mMipChain.upsample(pipeline, [&](int targetLevel, int sourceLevel) {
         pipeline.draw(GL_TRIANGLES, 3);
     });
 
     pipeline.setBlendMode(gpu::BlendMode::Disabled);
-
-    /* --- Reset mipmap sampling levels for debugging with RenderDoc */
-
-    if constexpr (detail::BuildInfo::debug) {
-        mMipChain.setMipLevelRange(0, mMipChain.numLevels() - 1);
-    }
 
     /* --- Applying bloom to the scene --- */
 

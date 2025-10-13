@@ -1690,12 +1690,12 @@ NX_Environment NX_GetDefaultEnvironment(void)
             .diffuse = 1.0f
         },
         .fog = {
+            .mode = NX_FOG_DISABLED,
             .density = 0.01f,
             .start = 5.0f,
             .end = 50.0f,
             .skyAffect = 0.5f,
-            .color = NX_GRAY,
-            .mode = NX_FOG_DISABLED,
+            .color = NX_GRAY
         },
         .ssao = {
             .intensity = 1.0f,
@@ -1705,11 +1705,21 @@ NX_Environment NX_GetDefaultEnvironment(void)
             .enabled = false
         },
         .bloom {
+            .mode = NX_BLOOM_DISABLED,
             .threshold = 0.0f,
             .softThreshold = 0.5f,
             .filterRadius = 0,
             .strength = 0.05f,
-            .mode = NX_BLOOM_DISABLED
+            .levels = {
+                0.0f,
+                0.0f,
+                0.0f,
+                1.0f,
+                0.0f,
+                1.0f,
+                0.0f,
+                0.0f
+            }
         },
         .adjustment = {
             .brightness = 1.0f,
