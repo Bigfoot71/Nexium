@@ -42,7 +42,7 @@ layout(std140, binding = 0) uniform U_Environment {
 /* === Uniforms === */
 
 layout(location = 0) uniform vec2 uTexelSize;        //< Reciprocal of the resolution of the source being sampled
-layout(location = 2) uniform int uMipLevel;          //< Which mip we are writing to, used for Karis average
+layout(location = 1) uniform int uMipLevel;          //< Which mip we are writing to, used for Karis average
 
 /* === Fragments === */
 

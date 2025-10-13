@@ -434,17 +434,13 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
     /* --- Downsampling of the source --- */
 
     pipeline.useProgram(mPrograms.downsampling());
-    pipeline.bindTexture(0, source);
-
-    pipeline.setUniformFloat2(0, NX_IVec2Rcp(mTargetSceneColor.dimensions()));
 
     mMipChain.downsample(pipeline, 0, [&](int targetLevel, int sourceLevel) {
-        pipeline.setUniformInt1(2, targetLevel);
+        const gpu::Texture& texSource = (targetLevel == 0) ? source : mMipChain.texture();
+        pipeline.setUniformFloat2(0, NX_IVec2Rcp(texSource.dimensions()));
+        pipeline.setUniformInt1(1, targetLevel);
+        pipeline.bindTexture(0, texSource);
         pipeline.draw(GL_TRIANGLES, 3);
-        pipeline.setUniformFloat2(0, NX_IVec2Rcp(mMipChain.dimensions(targetLevel)));
-        if (targetLevel == 0) {
-            pipeline.bindTexture(0, mMipChain.texture());
-        }
     });
 
     /* --- Apply bloom level factors --- */
