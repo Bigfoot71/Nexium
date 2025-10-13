@@ -1467,6 +1467,13 @@ NXAPI void NX_UpdateCameraFPS(NX_Camera* camera, NX_Vec3 movement, NX_Vec3 rotat
  */
 NXAPI void NX_ApplyCameraTransform(NX_Camera* camera, NX_Mat4 transform, NX_Vec3 offset);
 
+/**
+ * @brief Retrieves the current transformation of a camera.
+ * @param camera Pointer to the camera.
+ * @return The camera's current transform.
+ */
+NXAPI NX_Transform NX_GetCameraTransform(const NX_Camera* camera);
+
 /** @} */ // end of Camera
 
 /**

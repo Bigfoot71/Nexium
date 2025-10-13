@@ -1670,6 +1670,15 @@ void NX_ApplyCameraTransform(NX_Camera* camera, NX_Mat4 transform, NX_Vec3 offse
     camera->position = NX_Vec3Add(transformPosition, rotatedOffset);
 }
 
+NX_Transform NX_GetCameraTransform(const NX_Camera* camera)
+{
+    return NX_TRANSFORM_T {
+        .translation = camera->position,
+        .rotation = camera->rotation,
+        .scale = NX_VEC3_ONE
+    };
+}
+
 /* === Environment - Public API === */
 
 NX_Environment NX_GetDefaultEnvironment(void)
