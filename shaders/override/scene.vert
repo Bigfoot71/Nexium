@@ -31,8 +31,10 @@ vec4 TANGENT    = vec4(0.0, 0.0, 0.0, 1.0);
 
 void VertexOverride()
 {
+    Material material = sMaterials[uMaterialIndex];
+
     POSITION = aPosition;
-    TEXCOORD = uMaterial.texOffset + aTexCoord * uMaterial.texScale;
+    TEXCOORD = material.texOffset + aTexCoord * material.texScale;
     COLOR = aColor * iColor;
     NORMAL = aNormal;
     TANGENT = aTangent;

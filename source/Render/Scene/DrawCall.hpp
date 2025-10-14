@@ -39,18 +39,21 @@ public:
 public:
     /** Constructors */
     template<typename T_Mesh>
-    DrawCall(int dataIndex, T_Mesh& mesh, const NX_Material& material);
+    DrawCall(int dataIndex, int materialIndex, T_Mesh& mesh, const NX_Material& material);
 
     /** Draw call category management */
     static Category category(const NX_Material& material);
     Category category() const;
 
-    /** Internal draw call data */
-    const NX_Material& material() const;
+    /** Object data */
     NX_ShadowCastMode shadowCastMode() const;
     NX_ShadowFaceMode shadowFaceMode() const;
     const NX_BoundingBox& aabb() const;
     NX_Layer layerMask() const;
+
+    /** Material data */
+    const NX_Material& material() const;
+    int materialIndex() const;
 
     /** External draw call data */
     const NX_MaterialShader::TextureArray& materialShaderTextures() const;
@@ -63,7 +66,10 @@ public:
 private:
     /** Object to draw */
     std::variant<const NX_Mesh*, const NX_DynamicMesh*> mMesh;
-    NX_Material mMaterial;
+
+    /** Material data */
+    NX_Material mMaterial{};    //< REVIEW: We don't need to store all the data here
+    int mMaterialIndex{};       //< Index pointing to material data stored in the global SSBO
 
     /** Additionnal data */
     NX_MaterialShader::TextureArray mTextures;  //< Array containing the textures linked to the material shader at the time of draw (if any)
@@ -78,8 +84,9 @@ using BucketDrawCalls = util::BucketArray<DrawCall, DrawCall::Category, DrawCall
 /* === Public Implementation === */
 
 template<typename T_Mesh>
-inline DrawCall::DrawCall(int dataIndex, T_Mesh& mesh, const NX_Material& material)
-    : mMaterial(material), mMesh(&mesh), mDynamicRangeIndex(-1), mDrawDataIndex(dataIndex)
+inline DrawCall::DrawCall(int dataIndex, int materialIndex, T_Mesh& mesh, const NX_Material& material)
+    : mMesh(&mesh), mMaterial(material), mMaterialIndex(materialIndex)
+    , mDynamicRangeIndex(-1), mDrawDataIndex(dataIndex)
 {
     if (material.shader != nullptr) {
         mDynamicRangeIndex = material.shader->dynamicRangeIndex();
@@ -99,11 +106,6 @@ inline DrawCall::Category DrawCall::category(const NX_Material& material)
 inline DrawCall::Category DrawCall::category() const
 {
     return category(mMaterial);
-}
-
-inline const NX_Material& DrawCall::material() const
-{
-    return mMaterial;
 }
 
 inline NX_ShadowCastMode DrawCall::shadowCastMode() const
@@ -140,6 +142,16 @@ inline NX_Layer DrawCall::layerMask() const
     case 1: [[unlikely]] return std::get<1>(mMesh)->layerMask;
     default: NX_UNREACHABLE(); break;
     }
+}
+
+inline const NX_Material& DrawCall::material() const
+{
+    return mMaterial;
+}
+
+inline int DrawCall::materialIndex() const
+{
+    return mMaterialIndex;
 }
 
 inline const NX_MaterialShader::TextureArray& DrawCall::materialShaderTextures() const

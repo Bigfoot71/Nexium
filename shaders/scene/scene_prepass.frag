@@ -12,6 +12,10 @@
 precision highp float;
 #endif
 
+/* === Includes === */
+
+#include "../include/material.glsl"
+
 /* === Varyings === */
 
 layout(location = 0) in VaryInternal {
@@ -26,31 +30,24 @@ layout(location = 10) in VaryUser {
     flat ivec4 data4i;
 } vUsr;
 
+/* === Storage Buffers === */
+
+layout(std430, binding = 0) buffer S_MaterialBuffer {
+    Material sMaterials[];
+};
+
 /* === Samplers === */
 
 layout(binding = 0) uniform sampler2D uTexAlbedo;
 
 /* === Uniforms === */
 
-layout(std140, binding = 4) uniform U_Material {
-    vec4 albedoColor;
-    vec3 emissionColor;
-    float emissionEnergy;
-    float aoLightAffect;
-    float occlusion;
-    float roughness;
-    float metalness;
-    float normalScale;
-    float alphaCutOff;
-    vec2 texOffset;
-    vec2 texScale;
-    int billboard;
-} uMaterial;
+layout(location = 0) uniform uint uMaterialIndex;
 
 /* === Program === */
 
 void main()
 {
     float alpha = vInt.color.a * texture(uTexAlbedo, vInt.texCoord).a;
-    if (alpha < uMaterial.alphaCutOff) discard;
+    if (alpha < sMaterials[uMaterialIndex].alphaCutOff) discard;
 }

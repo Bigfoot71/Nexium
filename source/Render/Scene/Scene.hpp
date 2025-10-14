@@ -124,8 +124,9 @@ template <typename T_Mesh>
 inline void Scene::drawMesh(const T_Mesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform)
 {
     int dataIndex = mDrawData.size();
+    int materialIndex = mMaterialBuffer.stage(material);
     mDrawData.emplace_back(transform, instances, instanceCount);
-    mDrawCalls.emplace(DrawCall::category(material), dataIndex, mesh, material);
+    mDrawCalls.emplace(DrawCall::category(material), dataIndex, materialIndex, mesh, material);
 }
 
 inline void Scene::drawModel(const NX_Model& model, const NX_InstanceBuffer* instances, int instanceCount, const NX_Transform& transform)
@@ -161,7 +162,11 @@ inline void Scene::drawModel(const NX_Model& model, const NX_InstanceBuffer* ins
     int dataIndex = mDrawData.size();
     for (int i = 0; i < model.meshCount; i++) {
         const NX_Material& material = model.materials[model.meshMaterials[i]];
-        mDrawCalls.emplace(DrawCall::category(material), dataIndex, *model.meshes[i], material);
+        int materialIndex = mMaterialBuffer.stage(material);
+        mDrawCalls.emplace(
+            DrawCall::category(material), dataIndex,
+            materialIndex, *model.meshes[i], material
+        );
     }
 
     mDrawData.emplace_back(transform, instances, instanceCount, boneMatrixOffset);

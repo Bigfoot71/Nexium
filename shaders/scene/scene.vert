@@ -16,6 +16,7 @@ precision highp float;
 
 #include "../include/environment.glsl"
 #include "../include/billboard.glsl"
+#include "../include/material.glsl"
 #include "../include/frustum.glsl"
 #include "../include/frame.glsl"
 
@@ -36,7 +37,11 @@ layout(location = 11) in vec4 iCustom;
 
 /* === Storage Buffers === */
 
-layout(std430, binding = 0) buffer BoneBuffer {
+layout(std430, binding = 0) buffer S_MaterialBuffer {
+    Material sMaterials[];
+};
+
+layout(std430, binding = 1) buffer S_BoneBuffer {
     mat4 sBoneMatrices[];
 };
 
@@ -63,20 +68,9 @@ layout(std140, binding = 3) uniform U_Renderable {
     bool skinning;
 } uRender;
 
-layout(std140, binding = 4) uniform U_Material {
-    vec4 albedoColor;
-    vec3 emissionColor;
-    float emissionEnergy;
-    float aoLightAffect;
-    float occlusion;
-    float roughness;
-    float metalness;
-    float normalScale;
-    float alphaCutOff;
-    vec2 texOffset;
-    vec2 texScale;
-    int billboard;
-} uMaterial;
+/* === Uniforms === */
+
+layout(location = 0) uniform uint uMaterialIndex;
 
 /* === Varyings === */
 
@@ -127,7 +121,7 @@ void main()
         matNormal = mat3(transpose(inverse(iMatModel))) * matNormal;
     }
 
-    switch(uMaterial.billboard) {
+    switch(sMaterials[uMaterialIndex].billboard) {
     case BILLBOARD_NONE:
         break;
     case BILLBOARD_FRONT:

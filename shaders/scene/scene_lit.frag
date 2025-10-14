@@ -15,6 +15,7 @@ precision highp float;
 /* === Includes === */
 
 #include "../include/environment.glsl"
+#include "../include/material.glsl"
 #include "../include/frustum.glsl"
 #include "../include/lights.glsl"
 #include "../include/frame.glsl"
@@ -60,19 +61,23 @@ layout(location = 10) in VaryUser {
 
 /* === Storage Buffers === */
 
-layout(std430, binding = 1) buffer LightBuffer {
+layout(std430, binding = 0) buffer S_MaterialBuffer {
+    Material sMaterials[];
+};
+
+layout(std430, binding = 2) buffer S_LightBuffer {
     Light sLights[];
 };
 
-layout(std430, binding = 2) buffer ShadowBuffer {
+layout(std430, binding = 3) buffer S_ShadowBuffer {
     Shadow sShadows[];
 };
 
-layout(std430, binding = 3) buffer TileBuffer {
+layout(std430, binding = 4) buffer S_TileBuffer {
     uint sClusters[]; //< Contains number of lights for each tile
 };
 
-layout(std430, binding = 4) buffer IndexBuffer {
+layout(std430, binding = 5) buffer S_IndexBuffer {
     uint sIndices[]; //< Contains the light indices for each tile, in increments of 'uMaxLightsPerTile'
 };
 
@@ -113,20 +118,9 @@ layout(std140, binding = 3) uniform U_Renderable {
     bool skinning;
 } uRender;
 
-layout(std140, binding = 4) uniform U_Material {
-    vec4 albedoColor;
-    vec3 emissionColor;
-    float emissionEnergy;
-    float aoLightAffect;
-    float occlusion;
-    float roughness;
-    float metalness;
-    float normalScale;
-    float alphaCutOff;
-    vec2 texOffset;
-    vec2 texScale;
-    int billboard;
-} uMaterial;
+/* === Uniforms === */
+
+layout(location = 0) uniform uint uMaterialIndex;
 
 /* === Fragments === */
 

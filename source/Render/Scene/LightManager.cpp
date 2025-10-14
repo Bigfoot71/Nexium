@@ -317,9 +317,9 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         pipeline.bindTexture(0, mAssets.textureOrWhite(call.material().albedo.texture));
 
         params.renderableBuffer.upload(data, call);
-        params.materialBuffer.upload(call.material());
         pipeline.bindUniform(3, params.renderableBuffer.buffer());
-        pipeline.bindUniform(4, params.materialBuffer.buffer());
+
+        pipeline.setUniformUint1(0, call.materialIndex());
 
         call.draw(pipeline, data.instances(), data.instanceCount());
     };
@@ -365,9 +365,13 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
     /* --- Setup pipeline --- */
 
     gpu::Pipeline pipeline;
+
     pipeline.setViewport(0, 0, mShadowResolution, mShadowResolution);
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
-    pipeline.bindStorage(0, params.boneBuffer.buffer());
+
+    pipeline.bindStorage(0, params.materialBuffer.buffer());
+    pipeline.bindStorage(1, params.boneBuffer.buffer());
+
     pipeline.bindUniform(1, params.viewFrustum.buffer());
     pipeline.bindUniform(2, params.environment.buffer());
 

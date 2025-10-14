@@ -38,7 +38,7 @@ public:
         const ViewFrustum& viewFrustum;
         const Environment& environment;
         RenderableBuffer& renderableBuffer;
-        MaterialBuffer& materialBuffer;
+        const MaterialBuffer& materialBuffer;
         const BoneBuffer& boneBuffer;
         const BucketDrawCalls& drawCalls;
         const ArrayDrawData& drawData;

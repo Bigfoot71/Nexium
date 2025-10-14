@@ -12,6 +12,10 @@
 precision highp float;
 #endif
 
+/* === Includes === */
+
+#include "../include/material.glsl"
+
 /* === Defines === */
 
 #define SHADOW      //< Definition for frame.glsl
@@ -34,6 +38,12 @@ layout(location = 10) in VaryUser {
     flat ivec4 data4i;
 } vUsr;
 
+/* === Storage Buffers === */
+
+layout(std430, binding = 0) buffer S_MaterialBuffer {
+    Material sMaterials[];
+};
+
 /* === Samplers === */
 
 layout(binding = 0) uniform sampler2D uTexAlbedo;
@@ -44,20 +54,9 @@ layout(std140, binding = 0) uniform U_Frame {
     Frame uFrame;
 };
 
-layout(std140, binding = 4) uniform U_Material {
-    vec4 albedoColor;
-    vec3 emissionColor;
-    float emissionEnergy;
-    float aoLightAffect;
-    float occlusion;
-    float roughness;
-    float metalness;
-    float normalScale;
-    float alphaCutOff;
-    vec2 texOffset;
-    vec2 texScale;
-    int billboard;
-} uMaterial;
+/* === Uniforms === */
+
+layout(location = 0) uniform uint uMaterialIndex;
 
 /* === Fragments === */
 
@@ -68,7 +67,7 @@ layout(location = 0) out vec4 FragDistance;
 void main()
 {
     float alpha = vInt.color.a * texture(uTexAlbedo, vInt.texCoord).a;
-    if (alpha < uMaterial.alphaCutOff) discard;
+    if (alpha < sMaterials[uMaterialIndex].alphaCutOff) discard;
 
     // Normalized linear distance in [0,1]
     float d01 = length(vInt.position - uFrame.lightPosition) / uFrame.lightRange;

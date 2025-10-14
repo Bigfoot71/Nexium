@@ -12,7 +12,7 @@
 #include <NX/NX_Render.h>
 #include <NX/NX_Math.h>
 
-#include "../../Detail/Util/ObjectRing.hpp"
+#include "../../Detail/Util/DynamicArray.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
 
 namespace scene {
@@ -23,7 +23,13 @@ class MaterialBuffer {
 public:
     MaterialBuffer();
 
-    void upload(const NX_Material& material);
+    /** Stage material data and return GPU material index */
+    int stage(const NX_Material& material);
+
+    /** Upload all staged data */
+    void upload();
+
+    /** Getters */
     const gpu::Buffer& buffer() const;
 
 private:
@@ -43,23 +49,28 @@ private:
     };
 
 private:
-    util::ObjectRing<gpu::Buffer, 3> mBuffer;
+    util::DynamicArray<GPUData> mStagingBuffer{};
+    gpu::Buffer mBuffer{};
 };
 
 /* === Public Implementation === */
 
 inline MaterialBuffer::MaterialBuffer()
-    : mBuffer(GL_UNIFORM_BUFFER, sizeof(GPUData), nullptr, GL_DYNAMIC_DRAW)
-{ }
-
-inline void MaterialBuffer::upload(const NX_Material& material)
+    : mBuffer(GL_SHADER_STORAGE_BUFFER, 1024 * sizeof(GPUData), nullptr, GL_DYNAMIC_DRAW)
 {
-    // NOTE: We could have used a single ring buffer instead of three separate UBOs,
-    //       but driver behavior, especially on mobile GPUs, is not guaranteed.
-    //       Some drivers may implicitly synchronize or mark the entire buffer as busy
-    //       when updating or binding a sub-range, potentially causing stalls.
+    if (!mStagingBuffer.reserve(1024)) {
+        NX_INTERNAL_LOG(E,
+            "RENDER: Material staging buffer memory reservation failed (requested: 1024 bytes). "
+            "Rendering may not proceed correctly."
+        );
+    }
+}
 
-    GPUData data{
+inline int MaterialBuffer::stage(const NX_Material& material)
+{
+    int index = static_cast<int>(mStagingBuffer.size());
+
+    mStagingBuffer.emplace_back(GPUData {
         .albedoColor = NX_ColorToVec4(material.albedo.color),
         .emissionColor = NX_ColorToVec3(material.emission.color),
         .emissionEnergy = material.emission.energy,
@@ -72,15 +83,24 @@ inline void MaterialBuffer::upload(const NX_Material& material)
         .texOffset = material.texOffset,
         .texScale = material.texScale,
         .billboard = material.billboard
-    };
+    });
 
-    mBuffer.rotate();
-    mBuffer->upload(&data);
+    return index;
+}
+
+inline void MaterialBuffer::upload()
+{
+    size_t size = mStagingBuffer.size() * sizeof(GPUData);
+
+    mBuffer.reserve(size, false);
+    mBuffer.upload(0, size, mStagingBuffer.data());
+
+    mStagingBuffer.clear();
 }
 
 inline const gpu::Buffer& MaterialBuffer::buffer() const
 {
-    return *mBuffer;
+    return mBuffer;
 }
 
 } // namespace scene

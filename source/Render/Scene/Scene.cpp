@@ -133,6 +133,10 @@ void Scene::begin(const NX_Camera& camera, const NX_Environment& env, const NX_R
 
 void Scene::end()
 {
+    /* --- Upload draw calls data --- */
+
+    mMaterialBuffer.upload();
+
     /* --- Process lights --- */
 
     mLights.process({
@@ -267,7 +271,8 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::Disabled);
 
-    pipeline.bindStorage(0, mBoneBuffer.buffer());
+    pipeline.bindStorage(0, mMaterialBuffer.buffer());
+    pipeline.bindStorage(1, mBoneBuffer.buffer());
 
     pipeline.bindUniform(0, mFrameUniform);
     pipeline.bindUniform(1, mFrustum.buffer());
@@ -287,12 +292,12 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         pipeline.setDepthFunc(render::getDepthFunc(mat.depth.test));
         pipeline.setCullMode(render::getCullMode(mat.cull));
 
-        mMaterialBuffer.upload(mat);
         mRenderableBuffer.upload(data, call);
 
         pipeline.bindTexture(0, mAssets.textureOrWhite(mat.albedo.texture));
         pipeline.bindUniform(3, mRenderableBuffer.buffer());
-        pipeline.bindUniform(4, mMaterialBuffer.buffer());
+
+        pipeline.setUniformUint1(0, call.materialIndex());
 
         call.draw(pipeline, data.instances(), data.instanceCount());
     }
@@ -303,11 +308,12 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::RGBA);
 
-    pipeline.bindStorage(0, mBoneBuffer.buffer());
-    pipeline.bindStorage(1, mLights.lightsBuffer());
-    pipeline.bindStorage(2, mLights.shadowBuffer());
-    pipeline.bindStorage(3, mLights.tilesBuffer());
-    pipeline.bindStorage(4, mLights.indexBuffer());
+    pipeline.bindStorage(0, mMaterialBuffer.buffer());
+    pipeline.bindStorage(1, mBoneBuffer.buffer());
+    pipeline.bindStorage(2, mLights.lightsBuffer());
+    pipeline.bindStorage(3, mLights.shadowBuffer());
+    pipeline.bindStorage(4, mLights.tilesBuffer());
+    pipeline.bindStorage(5, mLights.indexBuffer());
 
     pipeline.bindTexture(4, mAssets.textureBrdfLut());
     pipeline.bindTexture(7, mLights.shadowCube());
@@ -341,16 +347,15 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         pipeline.setBlendMode(render::getBlendMode(mat.blend));
         pipeline.setCullMode(render::getCullMode(mat.cull));
 
-        mMaterialBuffer.upload(mat);
-        mRenderableBuffer.upload(data, call);
-
         pipeline.bindTexture(0, mAssets.textureOrWhite(mat.albedo.texture));
         pipeline.bindTexture(1, mAssets.textureOrWhite(mat.emission.texture));
         pipeline.bindTexture(2, mAssets.textureOrWhite(mat.orm.texture));
         pipeline.bindTexture(3, mAssets.textureOrNormal(mat.normal.texture));
 
+        mRenderableBuffer.upload(data, call);
         pipeline.bindUniform(3, mRenderableBuffer.buffer());
-        pipeline.bindUniform(4, mMaterialBuffer.buffer());
+
+        pipeline.setUniformUint1(0, call.materialIndex());
 
         call.draw(pipeline, data.instances(), data.instanceCount());
     }
