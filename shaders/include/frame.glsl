@@ -15,7 +15,7 @@ struct Frame {
     mat4 lightViewProj;
     vec3 lightPosition;
     float shadowLambda;
-    float farPlane;
+    float lightRange;
     float elapsedTime;
 };
 

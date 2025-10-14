@@ -71,7 +71,7 @@ void main()
     if (alpha < uMaterial.alphaCutOff) discard;
 
     // Normalized linear distance in [0,1]
-    float d01 = length(vInt.position - uFrame.lightPosition) / uFrame.farPlane;
+    float d01 = length(vInt.position - uFrame.lightPosition) / uFrame.lightRange;
 
 #ifdef GL_ES
     // VSM
