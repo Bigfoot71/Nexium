@@ -8,16 +8,15 @@
 
 #include <NX/Nexium.h>
 #include "./common.h"
-#include "NX/NX_Render.h"
 
-#define MAX_INSTANCE 128
+#define MAX_INSTANCE 256
 
 int main(void)
 {
     NX_Init("Nexium - Animation", 800, 450, NX_FLAG_VSYNC_HINT);
     NX_AddSearchPath(RESOURCES_PATH, false);
 
-    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_VEC2_ONE, NX_VEC3_UP);
+    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(100.0f), NX_VEC2_ONE, NX_VEC3_UP);
 
     int animCount = 0;
     NX_ModelAnimation** anims = NX_LoadModelAnimations("models/CesiumMan.glb", &animCount, 30);
@@ -29,9 +28,9 @@ int main(void)
     iPositions[0] = NX_VEC3_ZERO;
     for (int i = 1; i < MAX_INSTANCE; i++) {
         iPositions[i] = NX_VEC3(
-            NX_RandRangeFloat(NULL, -5.0f, 5.0f),
+            NX_RandRangeFloat(NULL, -50.0f, 50.0f),
             0,
-            NX_RandRangeFloat(NULL, -5.0f, 5.0f)
+            NX_RandRangeFloat(NULL, -50.0f, 50.0f)
         );
     }
     NX_UnmapInstanceBuffer(instances, NX_INSTANCE_POSITION);
