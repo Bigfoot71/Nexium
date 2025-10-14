@@ -1684,10 +1684,6 @@ NX_Transform NX_GetCameraTransform(const NX_Camera* camera)
 NX_Environment NX_GetDefaultEnvironment(void)
 {
     return NX_Environment {
-        .bounds = {
-            NX_VEC3(-10, -10, -10),
-            NX_VEC3(+10, +10, +10)
-        },
         .background = NX_GRAY,
         .ambient = NX_DARK_GRAY,
         .sky = {

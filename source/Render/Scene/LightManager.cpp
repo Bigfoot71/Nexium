@@ -182,16 +182,12 @@ void LightManager::updateState(const ProcessParams& params)
             }
         }
 
-        light.updateState(params.environment.bounds(), lightIndex, shadowIndex, shadowMapIndex);
+        light.updateState(params.viewFrustum, lightIndex, shadowIndex, shadowMapIndex);
     }
 }
 
 void LightManager::uploadActive(const ProcessParams& params)
 {
-    if (!(mLightDirty || mShadowDirty)) {
-        return;
-    }
-
     /* --- Calculate shadow counts --- */
 
     const int shadowCount = mActiveShadow2DCount + mActiveShadowCubeCount;
@@ -201,15 +197,22 @@ void LightManager::uploadActive(const ProcessParams& params)
     NX_Light::LightGPU* mappedLights = nullptr;
     NX_Light::ShadowGPU* mappedShadows = nullptr;
 
-    if (mLightDirty && mActiveLightCount > 0) {
+    if (mActiveLightCount > 0) {
         mStorageLights.reserve(mLights.size() * sizeof(NX_Light::LightGPU), false);
-        mappedLights = mStorageLights.mapRange<NX_Light::LightGPU>(0, mActiveLightCount * sizeof(NX_Light::LightGPU));
+        mappedLights = mStorageLights.mapRange<NX_Light::LightGPU>(
+            0, mActiveLightCount * sizeof(NX_Light::LightGPU),
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
+        );
     }
 
-    if (mShadowDirty && shadowCount > 0)
+    if (shadowCount > 0)
     {
         mStorageShadow.reserve(shadowCount * sizeof(NX_Light::ShadowGPU), false);
-        mappedShadows = mStorageShadow.mapRange<NX_Light::ShadowGPU>(0, shadowCount * sizeof(NX_Light::ShadowGPU));
+
+        mappedShadows = mStorageShadow.mapRange<NX_Light::ShadowGPU>(
+            0, shadowCount * sizeof(NX_Light::ShadowGPU),
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
+        );
 
         if (mActiveShadowCubeCount > mShadowMapCubeArray.depth()) {
             mShadowMapCubeArray.realloc(mShadowMapCubeArray.width(), mShadowMapCubeArray.height(), mActiveShadowCubeCount);
@@ -238,17 +241,8 @@ void LightManager::uploadActive(const ProcessParams& params)
 
     /* --- Unmap buffers --- */
 
-    if (mappedLights) {
-        mStorageLights.unmap();
-        NX_INTERNAL_LOG(V, "RENDER: %i lights have been uploaded", mActiveLightCount);
-        mLightDirty = false;
-    }
-
-    if (mappedShadows) {
-        mStorageShadow.unmap();
-        NX_INTERNAL_LOG(V, "RENDER: %i shadows have been uploaded", shadowCount);
-        mShadowDirty = false;
-    }
+    if (mappedLights) mStorageLights.unmap();
+    if (mappedShadows) mStorageShadow.unmap();
 }
 
 void LightManager::computeClusters(const ProcessParams& params)
@@ -338,7 +332,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             .lightViewProj = (faceIndex >= 0) ? light.viewProj(faceIndex) : light.viewProj(),
             .lightPosition = light.position(),
             .shadowLambda = light.shadowLambda(),
-            .farPlane = light.range(),
+            .lightRange = light.range(),
             .elapsedTime = static_cast<float>(NX_GetElapsedTime())
         });
         pipeline.bindUniform(0, *mFrameShadowUniform);

@@ -428,12 +428,11 @@ typedef struct NX_Skybox {
 /**
  * @brief Represents a 3D scene environment.
  *
- * Stores scene bounds, background/ambient colors, sky settings,
+ * Stores background/ambient colors, sky settings,
  * global adjustments, and post-processing parameters.
  */
 typedef struct NX_Environment {
 
-    NX_BoundingBox bounds;          ///< Scene bounds, used for directional light shadows and spatial calculations.
     NX_Color background;            ///< Fallback background color if no skybox is defined.
     NX_Color ambient;               ///< Fallback ambient light color if no reflection probe is defined.
 
@@ -1486,7 +1485,6 @@ NXAPI NX_Transform NX_GetCameraTransform(const NX_Camera* camera);
  * @return NX_Environment initialized with default values.
  *
  * Default environment parameters:
- * - bounds: min=(-10,-10,-10), max=(+10,+10,+10)
  * - background color: NX_GRAY
  * - ambient light: NX_DARK_GRAY
  * - sky:
@@ -2348,7 +2346,9 @@ NXAPI float NX_GetLightRange(const NX_Light* light);
  * @brief Sets the maximum lighting range.
  * @param light Pointer to the NX_Light.
  * @param range New range in world units.
- * @note Ignored for directional lights. Default is 16.0.
+ * @note For directional lights, the range defines the radius around
+         the camera within which objects will be rendered into
+         the shadow map. Default is 16.0.
  */
 NXAPI void NX_SetLightRange(NX_Light* light, float range);
 

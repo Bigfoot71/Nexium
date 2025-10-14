@@ -9,8 +9,6 @@
 #include "./NX_Light.hpp"
 
 #include "./Scene/LightManager.hpp"
-#include "./Scene/DrawCall.hpp"
-#include "./Scene/DrawData.hpp"
 
 /* === Public Implementation === */
 
@@ -43,83 +41,48 @@ NX_Light::NX_Light(scene::LightManager& manager, NX_LightType type)
 
 /* === Private Implementation === */
 
-void NX_Light::markDirty(bool light, bool shadow, bool viewProj)
-{
-    if (viewProj) mShadowState.vpDirty = true;
-    if (shadow) mManager.markShadowDirty();
-    if (light) mManager.markLightDirty();
-}
-
-void NX_Light::updateDirectionalViewProj(const NX_BoundingBox& sceneBounds)
+void NX_Light::updateDirectionalViewProj(const scene::ViewFrustum& viewFrustum)
 {
     SDL_assert(mType == NX_LIGHT_DIR);
     SDL_assert(mHasShadow);
 
     Directional& light = std::get<Directional>(mData);
 
-    /* --- Calculating the center and extents of the scene --- */
+    const NX_Vec3& cameraPos = viewFrustum.viewPosition();
+    const NX_Vec3& lightDir = light.direction;
 
-    constexpr float sceneMargin = 1.1f; // 10% margin
-    NX_Vec3 sceneCenter = (sceneBounds.min + sceneBounds.max) * 0.5f;
-    NX_Vec3 sceneExtents = (sceneBounds.max - sceneBounds.min) * 0.5f * sceneMargin;
+    /* --- Calcuate view matrix --- */
 
-    /* --- Normalizing the light direction --- */
+    NX_Vec3 up = (fabsf(NX_Vec3Dot(lightDir, NX_VEC3_UP)) > 0.99f) ? NX_VEC3_BACK : NX_VEC3_UP;
+    NX_Mat4 view = NX_Mat4LookTo(cameraPos, lightDir, up);
 
-    NX_Vec3 lightDir = NX_Vec3Normalize(light.direction);
+    /* --- Calculate projection matrix --- */
 
-    /* --- Calculating the light position (placed at a distance from the center of the scene) --- */
+    NX_Vec3 rightLS = NX_VEC3(view.m00, view.m10, view.m20);
+    NX_Vec3 upLS    = NX_VEC3(view.m01, view.m11, view.m21);
+    NX_Vec3 forwLS  = NX_VEC3(view.m02, view.m12, view.m22);
 
-    float maxSceneExtent = fmaxf(sceneExtents.x, fmaxf(sceneExtents.y, sceneExtents.z));
-    float lightDistance = 2.0f * maxSceneExtent;
-    NX_Vec3 pos = sceneCenter + (-lightDir * lightDistance);
+    NX_Vec3 extentLS = NX_VEC3(
+        fabsf(rightLS.x) + fabsf(upLS.x) + fabsf(forwLS.x),
+        fabsf(rightLS.y) + fabsf(upLS.y) + fabsf(forwLS.y),
+        fabsf(rightLS.z) + fabsf(upLS.z) + fabsf(forwLS.z)
+    ) * light.shadowRadius;
 
-    /* --- Calculating the view matrix with a stable up vector --- */
+    NX_Mat4 proj = NX_Mat4Ortho(
+        -extentLS.x,
+        +extentLS.x,
+        -extentLS.y,
+        +extentLS.y,
+        -extentLS.z,
+        +extentLS.z
+    );
 
-    // If the direction is nearly vertical, use Z as the "up" vector
-    NX_Vec3 upVector = (fabsf(lightDir.y) > 0.99f) ? NX_VEC3_FORWARD : NX_VEC3_UP;
-    NX_Mat4 view = NX_Mat4LookAt(pos, sceneCenter, upVector);
-
-    /* --- Calculating the bounding volume of the scene in light space --- */
-
-    NX_Vec3 corners[8] = {
-        {sceneBounds.min.x, sceneBounds.min.y, sceneBounds.min.z},
-        {sceneBounds.max.x, sceneBounds.min.y, sceneBounds.min.z},
-        {sceneBounds.min.x, sceneBounds.max.y, sceneBounds.min.z},
-        {sceneBounds.max.x, sceneBounds.max.y, sceneBounds.min.z},
-        {sceneBounds.min.x, sceneBounds.min.y, sceneBounds.max.z},
-        {sceneBounds.max.x, sceneBounds.min.y, sceneBounds.max.z},
-        {sceneBounds.min.x, sceneBounds.max.y, sceneBounds.max.z},
-        {sceneBounds.max.x, sceneBounds.max.y, sceneBounds.max.z}
-    };
-
-    float minX = INFINITY, maxX = -INFINITY;
-    float minY = INFINITY, maxY = -INFINITY;
-    float minZ = INFINITY, maxZ = -INFINITY;
-
-    for (int i = 0; i < 8; i++) {
-        NX_Vec3 transformed = corners[i] * view;
-        minX = fminf(minX, transformed.x);
-        maxX = fmaxf(maxX, transformed.x);
-        minY = fminf(minY, transformed.y);
-        maxY = fmaxf(maxY, transformed.y);
-        minZ = fminf(minZ, transformed.z);
-        maxZ = fmaxf(maxZ, transformed.z);
-    }
-
-    /* --- Creating the orthographic projection matrix --- */
-
-    // WARNING: In camera space, objects in front of the camera have negative Z values.
-    // Here, maxZ corresponds to the closest plane (less negative) and minZ to the farthest plane.
-    // To obtain positive distances for the projection, we reverse the signs:
-    // near = -maxZ and far = -minZ (which guarantees near < far).
-
-    NX_Mat4 proj = NX_Mat4Ortho(minX, maxX, minY, maxY, -maxZ, -minZ);
-
-    /* --- Keeps useful values ​​and returns the projection view matrix --- */
+    /* --- Store the results --- */
 
     mShadowData.viewProj[0] = view * proj;
-    light.position = pos;
-    light.range = -minZ;
+
+    light.position = cameraPos - lightDir * light.shadowRadius;
+    light.range = 2.0f * extentLS.z;
 
     /* --- Update frustum --- */
 
@@ -135,8 +98,10 @@ void NX_Light::updateSpotViewProj()
 
     /* --- Calculate view projection matrix --- */
 
+    constexpr float nearPlane = 0.05f;
+
     NX_Mat4 view = NX_Mat4LookAt(light.position, light.position + light.direction, NX_VEC3_UP);
-    NX_Mat4 proj = NX_Mat4Perspective(NX_PI / 2.0f, 1.0f, 0.05f, light.range);
+    NX_Mat4 proj = NX_Mat4Perspective(NX_PI / 2.0f, 1.0f, nearPlane, nearPlane + light.range);
 
     mShadowData.viewProj[0] = view * proj;
 
@@ -150,15 +115,17 @@ void NX_Light::updateOmniViewProj()
     SDL_assert(mType == NX_LIGHT_OMNI);
     SDL_assert(mHasShadow);
 
-    const Omni& omni = std::get<Omni>(mData);
+    const Omni& light = std::get<Omni>(mData);
 
     /* --- Calculate view projection matrices and frustums --- */
+
+    constexpr float nearPlane = 0.05f;
 
     for (int i = 0; i < mShadowData.viewProj.size(); i++)
     {
         mShadowData.viewProj[i] =
-            render::getCubeView(i, omni.position) *
-            render::getCubeProj(0.05f, omni.range);
+            render::getCubeView(i, light.position) *
+            render::getCubeProj(nearPlane, nearPlane + light.range);
 
         mShadowData.frustum[i].update(mShadowData.viewProj[i]);
     }

@@ -26,7 +26,6 @@ public:
     /** CPU data */
     const util::DynamicArray<float>& bloomLevels() const;
     bool hasFlags(NX_EnvironmentFlag flags) const;
-    const NX_BoundingBox& bounds() const;
     const NX_Color& background() const;
     NX_Tonemap tonemapMode() const;
     NX_Bloom bloomMode() const;
@@ -75,7 +74,6 @@ private:
 
     /** Scene data */
     NX_EnvironmentFlag mFlags;
-    NX_BoundingBox mBounds;
     NX_Color mBackground;
 
     /** Post processing data */
@@ -104,7 +102,6 @@ inline void Environment::update(const NX_Environment& env, int bloomMipCount)
     /* --- Store CPU data */
 
     mFlags = env.flags;
-    mBounds = env.bounds;
     mBackground = env.background;
 
     // Pre-multiply background with fog
@@ -194,11 +191,6 @@ inline const util::DynamicArray<float>& Environment::bloomLevels() const
 inline bool Environment::hasFlags(NX_EnvironmentFlag flags) const
 {
     return (mFlags & flags) == flags;
-}
-
-inline const NX_BoundingBox& Environment::bounds() const
-{
-    return mBounds;
 }
 
 inline const NX_Color& Environment::background() const

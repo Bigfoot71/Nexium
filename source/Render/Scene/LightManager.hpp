@@ -71,10 +71,6 @@ public:
     float clusterSliceBias() const;
     int shadowResolution() const;
 
-    /** State management */
-    void markShadowDirty();
-    void markLightDirty();
-
 private:
     /** Process functions */
     void updateState(const ProcessParams& params);
@@ -91,7 +87,7 @@ private:
         alignas(16) NX_Mat4 lightViewProj;
         alignas(16) NX_Vec3 lightPosition;
         alignas(4) float shadowLambda;
-        alignas(4) float farPlane;
+        alignas(4) float lightRange;
         alignas(4) float elapsedTime;
     };
 
@@ -132,9 +128,6 @@ private:
     int mActiveLightCount{0};
     int mActiveShadow2DCount{0};
     int mActiveShadowCubeCount{0};
-
-    bool mLightDirty{false};                    //< Indicates if the state of active lights has changed, this tells us to re-upload them
-    bool mShadowDirty{false};                   //< Indicates if the state of active shadows has changed, this tells us to re-upload them
 };
 
 /* === Public Implementation === */
@@ -146,13 +139,7 @@ inline NX_Light* LightManager::create(NX_LightType type)
 
 inline void LightManager::destroy(NX_Light* light)
 {
-    if (light != nullptr) {
-        if (light->isActive()) {
-            mShadowDirty = true;
-            mLightDirty = true;
-        }
-        mLights.destroy(light);
-    }
+    mLights.destroy(light);
 }
 
 inline void LightManager::process(const ProcessParams& params)
@@ -226,22 +213,6 @@ inline float LightManager::clusterSliceBias() const
 inline int LightManager::shadowResolution() const
 {
     return mShadowResolution;
-}
-
-inline void LightManager::markShadowDirty()
-{
-    if (!mShadowDirty) {
-        NX_INTERNAL_LOG(V, "RENDER: Shadows have been marked dirty to the LightManager");
-        mShadowDirty = true;
-    }
-}
-
-inline void LightManager::markLightDirty()
-{
-    if (!mLightDirty) {
-        NX_INTERNAL_LOG(V, "RENDER: Lights have been marked dirty to the LightManager");
-        mLightDirty = true;
-    }
 }
 
 } // namespace scene

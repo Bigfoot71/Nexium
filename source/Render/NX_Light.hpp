@@ -9,15 +9,16 @@
 #ifndef NX_LIGHT_HPP
 #define NX_LIGHT_HPP
 
+#include "./Scene/ViewFrustum.hpp"
 #include "./Scene/DrawCall.hpp"
 #include "./Scene/DrawData.hpp"
 #include "./Scene/Frustum.hpp"
-#include "./Core/Helper.hpp"
 
 #include <NX/NX_Macros.h>
 #include <NX/NX_Render.h>
 #include <NX/NX_Math.h>
 #include <NX/NX_Core.h>
+
 #include <SDL3/SDL_assert.h>
 #include <variant>
 
@@ -62,7 +63,7 @@ public:
     NX_Light(scene::LightManager& manager, NX_LightType type);
 
     /** Shadow state management */
-    void updateState(const NX_BoundingBox& sceneBounds, uint32_t lightIndex, int32_t shadowIndex, uint32_t shadowMapIndex);
+    void updateState(const scene::ViewFrustum& viewFrustum, uint32_t lightIndex, int32_t shadowIndex, uint32_t shadowMapIndex);
     void forceShadowMapUpdate();
     bool needsShadowMapUpdate();
 
@@ -119,19 +120,19 @@ public:
     uint32_t lightIndex() const;
 
 private:
-    void markDirty(bool light, bool shadow, bool viewProj);
-    void updateDirectionalViewProj(const NX_BoundingBox& sceneBounds);
+    void updateDirectionalViewProj(const scene::ViewFrustum& viewFrustum);
     void updateSpotViewProj();
     void updateOmniViewProj();
 
 private:
     struct Directional {
-        NX_Vec3 position{NX_VEC3_ZERO};         //< Used for shadow projection
+        NX_Vec3 position{NX_VEC3_ZERO};         //< Internally computed, actual position used to build the light's view matrix for shadow projection
         NX_Vec3 direction{NX_VEC3_FORWARD};
         NX_Vec3 color{NX_VEC3_ONE};
         float energy{1.0f};
         float specular{0.5f};
-        float range{0.0f};                      //< Used for shadow projection
+        float shadowRadius{16.0f};              //< Public 'range' parameter, defines the radius around the camera within which shadows are rendered
+        float range{0.0f};                      //< Internally computed, corresponds to the shadow projection range (far - near)
     };
 
     struct Spot {
@@ -171,7 +172,7 @@ private:
         float intervalSec{0.016f};
         float timerSec{0.0f};
         bool needsUpdate{1};
-        bool vpDirty{1};
+        bool vpDirty{true};
     };
 
 private:
@@ -199,7 +200,7 @@ static_assert(sizeof(NX_Light::ShadowGPU) % 16 == 0);   //< std430 compatibility
 
 /* === Public Implementation === */
 
-inline void NX_Light::updateState(const NX_BoundingBox& sceneBounds, uint32_t lightIndex, int32_t shadowIndex, uint32_t shadowMapIndex)
+inline void NX_Light::updateState(const scene::ViewFrustum& viewFrustum, uint32_t lightIndex, int32_t shadowIndex, uint32_t shadowMapIndex)
 {
     SDL_assert(mActive);
 
@@ -212,19 +213,24 @@ inline void NX_Light::updateState(const NX_BoundingBox& sceneBounds, uint32_t li
     mShadowStorageIndex = shadowIndex;
     mShadowMapIndex = shadowMapIndex;
 
-    if (mShadowState.vpDirty) {
-        switch (mType) {
-        case NX_LIGHT_DIR:
-            updateDirectionalViewProj(sceneBounds);
-            break;
-        case NX_LIGHT_SPOT:
+    switch (mType) {
+    case NX_LIGHT_DIR:
+        // NOTE: The view/proj of directional lights must
+        //       always be updated relative to the camera
+        updateDirectionalViewProj(viewFrustum);
+        break;
+    case NX_LIGHT_SPOT:
+        if (mShadowState.vpDirty) {
+            mShadowState.vpDirty = false;
             updateSpotViewProj();
-            break;
-        case NX_LIGHT_OMNI:
-            updateOmniViewProj();
-            break;
         }
-        mShadowState.vpDirty = false;
+        break;
+    case NX_LIGHT_OMNI:
+        if (mShadowState.vpDirty) {
+            mShadowState.vpDirty = false;
+            updateOmniViewProj();
+        }
+        break;
     }
 
     if (mShadowState.updateMode == NX_SHADOW_UPDATE_INTERVAL) {
@@ -573,32 +579,21 @@ inline float NX_Light::shadowUpdateInterval() const
 
 inline void NX_Light::setActive(bool active)
 {
-    if (mActive != active) {
-        markDirty(true, true, false);
-        mActive = active;
-    }
+    mActive = active;
 }
 
 inline void NX_Light::setLayerMask(NX_Layer layers)
 {
-    if (mLayerMask != layers) {
-        markDirty(mActive, false, false);
-        mLayerMask = layers;
-    }
+    mLayerMask = layers;
 }
 
 inline void NX_Light::setCullMask(NX_Layer layers)
 {
-    if (mLightCullMask != layers) {
-        markDirty(mActive, false, false);
-        mLightCullMask = layers;
-    }
+    mLightCullMask = layers;
 }
 
 inline void NX_Light::setPosition(NX_Vec3 position)
 {
-    bool updated = false;
-
     switch (mType) {
     case NX_LIGHT_DIR:
         {
@@ -607,53 +602,35 @@ inline void NX_Light::setPosition(NX_Vec3 position)
         break;
     case NX_LIGHT_SPOT:
         {
+            mShadowState.vpDirty = true;
             Spot& spot = std::get<Spot>(mData);
-            if (spot.position != position) {
-                spot.position = position;
-                updated = true;
-            }
+            spot.position = position;
         }
         break;
     case NX_LIGHT_OMNI:
         {
+            mShadowState.vpDirty = true;
             Omni& omni = std::get<Omni>(mData);
-            if (omni.position != position) {
-                omni.position = position;
-                updated = true;
-            }
+            omni.position = position;
         }
         break;
-    }
-
-    if (updated) {
-        // Only spot light position changes affect GPU shadows data; omni VP matrices aren't sent
-        markDirty(mActive, mHasShadow && mType == NX_LIGHT_SPOT, true);
     }
 }
 
 inline void NX_Light::setDirection(NX_Vec3 direction)
 {
-    bool updated = false;
-
     switch (mType) {
     case NX_LIGHT_DIR:
         {
             Directional& dir = std::get<Directional>(mData);
-            direction = NX_Vec3Normalize(direction);
-            if (dir.direction != direction) {
-                dir.direction = direction;
-                updated = true;
-            }
+            dir.direction = NX_Vec3Normalize(direction);
         }
         break;
     case NX_LIGHT_SPOT:
         {
+            mShadowState.vpDirty = true;
             Spot& spot = std::get<Spot>(mData);
-            direction = NX_Vec3Normalize(direction);
-            if (spot.direction != direction) {
-                spot.direction = direction;
-                updated = true;
-            }
+            spot.direction = NX_Vec3Normalize(direction);
         }
         break;
     case NX_LIGHT_OMNI:
@@ -662,172 +639,108 @@ inline void NX_Light::setDirection(NX_Vec3 direction)
         }
         break;
     }
-
-    if (updated) {
-        markDirty(mActive, mHasShadow, true);
-    }
 }
 
 inline void NX_Light::setColor(NX_Color color)
 {
-    bool updated = false;
-
     switch (mType) {
     case NX_LIGHT_DIR:
         {
             Directional& dir = std::get<Directional>(mData);
-            NX_Vec3 colV3 = NX_VEC3(color.r, color.g, color.b);
-            if (dir.color != colV3) {
-                dir.color = colV3;
-                updated = true;
-            }
+            dir.color = NX_VEC3(color.r, color.g, color.b);
         }
         break;
     case NX_LIGHT_SPOT:
         {
             Spot& spot = std::get<Spot>(mData);
-            NX_Vec3 colV3 = NX_VEC3(color.r, color.g, color.b);
-            if (spot.color != colV3) {
-                spot.color = colV3;
-                updated = true;
-            }
+            spot.color = NX_VEC3(color.r, color.g, color.b);
         }
         break;
     case NX_LIGHT_OMNI:
         {
             Omni& omni = std::get<Omni>(mData);
-            NX_Vec3 colV3 = NX_VEC3(color.r, color.g, color.b);
-            if (omni.color != colV3) {
-                omni.color = colV3;
-                updated = true;
-            }
+            omni.color = NX_VEC3(color.r, color.g, color.b);
         }
         break;
-    }
-
-    if (updated) {
-        markDirty(mActive, false, false);
     }
 }
 
 inline void NX_Light::setEnergy(float energy)
 {
-    bool updated = false;
-
     switch (mType) {
     case NX_LIGHT_DIR:
         {
             Directional& dir = std::get<Directional>(mData);
-            if (dir.energy != energy) {
-                dir.energy = energy;
-                updated = true;
-            }
+            dir.energy = energy;
         }
         break;
     case NX_LIGHT_SPOT:
         {
             Spot& spot = std::get<Spot>(mData);
-            if (spot.energy != energy) {
-                spot.energy = energy;
-                updated = true;
-            }
+            spot.energy = energy;
         }
         break;
     case NX_LIGHT_OMNI:
         {
             Omni& omni = std::get<Omni>(mData);
-            if (omni.energy != energy) {
-                omni.energy = energy;
-                updated = true;
-            }
+            omni.energy = energy;
         }
         break;
-    }
-
-    if (updated) {
-        markDirty(mActive, false, false);
     }
 }
 
 inline void NX_Light::setSpecular(float specular)
 {
-    bool updated = false;
-
     switch (mType) {
     case NX_LIGHT_DIR:
         {
             Directional& dir = std::get<Directional>(mData);
-            if (dir.specular != specular) {
-                dir.specular = specular;
-                updated = true;
-            }
+            dir.specular = specular;
         }
         break;
     case NX_LIGHT_SPOT:
         {
             Spot& spot = std::get<Spot>(mData);
-            if (spot.specular != specular) {
-                spot.specular = specular;
-                updated = true;
-            }
+            spot.specular = specular;
         }
         break;
     case NX_LIGHT_OMNI:
         {
             Omni& omni = std::get<Omni>(mData);
-            if (omni.specular != specular) {
-                omni.specular = specular;
-                updated = true;
-            }
+            omni.specular = specular;
         }
         break;
-    }
-
-    if (updated) {
-        markDirty(mActive, false, false);
     }
 }
 
 inline void NX_Light::setRange(float range)
 {
-    bool updated = false;
-
     switch (mType) {
     case NX_LIGHT_DIR:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot assign range to a directional light (operation ignored)");
+            Directional& dir = std::get<Directional>(mData);
+            dir.shadowRadius = range;
         }
         break;
     case NX_LIGHT_SPOT:
         {
+            mShadowState.vpDirty = true;
             Spot& spot = std::get<Spot>(mData);
-            if (spot.range != range) {
-                spot.range = range;
-                updated = true;
-            }
+            spot.range = range;
         }
         break;
     case NX_LIGHT_OMNI:
         {
+            mShadowState.vpDirty = true;
             Omni& omni = std::get<Omni>(mData);
-            if (omni.range != range) {
-                omni.range = range;
-                updated = true;
-            }
+            omni.range = range;
         }
         break;
-    }
-
-    if (updated) {
-        // Only spot light range changes affect GPU shadows data; omni VP matrices aren't sent
-        markDirty(mActive, mHasShadow && mType == NX_LIGHT_SPOT, true);
     }
 }
 
 inline void NX_Light::setAttenuation(float attenuation)
 {
-    bool updated = false;
-
     switch (mType) {
     case NX_LIGHT_DIR:
         {
@@ -837,32 +750,20 @@ inline void NX_Light::setAttenuation(float attenuation)
     case NX_LIGHT_SPOT:
         {
             Spot& spot = std::get<Spot>(mData);
-            if (spot.attenuation != attenuation) {
-                spot.attenuation = attenuation;
-                updated = true;
-            }
+            spot.attenuation = attenuation;
         }
         break;
     case NX_LIGHT_OMNI:
         {
             Omni& omni = std::get<Omni>(mData);
-            if (omni.attenuation != attenuation) {
-                omni.attenuation = attenuation;
-                updated = true;
-            }
+            omni.attenuation = attenuation;
         }
         break;
-    }
-
-    if (updated) {
-        markDirty(mActive, false, false);
     }
 }
 
 inline void NX_Light::setInnerCutOff(float radians)
 {
-    bool updated = false;
-
     switch (mType) {
     case NX_LIGHT_DIR:
         {
@@ -872,11 +773,7 @@ inline void NX_Light::setInnerCutOff(float radians)
     case NX_LIGHT_SPOT:
         {
             Spot& spot = std::get<Spot>(mData);
-            float cosTh = cosf(radians);
-            if (spot.innerCutOff != cosTh) {
-                spot.innerCutOff = cosTh;
-                updated = true;
-            }
+            spot.innerCutOff = cosf(radians);
         }
         break;
     case NX_LIGHT_OMNI:
@@ -885,16 +782,10 @@ inline void NX_Light::setInnerCutOff(float radians)
         }
         break;
     }
-
-    if (updated) {
-        markDirty(mActive, false, false);
-    }
 }
 
 inline void NX_Light::setOuterCutOff(float radians)
 {
-    bool updated = false;
-
     switch (mType) {
     case NX_LIGHT_DIR:
         {
@@ -903,12 +794,9 @@ inline void NX_Light::setOuterCutOff(float radians)
         break;
     case NX_LIGHT_SPOT:
         {
+            mShadowState.vpDirty = true;
             Spot& spot = std::get<Spot>(mData);
-            float cosTh = cosf(radians);
-            if (spot.outerCutOff != cosTh) {
-                spot.outerCutOff = cosTh;
-                updated = true;
-            }
+            spot.outerCutOff = cosf(radians);
         }
         break;
     case NX_LIGHT_OMNI:
@@ -917,18 +805,11 @@ inline void NX_Light::setOuterCutOff(float radians)
         }
         break;
     }
-
-    if (updated) {
-        markDirty(mActive, mHasShadow, true);
-    }
 }
 
 inline void NX_Light::setShadowActive(bool active)
 {
-    if (mHasShadow != active) {
-        markDirty(true, true, false);
-        mHasShadow = active;
-    }
+    mHasShadow = active;
 }
 
 inline void NX_Light::setShadowCullMask(NX_Layer layers)
@@ -941,26 +822,17 @@ inline void NX_Light::setShadowCullMask(NX_Layer layers)
 
 inline void NX_Light::setShadowBleedingBias(float bias)
 {
-    if (mShadowData.bleedingBias != bias) {
-        markDirty(false, mHasShadow, false);
-        mShadowData.bleedingBias = bias;
-    }
+    mShadowData.bleedingBias = bias;
 }
 
 inline void NX_Light::setShadowSoftness(float softness)
 {
-    if (mShadowData.softness != softness) {
-        markDirty(false, mHasShadow, false);
-        mShadowData.softness = softness;
-    }
+    mShadowData.softness = softness;
 }
 
 inline void NX_Light::setShadowLambda(float lambda)
 {
-    if (mShadowData.lambda != lambda) {
-        markDirty(false, mHasShadow, false);
-        mShadowData.lambda = lambda;
-    }
+    mShadowData.lambda = lambda;
 }
 
 inline void NX_Light::setShadowUpdateMode(NX_ShadowUpdateMode mode)
