@@ -806,7 +806,7 @@ NX_Mat4 NX_Mat4Ortho(float left, float right, float bottom, float top, float zne
 
 NX_Mat4 NX_Mat4LookTo(NX_Vec3 eye, NX_Vec3 direction, NX_Vec3 up)
 {
-    NX_Vec3 vz = NX_Vec3Normalize(NX_Vec3Neg(direction));
+    NX_Vec3 vz = NX_Vec3Normalize(direction);
     NX_Vec3 vx = NX_Vec3Normalize(NX_Vec3Cross(up, vz));
     NX_Vec3 vy = NX_Vec3Cross(vz, vx);
 
@@ -824,7 +824,7 @@ NX_Mat4 NX_Mat4LookTo(NX_Vec3 eye, NX_Vec3 direction, NX_Vec3 up)
 
 NX_Mat4 NX_Mat4LookAt(NX_Vec3 eye, NX_Vec3 target, NX_Vec3 up)
 {
-    NX_Vec3 direction = NX_Vec3Direction(eye, target);
+    NX_Vec3 direction = NX_Vec3Direction(target, eye);
     return NX_Mat4LookTo(eye, direction, up);
 }
 
