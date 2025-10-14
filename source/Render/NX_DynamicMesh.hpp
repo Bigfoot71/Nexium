@@ -56,7 +56,10 @@ inline NX_DynamicMesh::NX_DynamicMesh(size_t initialCapacity)
     : mVertexBuffer(nullptr, initialCapacity * sizeof(NX_Vertex3D), nullptr, 0)
 {
     if (!mVertices.reserve(initialCapacity)) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to reserve memory for immediate mesh");
+        NX_INTERNAL_LOG(E, 
+            "RENDER: Immediate mesh vertex buffer memory reservation failed (requested: %zu vertices). "
+            "Rendering may not proceed correctly.", initialCapacity
+        );
     }
 }
 

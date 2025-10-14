@@ -103,11 +103,17 @@ Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, NX_AppD
     /* --- Reserve enough space for the draw calls array --- */
 
     if (!mDrawCalls.reserve(1024)) {
-        NX_INTERNAL_LOG(W, "RENDER: Failed to pre-allocate the draw call buffer");
+        NX_INTERNAL_LOG(E, 
+            "RENDER: Draw call buffer pre-allocation failed (requested: 1024 entries). "
+            "Rendering may not proceed correctly."
+        );
     }
 
     if (!mDrawData.reserve(1024)) {
-        NX_INTERNAL_LOG(W, "RENDER: Failed to pre-allocate the draw data buffer");
+        NX_INTERNAL_LOG(E, 
+            "RENDER: Draw data buffer pre-allocation failed (requested: 1024 entries). "
+            "Rendering may not proceed correctly."
+        );
     }
 }
 
