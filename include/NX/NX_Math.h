@@ -3205,6 +3205,11 @@ NXAPI NX_Mat4 NX_Mat4Perspective(float fovy, float aspect, float znear, float zf
 NXAPI NX_Mat4 NX_Mat4Ortho(float left, float right, float bottom, float top, float znear, float zfar);
 
 /**
+ * @brief Create a look-to view matrix
+ */
+NXAPI NX_Mat4 NX_Mat4LookTo(NX_Vec3 eye, NX_Vec3 direction, NX_Vec3 up);
+
+/**
  * @brief Create a look-at view matrix
  */
 NXAPI NX_Mat4 NX_Mat4LookAt(NX_Vec3 eye, NX_Vec3 target, NX_Vec3 up);

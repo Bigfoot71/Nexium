@@ -804,62 +804,28 @@ NX_Mat4 NX_Mat4Ortho(float left, float right, float bottom, float top, float zne
     return result;
 }
 
+NX_Mat4 NX_Mat4LookTo(NX_Vec3 eye, NX_Vec3 direction, NX_Vec3 up)
+{
+    NX_Vec3 vz = NX_Vec3Normalize(NX_Vec3Neg(direction));
+    NX_Vec3 vx = NX_Vec3Normalize(NX_Vec3Cross(up, vz));
+    NX_Vec3 vy = NX_Vec3Cross(vz, vx);
+
+    float tx = -NX_Vec3Dot(vx, eye);
+    float ty = -NX_Vec3Dot(vy, eye);
+    float tz = -NX_Vec3Dot(vz, eye);
+
+    return NX_MAT4_T {
+        .m00 = vx.x,  .m01 = vy.x,  .m02 = vz.x,  .m03 = 0.0f,
+        .m10 = vx.y,  .m11 = vy.y,  .m12 = vz.y,  .m13 = 0.0f,
+        .m20 = vx.z,  .m21 = vy.z,  .m22 = vz.z,  .m23 = 0.0f,
+        .m30 = tx,    .m31 = ty,    .m32 = tz,    .m33 = 1.0f,
+    };
+}
+
 NX_Mat4 NX_Mat4LookAt(NX_Vec3 eye, NX_Vec3 target, NX_Vec3 up)
 {
-    NX_Mat4 result = NX_MAT4_IDENTITY;
-
-    float length = 0.0f;
-    float invLen = 0.0f;
-
-    NX_Vec3 vz = {
-        eye.x - target.x,
-        eye.y - target.y,
-        eye.z - target.z
-    };
-
-    length = sqrtf(vz.x * vz.x + vz.y * vz.y + vz.z * vz.z);
-    if (length < 1e-6f) length = 1.0f;
-    invLen = 1.0f / length;
-    vz.x *= invLen;
-    vz.y *= invLen;
-    vz.z *= invLen;
-
-    NX_Vec3 vx = {
-        up.y * vz.z - up.z * vz.y,
-        up.z * vz.x - up.x * vz.z,
-        up.x * vz.y - up.y * vz.x
-    };
-
-    length = sqrtf(vx.x * vx.x + vx.y * vx.y + vx.z * vx.z);
-    if (length < 1e-6f) length = 1.0f;
-    invLen = 1.0f / length;
-    vx.x *= invLen;
-    vx.y *= invLen;
-    vx.z *= invLen;
-
-    NX_Vec3 vy = {
-        vz.y * vx.z - vz.z * vx.y,
-        vz.z * vx.x - vz.x * vx.z,
-        vz.x * vx.y - vz.y * vx.x
-    };
-
-    result.m00 = vx.x;
-    result.m01 = vy.x;
-    result.m02 = vz.x;
-
-    result.m10 = vx.y;
-    result.m11 = vy.y;
-    result.m12 = vz.y;
-
-    result.m20 = vx.z;
-    result.m21 = vy.z;
-    result.m22 = vz.z;
-
-    result.m30 = -(vx.x * eye.x + vx.y * eye.y + vx.z * eye.z);
-    result.m31 = -(vy.x * eye.x + vy.y * eye.y + vy.z * eye.z);
-    result.m32 = -(vz.x * eye.x + vz.y * eye.y + vz.z * eye.z);
-
-    return result;
+    NX_Vec3 direction = NX_Vec3Direction(eye, target);
+    return NX_Mat4LookTo(eye, direction, up);
 }
 
 float NX_Mat4Determinant(const NX_Mat4* mat)
