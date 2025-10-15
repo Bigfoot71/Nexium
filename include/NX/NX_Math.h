@@ -2121,6 +2121,18 @@ static inline NX_Vec3 NX_Vec3Reject(NX_Vec3 v, NX_Vec3 onto)
 }
 
 /**
+ * @brief Transform a 3D vector by TRS transform
+ */
+static inline NX_Vec3 NX_Vec3Transform(NX_Vec3 vec, const NX_Transform* trs)
+{
+    vec = NX_Vec3Mul(vec, trs->scale);
+    vec = NX_Vec3Rotate(vec, trs->rotation);
+    vec = NX_Vec3Add(vec, trs->translation);
+
+    return vec;
+}
+
+/**
  * @brief Transform a 3D vector by 3x3 matrix
  */
 static inline NX_Vec3 NX_Vec3TransformByMat3(NX_Vec3 vec, const NX_Mat3* mat)
@@ -3422,6 +3434,9 @@ inline NX_Vec3 operator*(const NX_Vec3& lhs, const NX_Vec3& rhs) { return NX_Vec
 inline NX_Vec4 operator*(const NX_Vec4& lhs, const NX_Vec4& rhs) { return NX_Vec4Mul(lhs, rhs); }
 inline NX_Color operator*(const NX_Color& lhs, const NX_Color& rhs) { return NX_ColorMul(lhs, rhs); }
 
+// Vector * Transform (transformation)
+inline NX_Vec3 operator*(const NX_Vec3& lhs, const NX_Transform& rhs) { return NX_Vec3Transform(lhs, &rhs); }
+
 // Vector * Quaternion (transformation)
 inline NX_Vec3 operator*(const NX_Vec3& lhs, const NX_Quat& rhs) { return NX_Vec3Rotate(lhs, rhs); }
 
@@ -3441,7 +3456,7 @@ inline NX_Mat4 operator*(const NX_Mat4& lhs, const NX_Mat4& rhs) { return NX_Mat
 // Quaternion multiplication
 inline NX_Quat operator*(const NX_Quat& lhs, const NX_Quat& rhs) { return NX_QuatMul(lhs, rhs); }
 
-// Multiplication assignment operators
+// Vector *= Scalar
 inline const NX_IVec2& operator*=(NX_IVec2& lhs, int rhs) { lhs = NX_IVec2Scale(lhs, rhs); return lhs; }
 inline const NX_IVec3& operator*=(NX_IVec3& lhs, int rhs) { lhs = NX_IVec3Scale(lhs, rhs); return lhs; }
 inline const NX_IVec4& operator*=(NX_IVec4& lhs, int rhs) { lhs = NX_IVec4Scale(lhs, rhs); return lhs; }
@@ -3450,6 +3465,7 @@ inline const NX_Vec3& operator*=(NX_Vec3& lhs, float rhs) { lhs = NX_Vec3Scale(l
 inline const NX_Vec4& operator*=(NX_Vec4& lhs, float rhs) { lhs = NX_Vec4Scale(lhs, rhs); return lhs; }
 inline const NX_Color& operator*=(NX_Color& lhs, float rhs) { lhs = NX_ColorScale(lhs, rhs); return lhs; }
 
+// Vector *= Vector (component-wise)
 inline const NX_IVec2& operator*=(NX_IVec2& lhs, const NX_IVec2& rhs) { lhs = NX_IVec2Mul(lhs, rhs); return lhs; }
 inline const NX_IVec3& operator*=(NX_IVec3& lhs, const NX_IVec3& rhs) { lhs = NX_IVec3Mul(lhs, rhs); return lhs; }
 inline const NX_IVec4& operator*=(NX_IVec4& lhs, const NX_IVec4& rhs) { lhs = NX_IVec4Mul(lhs, rhs); return lhs; }
@@ -3458,15 +3474,22 @@ inline const NX_Vec3& operator*=(NX_Vec3& lhs, const NX_Vec3& rhs) { lhs = NX_Ve
 inline const NX_Vec4& operator*=(NX_Vec4& lhs, const NX_Vec4& rhs) { lhs = NX_Vec4Mul(lhs, rhs); return lhs; }
 inline const NX_Color& operator*=(NX_Color& lhs, const NX_Color& rhs) { lhs = NX_ColorMul(lhs, rhs); return lhs; }
 
+// Vector *= Transform (transformation)
+inline const NX_Vec3& operator*=(NX_Vec3& lhs, const NX_Transform& rhs) { lhs = NX_Vec3Transform(lhs, &rhs); return lhs; }
+
+// Vector *= Quaternion (transformation)
 inline const NX_Vec3& operator*=(NX_Vec3& lhs, const NX_Quat& rhs) { lhs = NX_Vec3Rotate(lhs, rhs); return lhs; }
 
+// Vector *= Matrix 3x3 (transformation)
 inline const NX_Vec2& operator*=(NX_Vec2& lhs, const NX_Mat3& rhs) { lhs = NX_Vec2TransformByMat3(lhs, &rhs); return lhs; }
 inline const NX_Vec3& operator*=(NX_Vec3& lhs, const NX_Mat3& rhs) { lhs = NX_Vec3TransformByMat3(lhs, &rhs); return lhs; }
 
+// Vector *= Matrix 4x4 (transformation)
 inline const NX_Vec2& operator*=(NX_Vec2& lhs, const NX_Mat4& rhs) { lhs = NX_Vec2TransformByMat4(lhs, &rhs); return lhs; }
 inline const NX_Vec3& operator*=(NX_Vec3& lhs, const NX_Mat4& rhs) { lhs = NX_Vec3TransformByMat4(lhs, &rhs); return lhs; }
 inline const NX_Vec4& operator*=(NX_Vec4& lhs, const NX_Mat4& rhs) { lhs = NX_Vec4TransformByMat4(lhs, &rhs); return lhs; }
 
+// Matrix *= Matrix
 inline const NX_Mat3& operator*=(NX_Mat3& lhs, const NX_Mat3& rhs) { lhs = NX_Mat3Mul(&lhs, &rhs); return lhs; }
 inline const NX_Mat4& operator*=(NX_Mat4& lhs, const NX_Mat4& rhs) { lhs = NX_Mat4Mul(&lhs, &rhs); return lhs; }
 inline const NX_Quat& operator*=(NX_Quat& lhs, const NX_Quat& rhs) { lhs = NX_QuatMul(lhs, rhs); return lhs; }
