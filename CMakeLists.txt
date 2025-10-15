@@ -328,7 +328,7 @@ embed_shaders(${PROJECT_NAME}
     "${NX_ROOT_PATH}/shaders/process/cubemap_skybox.frag"
     "${NX_ROOT_PATH}/shaders/process/downsampling.frag"
     "${NX_ROOT_PATH}/shaders/process/upsampling.frag"
-    "${NX_ROOT_PATH}/shaders/process/bilateral_blur.frag"
+    "${NX_ROOT_PATH}/shaders/process/ssao_bilateral_blur.frag"
     "${NX_ROOT_PATH}/shaders/process/ssao_pass.frag"
     "${NX_ROOT_PATH}/shaders/process/screen_quad.frag"
     "${NX_ROOT_PATH}/shaders/overlay/shape.vert"

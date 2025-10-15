@@ -1,4 +1,4 @@
-/* bilateral_blur.frag -- Bilateral depth-aware blur fragment shader for SSAO
+/* ssao_bilateral_blur.frag -- Bilateral depth-aware blur fragment shader for SSAO
  *
  * Copyright (c) 2025 Le Juez Victor
  *

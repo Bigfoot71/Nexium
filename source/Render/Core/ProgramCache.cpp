@@ -20,7 +20,7 @@
 #include <shaders/skybox.vert.h>
 #include <shaders/skybox.frag.h>
 
-#include <shaders/bilateral_blur.frag.h>
+#include <shaders/ssao_bilateral_blur.frag.h>
 #include <shaders/downsampling.frag.h>
 #include <shaders/screen_quad.frag.h>
 #include <shaders/upsampling.frag.h>
@@ -173,7 +173,7 @@ gpu::Program& ProgramCache::bilateralBlur()
         mVertexShaderScreen,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            BILATERAL_BLUR_FRAG
+            SSAO_BILATERAL_BLUR_FRAG
         )
     );
 
