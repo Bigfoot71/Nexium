@@ -292,7 +292,7 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         pipeline.setCullMode(render::getCullMode(mat.cull));
 
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
-        shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
+        shader.bindUniforms(pipeline, call.dynamicRangeIndex());
 
         pipeline.bindTexture(0, mAssets.textureOrWhite(mat.albedo.texture));
 
@@ -342,7 +342,7 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         pipeline.useProgram(shader.programFromShadingMode(call.material().shading));
 
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
-        shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
+        shader.bindUniforms(pipeline, call.dynamicRangeIndex());
 
         pipeline.setDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : render::getDepthFunc(mat.depth.test));
         pipeline.setBlendMode(render::getBlendMode(mat.blend));

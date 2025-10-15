@@ -313,7 +313,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         pipeline.setCullMode(render::getCullMode(call.shadowFaceMode(), call.material().cull));
 
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
-        shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
+        shader.bindUniforms(pipeline, call.dynamicRangeIndex());
 
         pipeline.bindTexture(0, mAssets.textureOrWhite(call.material().albedo.texture));
 

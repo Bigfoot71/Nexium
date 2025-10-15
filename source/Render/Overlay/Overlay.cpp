@@ -95,7 +95,7 @@ void Overlay::flush()
     for (const DrawCall& call : mDrawCalls)
     {
         NX_Shader& shader = mPrograms.shader(call.shader);
-        shader.bindUniformBuffers(pipeline, call.uRangeIndex);
+        shader.bindUniforms(pipeline, call.uRangeIndex);
         shader.bindTextures(pipeline, call.shaderTextures, mAssets.textureWhite().gpuTexture());
 
         switch (call.mode) {

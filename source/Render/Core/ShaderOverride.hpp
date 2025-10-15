@@ -74,7 +74,7 @@ public:
     void updateDynamicBuffer(size_t size, const void* data);
 
     /** Bind uniform buffers for the current draw call */
-    void bindUniformBuffers(const gpu::Pipeline& pipeline, int dynamicRangeIndex);
+    void bindUniforms(const gpu::Pipeline& pipeline, int dynamicRangeIndex);
     
     /** Bind all textures to their respective sampler units */
     void bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures, const gpu::Texture& defaultTexture);
@@ -227,7 +227,7 @@ void ShaderOverride<Derived>::updateDynamicBuffer(size_t size, const void* data)
 }
 
 template <typename Derived>
-void ShaderOverride<Derived>::bindUniformBuffers(const gpu::Pipeline& pipeline, int dynamicRangeIndex)
+void ShaderOverride<Derived>::bindUniforms(const gpu::Pipeline& pipeline, int dynamicRangeIndex)
 {
     if (mStaticBuffer.isValid()) {
         pipeline.bindUniform(
