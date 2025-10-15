@@ -303,6 +303,13 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         return;
     }
 
+    /* --- Lambda to get the clear value --- */
+
+    const auto clearValue = [&](const NX_Light& light) {
+        if (gCore->glProfile() == SDL_GL_CONTEXT_PROFILE_ES) return NX_COLOR(1.0f, 1.0f, 0.0f, 0.0f);
+        else return NX_COLOR(expf(+light.shadowLambda()), expf(-light.shadowLambda()), 0.0f, 0.0f);
+    };
+
     /* --- Lambda for drawing shadow geometry --- */
 
     const auto draw = [this, &params](const gpu::Pipeline& pipeline, const DrawCall& call, const DrawData& data)
@@ -393,7 +400,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
                 pipeline.bindFramebuffer(mFramebufferShadow2D);
                 mFramebufferShadow2D.setColorAttachmentTarget(0, light.shadowIndex());
-                pipeline.clear(mFramebufferShadow2D, NX_COLOR_1(FLT_MAX));
+                pipeline.clear(mFramebufferShadow2D, clearValue(light));
 
                 renderDrawCalls(pipeline, light);
                 mFrameShadowUniform.rotate();
@@ -407,7 +414,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     setupShadowUniform(pipeline, light, iFace);
 
                     mFramebufferShadowCube.setColorAttachmentTarget(0, light.shadowMapIndex(), iFace);
-                    pipeline.clear(mFramebufferShadowCube, NX_COLOR_1(FLT_MAX));
+                    pipeline.clear(mFramebufferShadowCube, clearValue(light));
 
                     renderDrawCalls(pipeline, light, iFace);
                     mFrameShadowUniform.rotate();
