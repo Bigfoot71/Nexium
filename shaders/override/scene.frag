@@ -36,22 +36,22 @@ float NORMAL_SCALE      = 1.0;
 
 void FragmentOverride()
 {
-    Material material = sMaterials[uMaterialIndex];
+    MeshData meshData = sMeshData[uMeshDataIndex];
 
-    ALBEDO = vInt.color * material.albedoColor * texture(uTexAlbedo, vInt.texCoord);
+    ALBEDO = vInt.color * meshData.albedoColor * texture(uTexAlbedo, vInt.texCoord);
 
-    EMISSION = material.emissionColor * texture(uTexEmission, vInt.texCoord).rgb;
-    EMISSION *= material.emissionEnergy;
+    EMISSION = meshData.emissionColor * texture(uTexEmission, vInt.texCoord).rgb;
+    EMISSION *= meshData.emissionEnergy;
 
-    AO_LIGHT_AFFECT = material.aoLightAffect;
+    AO_LIGHT_AFFECT = meshData.aoLightAffect;
 
     vec3 orm = texture(uTexORM, vInt.texCoord).rgb;
-    OCCLUSION = material.occlusion * orm.x;
-    ROUGHNESS = material.roughness * orm.y;
-    METALNESS = material.metalness * orm.z;
+    OCCLUSION = meshData.occlusion * orm.x;
+    ROUGHNESS = meshData.roughness * orm.y;
+    METALNESS = meshData.metalness * orm.z;
 
     NORMAL_MAP = texture(uTexNormal, vInt.texCoord).rgb;
-    NORMAL_SCALE = material.normalScale;
+    NORMAL_SCALE = meshData.normalScale;
 
     fragment();
 }

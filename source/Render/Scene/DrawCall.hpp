@@ -39,7 +39,7 @@ public:
 public:
     /** Constructors */
     template<typename T_Mesh>
-    DrawCall(int dataIndex, int materialIndex, T_Mesh& mesh, const NX_Material& material);
+    DrawCall(int dataIndex, int meshDataIndex, T_Mesh& mesh, const NX_Material& material);
 
     /** Draw call category management */
     static Category category(const NX_Material& material);
@@ -50,10 +50,10 @@ public:
     NX_ShadowFaceMode shadowFaceMode() const;
     const NX_BoundingBox& aabb() const;
     NX_Layer layerMask() const;
+    int meshDataIndex() const;
 
     /** Material data */
     const NX_Material& material() const;
-    int materialIndex() const;
 
     /** External draw call data */
     const NX_MaterialShader::TextureArray& materialShaderTextures() const;
@@ -67,9 +67,9 @@ private:
     /** Object to draw */
     std::variant<const NX_Mesh*, const NX_DynamicMesh*> mMesh;
 
-    /** Material data */
+    /** Object data to be drawn */
     NX_Material mMaterial{};    //< REVIEW: We don't need to store all the data here
-    int mMaterialIndex{};       //< Index pointing to material data stored in the global SSBO
+    int mMeshDataindex{};       //< Index to mesh data stored in the global SSBO
 
     /** Additionnal data */
     NX_MaterialShader::TextureArray mTextures;  //< Array containing the textures linked to the material shader at the time of draw (if any)
@@ -84,8 +84,8 @@ using BucketDrawCalls = util::BucketArray<DrawCall, DrawCall::Category, DrawCall
 /* === Public Implementation === */
 
 template<typename T_Mesh>
-inline DrawCall::DrawCall(int dataIndex, int materialIndex, T_Mesh& mesh, const NX_Material& material)
-    : mMesh(&mesh), mMaterial(material), mMaterialIndex(materialIndex)
+inline DrawCall::DrawCall(int dataIndex, int meshDataIndex, T_Mesh& mesh, const NX_Material& material)
+    : mMesh(&mesh), mMaterial(material), mMeshDataindex(meshDataIndex)
     , mDynamicRangeIndex(-1), mDrawDataIndex(dataIndex)
 {
     if (material.shader != nullptr) {
@@ -144,14 +144,14 @@ inline NX_Layer DrawCall::layerMask() const
     }
 }
 
+inline int DrawCall::meshDataIndex() const
+{
+    return mMeshDataindex;
+}
+
 inline const NX_Material& DrawCall::material() const
 {
     return mMaterial;
-}
-
-inline int DrawCall::materialIndex() const
-{
-    return mMaterialIndex;
 }
 
 inline const NX_MaterialShader::TextureArray& DrawCall::materialShaderTextures() const

@@ -15,10 +15,10 @@ precision highp float;
 /* === Includes === */
 
 #include "../include/environment.glsl"
-#include "../include/material.glsl"
 #include "../include/frustum.glsl"
 #include "../include/lights.glsl"
 #include "../include/frame.glsl"
+#include "../include/draw.glsl"
 #include "../include/math.glsl"
 #include "../include/pbr.glsl"
 
@@ -61,23 +61,23 @@ layout(location = 10) in VaryUser {
 
 /* === Storage Buffers === */
 
-layout(std430, binding = 0) buffer S_MaterialBuffer {
-    Material sMaterials[];
+layout(std430, binding = 1) buffer S_PerMeshBuffer {
+    MeshData sMeshData[];
 };
 
-layout(std430, binding = 2) buffer S_LightBuffer {
+layout(std430, binding = 3) buffer S_LightBuffer {
     Light sLights[];
 };
 
-layout(std430, binding = 3) buffer S_ShadowBuffer {
+layout(std430, binding = 4) buffer S_ShadowBuffer {
     Shadow sShadows[];
 };
 
-layout(std430, binding = 4) buffer S_TileBuffer {
+layout(std430, binding = 5) buffer S_TileBuffer {
     uint sClusters[]; //< Contains number of lights for each tile
 };
 
-layout(std430, binding = 5) buffer S_IndexBuffer {
+layout(std430, binding = 6) buffer S_IndexBuffer {
     uint sIndices[]; //< Contains the light indices for each tile, in increments of 'uMaxLightsPerTile'
 };
 
@@ -109,18 +109,9 @@ layout(std140, binding = 2) uniform U_Environment {
     Environment uEnv;
 };
 
-layout(std140, binding = 3) uniform U_Renderable {
-    mat4 matModel;
-    mat4 matNormal;
-    int boneOffset;
-    uint layerMask;
-    bool instancing;
-    bool skinning;
-} uRender;
-
 /* === Uniforms === */
 
-layout(location = 0) uniform uint uMaterialIndex;
+layout(location = 1) uniform uint uMeshDataIndex;
 
 /* === Fragments === */
 
@@ -464,7 +455,7 @@ void main()
 
         /* --- Accumulate the diffuse and specular lighting contributions --- */
 
-        bool validLayer = ((light.cullMask & uRender.layerMask) != 0u);
+        bool validLayer = ((light.cullMask & sMeshData[uMeshDataIndex].layerMask) != 0u);
         float contribution = shadow * float(validLayer);
 
         diffuse += diffLight * contribution;

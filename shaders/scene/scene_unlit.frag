@@ -15,9 +15,9 @@ precision highp float;
 /* === Includes === */
 
 #include "../include/environment.glsl"
-#include "../include/material.glsl"
 #include "../include/frustum.glsl"
 #include "../include/frame.glsl"
+#include "../include/draw.glsl"
 #include "../include/math.glsl"
 
 /* === Varyings === */
@@ -36,8 +36,8 @@ layout(location = 10) in VaryUser {
 
 /* === Storage Buffers === */
 
-layout(std430, binding = 0) buffer S_MaterialBuffer {
-    Material sMaterials[];
+layout(std430, binding = 1) buffer S_PerMeshBuffer {
+    MeshData sMeshData[];
 };
 
 /* === Samplers === */
@@ -61,18 +61,9 @@ layout(std140, binding = 2) uniform U_Environment {
     Environment uEnv;
 };
 
-layout(std140, binding = 3) uniform U_Renderable {
-    mat4 matModel;
-    mat4 matNormal;
-    int boneOffset;
-    uint layerMask;
-    bool instancing;
-    bool skinning;
-} uRender;
-
 /* === Uniforms === */
 
-layout(location = 0) uniform uint uMaterialIndex;
+layout(location = 1) uniform uint uMeshDataIndex;
 
 /* === Fragments === */
 

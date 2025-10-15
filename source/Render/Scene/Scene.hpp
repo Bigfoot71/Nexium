@@ -21,8 +21,8 @@
 #include "../Core/AssetCache.hpp"
 
 #include "../NX_RenderTexture.hpp"
-#include "./RenderableBuffer.hpp"
-#include "./MaterialBuffer.hpp"
+#include "./PerModelBuffer.hpp"
+#include "./PerMeshBuffer.hpp"
 #include "./LightManager.hpp"
 #include "./Environment.hpp"
 #include "./ViewFrustum.hpp"
@@ -93,8 +93,8 @@ private:
     ViewFrustum mFrustum{};
 
     /** Managers */
-    RenderableBuffer mRenderableBuffer;
-    MaterialBuffer mMaterialBuffer;
+    PerModelBuffer mPerModelBuffer;
+    PerMeshBuffer mPerMeshBuffer;
     BoneBuffer mBoneBuffer;
     LightManager mLights;
 
@@ -123,10 +123,12 @@ private:
 template <typename T_Mesh>
 inline void Scene::drawMesh(const T_Mesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform)
 {
+    int modelDataIndex = mPerModelBuffer.stage(transform, instanceCount);
+    int meshDataIndex = mPerMeshBuffer.stage(mesh, material);
     int dataIndex = mDrawData.size();
-    int materialIndex = mMaterialBuffer.stage(material);
-    mDrawData.emplace_back(transform, instances, instanceCount);
-    mDrawCalls.emplace(DrawCall::category(material), dataIndex, materialIndex, mesh, material);
+
+    mDrawData.emplace_back(modelDataIndex, transform, instances, instanceCount);
+    mDrawCalls.emplace(DrawCall::category(material), dataIndex, meshDataIndex, mesh, material);
 }
 
 inline void Scene::drawModel(const NX_Model& model, const NX_InstanceBuffer* instances, int instanceCount, const NX_Transform& transform)
@@ -160,16 +162,22 @@ inline void Scene::drawModel(const NX_Model& model, const NX_InstanceBuffer* ins
     /* --- Adding shared meshes and data to the batch --- */
 
     int dataIndex = mDrawData.size();
-    for (int i = 0; i < model.meshCount; i++) {
+
+    for (int i = 0; i < model.meshCount; i++)
+    {
+        const NX_Mesh& mesh = *model.meshes[i];
         const NX_Material& material = model.materials[model.meshMaterials[i]];
-        int materialIndex = mMaterialBuffer.stage(material);
+
+        int meshDataIndex = mPerMeshBuffer.stage(mesh, material);
+
         mDrawCalls.emplace(
             DrawCall::category(material), dataIndex,
-            materialIndex, *model.meshes[i], material
+            meshDataIndex, *model.meshes[i], material
         );
     }
 
-    mDrawData.emplace_back(transform, instances, instanceCount, boneMatrixOffset);
+    int modelDataIndex = mPerModelBuffer.stage(transform, instanceCount, boneMatrixOffset);
+    mDrawData.emplace_back(modelDataIndex, transform, instances, instanceCount, boneMatrixOffset);
 }
 
 inline const LightManager& Scene::lights() const

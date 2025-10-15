@@ -312,14 +312,13 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_SHADOW));
         pipeline.setCullMode(render::getCullMode(call.shadowFaceMode(), call.material().cull));
 
-        shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
+        shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
+
         pipeline.bindTexture(0, mAssets.textureOrWhite(call.material().albedo.texture));
 
-        params.renderableBuffer.upload(data, call);
-        pipeline.bindUniform(3, params.renderableBuffer.buffer());
-
-        pipeline.setUniformUint1(0, call.materialIndex());
+        pipeline.setUniformUint1(0, data.modelDataIndex());
+        pipeline.setUniformUint1(1, call.meshDataIndex());
 
         call.draw(pipeline, data.instances(), data.instanceCount());
     };
@@ -369,8 +368,9 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
     pipeline.setViewport(0, 0, mShadowResolution, mShadowResolution);
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
 
-    pipeline.bindStorage(0, params.materialBuffer.buffer());
-    pipeline.bindStorage(1, params.boneBuffer.buffer());
+    pipeline.bindStorage(0, params.perModelBuffer.buffer());
+    pipeline.bindStorage(1, params.perMeshBuffer.buffer());
+    pipeline.bindStorage(2, params.boneBuffer.buffer());
 
     pipeline.bindUniform(1, params.viewFrustum.buffer());
     pipeline.bindUniform(2, params.environment.buffer());

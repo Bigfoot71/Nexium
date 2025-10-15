@@ -31,8 +31,8 @@ public:
 
     /** Distance to view */
     float getDistanceSquaredTo(const NX_Vec3& point) const;
-    float getDistanceSquaredToCenterPoint(const NX_BoundingBox& box, const NX_Mat4& transform) const;
-    float getDistanceSquaredToFarthestPoint(const NX_BoundingBox& box, const NX_Mat4& transform) const;
+    float getDistanceSquaredToCenterPoint(const NX_BoundingBox& box, const NX_Transform& transform) const;
+    float getDistanceSquaredToFarthestPoint(const NX_BoundingBox& box, const NX_Transform& transform) const;
 
     /** Matrices */
     const NX_Vec3& viewPosition() const;
@@ -139,12 +139,12 @@ inline float ViewFrustum::getDistanceSquaredTo(const NX_Vec3& point) const
     return NX_Vec3DistanceSq(mData.position, point);
 }
 
-inline float ViewFrustum::getDistanceSquaredToCenterPoint(const NX_BoundingBox& box, const NX_Mat4& transform) const
+inline float ViewFrustum::getDistanceSquaredToCenterPoint(const NX_BoundingBox& box, const NX_Transform& transform) const
 {
     return NX_Vec3DistanceSq(mData.position, (box.min + box.max) * transform);
 }
 
-inline float ViewFrustum::getDistanceSquaredToFarthestPoint(const NX_BoundingBox& box, const NX_Mat4& transform) const
+inline float ViewFrustum::getDistanceSquaredToFarthestPoint(const NX_BoundingBox& box, const NX_Transform& transform) const
 {
     float maxDistSq = 0.0f;
 

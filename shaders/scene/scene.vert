@@ -16,9 +16,9 @@ precision highp float;
 
 #include "../include/environment.glsl"
 #include "../include/billboard.glsl"
-#include "../include/material.glsl"
 #include "../include/frustum.glsl"
 #include "../include/frame.glsl"
+#include "../include/draw.glsl"
 
 /* === Attributes === */
 
@@ -37,11 +37,15 @@ layout(location = 11) in vec4 iCustom;
 
 /* === Storage Buffers === */
 
-layout(std430, binding = 0) buffer S_MaterialBuffer {
-    Material sMaterials[];
+layout(std430, binding = 0) buffer S_PerModelBuffer {
+    ModelData sModelData[];
 };
 
-layout(std430, binding = 1) buffer S_BoneBuffer {
+layout(std430, binding = 1) buffer S_PerMeshBuffer {
+    MeshData sMeshData[];
+};
+
+layout(std430, binding = 2) buffer S_BoneBuffer {
     mat4 sBoneMatrices[];
 };
 
@@ -59,18 +63,10 @@ layout(std140, binding = 2) uniform U_Environment {
     Environment uEnv;
 };
 
-layout(std140, binding = 3) uniform U_Renderable {
-    mat4 matModel;
-    mat4 matNormal;
-    int boneOffset;
-    uint layerMask;
-    bool instancing;
-    bool skinning;
-} uRender;
-
 /* === Uniforms === */
 
-layout(location = 0) uniform uint uMaterialIndex;
+layout(location = 0) uniform uint uModelDataIndex;
+layout(location = 1) uniform uint uMeshDataIndex;
 
 /* === Varyings === */
 
@@ -106,22 +102,24 @@ void main()
 {
     /* --- Calculation of matrices --- */
 
-    mat4 matModel = uRender.matModel;
-    mat3 matNormal = mat3(uRender.matNormal);
+    ModelData modelData = sModelData[uModelDataIndex];
 
-    if (uRender.skinning) {
-        mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, uRender.boneOffset);
+    mat4 matModel = modelData.matModel;
+    mat3 matNormal = mat3(modelData.matNormal);
+
+    if (modelData.skinning) {
+        mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, modelData.boneOffset);
         matModel = matModel * sMatModel;
         matNormal = matNormal * mat3(transpose(inverse(sMatModel)));
     }
 
-    if (uRender.instancing) {
+    if (modelData.instancing) {
         mat4 iMatModel = M_TransformToMat4(iPosition, iRotation, iScale);
         matModel = iMatModel * matModel;
         matNormal = mat3(transpose(inverse(iMatModel))) * matNormal;
     }
 
-    switch(sMaterials[uMaterialIndex].billboard) {
+    switch(sMeshData[uMeshDataIndex].billboard) {
     case BILLBOARD_NONE:
         break;
     case BILLBOARD_FRONT:

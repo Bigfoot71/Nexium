@@ -14,7 +14,7 @@ precision highp float;
 
 /* === Includes === */
 
-#include "../include/material.glsl"
+#include "../include/draw.glsl"
 
 /* === Varyings === */
 
@@ -32,8 +32,8 @@ layout(location = 10) in VaryUser {
 
 /* === Storage Buffers === */
 
-layout(std430, binding = 0) buffer S_MaterialBuffer {
-    Material sMaterials[];
+layout(std430, binding = 1) buffer S_PerMeshBuffer {
+    MeshData sMeshData[];
 };
 
 /* === Samplers === */
@@ -42,12 +42,12 @@ layout(binding = 0) uniform sampler2D uTexAlbedo;
 
 /* === Uniforms === */
 
-layout(location = 0) uniform uint uMaterialIndex;
+layout(location = 1) uniform uint uMeshDataIndex;
 
 /* === Program === */
 
 void main()
 {
     float alpha = vInt.color.a * texture(uTexAlbedo, vInt.texCoord).a;
-    if (alpha < sMaterials[uMaterialIndex].alphaCutOff) discard;
+    if (alpha < sMeshData[uMeshDataIndex].alphaCutOff) discard;
 }

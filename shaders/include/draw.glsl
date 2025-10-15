@@ -1,4 +1,4 @@
-/* material.glsl -- Contains everything you need to manage materials
+/* draw.glsl -- Contains everything you need to manage draw calls
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,7 +6,15 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-struct Material {
+struct ModelData {
+    mat4 matModel;
+    mat4 matNormal;
+    int boneOffset;
+    bool instancing;
+    bool skinning;
+};
+
+struct MeshData {
     vec4 albedoColor;
     vec3 emissionColor;
     float emissionEnergy;
@@ -19,4 +27,5 @@ struct Material {
     vec2 texOffset;
     vec2 texScale;
     int billboard;
+    int layerMask;
 };

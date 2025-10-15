@@ -1,4 +1,4 @@
-/* MaterialBuffer.hpp -- GPU material upload management class
+/* PerMeshBuffer.hpp -- GPU material upload management class
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,25 +6,27 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef NX_SCENE_MATERIAL_BUFFER_HPP
-#define NX_SCENE_MATERIAL_BUFFER_HPP
+#ifndef NX_SCENE_PER_MESH_BUFFER_HPP
+#define NX_SCENE_PER_MESH_BUFFER_HPP
 
 #include <NX/NX_Render.h>
 #include <NX/NX_Math.h>
 
 #include "../../Detail/Util/DynamicArray.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
+#include "../NX_DynamicMesh.hpp"
 
 namespace scene {
 
 /* === Declaration === */
 
-class MaterialBuffer {
+class PerMeshBuffer {
 public:
-    MaterialBuffer();
+    PerMeshBuffer();
 
     /** Stage material data and return GPU material index */
-    int stage(const NX_Material& material);
+    template <typename T_Mesh>
+    int stage(const T_Mesh& mesh, const NX_Material& material);
 
     /** Upload all staged data */
     void upload();
@@ -45,7 +47,8 @@ private:
         alignas(4) float alphaCutOff;
         alignas(4) NX_Vec2 texOffset;
         alignas(4) NX_Vec2 texScale;
-        alignas(4) int billboard;
+        alignas(4) int32_t billboard;
+        alignas(4) uint32_t layerMask;
     };
 
 private:
@@ -55,7 +58,7 @@ private:
 
 /* === Public Implementation === */
 
-inline MaterialBuffer::MaterialBuffer()
+inline PerMeshBuffer::PerMeshBuffer()
     : mBuffer(GL_SHADER_STORAGE_BUFFER, 1024 * sizeof(GPUData), nullptr, GL_DYNAMIC_DRAW)
 {
     if (!mStagingBuffer.reserve(1024)) {
@@ -66,7 +69,8 @@ inline MaterialBuffer::MaterialBuffer()
     }
 }
 
-inline int MaterialBuffer::stage(const NX_Material& material)
+template <typename T_Mesh>
+int PerMeshBuffer::stage(const T_Mesh& mesh, const NX_Material& material)
 {
     int index = static_cast<int>(mStagingBuffer.size());
 
@@ -82,13 +86,14 @@ inline int MaterialBuffer::stage(const NX_Material& material)
         .alphaCutOff = material.alphaCutOff,
         .texOffset = material.texOffset,
         .texScale = material.texScale,
-        .billboard = material.billboard
+        .billboard = material.billboard,
+        .layerMask = mesh.layerMask         //< NOTE: Layer mask is accessed the same way for NX_Mesh and NX_DynamicMesh
     });
 
     return index;
 }
 
-inline void MaterialBuffer::upload()
+inline void PerMeshBuffer::upload()
 {
     size_t size = mStagingBuffer.size() * sizeof(GPUData);
 
@@ -98,11 +103,11 @@ inline void MaterialBuffer::upload()
     mStagingBuffer.clear();
 }
 
-inline const gpu::Buffer& MaterialBuffer::buffer() const
+inline const gpu::Buffer& PerMeshBuffer::buffer() const
 {
     return mBuffer;
 }
 
 } // namespace scene
 
-#endif // NX_SCENE_MATERIAL_BUFFER_HPP
+#endif // NX_SCENE_PER_MESH_BUFFER_HPP

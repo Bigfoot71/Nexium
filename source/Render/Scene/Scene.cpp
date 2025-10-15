@@ -135,15 +135,16 @@ void Scene::end()
 {
     /* --- Upload draw calls data --- */
 
-    mMaterialBuffer.upload();
+    mPerModelBuffer.upload();
+    mPerMeshBuffer.upload();
 
     /* --- Process lights --- */
 
     mLights.process({
         .viewFrustum = mFrustum,
         .environment = mEnvironment,
-        .renderableBuffer = mRenderableBuffer,
-        .materialBuffer = mMaterialBuffer,
+        .perModelBuffer = mPerModelBuffer,
+        .perMeshBuffer = mPerMeshBuffer,
         .boneBuffer = mBoneBuffer,
         .drawCalls = mDrawCalls,
         .drawData = mDrawData
@@ -180,8 +181,8 @@ void Scene::end()
     if (mEnvironment.hasFlags(NX_ENV_SORT_OPAQUE)) {
         mDrawCalls.sort(DrawCall::Category::OPAQUE,
             [this](const DrawCall& a, const DrawCall& b) {
-                float maxDistA = mFrustum.getDistanceSquaredToCenterPoint(a.aabb(), mDrawData[a.drawDataIndex()].matrix());
-                float maxDistB = mFrustum.getDistanceSquaredToCenterPoint(b.aabb(), mDrawData[b.drawDataIndex()].matrix());
+                float maxDistA = mFrustum.getDistanceSquaredToCenterPoint(a.aabb(), mDrawData[a.drawDataIndex()].transform());
+                float maxDistB = mFrustum.getDistanceSquaredToCenterPoint(b.aabb(), mDrawData[b.drawDataIndex()].transform());
                 return maxDistA < maxDistB;
             }
         );
@@ -190,8 +191,8 @@ void Scene::end()
     if (mEnvironment.hasFlags(NX_ENV_SORT_TRANSPARENT)) {
         mDrawCalls.sort(DrawCall::Category::TRANSPARENT,
             [this](const DrawCall& a, const DrawCall& b) {
-                float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.aabb(), mDrawData[a.drawDataIndex()].matrix());
-                float maxDistB = mFrustum.getDistanceSquaredToFarthestPoint(b.aabb(), mDrawData[b.drawDataIndex()].matrix());
+                float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.aabb(), mDrawData[a.drawDataIndex()].transform());
+                float maxDistB = mFrustum.getDistanceSquaredToFarthestPoint(b.aabb(), mDrawData[b.drawDataIndex()].transform());
                 return maxDistA > maxDistB;
             }
         );
@@ -271,8 +272,9 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::Disabled);
 
-    pipeline.bindStorage(0, mMaterialBuffer.buffer());
-    pipeline.bindStorage(1, mBoneBuffer.buffer());
+    pipeline.bindStorage(0, mPerModelBuffer.buffer());
+    pipeline.bindStorage(1, mPerMeshBuffer.buffer());
+    pipeline.bindStorage(2, mBoneBuffer.buffer());
 
     pipeline.bindUniform(0, mFrameUniform);
     pipeline.bindUniform(1, mFrustum.buffer());
@@ -286,18 +288,16 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
         pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_PREPASS));
 
-        shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
-        shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
-
         pipeline.setDepthFunc(render::getDepthFunc(mat.depth.test));
         pipeline.setCullMode(render::getCullMode(mat.cull));
 
-        mRenderableBuffer.upload(data, call);
+        shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
+        shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
 
         pipeline.bindTexture(0, mAssets.textureOrWhite(mat.albedo.texture));
-        pipeline.bindUniform(3, mRenderableBuffer.buffer());
 
-        pipeline.setUniformUint1(0, call.materialIndex());
+        pipeline.setUniformUint1(0, data.modelDataIndex());
+        pipeline.setUniformUint1(1, call.meshDataIndex());
 
         call.draw(pipeline, data.instances(), data.instanceCount());
     }
@@ -308,12 +308,13 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::RGBA);
 
-    pipeline.bindStorage(0, mMaterialBuffer.buffer());
-    pipeline.bindStorage(1, mBoneBuffer.buffer());
-    pipeline.bindStorage(2, mLights.lightsBuffer());
-    pipeline.bindStorage(3, mLights.shadowBuffer());
-    pipeline.bindStorage(4, mLights.tilesBuffer());
-    pipeline.bindStorage(5, mLights.indexBuffer());
+    pipeline.bindStorage(0, mPerModelBuffer.buffer());
+    pipeline.bindStorage(1, mPerMeshBuffer.buffer());
+    pipeline.bindStorage(2, mBoneBuffer.buffer());
+    pipeline.bindStorage(3, mLights.lightsBuffer());
+    pipeline.bindStorage(4, mLights.shadowBuffer());
+    pipeline.bindStorage(5, mLights.tilesBuffer());
+    pipeline.bindStorage(6, mLights.indexBuffer());
 
     pipeline.bindTexture(4, mAssets.textureBrdfLut());
     pipeline.bindTexture(7, mLights.shadowCube());
@@ -340,8 +341,8 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
         pipeline.useProgram(shader.programFromShadingMode(call.material().shading));
 
-        shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
         shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
+        shader.bindUniformBuffers(pipeline, call.dynamicRangeIndex());
 
         pipeline.setDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : render::getDepthFunc(mat.depth.test));
         pipeline.setBlendMode(render::getBlendMode(mat.blend));
@@ -352,10 +353,8 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         pipeline.bindTexture(2, mAssets.textureOrWhite(mat.orm.texture));
         pipeline.bindTexture(3, mAssets.textureOrNormal(mat.normal.texture));
 
-        mRenderableBuffer.upload(data, call);
-        pipeline.bindUniform(3, mRenderableBuffer.buffer());
-
-        pipeline.setUniformUint1(0, call.materialIndex());
+        pipeline.setUniformUint1(0, data.modelDataIndex());
+        pipeline.setUniformUint1(1, call.meshDataIndex());
 
         call.draw(pipeline, data.instances(), data.instanceCount());
     }

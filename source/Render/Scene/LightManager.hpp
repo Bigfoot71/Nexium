@@ -20,8 +20,8 @@
 #include "../Core/ProgramCache.hpp"
 #include "../Core/AssetCache.hpp"
 
-#include "./RenderableBuffer.hpp"
-#include "./MaterialBuffer.hpp"
+#include "./PerModelBuffer.hpp"
+#include "./PerMeshBuffer.hpp"
 #include "./ViewFrustum.hpp"
 #include "./Environment.hpp"
 #include "./BoneBuffer.hpp"
@@ -37,8 +37,8 @@ public:
     struct ProcessParams {
         const ViewFrustum& viewFrustum;
         const Environment& environment;
-        RenderableBuffer& renderableBuffer;
-        const MaterialBuffer& materialBuffer;
+        const PerModelBuffer& perModelBuffer;
+        const PerMeshBuffer& perMeshBuffer;
         const BoneBuffer& boneBuffer;
         const BucketDrawCalls& drawCalls;
         const ArrayDrawData& drawData;

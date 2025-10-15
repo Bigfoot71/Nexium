@@ -21,6 +21,7 @@ namespace scene {
 class DrawData {
 public:
     DrawData(
+        int modelDataIndex,
         const NX_Transform& transform,
         const NX_InstanceBuffer* instances = nullptr,
         int instanceCount = 0, int boneMatrixOffset = -1
@@ -28,8 +29,6 @@ public:
 
     /** Transform */
     const NX_Transform& transform() const;
-    const NX_Mat4& matrix() const;
-    const NX_Mat3& normal() const;
 
     /** Instances */
     const NX_InstanceBuffer* instances() const;
@@ -40,11 +39,12 @@ public:
     int boneMatrixOffset() const;
     bool useSkinning() const;
 
+    /** Model data (SSBO) */
+    int modelDataIndex() const;
+
 private:
     /** Transform */
     NX_Transform mTransform;
-    NX_Mat4 mMatrix;
-    NX_Mat3 mNormal;
 
     /** Instances */
     const NX_InstanceBuffer* mInstances;
@@ -52,6 +52,9 @@ private:
 
     /** Animations */
     int mBoneMatrixOffset;  //< If less than zero, no animation assigned
+
+    /** Model data (SSBO) */
+    int mModelDataIndex;
 };
 
 /* === Container === */
@@ -60,28 +63,21 @@ using ArrayDrawData = util::DynamicArray<DrawData>;
 
 /* === Public Implementation === */
 
-inline DrawData::DrawData(const NX_Transform& transform, const NX_InstanceBuffer* instances, int instanceCount, int boneMatrixOffset)
+inline DrawData::DrawData(
+    int modelDataIndex,
+    const NX_Transform& transform,
+    const NX_InstanceBuffer* instances,
+    int instanceCount, int boneMatrixOffset)
     : mTransform(transform)
-    , mMatrix(NX_TransformToMat4(&transform))
-    , mNormal(NX_Mat3Normal(&mMatrix))
     , mInstances(instances)
     , mInstanceCount(instanceCount)
     , mBoneMatrixOffset(boneMatrixOffset)
+    , mModelDataIndex(modelDataIndex)
 { }
 
 inline const NX_Transform& DrawData::transform() const
 {
     return mTransform;
-}
-
-inline const NX_Mat4& DrawData::matrix() const
-{
-    return mMatrix;
-}
-
-inline const NX_Mat3& DrawData::normal() const
-{
-    return mNormal;
 }
 
 inline const NX_InstanceBuffer* DrawData::instances() const
@@ -107,6 +103,11 @@ inline int DrawData::boneMatrixOffset() const
 inline bool DrawData::useSkinning() const
 {
     return (mBoneMatrixOffset >= 0);
+}
+
+inline int DrawData::modelDataIndex() const
+{
+    return mModelDataIndex;
 }
 
 } // namespace scene
