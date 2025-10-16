@@ -22,12 +22,6 @@
 #include <SDL3/SDL_assert.h>
 #include <variant>
 
-/* === Forward Declaration === */
-
-namespace scene {
-class LightManager;
-}
-
 /* === Declaration === */
 
 class NX_Light {
@@ -53,21 +47,18 @@ public:
     struct ShadowGPU {
         alignas(16) NX_Mat4 viewProj{};
         alignas(4) float bleedingBias{};
-        alignas(4) float softness{};
         alignas(4) float lambda{};
         alignas(4) uint32_t mapIndex{};
     };
 
 public:
     /** Constructors */
-    NX_Light(scene::LightManager& manager, NX_LightType type);
+    NX_Light(NX_LightType type);
 
-    /** Shadow state management */
-    void updateState(const scene::ViewFrustum& viewFrustum, uint32_t lightIndex, int32_t shadowIndex, uint32_t shadowMapIndex);
+    /** Actions */
     void forceShadowMapUpdate();
-    bool needsShadowMapUpdate();
 
-    /** Public getters */
+    /** Getters */
     NX_LightType type() const;
     bool isActive() const;
     NX_Layer layerMask() const;
@@ -89,7 +80,7 @@ public:
     NX_ShadowUpdateMode shadowUpdateMode() const;
     float shadowUpdateInterval() const;
 
-    /** Public setters */
+    /** Setters */
     void setActive(bool active);
     void setLayerMask(NX_Layer layers);
     void setCullMask(NX_Layer layers);
@@ -111,13 +102,11 @@ public:
     void setShadowUpdateInterval(float interval);
 
     /** Getters for light manager */
+    void updateState(const scene::ViewFrustum& viewFrustum, bool* needsShadowUpdate);
     bool isInsideShadowFrustum(const scene::DrawCall& call, const scene::DrawData& data, int face = 0) const;
-    void fillShadowGPU(ShadowGPU* shadow) const;
-    void fillLightGPU(LightGPU* light) const;
+    void fillShadowGPU(ShadowGPU* shadow, int mapIndex) const;
+    void fillLightGPU(LightGPU* light, int shadowIndex) const;
     const NX_Mat4& viewProj(int face = 0);
-    uint32_t shadowMapIndex() const;
-    int32_t shadowIndex() const;
-    uint32_t lightIndex() const;
 
 private:
     void updateDirectionalViewProj(const scene::ViewFrustum& viewFrustum);
@@ -131,7 +120,7 @@ private:
         NX_Vec3 color{NX_VEC3_ONE};
         float energy{1.0f};
         float specular{0.5f};
-        float shadowRadius{16.0f};              //< Public 'range' parameter, defines the radius around the camera within which shadows are rendered
+        float shadowRadius{8.0f};               //< Public 'range' parameter, defines the radius around the camera within which shadows are rendered
         float range{0.0f};                      //< Internally computed, corresponds to the shadow projection range (far - near)
     };
 
@@ -141,7 +130,7 @@ private:
         NX_Vec3 color{NX_VEC3_ONE};
         float energy{1.0f};
         float specular{0.5f};
-        float range{16.0f};
+        float range{8.0f};
         float attenuation{1.0f};
         float innerCutOff{0.7071f};             //< ~ 45°
         float outerCutOff{1e-6f};               //< ~ 90°
@@ -152,7 +141,7 @@ private:
         NX_Vec3 color{NX_VEC3_ONE};
         float energy{1.0f};
         float specular{0.5f};
-        float range{16.0f};
+        float range{8.0f};
         float attenuation{1.0f};
     };
 
@@ -162,30 +151,24 @@ private:
         // NOTE: We store the viewProj matrices and frustums for each face in case of omni-light
         std::array<scene::Frustum, 6> frustum{};
         std::array<NX_Mat4, 6> viewProj{};
-        float bleedingBias{};
-        float softness{};
-        float lambda{};
+        float bleedingBias{0.2f};
+        float softness{1.0f};
+        float lambda{60};
     };
 
     struct ShadowState {
         NX_ShadowUpdateMode updateMode{};
         float intervalSec{0.016f};
         float timerSec{0.0f};
-        bool needsUpdate{1};
+        bool forceUpdate{};
         bool vpDirty{true};
     };
-
-private:
-    scene::LightManager& mManager;
 
 private:
     LightData mData;                        //< Union holding data for the specific light type instance
     ShadowData mShadowData{};               //< Shadow data to be uploaded to the GPU
     ShadowState mShadowState{};             //< CPU-side shadow management state
     const NX_LightType mType{};             //< Immutable light type
-    uint32_t mLightStorageIndex{0};         //< Index of light data in the SSBO (assigned by manager) if active
-    int32_t mShadowStorageIndex{-1};        //< Index of shadow data in the SSBO (-1 if no shadows)
-    uint32_t mShadowMapIndex{0};            //< Texture index of the shadow map if shadows are produced
     NX_Layer mLayerMask{NX_LAYER_01};       //< Layers in the scene where the light is active
     NX_Layer mLightCullMask{NX_LAYER_ALL};  //< Layers of meshes affected by this light
     NX_Layer mShadowCullMask{NX_LAYER_ALL}; //< Layers of meshes that produce shadows from this light
@@ -193,81 +176,35 @@ private:
     bool mActive{false};                    //< True if the light is active
 };
 
-/* === Static Asserts === */
-
-static_assert(sizeof(NX_Light::LightGPU) % 16 == 0);    //< std430 compatibility
-static_assert(sizeof(NX_Light::ShadowGPU) % 16 == 0);   //< std430 compatibility
-
 /* === Public Implementation === */
 
-inline void NX_Light::updateState(const scene::ViewFrustum& viewFrustum, uint32_t lightIndex, int32_t shadowIndex, uint32_t shadowMapIndex)
+inline NX_Light::NX_Light(NX_LightType type)
+    : mData(Directional())
+    , mType(type)
 {
-    SDL_assert(mActive);
-
-    mLightStorageIndex = lightIndex;
-
-    if (!mHasShadow) {
-        return;
-    }
-
-    mShadowStorageIndex = shadowIndex;
-    mShadowMapIndex = shadowMapIndex;
-
-    switch (mType) {
+    switch (type) {
     case NX_LIGHT_DIR:
-        // NOTE: The view/proj of directional lights must
-        //       always be updated relative to the camera
-        updateDirectionalViewProj(viewFrustum);
+        mData = Directional();
         break;
     case NX_LIGHT_SPOT:
-        if (mShadowState.vpDirty) {
-            mShadowState.vpDirty = false;
-            updateSpotViewProj();
-        }
+        mData = Spot();
         break;
     case NX_LIGHT_OMNI:
-        if (mShadowState.vpDirty) {
-            mShadowState.vpDirty = false;
-            updateOmniViewProj();
-        }
+        mData = Omni();
         break;
-    }
-
-    if (mShadowState.updateMode == NX_SHADOW_UPDATE_INTERVAL) {
-        if (!mShadowState.needsUpdate) {
-            mShadowState.timerSec += NX_GetFrameTime();
-            if (mShadowState.timerSec >= mShadowState.intervalSec) {
-                mShadowState.timerSec -= mShadowState.intervalSec;
-                mShadowState.needsUpdate = true;
-            }
-        }
+    default:
+        NX_INTERNAL_LOG(W, "RENDER: Invalid light type (%i); The light will be invalid");
+        break;
     }
 }
 
 inline void NX_Light::forceShadowMapUpdate()
 {
-    mShadowState.needsUpdate = true;
+    mShadowState.forceUpdate = true;
 
     if (mShadowState.updateMode == NX_SHADOW_UPDATE_INTERVAL) {
         mShadowState.timerSec = 0.0f;
     }
-}
-
-inline bool NX_Light::needsShadowMapUpdate()
-{
-    bool result = mShadowState.needsUpdate;
-
-    switch (mShadowState.updateMode) {
-    case NX_SHADOW_UPDATE_CONTINUOUS:
-        mShadowState.needsUpdate = true;
-        break;
-    case NX_SHADOW_UPDATE_INTERVAL:
-    case NX_SHADOW_UPDATE_MANUAL:
-        mShadowState.needsUpdate = false;
-        break;
-    }
-
-    return result;
 }
 
 inline NX_LightType NX_Light::type() const
@@ -837,24 +774,7 @@ inline void NX_Light::setShadowLambda(float lambda)
 
 inline void NX_Light::setShadowUpdateMode(NX_ShadowUpdateMode mode)
 {
-    if (mShadowState.updateMode == mode) {
-        return;
-    }
-
     mShadowState.updateMode = mode;
-
-    switch (mode) {
-    case NX_SHADOW_UPDATE_CONTINUOUS:
-        mShadowState.needsUpdate = true;
-        break;
-    case NX_SHADOW_UPDATE_INTERVAL:
-        mShadowState.needsUpdate = true;
-        mShadowState.timerSec = 0.0f;
-        break;
-    case NX_SHADOW_UPDATE_MANUAL:
-        mShadowState.needsUpdate = false;
-        break;
-    }
 }
 
 inline void NX_Light::setShadowUpdateInterval(float interval)
@@ -872,7 +792,7 @@ inline bool NX_Light::isInsideShadowFrustum(const scene::DrawCall& call, const s
     return mShadowData.frustum[face].containsObb(call.aabb(), data.transform());
 }
 
-inline void NX_Light::fillShadowGPU(ShadowGPU* shadow) const
+inline void NX_Light::fillShadowGPU(ShadowGPU* shadow, int mapIndex) const
 {
     SDL_assert(shadow != nullptr);
     SDL_assert(mHasShadow);
@@ -882,12 +802,11 @@ inline void NX_Light::fillShadowGPU(ShadowGPU* shadow) const
     }
 
     shadow->bleedingBias = mShadowData.bleedingBias;
-    shadow->softness = mShadowData.softness;
     shadow->lambda = mShadowData.lambda;
-    shadow->mapIndex = mShadowMapIndex;
+    shadow->mapIndex = mapIndex;
 }
 
-inline void NX_Light::fillLightGPU(LightGPU* light) const
+inline void NX_Light::fillLightGPU(LightGPU* light, int shadowIndex) const
 {
     SDL_assert(light != nullptr);
     SDL_assert(mActive);
@@ -937,7 +856,7 @@ inline void NX_Light::fillLightGPU(LightGPU* light) const
         break;
     }
 
-    light->shadowIndex = mShadowStorageIndex;
+    light->shadowIndex = shadowIndex;
     light->cullMask = mLightCullMask;
     light->layerMask = mLayerMask;
 }
@@ -950,21 +869,6 @@ inline const NX_Mat4& NX_Light::viewProj(int face)
     SDL_assert((mType != NX_LIGHT_OMNI && face == 0) || (mType == NX_LIGHT_OMNI && face <= 5));
 
     return mShadowData.viewProj[face];
-}
-
-inline uint32_t NX_Light::shadowMapIndex() const
-{
-    return mShadowMapIndex;
-}
-
-inline int32_t NX_Light::shadowIndex() const
-{
-    return mShadowStorageIndex;
-}
-
-inline uint32_t NX_Light::lightIndex() const
-{
-    return mLightStorageIndex;
 }
 
 #endif // NX_LIGHT_HPP

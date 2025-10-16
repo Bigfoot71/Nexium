@@ -33,7 +33,6 @@ struct Light {
 struct Shadow {
     mat4 viewProj;
     float bleedingBias;
-    float softness;
     float lambda;
     int mapIndex;
 };

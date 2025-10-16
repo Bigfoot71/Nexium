@@ -317,8 +317,9 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
     pipeline.bindStorage(6, mLights.indexBuffer());
 
     pipeline.bindTexture(4, mAssets.textureBrdfLut());
-    pipeline.bindTexture(7, mLights.shadowCube());
-    pipeline.bindTexture(8, mLights.shadow2D());
+    pipeline.bindTexture(7, mLights.shadowMap(NX_LIGHT_DIR));
+    pipeline.bindTexture(8, mLights.shadowMap(NX_LIGHT_SPOT));
+    pipeline.bindTexture(9, mLights.shadowMap(NX_LIGHT_OMNI));
 
     pipeline.bindUniform(0, mFrameUniform);
     pipeline.bindUniform(1, mFrustum.buffer());
@@ -396,7 +397,7 @@ const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
 
     /* --- Blur ambient occlusion --- */
 
-    pipeline.useProgram(mPrograms.bilateralBlur());
+    pipeline.useProgram(mPrograms.ssaoBilateralBlur());
 
     pipeline.bindTexture(1, mTargetSceneDepth);
 

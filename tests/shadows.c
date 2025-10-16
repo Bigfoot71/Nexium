@@ -11,6 +11,7 @@ int main(void)
     NX_Light* dirLight = NX_CreateLight(NX_LIGHT_DIR);
     NX_SetLightDirection(dirLight, NX_VEC3(-1, -1, 0));
     NX_SetLightColor(dirLight, NX_RED);
+    NX_SetLightRange(dirLight, 16.0f);
     NX_SetShadowActive(dirLight, true);
     NX_SetLightActive(dirLight, true);
 
@@ -18,12 +19,14 @@ int main(void)
     NX_SetLightPosition(spotLight, NX_VEC3(0, 5, -10));
     NX_SetLightDirection(spotLight, NX_VEC3(0, -1, 1));
     NX_SetLightColor(spotLight, NX_GREEN);
+    NX_SetLightRange(spotLight, 16.0f);
     NX_SetShadowActive(spotLight, true);
     NX_SetLightActive(spotLight, true);
 
     NX_Light* omniLight = NX_CreateLight(NX_LIGHT_OMNI);
     NX_SetLightPosition(omniLight, NX_VEC3(0, 5, 10));
     NX_SetLightColor(omniLight, NX_BLUE);
+    NX_SetLightRange(omniLight, 16.0f);
     NX_SetShadowActive(omniLight, true);
     NX_SetLightActive(omniLight, true);
 

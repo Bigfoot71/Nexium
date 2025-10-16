@@ -59,8 +59,7 @@ public:
     const gpu::Buffer& shadowBuffer() const;
     const gpu::Buffer& tilesBuffer() const;
     const gpu::Buffer& indexBuffer() const;
-    const gpu::Texture& shadowCube() const;
-    const gpu::Texture& shadow2D() const;
+    const gpu::Texture& shadowMap(NX_LightType type) const;
 
     /** Info getters */
     int activeCount() const;
@@ -74,21 +73,36 @@ public:
 private:
     /** Process functions */
     void updateState(const ProcessParams& params);
-    void uploadActive(const ProcessParams& params);
+    void uploadLights(const ProcessParams& params);
+    void uploadShadows(const ProcessParams& params);
     void computeClusters(const ProcessParams& params);
     void renderShadowMaps(const ProcessParams& params);
+    void preBlursShadowMaps(const ProcessParams& params);
 
 private:
     static constexpr float SlicesPerDepthOctave = 3.0f;     ///< Number of depth slices per depth octave
     static constexpr int MaxLightsPerCluster = 32;          ///< Maximum number of lights in a single cluster
 
 private:
+    /** Per-frame data for shadow maps rendering */
     struct FrameShadowUniform {
         alignas(16) NX_Mat4 lightViewProj;
         alignas(16) NX_Vec3 lightPosition;
         alignas(4) float shadowLambda;
         alignas(4) float lightRange;
         alignas(4) float elapsedTime;
+    };
+
+    /** Data for active lights */
+    struct ActiveLight {
+        NX_Light* light;
+        int32_t shadowIndex;
+    };
+
+    /** Data for active shadows */
+    struct ActiveShadow {
+        NX_Light* light;
+        uint32_t mapIndex;
     };
 
 private:
@@ -99,42 +113,43 @@ private:
     render::ProgramCache& mPrograms;
     render::AssetCache& mAssets;
 
-    /** Shadow Framebuffers and Targets */
-    gpu::Framebuffer mFramebufferShadowCube{};
-    gpu::Framebuffer mFramebufferShadow2D{};
-    gpu::Texture mShadowMapCubeArray{};         ///< Contains world distances in cubemaps
-    gpu::Texture mShadowMap2DArray{};           ///< Contains world distances in 2D textures
-    gpu::Texture mShadowDepth{};                ///< Common depth buffer for depth testing (TODO: Make it a renderbuffer)
+    /** Shadow framebuffers and targets (one per light type) */
+    std::array<gpu::Framebuffer, 3> mFramebufferShadow{};   ///< Contains on framebuffer per light type
+    std::array<gpu::Texture, 3> mTargetShadow{};            ///< Contains one texture array per light type (cubemap for omni-lights)
+    gpu::Texture mShadowDepth{};                            ///< Common depth buffer for depth testing (TODO: Make it a renderbuffer)
+
+    /** Pre-blur temp buffer */
+    gpu::Framebuffer mFramebufferPreBlur{};
+    gpu::Texture mTargetPreBlur{};              ///< Temporary buffer used for the first shadow pre-blur pass
 
     /** Storage Buffers */
-    gpu::Buffer mStorageLights{};               ///< Storage containing the lights
-    gpu::Buffer mStorageShadow{};               ///< Storage containing the shadow map layer indices for each light
-    gpu::Buffer mStorageClusters{};             ///< Storage containing the tiles (number of lights per tile)
-    gpu::Buffer mStorageIndex{};                ///< Storage containing the light indices for each tile
-    gpu::Buffer mStorageClusterAABB{};          ///< Storage containing the cluster AABBs (computed during GPU light culling, could be useful later)
+    gpu::Buffer mStorageLights{};       ///< Storage for lights data
+    gpu::Buffer mStorageShadow{};       ///< Storage for per light shadow data
+    gpu::Buffer mStorageClusters{};     ///< Storage for clusters (light count per clusters)
+    gpu::Buffer mStorageIndex{};        ///< Storage for light indices per clusters
+    gpu::Buffer mStorageClusterAABB{};  ///< Storage for cluster AABBs (from GPU light culling)
 
     /** Uniform Buffers */
     util::ObjectRing<gpu::Buffer, 3> mFrameShadowUniform;
 
+    /** Per-frame caches */
+    util::BucketArray<ActiveLight, NX_LightType, 3> mActiveLights{};     //< Light pointers + indices to 'mActiveShadows'. Main array matches light SSBO layout (sorted by type).
+    util::BucketArray<ActiveShadow, NX_LightType, 3> mActiveShadows{};   //< Light pointers + texture array indices for shadow maps. Main array matches shadow SSBO layout (sorted by type).
+    util::BucketArray<uint32_t, NX_LightType, 3> mShadowNeedingUpdate{}; //< Global indices to 'mActiveShadows' (sorted by type).
+
     /** Additionnal Data */
     int mShadowResolution{};
-
-    NX_IVec3 mClusterCount{};                   ///< Number of clusters X/Y/Z
-    NX_IVec2 mClusterSize{};                    ///< Size of a cluster X/Y
-
+    NX_IVec3 mClusterCount{};       ///< Number of clusters X/Y/Z
+    NX_IVec2 mClusterSize{};        ///< Size of a cluster X/Y
     float mClusterSliceScale{};
     float mClusterSliceBias{};
-
-    int mActiveLightCount{0};
-    int mActiveShadow2DCount{0};
-    int mActiveShadowCubeCount{0};
 };
 
 /* === Public Implementation === */
 
 inline NX_Light* LightManager::create(NX_LightType type)
 {
-    return mLights.create(*this, type);
+    return mLights.create(type);
 }
 
 inline void LightManager::destroy(NX_Light* light)
@@ -144,10 +159,20 @@ inline void LightManager::destroy(NX_Light* light)
 
 inline void LightManager::process(const ProcessParams& params)
 {
+    // NOTE: We clear the caches only at the beginning
+    //       because we will need the light counts
+    //       after they have been processed
+
+    mActiveLights.clear();
+    mActiveShadows.clear();
+    mShadowNeedingUpdate.clear();
+
     updateState(params);
-    uploadActive(params);
+    uploadLights(params);
+    uploadShadows(params);
     computeClusters(params);
     renderShadowMaps(params);
+    preBlursShadowMaps(params);
 }
 
 inline const gpu::Buffer& LightManager::lightsBuffer() const
@@ -170,19 +195,15 @@ inline const gpu::Buffer& LightManager::indexBuffer() const
     return mStorageIndex;
 }
 
-inline const gpu::Texture& LightManager::shadowCube() const
+inline const gpu::Texture& LightManager::shadowMap(NX_LightType type) const
 {
-    return mShadowMapCubeArray;
-}
-
-inline const gpu::Texture& LightManager::shadow2D() const
-{
-    return mShadowMap2DArray;
+    SDL_assert(type >= 0 && type < mTargetShadow.size());
+    return mTargetShadow[type];
 }
 
 inline int LightManager::activeCount() const
 {
-    return mActiveLightCount;
+    return mActiveLights.size();
 }
 
 inline NX_IVec2 LightManager::clusterSize() const

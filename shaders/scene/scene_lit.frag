@@ -22,29 +22,6 @@ precision highp float;
 #include "../include/math.glsl"
 #include "../include/pbr.glsl"
 
-/* === Constants === */
-
-#define SHADOW_SAMPLES 16
-
-const vec2 POISSON_DISK[16] = vec2[](
-    vec2(-0.94201624, -0.39906216),
-    vec2(0.94558609, -0.76890725),
-    vec2(-0.094184101, -0.92938870),
-    vec2(0.34495938, 0.29387760),
-    vec2(-0.91588581, 0.45771432),
-    vec2(-0.81544232, -0.87912464),
-    vec2(-0.38277543, 0.27676845),
-    vec2(0.97484398, 0.75648379),
-    vec2(0.44323325, -0.97511554),
-    vec2(0.53742981, -0.47373420),
-    vec2(-0.26496911, -0.41893023),
-    vec2(0.79197514, 0.19090188),
-    vec2(-0.24188840, 0.99706507),
-    vec2(-0.81409955, 0.91437590),
-    vec2(0.19984126, 0.78641367),
-    vec2(0.14383161, -0.14100790)
-);
-
 /* === Varyings === */
 
 layout(location = 0) in VaryInternal {
@@ -73,7 +50,7 @@ layout(std430, binding = 4) buffer S_ShadowBuffer {
     Shadow sShadows[];
 };
 
-layout(std430, binding = 5) buffer S_TileBuffer {
+layout(std430, binding = 5) buffer S_ClusterBuffer {
     uint sClusters[]; //< Contains number of lights for each tile
 };
 
@@ -92,8 +69,9 @@ layout(binding = 4) uniform sampler2D uTexBrdfLut;
 layout(binding = 5) uniform samplerCube uTexProbeIrradiance;
 layout(binding = 6) uniform samplerCube uTexProbePrefilter;
 
-layout(binding = 7) uniform highp samplerCubeArray uTexShadowCube;
-layout(binding = 8) uniform highp sampler2DArray uTexShadow2D;
+layout(binding = 7) uniform highp sampler2DArray uTexShadowDir;
+layout(binding = 8) uniform highp sampler2DArray uTexShadowSpot;
+layout(binding = 9) uniform highp samplerCubeArray uTexShadowOmni;
 
 /* === Uniform Buffers === */
 
@@ -147,23 +125,78 @@ vec3 Specular(vec3 F0, float cLdotH, float cNdotH, float cNdotV, float cNdotL, f
 
 /* === Shadow functions === */
 
-float InterleavedGradientNoise(vec2 pos)
-{
-    // http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
-	const vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
-	return fract(magic.z * fract(dot(pos, magic.xy)));
-}
-
 float ReduceLightBleeding(float pMax, float amount)
 {
     return clamp((pMax - amount) / (1.0 - amount), 0.0, 1.0);
 }
 
-float ShadowCube(in Light light, float cNdotL)
+float ShadowDir(in Light light)
 {
     Shadow shadow = sShadows[light.shadowIndex];
 
-    /* --- Calculate direction and distance --- */
+    vec4 projPos = shadow.viewProj * vec4(vInt.position, 1.0);
+    vec3 projCoords = projPos.xyz / projPos.w * 0.5 + 0.5;
+
+    if (any(greaterThan(projCoords.xyz, vec3(1.0))) ||
+        any(lessThan(projCoords.xyz, vec3(0.0)))) {
+        return 1.0;
+    }
+
+    float d01 = length(vInt.position - light.position) / light.range;
+    vec2 m = texture(uTexShadowDir, vec3(projCoords.xy, float(shadow.mapIndex))).rg;
+
+#ifdef GL_ES
+    // VSM
+    float dx = d01 - m.x;
+    float v  = max(m.y - m.x * m.x, 1e-4);
+    float p  = v / (v + dx * dx);
+    float factor = ReduceLightBleeding(p, shadow.bleedingBias);
+#else
+    // EVSM
+    float nExp = exp(-shadow.lambda * d01);
+    float pExp = exp(+shadow.lambda * d01);
+    float p = min(m.x * nExp, m.y * pExp);
+    float factor = ReduceLightBleeding(p, shadow.bleedingBias);
+#endif
+
+    return factor;
+}
+
+float ShadowSpot(in Light light)
+{
+    Shadow shadow = sShadows[light.shadowIndex];
+
+    vec4 projPos = shadow.viewProj * vec4(vInt.position, 1.0);
+    vec3 projCoords = projPos.xyz / projPos.w * 0.5 + 0.5;
+
+    if (any(greaterThan(projCoords.xyz, vec3(1.0))) ||
+        any(lessThan(projCoords.xyz, vec3(0.0)))) {
+        return 1.0;
+    }
+
+    float d01 = length(vInt.position - light.position) / light.range;
+    vec2 m = texture(uTexShadowSpot, vec3(projCoords.xy, float(shadow.mapIndex))).rg;
+
+#ifdef GL_ES
+    // VSM
+    float dx = d01 - m.x;
+    float v  = max(m.y - m.x * m.x, 1e-4);
+    float p  = v / (v + dx * dx);
+    float factor = ReduceLightBleeding(p, shadow.bleedingBias);
+#else
+    // EVSM
+    float nExp = exp(-shadow.lambda * d01);
+    float pExp = exp(+shadow.lambda * d01);
+    float p = min(m.x * nExp, m.y * pExp);
+    float factor = ReduceLightBleeding(p, shadow.bleedingBias);
+#endif
+
+    return factor;
+}
+
+float ShadowOmni(in Light light)
+{
+    Shadow shadow = sShadows[light.shadowIndex];
 
     vec3 lightToFrag = vInt.position - light.position;
     float dist = length(lightToFrag);
@@ -171,116 +204,23 @@ float ShadowCube(in Light light, float cNdotL)
     vec3 direction = lightToFrag / dist;
     float d01 = dist / light.range;
 
-    /* --- Pre-compute EVSM exponents --- */
+    vec2 m = texture(uTexShadowOmni, vec4(direction, float(shadow.mapIndex))).rg;
 
-#ifndef GL_ES
+#ifdef GL_ES
+    // VSM
+    float dx = d01 - m.x;
+    float v  = max(m.y - m.x * m.x, 1e-4);
+    float p  = v / (v + dx * dx);
+    float factor = ReduceLightBleeding(p, shadow.bleedingBias);
+#else
+    // EVSM
     float nExp = exp(-shadow.lambda * d01);
     float pExp = exp(+shadow.lambda * d01);
+    float p = min(m.x * nExp, m.y * pExp);
+    float factor = ReduceLightBleeding(p, shadow.bleedingBias);
 #endif
 
-    /* --- Build orthonormal basis for perturbation --- */
-
-    mat3 TBN = M_OrthonormalBasis(direction);
-
-    /* --- Generate an additional debanding rotation for the poisson disk --- */
-
-    float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
-    float sr = sin(r), cr = cos(r);
-
-    mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
-
-    /* --- Approximation of the size of the penumbra --- */
-
-    float penumbraSize = shadow.softness * (1.0 + d01 * 2.0);
-
-    /* --- Poisson Disk blur --- */
-
-    float factor = 0.0;
-    for(int i = 0; i < SHADOW_SAMPLES; i++)
-    {
-        vec2 diskOffset = diskRot * POISSON_DISK[i] * penumbraSize;
-        vec3 sampleDir = normalize(TBN * vec3(diskOffset.xy, 1.0));
-
-        vec2 m = texture(uTexShadowCube, vec4(sampleDir, float(shadow.mapIndex))).rg;
-
-    #ifdef GL_ES
-        // VSM
-        float dx = d01 - m.x;
-        float v  = max(m.y - m.x * m.x, 1e-4);
-        float p  = v / (v + dx * dx);
-        factor += ReduceLightBleeding(p, shadow.bleedingBias);
-    #else
-        // EVSM
-        float p = min(m.x * nExp, m.y * pExp);
-        factor += ReduceLightBleeding(p, shadow.bleedingBias);
-    #endif
-    }
-
-    return factor / float(SHADOW_SAMPLES);
-}
-
-float Shadow2D(in Light light, float cNdotL)
-{
-    Shadow shadow = sShadows[light.shadowIndex];
-
-    /* --- Light space projection --- */
-
-    vec4 projPos = shadow.viewProj * vec4(vInt.position, 1.0);
-    vec3 projCoords = projPos.xyz / projPos.w * 0.5 + 0.5;
-
-    /* --- Shadow map bounds check --- */
-
-    if (any(greaterThan(projCoords.xyz, vec3(1.0))) ||
-        any(lessThan(projCoords.xyz, vec3(0.0)))) {
-        return 1.0;
-    }
-
-    /* --- Normalized distance --- */
-
-    float d01 = length(vInt.position - light.position) / light.range;
-
-    /* --- Pre-compute EVSM exponents --- */
-
-#ifndef GL_ES
-    float nExp = exp(-shadow.lambda * d01);
-    float pExp = exp(+shadow.lambda * d01);
-#endif
-
-    /* --- Generate an additional debanding rotation for the poisson disk --- */
-
-    float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
-    float sr = sin(r), cr = cos(r);
-
-    mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
-
-    /* --- Approximation of the size of the penumbra --- */
-
-    float penumbraSize = shadow.softness * (1.0 + d01 * 2.0);
-
-    /* --- Poisson Disk blur --- */
-
-    float factor = 0.0;
-    for(int i = 0; i < SHADOW_SAMPLES; i++)
-    {
-        vec2 offset = diskRot * POISSON_DISK[i] * penumbraSize;
-        vec2 sampleUV = projCoords.xy + offset;
-
-        vec2 m = texture(uTexShadow2D, vec3(sampleUV, float(shadow.mapIndex))).rg;
-
-    #ifdef GL_ES
-        // VSM
-        float dx = d01 - m.x;
-        float v  = max(m.y - m.x * m.x, 1e-4);
-        float p  = v / (v + dx * dx);
-        factor += ReduceLightBleeding(p, shadow.bleedingBias);
-    #else
-        // EVSM
-        float p = min(m.x * nExp, m.y * pExp);
-        factor += ReduceLightBleeding(p, shadow.bleedingBias);
-    #endif
-    }
-
-    return factor / float(SHADOW_SAMPLES);
+    return factor;
 }
 
 /* === IBL Functions === */
@@ -432,9 +372,17 @@ void main()
 
         float shadow = 1.0;
         if (light.shadowIndex >= 0) {
-            shadow = (light.type == LIGHT_OMNI)
-                ? ShadowCube(light, cNdotL)
-                : Shadow2D(light, cNdotL);
+            switch (light.type) {
+            case LIGHT_DIR:
+                shadow = ShadowDir(light);
+                break;
+            case LIGHT_SPOT:
+                shadow = ShadowSpot(light);
+                break;
+            case LIGHT_OMNI:
+                shadow = ShadowOmni(light);
+                break;
+            }
         }
 
         /* --- Apply attenuation based on the distance from the light --- */

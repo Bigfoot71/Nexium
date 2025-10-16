@@ -8,35 +8,52 @@
 
 #include "./NX_Light.hpp"
 
-#include "./Scene/LightManager.hpp"
-
 /* === Public Implementation === */
 
-NX_Light::NX_Light(scene::LightManager& manager, NX_LightType type)
-    : mManager(manager)
-    , mData(Directional())
-    , mType(type)
+void NX_Light::updateState(const scene::ViewFrustum& viewFrustum, bool* needsShadowUpdate)
 {
-    switch (type) {
+    SDL_assert(needsShadowUpdate != nullptr);
+    SDL_assert(mActive);
+
+    if (!mHasShadow) {
+        return;
+    }
+
+    switch (mType) {
     case NX_LIGHT_DIR:
-        mShadowData.lambda = 60;
-        mData = Directional();
+        // NOTE: The view/proj of directional lights must
+        //       always be updated relative to the camera
+        updateDirectionalViewProj(viewFrustum);
         break;
     case NX_LIGHT_SPOT:
-        mShadowData.lambda = 40;
-        mData = Spot();
+        if (mShadowState.vpDirty) {
+            mShadowState.vpDirty = false;
+            updateSpotViewProj();
+        }
         break;
     case NX_LIGHT_OMNI:
-        mShadowData.lambda = 40;
-        mData = Omni();
-        break;
-    default:
-        NX_INTERNAL_LOG(W, "RENDER: Invalid light type (%i); The light will be invalid");
+        if (mShadowState.vpDirty) {
+            mShadowState.vpDirty = false;
+            updateOmniViewProj();
+        }
         break;
     }
 
-    mShadowData.softness = 1.0f / manager.shadowResolution();
-    mShadowData.bleedingBias = 0.2f;
+    if (mShadowState.forceUpdate) {
+        mShadowState.forceUpdate = false;
+        *needsShadowUpdate = true;
+    }
+
+    if (mShadowState.updateMode == NX_SHADOW_UPDATE_INTERVAL) {
+        mShadowState.timerSec += NX_GetFrameTime();
+        if (mShadowState.timerSec >= mShadowState.intervalSec) {
+            mShadowState.timerSec -= mShadowState.intervalSec;
+            *needsShadowUpdate = true;
+        }
+    }
+    else if (mShadowState.updateMode == NX_SHADOW_UPDATE_CONTINUOUS) {
+        *needsShadowUpdate = true;
+    }
 }
 
 /* === Private Implementation === */

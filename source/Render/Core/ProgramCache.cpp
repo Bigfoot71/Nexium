@@ -20,6 +20,7 @@
 #include <shaders/skybox.vert.h>
 #include <shaders/skybox.frag.h>
 
+#include <shaders/shadow_bilateral_blur.frag.h>
 #include <shaders/ssao_bilateral_blur.frag.h>
 #include <shaders/downsampling.frag.h>
 #include <shaders/screen_quad.frag.h>
@@ -163,13 +164,42 @@ gpu::Program& ProgramCache::output(NX_Tonemap tonemap)
     return mOutput[tonemap];
 }
 
-gpu::Program& ProgramCache::bilateralBlur()
+gpu::Program& ProgramCache::shadowBilateralBlur(bool firstPass, bool isCubemap)
 {
-    if (mBilateralBlur.isValid()) {
-        return mBilateralBlur;
+    int index = 0;
+    if (firstPass) {
+        index = (isCubemap) ? 2 : 1;
     }
 
-    mBilateralBlur = gpu::Program(
+    if (mShadowBilateralBlur[index].isValid()) {
+        return mShadowBilateralBlur[index];
+    }
+
+    constexpr const char* defines[3] = {
+        "SECOND_PASS",
+        "FIRST_PASS_2D",
+        "FIRST_PASS_CUBE"
+    };
+
+    mShadowBilateralBlur[index] = gpu::Program(
+        mVertexShaderScreen,
+        gpu::Shader(
+            GL_FRAGMENT_SHADER,
+            SHADOW_BILATERAL_BLUR_FRAG,
+            {defines[index]}
+        )
+    );
+
+    return mShadowBilateralBlur[index];
+}
+
+gpu::Program& ProgramCache::ssaoBilateralBlur()
+{
+    if (mSsaoBilateralBlur.isValid()) {
+        return mSsaoBilateralBlur;
+    }
+
+    mSsaoBilateralBlur = gpu::Program(
         mVertexShaderScreen,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
@@ -177,7 +207,7 @@ gpu::Program& ProgramCache::bilateralBlur()
         )
     );
 
-    return mBilateralBlur;
+    return mSsaoBilateralBlur;
 }
 
 gpu::Program& ProgramCache::downsampling()

@@ -37,6 +37,7 @@ int main(void)
     NX_Light* light = NX_CreateLight(NX_LIGHT_SPOT);
     NX_SetLightPosition(light, NX_VEC3(-2, 5, 2));
     NX_SetLightDirection(light, NX_VEC3(1,-1,-1));
+    NX_SetLightRange(light, 16.0f);
     NX_SetShadowActive(light, true);
     NX_SetLightActive(light, true);
 

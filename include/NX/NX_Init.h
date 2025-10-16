@@ -68,9 +68,10 @@ typedef struct NX_AppDesc {
     struct {
         NX_IVec2 resolution;    ///< Internal framebuffer dimensions, if component <= 0 uses primary monitor resolution
         int sampleCount;        ///< MSAA sample count for 3D rendering, if <= 1 disables MSAA
-        int shadowRes;          ///< Shadow map resolution, if <= 0 defaults to 2048x2048
-        bool shadowCubeMip;     ///< Indicates whether to generate mipmaps for shadow maps (omni lights)
-        bool shadow2DMip;       ///< Indicates whether to generate mipmaps for shadow maps (dir/spot lights)
+        int shadowRes;          ///< Shadow map resolution, if <= 0 defaults to 1024x1024
+        bool shadowDirMip;      ///< Indicates whether to generate mipmaps for shadow maps (dir lights)
+        bool shadowSpotMip;     ///< Indicates whether to generate mipmaps for shadow maps (spot lights)
+        bool shadowOmniMip;     ///< Indicates whether to generate mipmaps for shadow maps (omni lights)
     } render3D;
 
     struct {

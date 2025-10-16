@@ -2348,7 +2348,7 @@ NXAPI float NX_GetLightRange(const NX_Light* light);
  * @param range New range in world units.
  * @note For directional lights, the range defines the radius around
          the camera within which objects will be rendered into
-         the shadow map. Default is 16.0.
+         the shadow map. Default is 8.0.
  */
 NXAPI void NX_SetLightRange(NX_Light* light, float range);
 
@@ -2460,18 +2460,22 @@ NXAPI float NX_GetShadowBleedingBias(const NX_Light* light);
 NXAPI void NX_SetShadowBleedingBias(NX_Light* light, float bias);
 
 /**
- * @brief Gets the shadow softness factor.
+ * @brief Gets the shadow blur factor.
  * @param light Pointer to the NX_Light.
- * @return Current softness value, expressed in texels.
- * @note Represents the penumbra radius. Default is 1 / shadowMapResolution.
+ * @return Current blur factor value.
+ * @note Scales the offsets of the Gaussian pre-blur kernel applied to the shadow map.
+ *       Factors <= 0.0 disable the blur. 1.0 uses the full kernel radius (default = 1.0).
+ *       Values < 1.0 yield sharper shadows; values > 1.0 are allowed but not recommended.
  */
 NXAPI float NX_GetShadowSoftness(const NX_Light* light);
 
 /**
- * @brief Sets the shadow softness factor.
+ * @brief Sets the shadow blur factor.
  * @param light Pointer to the NX_Light.
- * @param softness New softness value, expressed in texels.
- * @note Represents the penumbra radius. Default is 1 / shadowMapResolution.
+ * @param softness New blur factor value.
+ * @note Scales the offsets of the Gaussian pre-blur kernel applied to the shadow map.
+ *       Factors <= 0.0 disable the blur. 1.0 uses the full kernel radius (default = 1.0).
+ *       Values < 1.0 yield sharper shadows; values > 1.0 are allowed but not recommended.
  */
 NXAPI void NX_SetShadowSoftness(NX_Light* light, float softness);
 
@@ -2479,8 +2483,7 @@ NXAPI void NX_SetShadowSoftness(NX_Light* light, float softness);
  * @brief Gets the shadow lambda factor (EVSM).
  * @param light Pointer to the NX_Light.
  * @return Current lambda value.
- * @note Used only in EVSM mode (not in GLES profile which uses VSM).
- *       Default is 40 for directional lights and 20 for spot/omni lights.
+ * @note Used only in EVSM mode (not in GLES profile which uses VSM). Default is 60.
  */
 NXAPI float NX_GetShadowLambda(const NX_Light* light);
 
