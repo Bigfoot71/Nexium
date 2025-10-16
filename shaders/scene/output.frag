@@ -15,6 +15,7 @@ precision highp float;
 /* === Includes === */
 
 #include "../include/environment.glsl"
+#include "../include/color.glsl"
 
 /* === Definitions === */
 
@@ -215,15 +216,6 @@ vec3 Debanding(vec3 color)
     return color + vec3((GradientNoise(gl_FragCoord.xy) - 0.5) / ditherStrength);
 }
 
-vec3 LinearToSRGB(vec3 color)
-{
-    // color = clamp(color, vec3(0.0), vec3(1.0));
-    // const vec3 a = vec3(0.055f);
-    // return mix((vec3(1.0f) + a) * pow(color.rgb, vec3(1.0f / 2.4f)) - a, 12.92f * color.rgb, lessThan(color.rgb, vec3(0.0031308f)));
-    // Approximation from http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
-    return max(vec3(1.055) * pow(color, vec3(0.416666667)) - vec3(0.055), vec3(0.0));
-}
-
 /* === Main program === */
 
 void main()
@@ -234,5 +226,5 @@ void main()
     color = Adjustments(color, uEnv.adjustBrightness, uEnv.adjustContrast, uEnv.adjustSaturation);
     color = Debanding(color);
 
-    FragColor = vec4(LinearToSRGB(color), 1.0);
+    FragColor = vec4(C_LinearToSRGB(color), 1.0);
 }
