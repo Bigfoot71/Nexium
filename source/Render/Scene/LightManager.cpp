@@ -80,6 +80,14 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
 
     /* --- Create shadow maps --- */
 
+    // NOTE: On desktop GL we use EVSM for shadow maps, which requires
+    //       storing exponentials and therefore high precision. 
+    //       We use 32-bit float per pixel for that.
+    //       Since 32-bit float on OpenGL ES 3.2 relies on an extension,
+    //       to keep things simpler and reduce memory usage on these devices,
+    //       we use 16-bit format with VSM instead, similar in concept but 
+    //       without storing exponentials.
+
     GLenum shadowFormat = GL_RG32F;
     if (gCore->glProfile() == SDL_GL_CONTEXT_PROFILE_ES) {
         shadowFormat = GL_RG16F;
