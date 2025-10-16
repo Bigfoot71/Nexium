@@ -848,9 +848,15 @@ inline void Pipeline::withFramebufferBind(GLuint id, F&& func) noexcept
         prevFBO = sBindFramebuffer->renderId();
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, id);
+    if (prevFBO != id) {
+        glBindFramebuffer(GL_FRAMEBUFFER, id);
+    }
+
     func();
-    glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
+
+    if (prevFBO != id) {
+        glBindFramebuffer(GL_FRAMEBUFFER, prevFBO);
+    }
 }
 
 template <typename F>
@@ -866,9 +872,15 @@ inline void Pipeline::withVertexArrayBind(GLuint id, F&& func) noexcept
         prevVAO = sBindVertexArray->id();
     }
 
-    glBindVertexArray(id);
+    if (prevVAO != id) {
+        glBindVertexArray(id);
+    }
+
     func();
-    glBindVertexArray(prevVAO);
+
+    if (prevVAO != id) {
+        glBindVertexArray(prevVAO);
+    }
 }
 
 template <typename F>
