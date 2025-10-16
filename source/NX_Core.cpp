@@ -33,13 +33,14 @@ bool NX_FrameStep(void)
 
     /* --- Buffer swap --- */
 
-    // NOTE: The buffer swap happens inside NX_FrameStep at the start of each frame.
-    //       This is fine because there’s no latency between the end and start
-    //       of the loop, and it spares the user from calling swap/present manually.
-    //       The only minor drawback is an extra swap on the very first frame,
-    //       but everything works normally afterwards.
+    static bool firstFrame = true;
 
-    SDL_GL_SwapWindow(gCore->mWindow);
+    if (!firstFrame) {
+        SDL_GL_SwapWindow(gCore->mWindow);
+    }
+    else {
+        firstFrame = false;
+    }
 
     /* --- Calculate delta time and sleep if enough time remains --- */
 
