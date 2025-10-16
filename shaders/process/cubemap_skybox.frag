@@ -36,106 +36,58 @@ layout(location = 9) uniform bool uIsHDR;
 
 layout(location = 0) out vec4 FragColor;
 
-/* === Utility Functions === */
+/* === Helper Functions === */
 
-vec3 RayleighScattering(vec3 direction, vec3 sunDir)
+vec3 LinearToSRGB(vec3 color)
 {
-    // Simulates atmospheric Rayleigh scattering (simplified)
-    float cosTheta = dot(direction, sunDir);
-    float phase = 3.0 / (16.0 * M_PI) * (1.0 + cosTheta * cosTheta);
-    return vec3(0.3, 0.6, 1.0) * phase;
-}
-
-vec3 MieScattering(vec3 direction, vec3 sunDir, float uHaze)
-{
-    // Simulates Mie scattering for suspended particles
-    float cosTheta = dot(direction, sunDir);
-    float g = 0.8; // Anisotropy parameter
-    float g2 = g * g;
-    float phase = (1.0 - g2) / pow(1.0 + g2 - 2.0 * g * cosTheta, 1.5);
-    return vec3(1.0, 0.9, 0.7) * phase * uHaze;
+    // color = clamp(color, vec3(0.0), vec3(1.0));
+    // const vec3 a = vec3(0.055f);
+    // return mix((vec3(1.0f) + a) * pow(color.rgb, vec3(1.0f / 2.4f)) - a, 12.92f * color.rgb, lessThan(color.rgb, vec3(0.0031308f)));
+    // Approximation from http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
+    return max(vec3(1.055) * pow(color, vec3(0.416666667)) - vec3(0.055), vec3(0.0));
 }
 
 /* === Program === */
 
 void main()
 {
+    /* --- Normalization of ray direction --- */
+
     vec3 rayDir = normalize(vPosition);
     vec3 sunDir = normalize(uSunDirection);
 
-    float rayElevation = asin(rayDir.y);
-    float sunElevation = asin(sunDir.y);
+    /* --- Gradient: sky / horizon / ground --- */
 
-    /* --- Sky gradient --- */
+    float skyGradient = smoothstep(-0.1, 0.8, asin(rayDir.y));
+    vec3 sky = mix(uSkyColorHorizon, uSkyColorTop, skyGradient);
 
-    float skyGradient = smoothstep(-0.1, 0.8, rayElevation);
-    vec3 skyColor = mix(uSkyColorHorizon, uSkyColorTop, skyGradient);
-
-    /* --- Ground --- */
-
-    vec3 finalColor = skyColor;
-
-    if (rayDir.y < 0.0) {
+    if (rayDir.y < 0.0) { //< Ground
         float groundFade = smoothstep(-0.05, -0.02, rayDir.y);
-        finalColor = mix(uGroundColor, uSkyColorHorizon, groundFade);
+        sky = mix(uGroundColor, uSkyColorHorizon, groundFade);
     }
 
-    /* --- Sun --- */
+    /* --- Sun and halo --- */
 
-    float sunDistance = distance(rayDir, sunDir);
-    float sunDisk = 1.0 - smoothstep(uSunSize * 0.8, uSunSize, sunDistance);
+    float sunDist = distance(rayDir, sunDir);
+    float sunCore = smoothstep(uSunSize, 0.0, sunDist);                 // sun disk
+    float sunHalo = exp(-pow(sunDist / (uSunSize * 2.0), 2.0)) * 0.5;   // soft halo
+    vec3 sun = uSunColor * (sunCore + sunHalo);
 
-    float sunHalo = 1.0 - smoothstep(uSunSize * 2.0, uSunSize * 8.0, sunDistance);
-    sunHalo = pow(sunHalo, 3.0) * 0.3;
+    sky += sun;
 
-    float sunCorona = 1.0 - smoothstep(uSunSize * 8.0, uSunSize * 20.0, sunDistance);
-    sunCorona = pow(sunCorona, 2.0) * 0.1;
+    /* --- Haze / diffusion --- */
 
-    vec3 sunEffect = uSunColor * (sunDisk + sunHalo + sunCorona);
+    float sunDot = max(dot(rayDir, sunDir), 0.0);
+    vec3 haze = mix(vec3(1.0), uSunColor, pow(sunDot, 16.0) * uHaze);
+    sky *= haze;
 
-    /* --- Atmospheric effects --- */
+    /* --- HDR: Apply energy and convert to sRGB if needed --- */
 
-    vec3 rayleigh = RayleighScattering(rayDir, sunDir) * 0.1;
-    vec3 mie = MieScattering(rayDir, sunDir, uHaze) * 0.05;
+    sky *= uEnergy;
 
-    float dayIntensity = clamp(sunElevation + 0.2, 0.0, 1.0);
-    
-    /* --- Atmospheric lighting --- */
-
-    float sunInfluence = max(0.0, dot(rayDir, sunDir));
-    sunInfluence = pow(sunInfluence, 2.0);
-
-    vec3 atmosphericLight = mix(
-        vec3(0.4, 0.5, 0.8),
-        uSunColor * 0.3,
-        sunInfluence
-    );
-
-    /* --- Final assembly --- */
-
-    finalColor += sunEffect;
-    finalColor += rayleigh * dayIntensity;
-    finalColor += mie * dayIntensity;
-    finalColor *= (1.0 + atmosphericLight * 0.2);
-
-    /* --- Final adjustment --- */
-
-    float nightFactor = 1.0 - clamp(sunElevation * 2.0, 0.0, 1.0);
-    finalColor = mix(finalColor, finalColor * vec3(0.1, 0.2, 0.4), nightFactor * 0.8);
-
-    // Saturation based on daylight intensity
-    float saturation = 0.8 + dayIntensity * 0.4;
-    float luminance = dot(finalColor, vec3(0.299, 0.587, 0.114));
-    finalColor = mix(vec3(luminance), finalColor, saturation);
-
-    if (uIsHDR) {
-        finalColor *= uEnergy;
-    }
-    else {
-        // REVIEW: Can be adapted according to the environment tonemap?
-        finalColor = 1.0 - exp(-finalColor * uEnergy);
-        finalColor = pow(finalColor, vec3(1.0 / 2.2));
+    if (!uIsHDR) {
+        sky = LinearToSRGB(sky);
     }
 
-    FragColor = vec4(finalColor, 1.0);
+    FragColor = vec4(sky, 1.0);
 }
