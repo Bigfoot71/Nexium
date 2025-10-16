@@ -113,7 +113,7 @@ inline void Environment::update(const NX_Environment& env, int bloomMipCount)
     if (env.bloom.mode != NX_BLOOM_DISABLED) {
         mBloomLevels.clear();
         if (!mBloomLevels.reserve(bloomMipCount)) {
-            NX_INTERNAL_LOG(E, "RENDER: Bloom mip factor buffer reservation failed (requested: %d levels).", bloomMipCount);
+            NX_INTERNAL_LOG(E, "RENDER: Bloom mip factor buffer reservation failed (requested: %d levels)", bloomMipCount);
         }
         for (uint32_t i = 0; i < bloomMipCount; ++i) {
             float t = float(i) / float(bloomMipCount - 1); // 0 -> 1

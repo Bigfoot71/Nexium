@@ -36,10 +36,7 @@ inline BoneBuffer::BoneBuffer()
     : mBuffer(GL_SHADER_STORAGE_BUFFER, 1024 * sizeof(NX_Mat4), nullptr, GL_DYNAMIC_DRAW)
 {
     if (!mTemp.reserve(256)) {
-        NX_INTERNAL_LOG(E, 
-            "RENDER: Bone matrix computation buffer pre-allocation failed (requested: 256 entries). "
-            "Some computations may be slower or fail."
-        );
+        NX_INTERNAL_LOG(E, "RENDER: Bone matrix computation buffer pre-allocation failed (requested: 256 entries)");
     }
 }
 

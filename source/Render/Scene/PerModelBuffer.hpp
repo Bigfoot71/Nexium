@@ -52,10 +52,7 @@ inline PerModelBuffer::PerModelBuffer()
     : mBuffer(GL_SHADER_STORAGE_BUFFER, 1024 * sizeof(GPUData), nullptr, GL_DYNAMIC_DRAW)
 {
     if (!mStagingBuffer.reserve(1024)) {
-        NX_INTERNAL_LOG(E,
-            "RENDER: Object staging buffer memory reservation failed (requested: 1024 bytes). "
-            "Rendering may not proceed correctly."
-        );
+        NX_INTERNAL_LOG(E, "RENDER: Object staging buffer memory reservation failed (requested: 1024 bytes)");
     }
 }
 
