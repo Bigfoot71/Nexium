@@ -137,11 +137,6 @@ float ShadowDir(in Light light)
     vec4 projPos = shadow.viewProj * vec4(vInt.position, 1.0);
     vec3 projCoords = projPos.xyz / projPos.w * 0.5 + 0.5;
 
-    if (any(greaterThan(projCoords.xyz, vec3(1.0))) ||
-        any(lessThan(projCoords.xyz, vec3(0.0)))) {
-        return 1.0;
-    }
-
     float d01 = length(vInt.position - light.position) / light.range;
     vec2 m = texture(uTexShadowDir, vec3(projCoords.xy, float(shadow.mapIndex))).rg;
 
@@ -159,7 +154,13 @@ float ShadowDir(in Light light)
     float factor = ReduceLightBleeding(p, shadow.bleedingBias);
 #endif
 
-    return factor;
+    vec3 distToBorder = min(projCoords, 1.0 - projCoords);
+    float minDist = min(distToBorder.x, min(distToBorder.y, distToBorder.z));
+
+    const float fadeStart = 0.85; // Start of attenuation (85% of the map)
+    float edgeFade = smoothstep(0.0, 1.0 - fadeStart, minDist);
+
+    return mix(1.0, factor, edgeFade);
 }
 
 float ShadowSpot(in Light light)
@@ -168,11 +169,6 @@ float ShadowSpot(in Light light)
 
     vec4 projPos = shadow.viewProj * vec4(vInt.position, 1.0);
     vec3 projCoords = projPos.xyz / projPos.w * 0.5 + 0.5;
-
-    if (any(greaterThan(projCoords.xyz, vec3(1.0))) ||
-        any(lessThan(projCoords.xyz, vec3(0.0)))) {
-        return 1.0;
-    }
 
     float d01 = length(vInt.position - light.position) / light.range;
     vec2 m = texture(uTexShadowSpot, vec3(projCoords.xy, float(shadow.mapIndex))).rg;
@@ -191,7 +187,13 @@ float ShadowSpot(in Light light)
     float factor = ReduceLightBleeding(p, shadow.bleedingBias);
 #endif
 
-    return factor;
+    vec2 distToBorder = min(projCoords.xy, 1.0 - projCoords.xy);
+    float minDist = min(distToBorder.x, distToBorder.y);
+
+    const float fadeStart = 0.85; // Start of attenuation (85% of the map)
+    float edgeFade = smoothstep(0.0, 1.0 - fadeStart, minDist);
+
+    return mix(1.0, factor, edgeFade);
 }
 
 float ShadowOmni(in Light light)
