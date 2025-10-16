@@ -92,7 +92,7 @@ vec3 GetDirection(int face, vec2 uv)
 
 void main()
 {
-    vec3 result = vec3(0.0);
+    vec2 result = vec2(0.0);
 
     float texelSize = 1.0 / textureSize(uTexShadow, 0).x;
     float blurRadius = uSoftness * texelSize;
@@ -101,19 +101,19 @@ void main()
     for (int i = 0; i < SAMPLE_COUNT; ++i) {
         float offset = blurRadius *  OFFSETS[i];
         vec3 direction = GetDirection(uCubeFace, vec2(vTexCoord.x + offset, vTexCoord.y));
-        result += texture(uTexShadow, vec4(direction, float(uShadowMapIndex))).rgb * WEIGHTS[i];
+        result += texture(uTexShadow, vec4(direction, float(uShadowMapIndex))).rg * WEIGHTS[i];
     }
 #elif defined(FIRST_PASS_2D)
     for (int i = 0; i < SAMPLE_COUNT; ++i) {
         float offset = blurRadius *  OFFSETS[i];
-        result += texture(uTexShadow, vec3(vTexCoord.x + offset, vTexCoord.y, float(uShadowMapIndex))).rgb * WEIGHTS[i];
+        result += texture(uTexShadow, vec3(vTexCoord.x + offset, vTexCoord.y, float(uShadowMapIndex))).rg * WEIGHTS[i];
     }
 #else
     for (int i = 0; i < SAMPLE_COUNT; ++i) {
         float offset = blurRadius *  OFFSETS[i];
-        result += texture(uTexShadow, vec2(vTexCoord.x, vTexCoord.y + offset)).rgb * WEIGHTS[i];
+        result += texture(uTexShadow, vec2(vTexCoord.x, vTexCoord.y + offset)).rg * WEIGHTS[i];
     }
 #endif
 
-    FragColor = vec4(result, 1.0);
+    FragColor = vec4(vec2(result), vec2(1.0));
 }
