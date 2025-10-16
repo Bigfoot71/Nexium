@@ -15,7 +15,7 @@ namespace gpu {
 
 /* === Public Implementation === */
 
-void Framebuffer::setDrawBuffers(std::initializer_list<GLenum> buffers) noexcept
+void Framebuffer::setDrawBuffers(std::initializer_list<int> buffers) noexcept
 {
     if (!isValid()) {
         NX_INTERNAL_LOG(E, "GPU: Cannot set draw buffers on invalid framebuffer");
@@ -32,7 +32,7 @@ void Framebuffer::setDrawBuffers(std::initializer_list<GLenum> buffers) noexcept
     });
 }
 
-void Framebuffer::enableAllDrawBuffers() noexcept
+void Framebuffer::enableDrawBuffers() noexcept
 {
     if (!isValid()) {
         NX_INTERNAL_LOG(E, "GPU: Cannot enable draw buffers on invalid framebuffer");
@@ -62,6 +62,47 @@ void Framebuffer::disableDrawBuffers() noexcept
     });
 }
 
+void Framebuffer::invalidate(std::initializer_list<int> buffers) noexcept
+{
+    if (!isValid()) {
+        NX_INTERNAL_LOG(E, "GPU: Cannot invalidate an invalid framebuffer");
+        return;
+    }
+
+    util::StaticArray<GLenum, 32> glBuffers{};
+    for (int i = 0; i < NX_MIN(glBuffers.capacity(), buffers.size()); i++) {
+        if (buffers.begin()[i] >= 0) glBuffers.push_back(GL_COLOR_ATTACHMENT0 + buffers.begin()[i]);
+        else glBuffers.push_back(getDepthStencilAttachment(mDepthStencilAttachment.internalFormat()));
+    }
+
+    Pipeline::withFramebufferBind(renderId(), [&]() {
+        glInvalidateFramebuffer(GL_FRAMEBUFFER, static_cast<GLsizei>(glBuffers.size()), glBuffers.begin());
+    });
+}
+
+void Framebuffer::invalidate() noexcept
+{
+    if (!isValid()) {
+        NX_INTERNAL_LOG(E, "GPU: Cannot invalidate an invalid framebuffer");
+        return;
+    }
+
+    util::StaticArray<GLenum, 32> buffers{};
+    for (int i = 0; i < mColorAttachments.size(); i++) {
+        buffers.push_back(GL_COLOR_ATTACHMENT0 + i);
+    }
+
+    if (mDepthStencilAttachment.isValid()) {
+        buffers.push_back(getDepthStencilAttachment(
+            mDepthStencilAttachment.internalFormat()
+        ));
+    }
+
+    Pipeline::withFramebufferBind(renderId(), [&]() {
+        glInvalidateFramebuffer(GL_FRAMEBUFFER, static_cast<GLsizei>(buffers.size()), buffers.data());
+    });
+}
+
 void Framebuffer::resolve() noexcept
 {
     if (!isValid() || mSampleCount == 0 || mMultisampleFramebuffer == 0) {
@@ -78,7 +119,8 @@ void Framebuffer::resolve() noexcept
         resolveDepthAttachment();
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // Invalidate multisample framebuffer
+    invalidate();
 }
 
 /* === Private Implementation === */
@@ -239,8 +281,8 @@ void Framebuffer::createAndAttachMultisampleRenderbuffers() noexcept
 
     /* --- Generates depth renderbuffer if needed --- */
 
-    if (mDepthStencilAttachment.isValid() && mDepthRenderbuffer == 0) {
-        glGenRenderbuffers(1, &mDepthRenderbuffer);
+    if (mDepthStencilAttachment.isValid() && mDepthStencilRenderbuffer == 0) {
+        glGenRenderbuffers(1, &mDepthStencilRenderbuffer);
     }
 
     /* --- Attach and configure multisample renderbuffers in the framebuffer --- */
@@ -270,9 +312,9 @@ void Framebuffer::createAndAttachMultisampleRenderbuffers() noexcept
 
         /* --- Configure depth/stencil renderbuffer --- */
 
-        if (mDepthStencilAttachment.isValid() && mDepthRenderbuffer > 0)
+        if (mDepthStencilAttachment.isValid() && mDepthStencilRenderbuffer > 0)
         {
-            glBindRenderbuffer(GL_RENDERBUFFER, mDepthRenderbuffer);
+            glBindRenderbuffer(GL_RENDERBUFFER, mDepthStencilRenderbuffer);
             glRenderbufferStorageMultisample(
                 GL_RENDERBUFFER, mSampleCount,
                 mDepthStencilAttachment.internalFormat(),
@@ -283,7 +325,7 @@ void Framebuffer::createAndAttachMultisampleRenderbuffers() noexcept
             glFramebufferRenderbuffer(
                 GL_FRAMEBUFFER, attachment,
                 GL_RENDERBUFFER,
-                mDepthRenderbuffer
+                mDepthStencilRenderbuffer
             );
         }
 

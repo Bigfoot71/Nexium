@@ -260,7 +260,7 @@ void Scene::renderBackground(const gpu::Pipeline& pipeline)
     pipeline.bindTexture(0, mEnvironment.skyCubemap()->texture());
     pipeline.draw(GL_TRIANGLES, 36);
 
-    mFramebufferScene.enableAllDrawBuffers();
+    mFramebufferScene.enableDrawBuffers();
 }
 
 void Scene::renderPrePass(const gpu::Pipeline& pipeline)

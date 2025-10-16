@@ -451,9 +451,10 @@ void LightManager::preBlursShadowMaps(const ProcessParams& params)
             {
                 /* --- First pass (horizontal) --- */
 
-                pipeline.useProgram(mPrograms.shadowGaussianBlur(true, isOmni));
                 pipeline.bindFramebuffer(mFramebufferPreBlur);
+                mFramebufferPreBlur.invalidate({0});
 
+                pipeline.useProgram(mPrograms.shadowGaussianBlur(true, isOmni));
                 pipeline.bindTexture(0, mTargetShadow[lightType]);
 
                 pipeline.setUniformFloat1(2, data.light->shadowSoftness());
@@ -464,10 +465,11 @@ void LightManager::preBlursShadowMaps(const ProcessParams& params)
 
                 /* --- Second pass (vertical) --- */
 
-                pipeline.useProgram(mPrograms.shadowGaussianBlur(false, isOmni));
-
                 pipeline.bindFramebuffer(mFramebufferShadow[i]);
                 mFramebufferShadow[lightType].setColorAttachmentTarget(0, data.mapIndex, face);
+                mFramebufferShadow[lightType].invalidate({0});
+
+                pipeline.useProgram(mPrograms.shadowGaussianBlur(false, isOmni));
 
                 pipeline.bindTexture(0, mTargetPreBlur);
                 pipeline.setUniformFloat1(2, data.light->shadowSoftness());

@@ -75,9 +75,13 @@ public:
     size_t colorAttachmentCount() const noexcept;
 
     /** Draw buffers control */
-    void setDrawBuffers(std::initializer_list<GLenum> buffers) noexcept;
-    void enableAllDrawBuffers() noexcept;
+    void setDrawBuffers(std::initializer_list<int> buffers) noexcept;
+    void enableDrawBuffers() noexcept;
     void disableDrawBuffers() noexcept;
+
+    /** Invalidate content */
+    void invalidate(std::initializer_list<int> buffers) noexcept;
+    void invalidate() noexcept;
 
     /** Multisampling control */
     void setSampleCount(int sampleCount) noexcept;
@@ -115,7 +119,7 @@ private:
     GLuint mMultisampleFramebuffer{0};                  //< Framebuffer MSAA (optional)
     util::FixedArray<TextureView> mColorAttachments;
     util::FixedArray<GLuint> mColorRenderbuffers;       //< MSAA color renderbuffers
-    GLuint mDepthRenderbuffer{0};                       //< MSAA depth/stencil renderbuffer
+    GLuint mDepthStencilRenderbuffer{0};                //< MSAA depth/stencil renderbuffer
     TextureView mDepthStencilAttachment{};
     int mSampleCount{0};
 
@@ -192,7 +196,7 @@ inline Framebuffer::Framebuffer(std::initializer_list<const Texture*> colorAttac
     createResolveFramebuffer();
 
     if (isValid()) {
-        enableAllDrawBuffers();
+        enableDrawBuffers();
     }
 }
 
@@ -209,7 +213,7 @@ inline Framebuffer::Framebuffer(Framebuffer&& other) noexcept
     , mMultisampleFramebuffer(std::exchange(other.mMultisampleFramebuffer, 0))
     , mColorAttachments(std::move(other.mColorAttachments))
     , mColorRenderbuffers(std::move(other.mColorRenderbuffers))
-    , mDepthRenderbuffer(std::exchange(other.mDepthRenderbuffer, 0))
+    , mDepthStencilRenderbuffer(std::exchange(other.mDepthStencilRenderbuffer, 0))
     , mDepthStencilAttachment(other.mDepthStencilAttachment)
     , mSampleCount(other.mSampleCount)
     , mColorTargets(std::move(other.mColorTargets))
@@ -227,7 +231,7 @@ inline Framebuffer& Framebuffer::operator=(Framebuffer&& other) noexcept
         mMultisampleFramebuffer = std::exchange(other.mMultisampleFramebuffer, 0);
         mColorAttachments = std::move(other.mColorAttachments);
         mColorRenderbuffers = std::move(other.mColorRenderbuffers);
-        mDepthRenderbuffer = std::exchange(other.mDepthRenderbuffer, 0);
+        mDepthStencilRenderbuffer = std::exchange(other.mDepthStencilRenderbuffer, 0);
         mDepthStencilAttachment = other.mDepthStencilAttachment;
         mSampleCount = other.mSampleCount;
         mColorTargets = std::move(other.mColorTargets);
@@ -485,7 +489,7 @@ inline void Framebuffer::createMultisampleFramebuffer() noexcept
         mSampleCount = 0;
     }
 
-    enableAllDrawBuffers();
+    enableDrawBuffers();
 }
 
 inline void Framebuffer::destroyMultisampleFramebuffer() noexcept
@@ -494,9 +498,9 @@ inline void Framebuffer::destroyMultisampleFramebuffer() noexcept
         glDeleteRenderbuffers(static_cast<GLsizei>(mColorRenderbuffers.size()), mColorRenderbuffers.data());
         mColorRenderbuffers.clear();
     }
-    if (mDepthRenderbuffer > 0) {
-        glDeleteRenderbuffers(1, &mDepthRenderbuffer);
-        mDepthRenderbuffer = 0;
+    if (mDepthStencilRenderbuffer > 0) {
+        glDeleteRenderbuffers(1, &mDepthStencilRenderbuffer);
+        mDepthStencilRenderbuffer = 0;
     }
     if (mMultisampleFramebuffer > 0) {
         glDeleteFramebuffers(1, &mMultisampleFramebuffer);
