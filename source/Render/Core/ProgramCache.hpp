@@ -51,7 +51,7 @@ public:
     /** Scene post process programs */
     gpu::Program& bloomPost(NX_Bloom mode);
     gpu::Program& output(NX_Tonemap tonemap);
-    gpu::Program& shadowBilateralBlur(bool firstPass, bool isCubemap);
+    gpu::Program& shadowGaussianBlur(bool firstPass, bool isCubemap);
     gpu::Program& ssaoBilateralBlur();
     gpu::Program& downsampling();
     gpu::Program& upsampling();
@@ -84,7 +84,7 @@ private:
     /** Scene post process programs */
     std::array<gpu::Program, NX_BLOOM_COUNT> mBloomPost{};
     std::array<gpu::Program, NX_TONEMAP_COUNT> mOutput{};
-    std::array<gpu::Program, 3> mShadowBilateralBlur{};
+    std::array<gpu::Program, 3> mShadowGaussianBlur{};
     gpu::Program mSsaoBilateralBlur{};
     gpu::Program mDownsampling{};
     gpu::Program mUpsampling{};

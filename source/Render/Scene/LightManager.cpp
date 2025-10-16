@@ -451,7 +451,7 @@ void LightManager::preBlursShadowMaps(const ProcessParams& params)
             {
                 /* --- First pass (horizontal) --- */
 
-                pipeline.useProgram(mPrograms.shadowBilateralBlur(true, isOmni));
+                pipeline.useProgram(mPrograms.shadowGaussianBlur(true, isOmni));
                 pipeline.bindFramebuffer(mFramebufferPreBlur);
 
                 pipeline.bindTexture(0, mTargetShadow[lightType]);
@@ -464,7 +464,7 @@ void LightManager::preBlursShadowMaps(const ProcessParams& params)
 
                 /* --- Second pass (vertical) --- */
 
-                pipeline.useProgram(mPrograms.shadowBilateralBlur(false, isOmni));
+                pipeline.useProgram(mPrograms.shadowGaussianBlur(false, isOmni));
 
                 pipeline.bindFramebuffer(mFramebufferShadow[i]);
                 mFramebufferShadow[lightType].setColorAttachmentTarget(0, data.mapIndex, face);

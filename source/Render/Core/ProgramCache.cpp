@@ -20,7 +20,7 @@
 #include <shaders/skybox.vert.h>
 #include <shaders/skybox.frag.h>
 
-#include <shaders/shadow_bilateral_blur.frag.h>
+#include <shaders/shadow_gaussian_blur.frag.h>
 #include <shaders/ssao_bilateral_blur.frag.h>
 #include <shaders/downsampling.frag.h>
 #include <shaders/screen_quad.frag.h>
@@ -164,15 +164,15 @@ gpu::Program& ProgramCache::output(NX_Tonemap tonemap)
     return mOutput[tonemap];
 }
 
-gpu::Program& ProgramCache::shadowBilateralBlur(bool firstPass, bool isCubemap)
+gpu::Program& ProgramCache::shadowGaussianBlur(bool firstPass, bool isCubemap)
 {
     int index = 0;
     if (firstPass) {
         index = (isCubemap) ? 2 : 1;
     }
 
-    if (mShadowBilateralBlur[index].isValid()) {
-        return mShadowBilateralBlur[index];
+    if (mShadowGaussianBlur[index].isValid()) {
+        return mShadowGaussianBlur[index];
     }
 
     constexpr const char* defines[3] = {
@@ -181,16 +181,16 @@ gpu::Program& ProgramCache::shadowBilateralBlur(bool firstPass, bool isCubemap)
         "FIRST_PASS_CUBE"
     };
 
-    mShadowBilateralBlur[index] = gpu::Program(
+    mShadowGaussianBlur[index] = gpu::Program(
         mVertexShaderScreen,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            SHADOW_BILATERAL_BLUR_FRAG,
+            SHADOW_GAUSSIAN_BLUR_FRAG,
             {defines[index]}
         )
     );
 
-    return mShadowBilateralBlur[index];
+    return mShadowGaussianBlur[index];
 }
 
 gpu::Program& ProgramCache::ssaoBilateralBlur()

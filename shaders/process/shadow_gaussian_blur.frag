@@ -1,4 +1,4 @@
-/* shadow_bilateral_blur.frag -- Bilateral fragment shader for shadow maps
+/* shadow_gaussian_blur.frag -- Gaussian blur (two passes) fragment shader for shadow maps
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -69,8 +69,6 @@ const float WEIGHTS[6] = float[6](
 
 /* === Helper Functions === */
 
-#if defined(FIRST_PASS_CUBE)
-
 vec3 GetDirection(int face, vec2 uv)
 {
     // uv * 2.0 - 1.0 : [0,1] -> [-1,1]
@@ -86,7 +84,21 @@ vec3 GetDirection(int face, vec2 uv)
     return vec3(0.0);
 }
 
-#endif // FIRST_PASS_CUBE
+vec2 SampleShadow(vec2 texCoord)
+{
+    vec2 result;
+
+#if defined(FIRST_PASS_CUBE)
+    vec3 direction = GetDirection(uCubeFace, texCoord);
+    result = texture(uTexShadow, vec4(direction, float(uShadowMapIndex))).rg;
+#elif defined(FIRST_PASS_2D)
+    result = texture(uTexShadow, vec3(texCoord, float(uShadowMapIndex))).rg;
+#else
+    result = texture(uTexShadow, texCoord).rg;
+#endif
+
+    return result;
+}
 
 /* === Main Program === */
 
@@ -97,21 +109,13 @@ void main()
     float texelSize = 1.0 / textureSize(uTexShadow, 0).x;
     float blurRadius = uSoftness * texelSize;
 
-#if defined(FIRST_PASS_CUBE)
+#if defined(FIRST_PASS_CUBE) || defined(FIRST_PASS_2D)
     for (int i = 0; i < SAMPLE_COUNT; ++i) {
-        float offset = blurRadius *  OFFSETS[i];
-        vec3 direction = GetDirection(uCubeFace, vec2(vTexCoord.x + offset, vTexCoord.y));
-        result += texture(uTexShadow, vec4(direction, float(uShadowMapIndex))).rg * WEIGHTS[i];
-    }
-#elif defined(FIRST_PASS_2D)
-    for (int i = 0; i < SAMPLE_COUNT; ++i) {
-        float offset = blurRadius *  OFFSETS[i];
-        result += texture(uTexShadow, vec3(vTexCoord.x + offset, vTexCoord.y, float(uShadowMapIndex))).rg * WEIGHTS[i];
+        result += SampleShadow(vTexCoord + vec2(blurRadius *  OFFSETS[i], 0.0)) * WEIGHTS[i];
     }
 #else
     for (int i = 0; i < SAMPLE_COUNT; ++i) {
-        float offset = blurRadius *  OFFSETS[i];
-        result += texture(uTexShadow, vec2(vTexCoord.x, vTexCoord.y + offset)).rg * WEIGHTS[i];
+        result += SampleShadow(vTexCoord + vec2(0.0, blurRadius *  OFFSETS[i])) * WEIGHTS[i];
     }
 #endif
 
