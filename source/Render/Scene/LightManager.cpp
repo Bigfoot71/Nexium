@@ -409,6 +409,14 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
 void LightManager::preBlursShadowMaps(const ProcessParams& params)
 {
+    // NOTE: For cubemaps, we simply iterate over each face and
+    //       apply a fullscreen blur independently on each face
+    //       as if it were a regular texture. Technically, this
+    //       doesn't handle the cubemap borders, there are tricks
+    //       to deal with that, but so far no noticeable artifacts
+    //       or major visual issues have appeared for the shadows,
+    //       so as long as it works, we'll keep it this way!
+
     if (mShadowNeedingUpdate.empty()) {
         return;
     }
