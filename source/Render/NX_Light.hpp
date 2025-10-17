@@ -855,7 +855,7 @@ inline const scene::Frustum& NX_Light::frustum(int face) const
     // Assert that:
     // - For non-omni lights, only face 0 is valid.
     // - For omni lights, valid faces are 0 through 5.
-    SDL_assert((mType != NX_LIGHT_OMNI && face == 0) || (mType == NX_LIGHT_OMNI && face < 5));
+    SDL_assert((mType != NX_LIGHT_OMNI && face == 0) || (mType == NX_LIGHT_OMNI && face <= 5));
 
     return mShadowData.frustum[face];
 }
