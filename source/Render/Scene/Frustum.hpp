@@ -11,6 +11,7 @@
 
 #include <NX/NX_Render.h>
 #include <NX/NX_Math.h>
+#include <array>
 
 namespace scene {
 
@@ -37,6 +38,7 @@ public:
     bool containsSphere(const NX_Vec3& position, float radius) const;
     bool containsAabb(const NX_BoundingBox& aabb) const;
     bool containsObb(const NX_BoundingBox& aabb, const NX_Transform& transform) const;
+    bool containsObb(const NX_Vec3& center, const std::array<NX_Vec3, 3>& axes, const NX_Vec3& extents) const;
 
 private:
     /** Helper functions */
@@ -148,37 +150,33 @@ inline bool Frustum::containsAabb(const NX_BoundingBox& aabb) const
 
 inline bool Frustum::containsObb(const NX_BoundingBox& aabb, const NX_Transform& transform) const
 {
-    /* --- Compute OBB center and extents in local space --- */
-
     NX_Vec3 localCenter = (aabb.min + aabb.max) * 0.5f;
     NX_Vec3 extents = (aabb.max - aabb.min) * 0.5f;
-
-    /* --- Transform center to world space --- */
 
     NX_Vec3 scaledCenter = localCenter * transform.scale;
     NX_Vec3 rotatedCenter = NX_Vec3Rotate(scaledCenter, transform.rotation);
     NX_Vec3 worldCenter = rotatedCenter + transform.translation;
 
-    /* --- Compute the 3 OBB axes (columns of rotation matrix scaled) --- */
+    std::array<NX_Vec3, 3> obbAxes;
+    obbAxes[0] = NX_Vec3Rotate(NX_VEC3(transform.scale.x, 0, 0), transform.rotation);
+    obbAxes[1] = NX_Vec3Rotate(NX_VEC3(0, transform.scale.y, 0), transform.rotation);
+    obbAxes[2] = NX_Vec3Rotate(NX_VEC3(0, 0, transform.scale.z), transform.rotation);
 
-    NX_Vec3 obbAxisX = NX_Vec3Rotate(NX_VEC3(transform.scale.x, 0, 0), transform.rotation);
-    NX_Vec3 obbAxisY = NX_Vec3Rotate(NX_VEC3(0, transform.scale.y, 0), transform.rotation);
-    NX_Vec3 obbAxisZ = NX_Vec3Rotate(NX_VEC3(0, 0, transform.scale.z), transform.rotation);
+    return containsObb(worldCenter, obbAxes, extents);
+}
 
-    /* --- Test OBB against each frustum plane --- */
-
+inline bool Frustum::containsObb(const NX_Vec3& center, const std::array<NX_Vec3, 3>& axes, const NX_Vec3& extents) const
+{
     for (int i = 0; i < PLANE_COUNT; i++)
     {
         const NX_Vec4& plane = mPlanes[i];
 
-        // Signed distance from OBB center to plane
-        float centerDistance = distanceToPlane(plane, worldCenter);
+        float centerDistance = distanceToPlane(plane, center);
 
-        // Project OBB extents onto plane normal
         float projectedRadius =
-            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obbAxisX)) * extents.x +
-            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obbAxisY)) * extents.y +
-            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obbAxisZ)) * extents.z;
+            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), axes[0])) * extents.x +
+            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), axes[1])) * extents.y +
+            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), axes[2])) * extents.z;
 
         if (centerDistance + projectedRadius < -1e-6f) {
             return false;

@@ -12,14 +12,15 @@
 #include "../../Detail/Util/BucketArray.hpp"
 #include "../../Detail/GPU/StagingBuffer.hpp"
 #include "../../Detail/GPU/Pipeline.hpp"
-#include "../Core/Helper.hpp"
 
 #include "../NX_MaterialShader.hpp"
 #include "../NX_VertexBuffer.hpp"
 #include "../NX_DynamicMesh.hpp"
+#include "../Core/Helper.hpp"
 #include "./Environment.hpp"
 #include "./ViewFrustum.hpp"
 #include "./VariantMesh.hpp"
+#include "./Culling.hpp"
 
 #include <NX/NX_Render.h>
 #include <NX/NX_Math.h>
@@ -33,19 +34,6 @@ enum DrawType : uint8_t {
     DRAW_PREPASS = 1,       ///< Represents objects rendered with a depth pre-pass (can be opaque or transparent)
     DRAW_TRANSPARENT = 2,   ///< Represents all transparent objects
     DRAW_TYPE_COUNT
-};
-
-/** Bounding sphere (used as 'pre-test' during frustum culling) */
-struct BoundingSphere {
-    NX_Vec3 center;
-    float radius;
-    BoundingSphere(const NX_BoundingBox& aabb, const NX_Transform& transform) {
-        NX_Vec3 localCenter = (aabb.min + aabb.max) * 0.5f;
-        NX_Vec3 rotatedCenter = localCenter * transform.rotation;
-        center = transform.translation + rotatedCenter;
-        NX_Vec3 halfSize = (aabb.max - aabb.min) * 0.5f;
-        radius = NX_Vec3Length(halfSize * transform.scale);
-    }
 };
 
 /** Shared CPU data per draw call */
@@ -68,6 +56,7 @@ struct DrawUnique {
     /** Object to draw */
     VariantMesh mesh;
     NX_Material material;
+    OrientedBoundingBox obb;
     /** Additionnal data */
     NX_MaterialShader::TextureArray textures;   //< Array containing the textures linked to the material shader at the time of draw (if any)
     int dynamicRangeIndex;                      //< Index of the material shader's dynamic uniform buffer range (if any)
@@ -193,6 +182,7 @@ inline void DrawCallManager::push(const VariantMesh& mesh, const NX_InstanceBuff
     UniqueData uniqueData{
         .mesh = mesh,
         .material = material,
+        .obb = OrientedBoundingBox(mesh.aabb(), transform),
         .textures = {},
         .dynamicRangeIndex = -1,
         .sharedDataIndex = sharedIndex,
@@ -253,6 +243,7 @@ inline void DrawCallManager::push(const NX_Model& model, const NX_InstanceBuffer
         UniqueData uniqueData{
             .mesh = model.meshes[i],
             .material = model.materials[model.meshMaterials[i]],
+            .obb = OrientedBoundingBox(model.aabb, transform),
             .textures = {},
             .dynamicRangeIndex = -1,
             .sharedDataIndex = sharedIndex,
@@ -279,7 +270,7 @@ inline void DrawCallManager::culling(const Frustum& frustum, NX_Layer frustumCul
 {
     mUniqueVisible.clear();
 
-    for (SharedData& shared : mSharedData)
+    for (const SharedData& shared : mSharedData)
     {
         if (shared.instanceCount == 0) {
             if (!frustum.containsSphere(shared.sphere.center, shared.sphere.radius)) {
@@ -292,14 +283,14 @@ inline void DrawCallManager::culling(const Frustum& frustum, NX_Layer frustumCul
 
         for (int i = uniqueStart; i < uniqueEnd; i++)
         {
-            UniqueData unique = mUniqueData[i];
+            const UniqueData& unique = mUniqueData[i];
 
             if ((frustumCullMask & unique.mesh.layerMask()) == 0) {
                 continue;
             }
 
             if (shared.instanceCount == 0) {
-                if (!frustum.containsObb(unique.mesh.aabb(), shared.transform)) {
+                if (!frustum.containsObb(unique.obb.center, unique.obb.axes, unique.obb.extents)) {
                     continue;
                 }
             }
