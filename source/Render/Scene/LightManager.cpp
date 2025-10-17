@@ -375,6 +375,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                 mFramebufferShadow[lightType].setColorAttachmentTarget(0, data.mapIndex, face);
                 pipeline.clear(mFramebufferShadow[lightType], clearValue(light));
 
+                // REVIEW: We could use a better method for per-frame data...
                 mFrameShadowUniform->uploadObject(FrameShadowUniform {
                     .lightViewProj = light.viewProj(face),
                     .lightPosition = light.position(),
