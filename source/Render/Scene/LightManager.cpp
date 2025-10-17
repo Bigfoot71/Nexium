@@ -9,8 +9,8 @@
 #include "./LightManager.hpp"
 
 #include "../../Detail/GPU/Pipeline.hpp"
+#include "./DrawCallManager.hpp"
 #include "../NX_Texture.hpp"
-#include "DrawCallManager.hpp"
 
 #include <NX/NX_Render.h>
 #include <NX/NX_Macros.h>
