@@ -35,22 +35,35 @@ enum DrawType : uint8_t {
     DRAW_TYPE_COUNT
 };
 
-/** Données CPU partagées par draw call */
+/** Bounding sphere (used as 'pre-test' during frustum culling) */
+struct BoundingSphere {
+    NX_Vec3 center;
+    float radius;
+    BoundingSphere(const NX_BoundingBox& aabb, const NX_Transform& transform) {
+        NX_Vec3 localCenter = (aabb.min + aabb.max) * 0.5f;
+        NX_Vec3 rotatedCenter = localCenter * transform.rotation;
+        center = transform.translation + rotatedCenter;
+        NX_Vec3 halfSize = (aabb.max - aabb.min) * 0.5f;
+        radius = NX_Vec3Length(halfSize * transform.scale);
+    }
+};
+
+/** Shared CPU data per draw call */
 struct DrawShared {
     /** Spatial data */
     NX_Transform transform;
-    NX_BoundingBox aabb;
+    BoundingSphere sphere;
     /** Instances data */
     const NX_InstanceBuffer* instances;
     int instanceCount;
     /** Animations */
-    int boneMatrixOffset;       //< If less than zero, no animation assigned
+    int boneMatrixOffset;                       //< If less than zero, no animation assigned
     /** Unique data */
     int uniqueDataIndex;
     int uniqueDataCount;
 };
 
-/** Données CPU unique par draw call */
+/** Unique CPU data per draw call */
 struct DrawUnique {
     /** Object to draw */
     VariantMesh mesh;
@@ -103,7 +116,7 @@ private:
     static DrawType drawType(const NX_Material& material);
 
 private:
-    /** Données GPU partagées par draw call */
+    /** Shared GPU data per draw call */
     struct GPUSharedData {
         alignas(16) NX_Mat4 matModel;
         alignas(16) NX_Mat4 matNormal;
@@ -112,7 +125,7 @@ private:
         alignas(4) int32_t skinning;
     };
 
-    /** Données GPU unique par draw call */
+    /** Unique GPU data per draw call */
     struct GPUUniqueData {
         alignas(16) NX_Vec4 albedoColor;
         alignas(16) NX_Vec3 emissionColor;
@@ -169,7 +182,7 @@ inline void DrawCallManager::push(const VariantMesh& mesh, const NX_InstanceBuff
 
     mSharedData.emplace_back(SharedData {
         .transform = transform,
-        .aabb = mesh.aabb(),
+        .sphere = BoundingSphere(mesh.aabb(), transform),
         .instances = instances,
         .instanceCount = instanceCount,
         .boneMatrixOffset = -1,
@@ -227,7 +240,7 @@ inline void DrawCallManager::push(const NX_Model& model, const NX_InstanceBuffer
 
     mSharedData.emplace_back(SharedData {
         .transform = transform,
-        .aabb = model.aabb,
+        .sphere = BoundingSphere(model.aabb, transform),
         .instances = instances,
         .instanceCount = instanceCount,
         .boneMatrixOffset = boneMatrixOffset,
@@ -269,7 +282,7 @@ inline void DrawCallManager::culling(const Frustum& frustum, NX_Layer frustumCul
     for (SharedData& shared : mSharedData)
     {
         if (shared.instanceCount == 0) {
-            if (!frustum.containsObb(shared.aabb, shared.transform)) {
+            if (!frustum.containsSphere(shared.sphere.center, shared.sphere.radius)) {
                 continue;
             }
         }
@@ -285,7 +298,7 @@ inline void DrawCallManager::culling(const Frustum& frustum, NX_Layer frustumCul
                 continue;
             }
 
-            if (shared.uniqueDataCount > 1 && shared.instanceCount == 0) {
+            if (shared.instanceCount == 0) {
                 if (!frustum.containsObb(unique.mesh.aabb(), shared.transform)) {
                     continue;
                 }

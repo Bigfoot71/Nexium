@@ -34,7 +34,7 @@ public:
     /** Frustum culling */
     bool containsPoint(const NX_Vec3& position) const;
     bool containsPoints(const NX_Vec3* positions, int count) const;
-    bool cointainsSphere(const NX_Vec3& position, float radius) const;
+    bool containsSphere(const NX_Vec3& position, float radius) const;
     bool containsAabb(const NX_BoundingBox& aabb) const;
     bool containsObb(const NX_BoundingBox& aabb, const NX_Transform& transform) const;
 
@@ -113,7 +113,7 @@ inline bool Frustum::containsPoints(const NX_Vec3* positions, int count) const
     return false;
 }
 
-inline bool Frustum::cointainsSphere(const NX_Vec3& position, float radius) const
+inline bool Frustum::containsSphere(const NX_Vec3& position, float radius) const
 {
     for (int i = 0; i < PLANE_COUNT; i++) {
         if (distanceToPlane(mPlanes[i], position) < -radius) {
