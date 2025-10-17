@@ -333,53 +333,6 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         else return NX_COLOR(expf(+light.shadowLambda()), expf(-light.shadowLambda()), 0.0f, 0.0f);
     };
 
-    /* --- Lambda for drawing shadow geometry --- */
-
-    const auto draw = [this, &params](const gpu::Pipeline& pipeline, const DrawUnique& unique)
-    {
-        NX_MaterialShader& shader = mPrograms.materialShader(unique.material.shader);
-
-        pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_SHADOW));
-        pipeline.setCullMode(render::getCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
-
-        shader.bindTextures(pipeline, unique.textures, mAssets.textureWhite().gpuTexture());
-        shader.bindUniforms(pipeline, unique.dynamicRangeIndex);
-
-        pipeline.bindTexture(0, mAssets.textureOrWhite(unique.material.albedo.texture));
-
-        pipeline.setUniformUint1(0, unique.sharedDataIndex);
-        pipeline.setUniformUint1(1, unique.uniqueDataIndex);
-
-        params.drawCalls.draw(pipeline, unique);
-    };
-
-    /* --- Lambda for shadow uniform setup --- */
-
-    const auto setupShadowUniform = [this, &params](gpu::Pipeline& pipeline, NX_Light& light, int faceIndex)
-    {
-        mFrameShadowUniform->uploadObject(FrameShadowUniform {
-            .lightViewProj = light.viewProj(faceIndex),
-            .lightPosition = light.position(),
-            .shadowLambda = light.shadowLambda(),
-            .lightRange = light.range(),
-            .elapsedTime = static_cast<float>(NX_GetElapsedTime())
-        });
-        pipeline.bindUniform(0, *mFrameShadowUniform);
-    };
-
-    /* --- Lambda for rendering draw calls for a light --- */
-
-    const auto renderDrawCalls = [this, &params, &draw](gpu::Pipeline& pipeline, const NX_Light& light, int faceIndex)
-    {
-        params.drawCalls.culling(light.frustum(faceIndex), light.shadowCullMask());
-        for (int uniqueIndex : params.drawCalls.uniqueVisible().categories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT)) {
-            const DrawUnique& unique = params.drawCalls.uniqueData()[uniqueIndex];
-            if (unique.mesh.shadowCastMode() != NX_SHADOW_CAST_DISABLED) {
-                draw(pipeline, unique);
-            }
-        }
-    };
-
     /* --- Ensures that there are enough shadow maps in each texture array --- */
 
     for (int i = 0; i < mTargetShadow.size(); i++) {
@@ -415,12 +368,43 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         for (uint32_t shadowIndex : mShadowNeedingUpdate.category(lightType))
         {
             const ActiveShadow& data = mActiveShadows[shadowIndex];
+            const NX_Light& light = *data.light;
 
-            for (int face = 0; face < ((lightType == NX_LIGHT_OMNI) ? 6 : 1); ++face) {
+            for (int face = 0; face < ((lightType == NX_LIGHT_OMNI) ? 6 : 1); ++face)
+            {
                 mFramebufferShadow[lightType].setColorAttachmentTarget(0, data.mapIndex, face);
-                pipeline.clear(mFramebufferShadow[lightType], clearValue(*data.light));
-                setupShadowUniform(pipeline, *data.light, face);
-                renderDrawCalls(pipeline, *data.light, face);
+                pipeline.clear(mFramebufferShadow[lightType], clearValue(light));
+
+                mFrameShadowUniform->uploadObject(FrameShadowUniform {
+                    .lightViewProj = light.viewProj(face),
+                    .lightPosition = light.position(),
+                    .shadowLambda = light.shadowLambda(),
+                    .lightRange = light.range(),
+                    .elapsedTime = static_cast<float>(NX_GetElapsedTime())
+                });
+                pipeline.bindUniform(0, *mFrameShadowUniform);
+
+                params.drawCalls.culling(light.frustum(face), light.shadowCullMask());
+
+                for (int uniqueIndex : params.drawCalls.uniqueVisible().categories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
+                {
+                    const DrawUnique& unique = params.drawCalls.uniqueData()[uniqueIndex];
+                    if (unique.mesh.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
+
+                    NX_MaterialShader& shader = mPrograms.materialShader(unique.material.shader);
+                    pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_SHADOW));
+                    pipeline.setCullMode(render::getCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
+
+                    shader.bindTextures(pipeline, unique.textures, mAssets.textureWhite().gpuTexture());
+                    shader.bindUniforms(pipeline, unique.dynamicRangeIndex);
+
+                    pipeline.bindTexture(0, mAssets.textureOrWhite(unique.material.albedo.texture));
+                    pipeline.setUniformUint1(0, unique.sharedDataIndex);
+                    pipeline.setUniformUint1(1, unique.uniqueDataIndex);
+
+                    params.drawCalls.draw(pipeline, unique);
+                }
+
                 mFrameShadowUniform.rotate();
             }
         }
