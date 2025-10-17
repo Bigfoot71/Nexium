@@ -383,6 +383,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     .elapsedTime = static_cast<float>(NX_GetElapsedTime())
                 });
                 pipeline.bindUniform(0, *mFrameShadowUniform);
+                mFrameShadowUniform.rotate();
 
                 params.drawCalls.culling(light.frustum(face), light.shadowCullMask());
 
@@ -404,8 +405,6 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
                     params.drawCalls.draw(pipeline, unique);
                 }
-
-                mFrameShadowUniform.rotate();
             }
         }
     }
