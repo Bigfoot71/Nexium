@@ -264,7 +264,7 @@ NX_Mesh* PoolModel::processMesh(const aiMesh* mesh, const NX_Mat4& transform)
         NX_PRIMITIVE_TRIANGLES,
         vertices, vertexCount,
         indices, indexCount,
-        true
+        aabb, true
     );
 
     if (mesh == nullptr) {
@@ -334,6 +334,14 @@ bool PoolModel::processMeshes(NX_Model* model, const aiScene* scene, const aiNod
         SDL_free(model->meshMaterials);
         SDL_free(model->meshes);
         return false;
+    }
+
+    model->aabb.min = NX_VEC3(+FLT_MAX, +FLT_MAX, +FLT_MAX);
+    model->aabb.max = NX_VEC3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+    for (int i = 0; i < model->meshCount; ++i) {
+        NX_Vec3Min(model->aabb.min, model->meshes[i]->aabb.min);
+        NX_Vec3Max(model->aabb.max, model->meshes[i]->aabb.max);
     }
 
     return true;
