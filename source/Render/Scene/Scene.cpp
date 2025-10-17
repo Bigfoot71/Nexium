@@ -21,7 +21,8 @@ namespace scene {
 /* === Public Implementation === */
 
 Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, NX_AppDesc& desc)
-    : mPrograms(programs), mAssets(assets), mLights(programs, assets, desc), mFrustum()
+    : mPrograms(programs), mAssets(assets)
+    , mDrawCalls(1024), mLights(programs, assets, desc), mFrustum()
     , mFrameUniform(GL_UNIFORM_BUFFER, sizeof(FrameUniform), nullptr, GL_DYNAMIC_DRAW)
 {
     /* --- Tweak description --- */
@@ -99,16 +100,6 @@ Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, NX_AppD
         desc.render3D.resolution.y / 2,
         GL_RGB16F
     );
-
-    /* --- Reserve enough space for the draw calls array --- */
-
-    if (!mDrawCalls.reserve(1024)) {
-        NX_INTERNAL_LOG(E, "RENDER: Draw call buffer pre-allocation failed (requested: 1024 entries)");
-    }
-
-    if (!mDrawData.reserve(1024)) {
-        NX_INTERNAL_LOG(E, "RENDER: Draw data buffer pre-allocation failed (requested: 1024 entries)");
-    }
 }
 
 void Scene::begin(const NX_Camera& camera, const NX_Environment& env, const NX_RenderTexture* target)
@@ -129,19 +120,14 @@ void Scene::end()
 {
     /* --- Upload draw calls data --- */
 
-    mPerModelBuffer.upload();
-    mPerMeshBuffer.upload();
+    mDrawCalls.upload();
 
     /* --- Process lights --- */
 
     mLights.process({
         .viewFrustum = mFrustum,
         .environment = mEnvironment,
-        .perModelBuffer = mPerModelBuffer,
-        .perMeshBuffer = mPerMeshBuffer,
-        .boneBuffer = mBoneBuffer,
-        .drawCalls = mDrawCalls,
-        .drawData = mDrawData
+        .drawCalls = mDrawCalls
     });
 
     /* --- Upload frame info data --- */
@@ -157,44 +143,14 @@ void Scene::end()
         .hasProbe = (mEnvironment.skyProbe() != nullptr)
     });
 
-    /* --- View layer/furstum culling --- */
+    /* --- View layer/furstum culling and sorting --- */
 
-    mDrawCalls.remove_if([this](const DrawCall& call) {
-        if ((mFrustum.cullMask() & call.layerMask()) == 0) {
-            return true;
-        }
-        const DrawData& data = mDrawData[call.drawDataIndex()];
-        if (!data.useInstancing() && mEnvironment.hasFlags(NX_ENV_VIEW_FRUSTUM_CULLING)) {
-            return !mFrustum.containsObb(call.aabb(), data.transform());
-        }
-        return false;
-    });
-
-    /* --- Sort draw calls --- */
-
-    if (mEnvironment.hasFlags(NX_ENV_SORT_OPAQUE)) {
-        mDrawCalls.sort(DrawCall::Category::OPAQUE,
-            [this](const DrawCall& a, const DrawCall& b) {
-                float maxDistA = mFrustum.getDistanceSquaredToCenterPoint(a.aabb(), mDrawData[a.drawDataIndex()].transform());
-                float maxDistB = mFrustum.getDistanceSquaredToCenterPoint(b.aabb(), mDrawData[b.drawDataIndex()].transform());
-                return maxDistA < maxDistB;
-            }
-        );
-    }
-
-    if (mEnvironment.hasFlags(NX_ENV_SORT_TRANSPARENT)) {
-        mDrawCalls.sort(DrawCall::Category::TRANSPARENT,
-            [this](const DrawCall& a, const DrawCall& b) {
-                float maxDistA = mFrustum.getDistanceSquaredToFarthestPoint(a.aabb(), mDrawData[a.drawDataIndex()].transform());
-                float maxDistB = mFrustum.getDistanceSquaredToFarthestPoint(b.aabb(), mDrawData[b.drawDataIndex()].transform());
-                return maxDistA > maxDistB;
-            }
-        );
-    }
+    mDrawCalls.culling(mFrustum, mFrustum.cullMask());
+    mDrawCalls.sorting(mFrustum, mEnvironment);
 
     /* --- Render scene --- */
 
-    gpu::Pipeline([this](const gpu::Pipeline& pipeline) { // NOLINT(bugprone-unused-raii)
+    gpu::Pipeline([this](const gpu::Pipeline& pipeline) { // NOLINT
         renderBackground(pipeline);
         renderPrePass(pipeline);
         renderScene(pipeline);
@@ -222,9 +178,7 @@ void Scene::end()
 
     /* --- Reset state --- */
 
-    mBoneBuffer.clear();
     mDrawCalls.clear();
-    mDrawData.clear();
 }
 
 /* === Private Implementation === */
@@ -259,25 +213,25 @@ void Scene::renderBackground(const gpu::Pipeline& pipeline)
 
 void Scene::renderPrePass(const gpu::Pipeline& pipeline)
 {
-    if (mDrawCalls.category(DrawCall::PREPASS).empty()) {
+    if (mDrawCalls.uniqueVisible().category(DRAW_PREPASS).empty()) {
         return;
     }
 
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::Disabled);
 
-    pipeline.bindStorage(0, mPerModelBuffer.buffer());
-    pipeline.bindStorage(1, mPerMeshBuffer.buffer());
-    pipeline.bindStorage(2, mBoneBuffer.buffer());
+    pipeline.bindStorage(0, mDrawCalls.sharedBuffer());
+    pipeline.bindStorage(1, mDrawCalls.uniqueBuffer());
+    pipeline.bindStorage(2, mDrawCalls.boneBuffer());
 
     pipeline.bindUniform(0, mFrameUniform);
     pipeline.bindUniform(1, mFrustum.buffer());
     pipeline.bindUniform(2, mEnvironment.buffer());
 
-    for (const DrawCall& call : mDrawCalls.category(DrawCall::PREPASS))
+    for (int uniqueIndex : mDrawCalls.uniqueVisible().category(DRAW_PREPASS))
     {
-        const DrawData& data = mDrawData[call.drawDataIndex()];
-        const NX_Material& mat = call.material();
+        const DrawUnique& unique = mDrawCalls.uniqueData()[uniqueIndex];
+        const NX_Material& mat = unique.material;
 
         NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
         pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_PREPASS));
@@ -285,15 +239,15 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         pipeline.setDepthFunc(render::getDepthFunc(mat.depth.test));
         pipeline.setCullMode(render::getCullMode(mat.cull));
 
-        shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
-        shader.bindUniforms(pipeline, call.dynamicRangeIndex());
+        shader.bindTextures(pipeline, unique.textures, mAssets.textureWhite().gpuTexture());
+        shader.bindUniforms(pipeline, unique.dynamicRangeIndex);
 
         pipeline.bindTexture(0, mAssets.textureOrWhite(mat.albedo.texture));
 
-        pipeline.setUniformUint1(0, data.modelDataIndex());
-        pipeline.setUniformUint1(1, call.meshDataIndex());
+        pipeline.setUniformUint1(0, unique.sharedDataIndex);
+        pipeline.setUniformUint1(1, unique.uniqueDataIndex);
 
-        call.draw(pipeline, data.instances(), data.instanceCount());
+        mDrawCalls.draw(pipeline, unique);
     }
 }
 
@@ -302,9 +256,9 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.setColorWrite(gpu::ColorWrite::RGBA);
 
-    pipeline.bindStorage(0, mPerModelBuffer.buffer());
-    pipeline.bindStorage(1, mPerMeshBuffer.buffer());
-    pipeline.bindStorage(2, mBoneBuffer.buffer());
+    pipeline.bindStorage(0, mDrawCalls.sharedBuffer());
+    pipeline.bindStorage(1, mDrawCalls.uniqueBuffer());
+    pipeline.bindStorage(2, mDrawCalls.boneBuffer());
     pipeline.bindStorage(3, mLights.lightsBuffer());
     pipeline.bindStorage(4, mLights.shadowBuffer());
     pipeline.bindStorage(5, mLights.tilesBuffer());
@@ -327,17 +281,16 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
     // Ensures SSBOs are ready (especially clusters)
     pipeline.memoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    for (const DrawCall& call : mDrawCalls.categories(
-        DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT))
+    for (int uniqueIndex : mDrawCalls.uniqueVisible().categories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
     {
-        const DrawData& data = mDrawData[call.drawDataIndex()];
-        const NX_Material& mat = call.material();
+        const DrawUnique& unique = mDrawCalls.uniqueData()[uniqueIndex];
+        const NX_Material& mat = unique.material;
 
         NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
-        pipeline.useProgram(shader.programFromShadingMode(call.material().shading));
+        pipeline.useProgram(shader.programFromShadingMode(unique.material.shading));
 
-        shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
-        shader.bindUniforms(pipeline, call.dynamicRangeIndex());
+        shader.bindTextures(pipeline, unique.textures, mAssets.textureWhite().gpuTexture());
+        shader.bindUniforms(pipeline, unique.dynamicRangeIndex);
 
         pipeline.setDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : render::getDepthFunc(mat.depth.test));
         pipeline.setBlendMode(render::getBlendMode(mat.blend));
@@ -348,10 +301,10 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         pipeline.bindTexture(2, mAssets.textureOrWhite(mat.orm.texture));
         pipeline.bindTexture(3, mAssets.textureOrNormal(mat.normal.texture));
 
-        pipeline.setUniformUint1(0, data.modelDataIndex());
-        pipeline.setUniformUint1(1, call.meshDataIndex());
+        pipeline.setUniformUint1(0, unique.sharedDataIndex);
+        pipeline.setUniformUint1(1, unique.uniqueDataIndex);
 
-        call.draw(pipeline, data.instances(), data.instanceCount());
+        mDrawCalls.draw(pipeline, unique);
     }
 }
 

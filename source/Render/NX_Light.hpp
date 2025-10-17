@@ -10,8 +10,6 @@
 #define NX_LIGHT_HPP
 
 #include "./Scene/ViewFrustum.hpp"
-#include "./Scene/DrawCall.hpp"
-#include "./Scene/DrawData.hpp"
 #include "./Scene/Frustum.hpp"
 
 #include <NX/NX_Macros.h>
@@ -21,6 +19,7 @@
 
 #include <SDL3/SDL_assert.h>
 #include <variant>
+#include <array>
 
 /* === Declaration === */
 
@@ -103,10 +102,10 @@ public:
 
     /** Getters for light manager */
     void updateState(const scene::ViewFrustum& viewFrustum, bool* needsShadowUpdate);
-    bool isInsideShadowFrustum(const scene::DrawCall& call, const scene::DrawData& data, int face = 0) const;
     void fillShadowGPU(ShadowGPU* shadow, int mapIndex) const;
     void fillLightGPU(LightGPU* light, int shadowIndex) const;
-    const NX_Mat4& viewProj(int face = 0);
+    const scene::Frustum& frustum(int face = 0) const;
+    const NX_Mat4& viewProj(int face = 0) const;
 
 private:
     void updateDirectionalViewProj(const scene::ViewFrustum& viewFrustum);
@@ -782,16 +781,6 @@ inline void NX_Light::setShadowUpdateInterval(float interval)
     mShadowState.intervalSec = interval;
 }
 
-inline bool NX_Light::isInsideShadowFrustum(const scene::DrawCall& call, const scene::DrawData& data, int face) const
-{
-    // Assert that:
-    // - For non-omni lights, only face 0 is valid.
-    // - For omni lights, valid faces are 0 through 5.
-    SDL_assert((mType != NX_LIGHT_OMNI && face == 0) || (mType == NX_LIGHT_OMNI && face < 5));
-
-    return mShadowData.frustum[face].containsObb(call.aabb(), data.transform());
-}
-
 inline void NX_Light::fillShadowGPU(ShadowGPU* shadow, int mapIndex) const
 {
     SDL_assert(shadow != nullptr);
@@ -861,7 +850,17 @@ inline void NX_Light::fillLightGPU(LightGPU* light, int shadowIndex) const
     light->layerMask = mLayerMask;
 }
 
-inline const NX_Mat4& NX_Light::viewProj(int face)
+inline const scene::Frustum& NX_Light::frustum(int face) const
+{
+    // Assert that:
+    // - For non-omni lights, only face 0 is valid.
+    // - For omni lights, valid faces are 0 through 5.
+    SDL_assert((mType != NX_LIGHT_OMNI && face == 0) || (mType == NX_LIGHT_OMNI && face < 5));
+
+    return mShadowData.frustum[face];
+}
+
+inline const NX_Mat4& NX_Light::viewProj(int face) const
 {
     // Assert that:
     // - For non-omni lights, only face 0 is valid.

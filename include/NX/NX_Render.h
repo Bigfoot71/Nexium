@@ -77,9 +77,8 @@ typedef uint8_t NX_InstanceData;
 typedef uint32_t NX_EnvironmentFlag;
 
 #define NX_ENV_SORT_OPAQUE              (1 << 0)    ///< Sort opaque objects front-to-back
-#define NX_ENV_SORT_TRANSPARENT         (1 << 1)    ///< Sort transparent objects back-to-front
-#define NX_ENV_VIEW_FRUSTUM_CULLING     (1 << 2)    ///< Enable view frustum culling (camera)
-#define NX_ENV_SHADOW_FRUSTUM_CULLING   (1 << 3)    ///< Enable shadow frustum culling
+#define NX_ENV_SORT_PREPASS             (1 << 1)    ///< Sort pre-pass objects front-to-back
+#define NX_ENV_SORT_TRANSPARENT         (1 << 2)    ///< Sort transparent objects back-to-front
 
 /**
  * @brief Defines the type of projection used by a camera.

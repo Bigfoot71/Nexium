@@ -20,13 +20,10 @@
 #include "../Core/ProgramCache.hpp"
 #include "../Core/AssetCache.hpp"
 
-#include "./PerModelBuffer.hpp"
-#include "./PerMeshBuffer.hpp"
+#include "./DrawCallManager.hpp"
 #include "./ViewFrustum.hpp"
 #include "./Environment.hpp"
-#include "./BoneBuffer.hpp"
 #include "../NX_Light.hpp"
-#include "./DrawCall.hpp"
 
 namespace scene {
 
@@ -37,11 +34,7 @@ public:
     struct ProcessParams {
         const ViewFrustum& viewFrustum;
         const Environment& environment;
-        const PerModelBuffer& perModelBuffer;
-        const PerMeshBuffer& perMeshBuffer;
-        const BoneBuffer& boneBuffer;
-        const BucketDrawCalls& drawCalls;
-        const ArrayDrawData& drawData;
+        DrawCallManager& drawCalls;
     };
 
 public:

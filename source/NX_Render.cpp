@@ -1526,8 +1526,8 @@ void NX_End3D(void)
 
 void NX_DrawMesh3D(const NX_Mesh* mesh, const NX_Material* material, const NX_Transform* transform)
 {
-    gRender->scene.drawMesh(
-        *mesh, nullptr, 0,
+    gRender->scene.drawCalls().push(
+        mesh, nullptr, 0,
         material ? *material : NX_GetDefaultMaterial(),
         transform ? *transform : NX_TRANSFORM_IDENTITY
     );
@@ -1536,8 +1536,8 @@ void NX_DrawMesh3D(const NX_Mesh* mesh, const NX_Material* material, const NX_Tr
 void NX_DrawMeshInstanced3D(const NX_Mesh* mesh, const NX_InstanceBuffer* instances, int instanceCount,
                             const NX_Material* material, const NX_Transform* transform)
 {
-    gRender->scene.drawMesh(
-        *mesh, instances, instanceCount,
+    gRender->scene.drawCalls().push(
+        mesh, instances, instanceCount,
         material ? *material : NX_GetDefaultMaterial(),
         transform ? *transform : NX_TRANSFORM_IDENTITY
     );
@@ -1545,8 +1545,8 @@ void NX_DrawMeshInstanced3D(const NX_Mesh* mesh, const NX_InstanceBuffer* instan
 
 void NX_DrawDynamicMesh3D(const NX_DynamicMesh* dynMesh, const NX_Material* material, const NX_Transform* transform)
 {
-    gRender->scene.drawMesh(
-        *dynMesh, nullptr, 0,
+    gRender->scene.drawCalls().push(
+        dynMesh, nullptr, 0,
         material ? *material : NX_GetDefaultMaterial(),
         transform ? *transform : NX_TRANSFORM_IDENTITY
     );
@@ -1555,8 +1555,8 @@ void NX_DrawDynamicMesh3D(const NX_DynamicMesh* dynMesh, const NX_Material* mate
 void NX_DrawDynamicMeshInstanced3D(const NX_DynamicMesh* dynMesh, const NX_InstanceBuffer* instances, int instanceCount,
                                    const NX_Material* material, const NX_Transform* transform)
 {
-    gRender->scene.drawMesh(
-        *dynMesh, instances, instanceCount,
+    gRender->scene.drawCalls().push(
+        dynMesh, instances, instanceCount,
         material ? *material : NX_GetDefaultMaterial(),
         transform ? *transform : NX_TRANSFORM_IDENTITY
     );
@@ -1564,12 +1564,18 @@ void NX_DrawDynamicMeshInstanced3D(const NX_DynamicMesh* dynMesh, const NX_Insta
 
 void NX_DrawModel3D(const NX_Model* model, const NX_Transform* transform)
 {
-    gRender->scene.drawModel(*model, nullptr, 0, transform ? *transform : NX_TRANSFORM_IDENTITY);
+    gRender->scene.drawCalls().push(
+        *model, nullptr, 0,
+        transform ? *transform : NX_TRANSFORM_IDENTITY
+    );
 }
 
 void NX_DrawModelInstanced3D(const NX_Model* model, const NX_InstanceBuffer* instances, int instanceCount, const NX_Transform* transform)
 {
-    gRender->scene.drawModel(*model, instances, instanceCount, transform ? *transform : NX_TRANSFORM_IDENTITY);
+    gRender->scene.drawCalls().push(
+        *model, instances, instanceCount,
+        transform ? *transform : NX_TRANSFORM_IDENTITY
+    );
 }
 
 /* === Camera - Public API === */

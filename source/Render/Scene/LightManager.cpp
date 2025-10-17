@@ -10,7 +10,7 @@
 
 #include "../../Detail/GPU/Pipeline.hpp"
 #include "../NX_Texture.hpp"
-#include "./DrawCall.hpp"
+#include "DrawCallManager.hpp"
 
 #include <NX/NX_Render.h>
 #include <NX/NX_Macros.h>
@@ -335,22 +335,22 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     /* --- Lambda for drawing shadow geometry --- */
 
-    const auto draw = [this, &params](const gpu::Pipeline& pipeline, const DrawCall& call, const DrawData& data)
+    const auto draw = [this, &params](const gpu::Pipeline& pipeline, const DrawUnique& unique)
     {
-        NX_MaterialShader& shader = mPrograms.materialShader(call.material().shader);
+        NX_MaterialShader& shader = mPrograms.materialShader(unique.material.shader);
 
         pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_SHADOW));
-        pipeline.setCullMode(render::getCullMode(call.shadowFaceMode(), call.material().cull));
+        pipeline.setCullMode(render::getCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
 
-        shader.bindTextures(pipeline, call.materialShaderTextures(), mAssets.textureWhite().gpuTexture());
-        shader.bindUniforms(pipeline, call.dynamicRangeIndex());
+        shader.bindTextures(pipeline, unique.textures, mAssets.textureWhite().gpuTexture());
+        shader.bindUniforms(pipeline, unique.dynamicRangeIndex);
 
-        pipeline.bindTexture(0, mAssets.textureOrWhite(call.material().albedo.texture));
+        pipeline.bindTexture(0, mAssets.textureOrWhite(unique.material.albedo.texture));
 
-        pipeline.setUniformUint1(0, data.modelDataIndex());
-        pipeline.setUniformUint1(1, call.meshDataIndex());
+        pipeline.setUniformUint1(0, unique.sharedDataIndex);
+        pipeline.setUniformUint1(1, unique.uniqueDataIndex);
 
-        call.draw(pipeline, data.instances(), data.instanceCount());
+        params.drawCalls.draw(pipeline, unique);
     };
 
     /* --- Lambda for shadow uniform setup --- */
@@ -371,13 +371,11 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
     const auto renderDrawCalls = [this, &params, &draw](gpu::Pipeline& pipeline, const NX_Light& light, int faceIndex)
     {
-        const bool frustumCulling = params.environment.hasFlags(NX_ENV_SHADOW_FRUSTUM_CULLING);
-        for (const DrawCall& call : params.drawCalls.categories(DrawCall::OPAQUE, DrawCall::PREPASS, DrawCall::TRANSPARENT)) {
-            if (call.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
-            if ((light.shadowCullMask() & call.layerMask()) == 0) continue;
-            const DrawData& data = params.drawData[call.drawDataIndex()];
-            if (!frustumCulling || light.isInsideShadowFrustum(call, data, faceIndex)) {
-                draw(pipeline, call, data);
+        params.drawCalls.culling(light.frustum(faceIndex), light.shadowCullMask());
+        for (int uniqueIndex : params.drawCalls.uniqueVisible().categories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT)) {
+            const DrawUnique& unique = params.drawCalls.uniqueData()[uniqueIndex];
+            if (unique.mesh.shadowCastMode() != NX_SHADOW_CAST_DISABLED) {
+                draw(pipeline, unique);
             }
         }
     };
@@ -399,9 +397,9 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
     pipeline.setViewport(0, 0, mShadowResolution, mShadowResolution);
     pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
 
-    pipeline.bindStorage(0, params.perModelBuffer.buffer());
-    pipeline.bindStorage(1, params.perMeshBuffer.buffer());
-    pipeline.bindStorage(2, params.boneBuffer.buffer());
+    pipeline.bindStorage(0, params.drawCalls.sharedBuffer());
+    pipeline.bindStorage(1, params.drawCalls.uniqueBuffer());
+    pipeline.bindStorage(2, params.drawCalls.boneBuffer());
 
     pipeline.bindUniform(1, params.viewFrustum.buffer());
     pipeline.bindUniform(2, params.environment.buffer());

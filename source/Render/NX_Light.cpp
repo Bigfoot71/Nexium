@@ -7,6 +7,7 @@
  */
 
 #include "./NX_Light.hpp"
+#include "./Core/Helper.hpp"
 
 /* === Public Implementation === */
 

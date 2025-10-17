@@ -21,14 +21,10 @@
 #include "../Core/AssetCache.hpp"
 
 #include "../NX_RenderTexture.hpp"
-#include "./PerModelBuffer.hpp"
-#include "./PerMeshBuffer.hpp"
+#include "./DrawCallManager.hpp"
 #include "./LightManager.hpp"
 #include "./Environment.hpp"
 #include "./ViewFrustum.hpp"
-#include "./BoneBuffer.hpp"
-#include "./DrawCall.hpp"
-#include "./DrawData.hpp"
 
 namespace scene {
 
@@ -42,11 +38,9 @@ public:
     void begin(const NX_Camera& camera, const NX_Environment& env, const NX_RenderTexture* target);
     void end();
 
-    /** Push draw call functions */
-    template <typename T_Mesh>
-    void drawMesh(const T_Mesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform);
-    void drawModel(const NX_Model& model, const NX_InstanceBuffer* instances, int instanceCount, const NX_Transform& transform);
-
+    /** Getters */
+    const DrawCallManager& drawCalls() const;
+    DrawCallManager& drawCalls();
     const LightManager& lights() const;
     LightManager& lights();
 
@@ -84,18 +78,12 @@ private:
     render::ProgramCache& mPrograms;
     render::AssetCache& mAssets;
 
-    /** Draw calls */
-    BucketDrawCalls mDrawCalls{};
-    ArrayDrawData mDrawData{};
-
     /** Scene data */
     Environment mEnvironment{};
     ViewFrustum mFrustum{};
 
     /** Managers */
-    PerModelBuffer mPerModelBuffer;
-    PerMeshBuffer mPerMeshBuffer;
-    BoneBuffer mBoneBuffer;
+    DrawCallManager mDrawCalls;
     LightManager mLights;
 
     /** Scene render targets */
@@ -120,64 +108,14 @@ private:
 
 /* === Public Implementation === */
 
-template <typename T_Mesh>
-inline void Scene::drawMesh(const T_Mesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform)
+inline const DrawCallManager& Scene::drawCalls() const
 {
-    int modelDataIndex = mPerModelBuffer.stage(transform, instanceCount);
-    int meshDataIndex = mPerMeshBuffer.stage(mesh, material);
-    int dataIndex = mDrawData.size();
-
-    mDrawData.emplace_back(modelDataIndex, transform, instances, instanceCount);
-    mDrawCalls.emplace(DrawCall::category(material), dataIndex, meshDataIndex, mesh, material);
+    return mDrawCalls;
 }
 
-inline void Scene::drawModel(const NX_Model& model, const NX_InstanceBuffer* instances, int instanceCount, const NX_Transform& transform)
+inline DrawCallManager& Scene::drawCalls()
 {
-    /* --- If the model is rigged we upload its bone transformations to the buffer --- */
-
-    int boneMatrixOffset = -1;
-
-    if (model.boneCount > 0)
-    {
-        const NX_Mat4* boneMatrices = model.boneBindPose;
-
-        if (model.animMode == NX_ANIM_INTERNAL && model.anim != nullptr) {
-            if (model.boneCount != model.anim->boneCount) {
-                NX_INTERNAL_LOG(W, "RENDER: Model and animation bone counts differ");
-            }
-            int frame = static_cast<int>(model.animFrame + 0.5) % model.anim->frameCount;
-            boneMatrices = model.anim->frameGlobalPoses[frame];
-        }
-        else if (model.animMode == NX_ANIM_CUSTOM && model.boneOverride != nullptr) {
-            boneMatrices = model.boneOverride;
-        }
-
-        boneMatrixOffset = mBoneBuffer.upload(
-            model.boneOffsets,
-            boneMatrices,
-            model.boneCount
-        );
-    }
-
-    /* --- Adding shared meshes and data to the batch --- */
-
-    int dataIndex = mDrawData.size();
-
-    for (int i = 0; i < model.meshCount; i++)
-    {
-        const NX_Mesh& mesh = *model.meshes[i];
-        const NX_Material& material = model.materials[model.meshMaterials[i]];
-
-        int meshDataIndex = mPerMeshBuffer.stage(mesh, material);
-
-        mDrawCalls.emplace(
-            DrawCall::category(material), dataIndex,
-            meshDataIndex, *model.meshes[i], material
-        );
-    }
-
-    int modelDataIndex = mPerModelBuffer.stage(transform, instanceCount, boneMatrixOffset);
-    mDrawData.emplace_back(modelDataIndex, transform, instances, instanceCount, boneMatrixOffset);
+    return mDrawCalls;
 }
 
 inline const LightManager& Scene::lights() const
