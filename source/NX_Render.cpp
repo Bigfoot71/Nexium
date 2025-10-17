@@ -2860,11 +2860,6 @@ void NX_QueryInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData* bitfield
 
 /* === Model - Public API === */
 
-void NX_SetModelImportScale(float value)
-{
-    gRender->models.setImportScale(value);
-}
-
 NX_Model* NX_LoadModel(const char* filePath)
 {
     size_t fileSize = 0;

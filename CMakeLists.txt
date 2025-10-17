@@ -245,13 +245,8 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/Detail/GPU/Buffer.cpp"
     "${NX_ROOT_PATH}/source/Detail/Helper.cpp"
 
-    "${NX_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelAnimation.cpp"
-    "${NX_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelMaterial.cpp"
-    "${NX_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelMesh.cpp"
-    "${NX_ROOT_PATH}/source/Render/Core/PoolModel/PoolModelBone.cpp"
     "${NX_ROOT_PATH}/source/Render/Core/ProgramCache.cpp"
     "${NX_ROOT_PATH}/source/Render/Core/AssetCache.cpp"
-    "${NX_ROOT_PATH}/source/Render/Core/PoolModel.cpp"
 
     "${NX_ROOT_PATH}/source/Render/Overlay/Overlay.cpp"
 

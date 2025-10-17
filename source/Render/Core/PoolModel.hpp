@@ -12,6 +12,11 @@
 #include <NX/NX_Render.h>
 
 #include "../../Detail/Util/ObjectPool.hpp"
+#include "./Importer/AnimationImporter.hpp"
+#include "./Importer/MaterialImporter.hpp"
+#include "./Importer/SceneImporter.hpp"
+#include "./Importer/MeshImporter.hpp"
+#include "./Importer/BoneImporter.hpp"
 #include "./PoolTexture.hpp"
 #include "./PoolMesh.hpp"
 
@@ -27,7 +32,6 @@ namespace render {
 class PoolModel {
 public:
     PoolModel(PoolTexture& poolTexture, PoolMesh& poolMesh);
-    void setImportScale(float scale);
 
     NX_Model* loadModel(const void* fileData, size_t fileSize, const char* hint);
     void destroyModel(NX_Model* model);
@@ -36,32 +40,8 @@ public:
     void destroyAnimations(NX_ModelAnimation** animations, int count);
 
 private:
-    const aiScene* loadSceneFromMemory(const void* data, uint32_t size, const char* hint);
-    NX_ModelAnimation** loadAnimationsFromScene(const aiScene* scene, int* animCount, int targetFrameRate);
-    bool loadModelFromScene(const aiScene* scene, NX_Model* model);
-
-private:
-    /** PoolModelAnimation.cpp */
-    static bool processAnimation(NX_ModelAnimation* animation, const struct aiScene* scene, const struct aiAnimation* aiAnim, int targetFrameRate);
-
-    /** PoolModelMesh.cpp */
-    template <bool HasBones>
-    NX_Mesh* processMesh(const aiMesh* mesh, const NX_Mat4& transform);
-    bool processMeshesRecursive(NX_Model* model, const aiScene* scene, const aiNode* node, const NX_Mat4& parentFinalTransform);
-    bool processMeshes(NX_Model* model, const aiScene* scene, const aiNode* node);
-
-    /** PoolModelMaterial.cpp */
-    NX_Texture* loadTexture(const aiScene* scene, const aiMaterial* aiMat, aiTextureType type, uint32_t index, bool asData);
-    NX_Texture* loadTextureORM(const aiScene* scene, const aiMaterial* aiMat, bool* hasOcclusion, bool* hasRoughness, bool* hasMetalness);
-    bool processMaterials(NX_Model* model, const aiScene* scene);
-
-    /** PoolModelBones.cpp */
-    bool processBones(NX_Model* model, const aiScene* scene);
-
-private:
     util::ObjectPool<NX_ModelAnimation, 256> mPoolAnimation;
     util::ObjectPool<NX_Model, 128> mPoolModel;
-    Assimp::Importer mImporter;
     PoolTexture& mPoolTexture;
     PoolMesh& mPoolMesh;
 };
@@ -71,33 +51,35 @@ private:
 inline PoolModel::PoolModel(PoolTexture& poolTexture, PoolMesh& poolMesh)
     : mPoolTexture(poolTexture)
     , mPoolMesh(poolMesh)
-{
-    mImporter.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 1.0f);
-}
-
-inline void PoolModel::setImportScale(float scale)
-{
-    mImporter.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
-}
+{ }
 
 inline NX_Model* PoolModel::loadModel(const void* fileData, size_t fileSize, const char* hint)
 {
-    const aiScene* scene = loadSceneFromMemory(fileData, fileSize, hint);
-    if (scene == nullptr) {
+    SceneImporter importer(fileData, fileSize, hint);
+    if (!importer.isValid()) {
         return nullptr;
     }
 
     NX_Model* model = mPoolModel.create();
     if (model == nullptr) {
+        NX_INTERNAL_LOG(E, "RENDER: Failed to load model; Object pool issue");
         return nullptr;
     }
 
-    if (!loadModelFromScene(scene, model)) {
+    if (!MeshImporter(importer, mPoolMesh).loadMeshes(model)) {
         destroyModel(model);
-        model = nullptr;
+        return nullptr;
     }
 
-    mImporter.FreeScene();
+    if (!MaterialImporter(importer, mPoolTexture).loadMaterials(model)) {
+        destroyModel(model);
+        return nullptr;
+    }
+
+    if (!BoneImporter(importer).processBones(model)) {
+        destroyModel(model);
+        return nullptr;
+    }
 
     return model;
 }
@@ -131,16 +113,15 @@ inline void PoolModel::destroyModel(NX_Model* model)
 
 inline NX_ModelAnimation** PoolModel::loadAnimations(const void* fileData, size_t fileSize, const char* hint, int* animCount, int targetFrameRate)
 {
-    const aiScene* scene = loadSceneFromMemory(fileData, fileSize, hint);
-    if (scene == nullptr) {
+    // TODO: Review how animations are loaded. I was thinking of creating a separate 'PoolAnimation'
+    //       and introducing a new type 'NX_AnimationLibrary' instead of returning arrays of pointers.
+
+    SceneImporter importer(fileData, fileSize, hint);
+    if (!importer.isValid()) {
         return nullptr;
     }
 
-    NX_ModelAnimation** animations = loadAnimationsFromScene(scene, animCount, targetFrameRate);
-
-    mImporter.FreeScene();
-
-    return animations;
+    return AnimationImporter(importer, mPoolAnimation).loadAnimations(animCount, targetFrameRate);
 }
 
 inline void PoolModel::destroyAnimations(NX_ModelAnimation** animations, int count)

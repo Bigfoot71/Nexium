@@ -1,18 +1,125 @@
-/* PoolModelMesh.cpp -- Contains the implementation for model mesh loading
- *
- * Copyright (c) 2025 Le Juez Victor
- *
- * This software is provided 'as-is', without any express or implied warranty.
- * For conditions of distribution and use, see accompanying LICENSE file.
- */
+#ifndef NX_RENDER_MESH_IMPORTER_HPP
+#define NX_RENDER_MESH_IMPORTER_HPP
 
-#include "../PoolModel.hpp"
+#include <NX/NX_Render.h>
+
+#include "./SceneImporter.hpp"
 #include "./AssimpHelper.hpp"
+#include "../PoolMesh.hpp"
+
+#include <SDL3/SDL_assert.h>
+#include <assimp/mesh.h>
+#include <float.h>
 
 namespace render {
 
+/* === Declaration === */
+
+class MeshImporter {
+public:
+    /** Constructors */
+    MeshImporter(const SceneImporter& importer, PoolMesh& poolMesh);
+
+    /** Loads the meshes and stores them in the specified model */
+    bool loadMeshes(NX_Model* model);
+
+private:
+    /** Iterate through all nodes to load meshes */
+    bool loadRecursive(NX_Model* model, const aiNode* node, const NX_Mat4& parentTransform);
+
+    /** Loads a mesh into memory */
+    template <bool HasBones>
+    NX_Mesh* loadMesh(const aiMesh* mesh, const NX_Mat4& transform);
+
+private:
+    const SceneImporter& mImporter;
+    PoolMesh& mPoolMesh;
+};
+
+/* === Public Implementation === */
+
+inline MeshImporter::MeshImporter(const SceneImporter& importer, PoolMesh& poolMesh)
+    : mImporter(importer)
+    , mPoolMesh(poolMesh)
+{
+    SDL_assert(importer.isValid());
+}
+
+inline bool MeshImporter::loadMeshes(NX_Model* model)
+{
+    model->meshCount = mImporter.scene()->mNumMeshes;
+
+    model->meshes = static_cast<NX_Mesh**>(SDL_calloc(model->meshCount, sizeof(NX_Mesh*)));
+    if (model->meshes == nullptr) {
+        NX_INTERNAL_LOG(E, "RENDER: Unable to allocate memory for meshes; The model will be invalid");
+        return false;
+    }
+
+    model->meshMaterials = static_cast<int*>(SDL_calloc(model->meshCount, sizeof(int)));
+    if (model->meshMaterials == nullptr) {
+        NX_INTERNAL_LOG(E, "RENDER: Unable to allocate memory for mesh materials array; The model will be invalid");
+        SDL_free(model->meshes);
+        return false;
+    }
+
+    if (!loadRecursive(model, mImporter.rootNode(), NX_MAT4_IDENTITY)) {
+        for (int i = 0; i < model->meshCount; i++) {
+            mPoolMesh.destroyMesh(model->meshes[i]);
+        }
+        SDL_free(model->meshMaterials);
+        SDL_free(model->meshes);
+        return false;
+    }
+
+    model->aabb.min = NX_VEC3(+FLT_MAX, +FLT_MAX, +FLT_MAX);
+    model->aabb.max = NX_VEC3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+    for (int i = 0; i < model->meshCount; ++i) {
+        model->aabb.min = NX_Vec3Min(model->aabb.min, model->meshes[i]->aabb.min);
+        model->aabb.max = NX_Vec3Max(model->aabb.max, model->meshes[i]->aabb.max);
+    }
+
+    return true;
+}
+
+/* === Private Implementation === */
+
+inline bool MeshImporter::loadRecursive(NX_Model* model, const aiNode* node, const NX_Mat4& parentTransform)
+{
+    NX_Mat4 localTransform = assimp_cast<NX_Mat4>(node->mTransformation);
+    NX_Mat4 globalTransform = NX_Mat4Mul(&localTransform, &parentTransform);
+
+    for (uint32_t i = 0; i < node->mNumMeshes; i++)
+    {
+        uint32_t meshIndex = node->mMeshes[i];
+        const aiMesh* mesh = mImporter.mesh(meshIndex);
+
+        model->meshMaterials[meshIndex] = mesh->mMaterialIndex;
+
+        if (mesh->mNumBones) {
+            model->meshes[meshIndex] = loadMesh<true>(mesh, globalTransform);
+        }
+        else {
+            model->meshes[meshIndex] = loadMesh<false>(mesh, globalTransform);
+        }
+
+        if (model->meshes[meshIndex] == nullptr) {
+            NX_INTERNAL_LOG(E, "RENDER: Unable to load mesh [%d]; The model will be invalid", node->mMeshes[i]);
+            return false;
+        }
+    }
+
+    for (uint32_t i = 0; i < node->mNumChildren; i++) {
+        if(!loadRecursive(model, node->mChildren[i], globalTransform)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 template <bool HasBones>
-NX_Mesh* PoolModel::processMesh(const aiMesh* mesh, const NX_Mat4& transform)
+NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
 {
     /* --- Validate input parameters --- */
 
@@ -48,10 +155,9 @@ NX_Mesh* PoolModel::processMesh(const aiMesh* mesh, const NX_Mat4& transform)
 
     /* --- Initialize bounding box --- */
 
-    NX_BoundingBox aabb = {
-        .min = {+FLT_MAX, +FLT_MAX, +FLT_MAX},
-        .max = {-FLT_MAX, -FLT_MAX, -FLT_MAX}
-    };
+    NX_BoundingBox aabb;
+    aabb.min = NX_VEC3(+FLT_MAX, +FLT_MAX, +FLT_MAX);
+    aabb.max = NX_VEC3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
     /* --- Compute normal matrix --- */
 
@@ -276,75 +382,6 @@ NX_Mesh* PoolModel::processMesh(const aiMesh* mesh, const NX_Mat4& transform)
     return modelMesh;
 }
 
-bool PoolModel::processMeshesRecursive(NX_Model* model, const aiScene* scene, const aiNode* node, const NX_Mat4& parentTransform)
-{
-    NX_Mat4 localTransform = assimp_cast<NX_Mat4>(node->mTransformation);
-    NX_Mat4 globalTransform = NX_Mat4Mul(&localTransform, &parentTransform);
-
-    for (uint32_t i = 0; i < node->mNumMeshes; i++)
-    {
-        uint32_t meshIndex = node->mMeshes[i];
-        const aiMesh* mesh = scene->mMeshes[meshIndex];
-
-        model->meshMaterials[meshIndex] = scene->mMeshes[meshIndex]->mMaterialIndex;
-
-        if (mesh->mNumBones) {
-            model->meshes[meshIndex] = processMesh<true>(mesh, globalTransform);
-        }
-        else {
-            model->meshes[meshIndex] = processMesh<false>(mesh, globalTransform);
-        }
-
-        if (model->meshes[meshIndex] == nullptr) {
-            NX_INTERNAL_LOG(E, "RENDER: Unable to load mesh [%d]; The model will be invalid", node->mMeshes[i]);
-            return false;
-        }
-    }
-
-    for (uint32_t i = 0; i < node->mNumChildren; i++) {
-        if(!processMeshesRecursive(model, scene, node->mChildren[i], globalTransform)) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-bool PoolModel::processMeshes(NX_Model* model, const aiScene* scene, const aiNode* node)
-{
-    model->meshCount = scene->mNumMeshes;
-
-    model->meshes = static_cast<NX_Mesh**>(SDL_calloc(model->meshCount, sizeof(NX_Mesh*)));
-    if (model->meshes == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to allocate memory for meshes; The model will be invalid");
-        return false;
-    }
-
-    model->meshMaterials = static_cast<int*>(SDL_calloc(model->meshCount, sizeof(int)));
-    if (model->meshMaterials == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to allocate memory for mesh materials array; The model will be invalid");
-        SDL_free(model->meshes);
-        return false;
-    }
-
-    if (!processMeshesRecursive(model, scene, node, NX_MAT4_IDENTITY)) {
-        for (int i = 0; i < model->meshCount; i++) {
-            mPoolMesh.destroyMesh(model->meshes[i]);
-        }
-        SDL_free(model->meshMaterials);
-        SDL_free(model->meshes);
-        return false;
-    }
-
-    model->aabb.min = NX_VEC3(+FLT_MAX, +FLT_MAX, +FLT_MAX);
-    model->aabb.max = NX_VEC3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-
-    for (int i = 0; i < model->meshCount; ++i) {
-        NX_Vec3Min(model->aabb.min, model->meshes[i]->aabb.min);
-        NX_Vec3Max(model->aabb.max, model->meshes[i]->aabb.max);
-    }
-
-    return true;
-}
-
 } // namespace render
+
+#endif // NX_RENDER_MESH_IMPORTER_HPP

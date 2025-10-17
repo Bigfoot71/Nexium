@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef NX_RENDER_POOL_MODEL_ASSIMP_HELPER_HPP
-#define NX_RENDER_POOL_MODEL_ASSIMP_HELPER_HPP
+#ifndef NX_RENDER_ASSIMP_HELPER_HPP
+#define NX_RENDER_ASSIMP_HELPER_HPP
 
 #include <NX/NX_Math.h>
 
@@ -63,4 +63,4 @@ constexpr NX_Mat4 assimp_cast<NX_Mat4, aiMatrix4x4>(const aiMatrix4x4& src)
     };
 }
 
-#endif // NX_RENDER_POOL_MODEL_ASSIMP_HELPER_HPP
+#endif // NX_RENDER_ASSIMP_HELPER_HPP

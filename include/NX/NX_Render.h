@@ -2105,13 +2105,6 @@ NXAPI void NX_QueryInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData* bi
  */
 
 /**
- * @brief Sets the scaling factor applied to models when loading.
- * @param value Scaling factor (e.g., 0.01 for meters to centimeters).
- * @note Only affects models loaded after this call and formats that support scaling.
- */
-NXAPI void NX_SetModelImportScale(float value);
-
-/**
  * @brief Loads a 3D model from a file.
  * @param filePath Path to the model file.
  * @return Pointer to a newly loaded NX_Model containing meshes and materials.
