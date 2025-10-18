@@ -281,21 +281,61 @@ inline void DrawCallManager::culling(const Frustum& frustum, NX_Layer frustumCul
         int uniqueStart = shared.uniqueDataIndex;
         int uniqueEnd = uniqueStart + shared.uniqueDataCount;
 
-        for (int i = uniqueStart; i < uniqueEnd; i++)
+        int i = uniqueStart;
+
+        for (; i + 4 <= uniqueEnd; i += 4)
         {
-            const UniqueData& unique = mUniqueData[i];
+            simd::Vec3 center(
+                mUniqueData[i + 0].obb.center,
+                mUniqueData[i + 1].obb.center,
+                mUniqueData[i + 2].obb.center,
+                mUniqueData[i + 3].obb.center
+            );
 
-            if ((frustumCullMask & unique.mesh.layerMask()) == 0) {
-                continue;
-            }
+            std::array<simd::Vec3, 3> axes = {
+                simd::Vec3(
+                    mUniqueData[i + 0].obb.axes[0],
+                    mUniqueData[i + 1].obb.axes[0],
+                    mUniqueData[i + 2].obb.axes[0],
+                    mUniqueData[i + 3].obb.axes[0]
+                ),
+                simd::Vec3(
+                    mUniqueData[i + 0].obb.axes[1],
+                    mUniqueData[i + 1].obb.axes[1],
+                    mUniqueData[i + 2].obb.axes[1],
+                    mUniqueData[i + 3].obb.axes[1]
+                ),
+                simd::Vec3(
+                    mUniqueData[i + 0].obb.axes[2],
+                    mUniqueData[i + 1].obb.axes[2],
+                    mUniqueData[i + 2].obb.axes[2],
+                    mUniqueData[i + 3].obb.axes[2]
+                )
+            };
 
-            if (shared.instanceCount == 0) {
-                if (!frustum.containsObb(unique.obb.center, unique.obb.axes, unique.obb.extents)) {
-                    continue;
+            simd::Vec3 extents(
+                mUniqueData[i + 0].obb.extents,
+                mUniqueData[i + 1].obb.extents,
+                mUniqueData[i + 2].obb.extents,
+                mUniqueData[i + 3].obb.extents
+            );
+
+            simd::Float4 mask = frustum.containsObb(center, axes, extents);
+            int bits = simd::movemask(mask);
+
+            for (int lane = 0; lane < 4; ++lane) {
+                const UniqueData& u = mUniqueData[i + lane];
+                if ((bits & (1 << lane)) && (frustumCullMask & u.mesh.layerMask()) != 0) {
+                    mUniqueVisible.emplace(u.type, i + lane);
                 }
             }
+        }
 
-            mUniqueVisible.emplace(unique.type, i);
+        for (; i < uniqueEnd; ++i) {
+            const UniqueData& u = mUniqueData[i];
+            if ((frustumCullMask & u.mesh.layerMask()) == 0) continue;
+            if (shared.instanceCount == 0 && !frustum.containsObb(u.obb.center, u.obb.axes, u.obb.extents)) continue;
+            mUniqueVisible.emplace(u.type, i);
         }
     }
 }
