@@ -453,11 +453,11 @@ inline void DrawCallManager::draw(const gpu::Pipeline& pipeline, const UniqueDat
     bool hasEBO = buffer->ebo().isValid();
 
     pipeline.bindVertexArray(buffer->vao());
-    if (useInstancing) {
+    if (useInstancing) [[unlikely]] {
         buffer->bindInstances(*shared.instances);
     }
 
-    if (hasEBO) {
+    if (hasEBO) [[likely]] {
         useInstancing ? 
             pipeline.drawElementsInstanced(primitive, GL_UNSIGNED_INT, indexCount, shared.instanceCount) :
             pipeline.drawElements(primitive, GL_UNSIGNED_INT, indexCount);
@@ -467,7 +467,7 @@ inline void DrawCallManager::draw(const gpu::Pipeline& pipeline, const UniqueDat
             pipeline.draw(primitive, vertexCount);
     }
 
-    if (useInstancing) {
+    if (useInstancing) [[unlikely]] {
         buffer->unbindInstances();
     }
 }
