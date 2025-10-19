@@ -141,7 +141,7 @@ inline float ViewFrustum::getDistanceSquaredTo(const NX_Vec3& point) const
 
 inline float ViewFrustum::getDistanceSquaredToCenterPoint(const NX_BoundingBox& box, const NX_Transform& transform) const
 {
-    return NX_Vec3DistanceSq(mData.position, (box.min + box.max) * transform);
+    return NX_Vec3DistanceSq(mData.position, (box.min + box.max) * 0.5f * transform);
 }
 
 inline float ViewFrustum::getDistanceSquaredToFarthestPoint(const NX_BoundingBox& box, const NX_Transform& transform) const
