@@ -33,7 +33,8 @@ struct Float4 {
     Float4();
     Float4(float v);
     Float4(float x, float y, float z, float w);
-    Float4(int maskBits);
+
+    static Float4 fromBits(int maskBits);
 
     void get(float out[4]) const;
 };
@@ -72,18 +73,20 @@ inline Float4::Float4(float x, float y, float z, float w)
 #endif
 }
 
-inline Float4::Float4(int maskBits)
+inline Float4 Float4::fromBits(int maskBits)
 {
+    Float4 r;
 #if defined(NX_HAS_SSE)
-    v = _mm_castsi128_ps(_mm_set1_epi32(maskBits));
+    r.v = _mm_castsi128_ps(_mm_set1_epi32(maskBits));
 #elif defined(NX_HAS_NEON)
-    v = vreinterpretq_f32_u32(vdupq_n_u32(static_cast<uint32_t>(maskBits)));
+    r.v = vreinterpretq_f32_u32(vdupq_n_u32(static_cast<uint32_t>(maskBits)));
 #else
     uint32_t m = static_cast<uint32_t>(maskBits);
     for (int i = 0; i < 4; ++i) {
-        reinterpret_cast<uint32_t&>(v[i]) = m;
+        reinterpret_cast<uint32_t&>(r.v[i]) = m;
     }
 #endif
+    return r;
 }
 
 inline void Float4::get(float out[4]) const
@@ -224,8 +227,12 @@ inline Float4 operator&(const Float4& a, const Float4& b)
 #else
     float ta[4], tb[4];
     a.get(ta); b.get(tb);
-    for (int i = 0; i < 4; ++i)
-        ((uint32_t*)ta)[i] = ((uint32_t*)ta)[i] & ((uint32_t*)tb)[i];
+    for (int i = 0; i < 4; ++i) {
+        uint32_t ua = std::bit_cast<uint32_t>(ta[i]);
+        uint32_t ub = std::bit_cast<uint32_t>(tb[i]);
+        uint32_t ur = ua & ub;
+        ta[i] = std::bit_cast<float>(ur);
+    }
     r = Float4(ta[0], ta[1], ta[2], ta[3]);
 #endif
     return r;
@@ -241,8 +248,12 @@ inline Float4 operator|(const Float4& a, const Float4& b)
 #else
     float ta[4], tb[4];
     a.get(ta); b.get(tb);
-    for (int i = 0; i < 4; ++i)
-        ((uint32_t*)ta)[i] = ((uint32_t*)ta)[i] | ((uint32_t*)tb)[i];
+    for (int i = 0; i < 4; ++i) {
+        uint32_t ua = std::bit_cast<uint32_t>(ta[i]);
+        uint32_t ub = std::bit_cast<uint32_t>(tb[i]);
+        uint32_t ur = ua | ub;
+        ta[i] = std::bit_cast<float>(ur);
+    }
     r = Float4(ta[0], ta[1], ta[2], ta[3]);
 #endif
     return r;
@@ -258,8 +269,12 @@ inline Float4 operator^(const Float4& a, const Float4& b)
 #else
     float ta[4], tb[4];
     a.get(ta); b.get(tb);
-    for (int i = 0; i < 4; ++i)
-        ((uint32_t*)ta)[i] = ((uint32_t*)ta)[i] ^ ((uint32_t*)tb)[i];
+    for (int i = 0; i < 4; ++i) {
+        uint32_t ua = std::bit_cast<uint32_t>(ta[i]);
+        uint32_t ub = std::bit_cast<uint32_t>(tb[i]);
+        uint32_t ur = ua ^ ub;
+        ta[i] = std::bit_cast<float>(ur);
+    }
     r = Float4(ta[0], ta[1], ta[2], ta[3]);
 #endif
     return r;
@@ -276,8 +291,11 @@ inline Float4 operator~(const Float4& a)
 #else
     float ta[4];
     a.get(ta);
-    for (int i = 0; i < 4; ++i)
-        ((uint32_t*)ta)[i] = ~((uint32_t*)ta)[i];
+    for (int i = 0; i < 4; ++i) {
+        uint32_t ua = std::bit_cast<uint32_t>(ta[i]);
+        ua = ~ua;
+        ta[i] = std::bit_cast<float>(ua);
+    }
     r = Float4(ta[0], ta[1], ta[2], ta[3]);
 #endif
     return r;
@@ -370,6 +388,7 @@ inline Float4 operator/(const Float4& a, const Float4& b)
     // NEON does not have a direct division before ARMv8, we approximate
     float32x4_t recip = vrecpeq_f32(b.v);
     recip = vmulq_f32(vrecpsq_f32(b.v, recip), recip); // Newton-Raphson
+    recip = vmulq_f32(vrecpsq_f32(b.v, recip), recip); // 2nd iteration
     r.v = vmulq_f32(a.v, recip);
 #else
     for (int i = 0; i < 4; ++i) {
@@ -408,13 +427,13 @@ inline int movemask(const Float4& a)
 #if defined(NX_HAS_SSE)
     return _mm_movemask_ps(a.v);
 #elif defined(NX_HAS_NEON)
-    float32_t tmp[4];
-    vst1q_f32(tmp, a.v);
+    uint32x4_t mask_u32 = vreinterpretq_u32_f32(a.v);
+    uint32_t tmp[4];
+    vst1q_u32(tmp, mask_u32);
     int mask = 0;
     for (int i = 0; i < 4; ++i) {
-        mask |= (tmp[i] < 0.0f ? 1 : 0) << i;
+        mask |= ((tmp[i] >> 31) & 1) << i;
     }
-    return mask;
 #else
     float tmp[4];
     a.get(tmp);
@@ -734,7 +753,7 @@ inline Vector<N> operator/(const Vector<N>& a, const Vector<N>& b)
 {
     Vector<N> r;
     for (int i = 0; i < N; ++i) {
-        r.v[i] = a.v[i] / a.v[i];
+        r.v[i] = a.v[i] / b.v[i];
     }
     return r;
 }
@@ -834,7 +853,7 @@ inline Float4 length(const Vec2& a)
 
 inline Vec2 normalize(const Vec2& a)
 {
-    Float4 invLen = rcp(length(a));
+    Float4 invLen = rsqrt(lengthSq(a));
 
     Vec2 r;
     r.v[0] = a.v[0] * invLen;
@@ -931,7 +950,7 @@ inline Float4 length(const Vec3& a)
 
 inline Vec3 normalize(const Vec3& a)
 {
-    Float4 invLen = rcp(length(a));
+    Float4 invLen = rsqrt(lengthSq(a));
 
     Vec3 r;
     r.v[0] = a.v[0] * invLen;
@@ -1065,7 +1084,7 @@ inline Float4 length(const Vec4& a)
 
 inline Vec4 normalize(const Vec4& a)
 {
-    Float4 invLen = rcp(length(a));
+    Float4 invLen = rsqrt(lengthSq(a));
 
     Vec4 r;
     r.v[0] = a.v[0] * invLen;
