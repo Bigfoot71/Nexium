@@ -13,22 +13,27 @@
 
 NX_Quat NX_QuatFromEuler(NX_Vec3 v)
 {
-    v.x *= 0.5f;
-    v.y *= 0.5f;
-    v.z *= 0.5f;
+    float hx = v.x * 0.5f;
+    float hy = v.y * 0.5f;
+    float hz = v.z * 0.5f;
 
-    float cp = cosf(v.x); // Pitch (X)
-    float sp = sinf(v.x);
-    float cy = cosf(v.y); // Yaw (Y)
-    float sy = sinf(v.y);
-    float cr = cosf(v.z); // Roll (Z)
-    float sr = sinf(v.z);
+    float cx = cosf(hx);
+    float sx = sinf(hx);
+    float cy = cosf(hy);
+    float sy = sinf(hy);
+    float cz = cosf(hz);
+    float sz = sinf(hz);
+
+    float cycp = cy * cx;
+    float sysp = sy * sx;
+    float cysp = cy * sx;
+    float sycp = sy * cx;
 
     NX_Quat q;
-    q.w = cy * cp * cr + sy * sp * sr;
-    q.x = cy * sp * cr + sy * cp * sr;
-    q.y = sy * cp * cr - cy * sp * sr;
-    q.z = cy * cp * sr - sy * sp * cr;
+    q.w = cycp * cz + sysp * sz;
+    q.x = cysp * cz + sycp * sz;
+    q.y = sycp * cz - cysp * sz;
+    q.z = cycp * sz - sysp * cz;
 
     float lenSq = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
     if (lenSq < 1e-6f) {
@@ -47,11 +52,28 @@ NX_Quat NX_QuatFromEuler(NX_Vec3 v)
 
 NX_Vec3 NX_QuatToEuler(NX_Quat q)
 {
-    NX_Vec3 angles;
-    angles.x = NX_QuatPitch(q);
-    angles.y = NX_QuatYaw(q);
-    angles.z = NX_QuatRoll(q);
-    return angles;
+    float qxx = q.x * q.x;
+    float qyy = q.y * q.y;
+    float qzz = q.z * q.z;
+
+    float sinp = 2.0f * (q.w * q.x - q.y * q.z);
+    float pitch;
+    if (fabsf(sinp) >= 1.0f) {
+        pitch = copysignf(NX_PI * 0.5f, sinp);
+    }
+    else {
+        pitch = asinf(sinp);
+    }
+
+    float sinYcosP = 2.0f * (q.w * q.y + q.x * q.z);
+    float cosYcosP = 1.0f - 2.0f * (qxx + qyy);
+    float yaw = atan2f(sinYcosP, cosYcosP);
+
+    float sinRcosP = 2.0f * (q.w * q.z + q.x * q.y);
+    float cosRcosP = 1.0f - 2.0f * (qxx + qzz);
+    float roll = atan2f(sinRcosP, cosRcosP);
+
+    return NX_VEC3(pitch, yaw, roll);
 }
 
 NX_Quat NX_QuatFromMat4(const NX_Mat4* m)
@@ -60,33 +82,37 @@ NX_Quat NX_QuatFromMat4(const NX_Mat4* m)
     float trace = m->m00 + m->m11 + m->m22;
 
     if (trace > 0.0f) {
-        float s = 0.5f / sqrtf(trace + 1.0f);
-        q.w = 0.25f / s;
-        q.x = (m->m21 - m->m12) * s;
-        q.y = (m->m02 - m->m20) * s;
-        q.z = (m->m10 - m->m01) * s;
+        float s = sqrtf(trace + 1.0f);
+        float invS = 0.5f / s;
+        q.w = s * 0.5f;
+        q.x = (m->m21 - m->m12) * invS;
+        q.y = (m->m02 - m->m20) * invS;
+        q.z = (m->m10 - m->m01) * invS;
     }
     else {
         if (m->m00 > m->m11 && m->m00 > m->m22) {
-            float s = 2.0f * sqrtf(1.0f + m->m00 - m->m11 - m->m22);
-            q.w = (m->m21 - m->m12) / s;
-            q.x = 0.25f * s;
-            q.y = (m->m01 + m->m10) / s;
-            q.z = (m->m02 + m->m20) / s;
+            float s = sqrtf(1.0f + m->m00 - m->m11 - m->m22);
+            float invS = 0.5f / s;
+            q.w = (m->m21 - m->m12) * invS;
+            q.x = s * 0.5f;
+            q.y = (m->m01 + m->m10) * invS;
+            q.z = (m->m02 + m->m20) * invS;
         }
         else if (m->m11 > m->m22) {
-            float s = 2.0f * sqrtf(1.0f + m->m11 - m->m00 - m->m22);
-            q.w = (m->m02 - m->m20) / s;
-            q.x = (m->m01 + m->m10) / s;
-            q.y = 0.25f * s;
-            q.z = (m->m12 + m->m21) / s;
+            float s = sqrtf(1.0f + m->m11 - m->m00 - m->m22);
+            float invS = 0.5f / s;
+            q.w = (m->m02 - m->m20) * invS;
+            q.x = (m->m01 + m->m10) * invS;
+            q.y = s * 0.5f;
+            q.z = (m->m12 + m->m21) * invS;
         }
         else {
-            float s = 2.0f * sqrtf(1.0f + m->m22 - m->m00 - m->m11);
-            q.w = (m->m10 - m->m01) / s;
-            q.x = (m->m02 + m->m20) / s;
-            q.y = (m->m12 + m->m21) / s;
-            q.z = 0.25f * s;
+            float s = sqrtf(1.0f + m->m22 - m->m00 - m->m11);
+            float invS = 0.5f / s;
+            q.w = (m->m10 - m->m01) * invS;
+            q.x = (m->m02 + m->m20) * invS;
+            q.y = (m->m12 + m->m21) * invS;
+            q.z = s * 0.5f;
         }
     }
 
@@ -124,7 +150,7 @@ NX_Mat4 NX_QuatToMat4(NX_Quat q)
 
 NX_Quat NX_QuatLookTo(NX_Vec3 direction, NX_Vec3 up)
 {
-    float fx = -direction.x, fy = -direction.y, fz = -direction.z;
+    float fx = direction.x, fy = direction.y, fz = direction.z;
     float flenSq = fx * fx + fy * fy + fz * fz;
 
     if (flenSq > 1e-12f) {
@@ -134,9 +160,9 @@ NX_Quat NX_QuatLookTo(NX_Vec3 direction, NX_Vec3 up)
         fz *= invFlen;
     }
 
-    float rx = up.y * fz - up.z * fy;
-    float ry = up.z * fx - up.x * fz;
-    float rz = up.x * fy - up.y * fx;
+    float rx = fy * up.z - fz * up.y;
+    float ry = fz * up.x - fx * up.z;
+    float rz = fx * up.y - fy * up.x;
 
     float rlenSq = rx * rx + ry * ry + rz * rz;
     if (rlenSq > 1e-12f) {
@@ -149,40 +175,46 @@ NX_Quat NX_QuatLookTo(NX_Vec3 direction, NX_Vec3 up)
         rx = 1.0f; ry = 0.0f; rz = 0.0f;
     }
 
-    float ux = fy * rz - fz * ry;
-    float uy = fz * rx - fx * rz;
-    float uz = fx * ry - fy * rx;
+    float ux = fz * ry - fy * rz;
+    float uy = fx * rz - fz * rx;
+    float uz = fy * rx - fx * ry;
+
+    fx = -fx; fy = -fy; fz = -fz;
 
     float trace = rx + uy + fz;
     NX_Quat q;
 
     if (trace > 0.0f) {
-        float s = sqrtf(trace + 1.0f) * 2.0f;
-        q.w = 0.25f * s;
-        q.x = (uz - fy) / s;
-        q.y = (fx - rz) / s;
-        q.z = (ry - ux) / s;
+        float s = sqrtf(trace + 1.0f);
+        float invS = 0.5f / s;
+        q.w = s * 0.5f;
+        q.x = (uz - fy) * invS;
+        q.y = (fx - rz) * invS;
+        q.z = (ry - ux) * invS;
     }
     else if (rx > uy && rx > fz) {
-        float s = sqrtf(1.0f + rx - uy - fz) * 2.0f;
-        q.w = (uz - fy) / s;
-        q.x = 0.25f * s;
-        q.y = (ux + ry) / s;
-        q.z = (fx + rz) / s;
+        float s = sqrtf(1.0f + rx - uy - fz);
+        float invS = 0.5f / s;
+        q.w = (uz - fy) * invS;
+        q.x = s * 0.5f;
+        q.y = (ux + ry) * invS;
+        q.z = (fx + rz) * invS;
     }
     else if (uy > fz) {
-        float s = sqrtf(1.0f + uy - rx - fz) * 2.0f;
-        q.w = (fx - rz) / s;
-        q.x = (ux + ry) / s;
-        q.y = 0.25f * s;
-        q.z = (fy + uz) / s;
+        float s = sqrtf(1.0f + uy - rx - fz);
+        float invS = 0.5f / s;
+        q.w = (fx - rz) * invS;
+        q.x = (ux + ry) * invS;
+        q.y = s * 0.5f;
+        q.z = (fy + uz) * invS;
     }
     else {
-        float s = sqrtf(1.0f + fz - rx - uy) * 2.0f;
-        q.w = (ry - ux) / s;
-        q.x = (fx + rz) / s;
-        q.y = (fy + uz) / s;
-        q.z = 0.25f * s;
+        float s = sqrtf(1.0f + fz - rx - uy);
+        float invS = 0.5f / s;
+        q.w = (ry - ux) * invS;
+        q.x = (fx + rz) * invS;
+        q.y = (fy + uz) * invS;
+        q.z = s * 0.5f;
     }
 
     return q;
@@ -591,21 +623,25 @@ NX_Mat3 NX_Mat3Sub(const NX_Mat3* left, const NX_Mat3* right)
     return result;
 }
 
-NX_Mat3 NX_Mat3Mul(const NX_Mat3* left, const NX_Mat3* right)
+NX_Mat3 NX_Mat3Mul(const NX_Mat3* NX_RESTRICT left, const NX_Mat3* NX_RESTRICT right)
 {
     NX_Mat3 result;
 
-    result.m00 = left->m00 * right->m00 + left->m01 * right->m10 + left->m02 * right->m20;
-    result.m01 = left->m00 * right->m01 + left->m01 * right->m11 + left->m02 * right->m21;
-    result.m02 = left->m00 * right->m02 + left->m01 * right->m12 + left->m02 * right->m22;
+    const float* NX_RESTRICT A = left->a;
+    const float* NX_RESTRICT B = right->a;
+    float* NX_RESTRICT R = result.a;
 
-    result.m10 = left->m10 * right->m00 + left->m11 * right->m10 + left->m12 * right->m20;
-    result.m11 = left->m10 * right->m01 + left->m11 * right->m11 + left->m12 * right->m21;
-    result.m12 = left->m10 * right->m02 + left->m11 * right->m12 + left->m12 * right->m22;
+    R[0] = fmaf(A[0], B[0], fmaf(A[1], B[3], A[2] * B[6]));
+    R[1] = fmaf(A[0], B[1], fmaf(A[1], B[4], A[2] * B[7]));
+    R[2] = fmaf(A[0], B[2], fmaf(A[1], B[5], A[2] * B[8]));
 
-    result.m20 = left->m20 * right->m00 + left->m21 * right->m10 + left->m22 * right->m20;
-    result.m21 = left->m20 * right->m01 + left->m21 * right->m11 + left->m22 * right->m21;
-    result.m22 = left->m20 * right->m02 + left->m21 * right->m12 + left->m22 * right->m22;
+    R[3] = fmaf(A[3], B[0], fmaf(A[4], B[3], A[5] * B[6]));
+    R[4] = fmaf(A[3], B[1], fmaf(A[4], B[4], A[5] * B[7]));
+    R[5] = fmaf(A[3], B[2], fmaf(A[4], B[5], A[5] * B[8]));
+
+    R[6] = fmaf(A[6], B[0], fmaf(A[7], B[3], A[8] * B[6]));
+    R[7] = fmaf(A[6], B[1], fmaf(A[7], B[4], A[8] * B[7]));
+    R[8] = fmaf(A[6], B[2], fmaf(A[7], B[5], A[8] * B[8]));
 
     return result;
 }
@@ -1264,17 +1300,25 @@ NX_Mat4 NX_Mat4Mul(const NX_Mat4* NX_RESTRICT left, const NX_Mat4* NX_RESTRICT r
 
 #else
 
-    for (int i = 0; i < 4; i++) {
-        const float ai0 = A[i * 4 + 0];
-        const float ai1 = A[i * 4 + 1];
-        const float ai2 = A[i * 4 + 2];
-        const float ai3 = A[i * 4 + 3];
+    R[0]  = fmaf(A[0], B[0],  fmaf(A[1], B[4],  fmaf(A[2], B[8],  A[3] * B[12])));
+    R[1]  = fmaf(A[0], B[1],  fmaf(A[1], B[5],  fmaf(A[2], B[9],  A[3] * B[13])));
+    R[2]  = fmaf(A[0], B[2],  fmaf(A[1], B[6],  fmaf(A[2], B[10], A[3] * B[14])));
+    R[3]  = fmaf(A[0], B[3],  fmaf(A[1], B[7],  fmaf(A[2], B[11], A[3] * B[15])));
 
-        R[i * 4 + 0] = ai0 * B[0]  + ai1 * B[4]  + ai2 * B[8]  + ai3 * B[12];
-        R[i * 4 + 1] = ai0 * B[1]  + ai1 * B[5]  + ai2 * B[9]  + ai3 * B[13];
-        R[i * 4 + 2] = ai0 * B[2]  + ai1 * B[6]  + ai2 * B[10] + ai3 * B[14];
-        R[i * 4 + 3] = ai0 * B[3]  + ai1 * B[7]  + ai2 * B[11] + ai3 * B[15];
-    }
+    R[4]  = fmaf(A[4], B[0],  fmaf(A[5], B[4],  fmaf(A[6], B[8],  A[7] * B[12])));
+    R[5]  = fmaf(A[4], B[1],  fmaf(A[5], B[5],  fmaf(A[6], B[9],  A[7] * B[13])));
+    R[6]  = fmaf(A[4], B[2],  fmaf(A[5], B[6],  fmaf(A[6], B[10], A[7] * B[14])));
+    R[7]  = fmaf(A[4], B[3],  fmaf(A[5], B[7],  fmaf(A[6], B[11], A[7] * B[15])));
+
+    R[8]  = fmaf(A[8], B[0],  fmaf(A[9], B[4],  fmaf(A[10], B[8],  A[11] * B[12])));
+    R[9]  = fmaf(A[8], B[1],  fmaf(A[9], B[5],  fmaf(A[10], B[9],  A[11] * B[13])));
+    R[10] = fmaf(A[8], B[2],  fmaf(A[9], B[6],  fmaf(A[10], B[10], A[11] * B[14])));
+    R[11] = fmaf(A[8], B[3],  fmaf(A[9], B[7],  fmaf(A[10], B[11], A[11] * B[15])));
+
+    R[12] = fmaf(A[12], B[0], fmaf(A[13], B[4], fmaf(A[14], B[8],  A[15] * B[12])));
+    R[13] = fmaf(A[12], B[1], fmaf(A[13], B[5], fmaf(A[14], B[9],  A[15] * B[13])));
+    R[14] = fmaf(A[12], B[2], fmaf(A[13], B[6], fmaf(A[14], B[10], A[15] * B[14])));
+    R[15] = fmaf(A[12], B[3], fmaf(A[13], B[7], fmaf(A[14], B[11], A[15] * B[15])));
 
 #endif
 
@@ -1440,17 +1484,25 @@ void NX_Mat4MulBatch(NX_Mat4* NX_RESTRICT results,
         const float* NX_RESTRICT B = right[i].a;
         float* NX_RESTRICT R = results[i].a;
 
-        for (int row = 0; row < 4; row++) {
-            const float ai0 = A[row * 4 + 0];
-            const float ai1 = A[row * 4 + 1];
-            const float ai2 = A[row * 4 + 2];
-            const float ai3 = A[row * 4 + 3];
+        R[0]  = fmaf(A[0], B[0],  fmaf(A[1], B[4],  fmaf(A[2], B[8],  A[3] * B[12])));
+        R[1]  = fmaf(A[0], B[1],  fmaf(A[1], B[5],  fmaf(A[2], B[9],  A[3] * B[13])));
+        R[2]  = fmaf(A[0], B[2],  fmaf(A[1], B[6],  fmaf(A[2], B[10], A[3] * B[14])));
+        R[3]  = fmaf(A[0], B[3],  fmaf(A[1], B[7],  fmaf(A[2], B[11], A[3] * B[15])));
 
-            R[row * 4 + 0] = ai0 * B[0]  + ai1 * B[4]  + ai2 * B[8]  + ai3 * B[12];
-            R[row * 4 + 1] = ai0 * B[1]  + ai1 * B[5]  + ai2 * B[9]  + ai3 * B[13];
-            R[row * 4 + 2] = ai0 * B[2]  + ai1 * B[6]  + ai2 * B[10] + ai3 * B[14];
-            R[row * 4 + 3] = ai0 * B[3]  + ai1 * B[7]  + ai2 * B[11] + ai3 * B[15];
-        }
+        R[4]  = fmaf(A[4], B[0],  fmaf(A[5], B[4],  fmaf(A[6], B[8],  A[7] * B[12])));
+        R[5]  = fmaf(A[4], B[1],  fmaf(A[5], B[5],  fmaf(A[6], B[9],  A[7] * B[13])));
+        R[6]  = fmaf(A[4], B[2],  fmaf(A[5], B[6],  fmaf(A[6], B[10], A[7] * B[14])));
+        R[7]  = fmaf(A[4], B[3],  fmaf(A[5], B[7],  fmaf(A[6], B[11], A[7] * B[15])));
+
+        R[8]  = fmaf(A[8], B[0],  fmaf(A[9], B[4],  fmaf(A[10], B[8],  A[11] * B[12])));
+        R[9]  = fmaf(A[8], B[1],  fmaf(A[9], B[5],  fmaf(A[10], B[9],  A[11] * B[13])));
+        R[10] = fmaf(A[8], B[2],  fmaf(A[9], B[6],  fmaf(A[10], B[10], A[11] * B[14])));
+        R[11] = fmaf(A[8], B[3],  fmaf(A[9], B[7],  fmaf(A[10], B[11], A[11] * B[15])));
+
+        R[12] = fmaf(A[12], B[0], fmaf(A[13], B[4], fmaf(A[14], B[8],  A[15] * B[12])));
+        R[13] = fmaf(A[12], B[1], fmaf(A[13], B[5], fmaf(A[14], B[9],  A[15] * B[13])));
+        R[14] = fmaf(A[12], B[2], fmaf(A[13], B[6], fmaf(A[14], B[10], A[15] * B[14])));
+        R[15] = fmaf(A[12], B[3], fmaf(A[13], B[7], fmaf(A[14], B[11], A[15] * B[15])));
     }
 
 #endif

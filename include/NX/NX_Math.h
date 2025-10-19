@@ -3011,8 +3011,11 @@ static inline float NX_QuatPitch(NX_Quat q)
  */
 static inline float NX_QuatYaw(NX_Quat q)
 {
+    float qxx = q.x * q.x;
+    float qyy = q.y * q.y;
+    
     float sinYcosP = 2.0f * (q.w * q.y + q.x * q.z);
-    float cosYcosP = 1.0f - 2.0f * (q.x * q.x + q.y * q.y);
+    float cosYcosP = 1.0f - 2.0f * (qxx + qyy);
     return atan2f(sinYcosP, cosYcosP);
 }
 
@@ -3021,8 +3024,11 @@ static inline float NX_QuatYaw(NX_Quat q)
  */
 static inline float NX_QuatRoll(NX_Quat q)
 {
+    float qxx = q.x * q.x;
+    float qzz = q.z * q.z;
+    
     float sinRcosP = 2.0f * (q.w * q.z + q.x * q.y);
-    float cosRcosP = 1.0f - 2.0f * (q.x * q.x + q.z * q.z);
+    float cosRcosP = 1.0f - 2.0f * (qxx + qzz);
     return atan2f(sinRcosP, cosRcosP);
 }
 
@@ -3273,7 +3279,7 @@ NXAPI NX_Mat3 NX_Mat3Sub(const NX_Mat3* left, const NX_Mat3* right);
 /**
  * @brief Multiply two 3x3 matrices
  */
-NXAPI NX_Mat3 NX_Mat3Mul(const NX_Mat3* left, const NX_Mat3* right);
+NXAPI NX_Mat3 NX_Mat3Mul(const NX_Mat3* NX_RESTRICT left, const NX_Mat3* NX_RESTRICT right);
 
 /** @} */ // Mat3
 
