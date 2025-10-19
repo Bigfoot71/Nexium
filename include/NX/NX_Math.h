@@ -698,12 +698,12 @@ static inline float NX_ExpDecay(float initial, float decayRate, float time)
 /**
  * @brief Move current value toward target by maxDelta
  */
-static inline float NX_MoveToward(float current, float target, float maxDelta)
+static inline float NX_MoveToward(float from, float to, float maxDelta)
 {
-    float delta = target - current;
+    float delta = to - from;
     float distance = fabsf(delta);
-    if (distance <= maxDelta) return target;
-    else return current + (delta / distance) * maxDelta;
+    if (distance <= maxDelta) return to;
+    else return from + (delta / distance) * maxDelta;
 }
 
 /**
@@ -1746,7 +1746,7 @@ static inline NX_Vec2 NX_Vec2Direction(NX_Vec2 v0, NX_Vec2 v1)
 }
 
 /**
- * @brief Linear interpolation between vectors
+ * @brief Linear interpolation between two vectors
  */
 static inline NX_Vec2 NX_Vec2Lerp(NX_Vec2 v0, NX_Vec2 v1, float t)
 {
@@ -1761,7 +1761,7 @@ static inline NX_Vec2 NX_Vec2Lerp(NX_Vec2 v0, NX_Vec2 v1, float t)
 }
 
 /**
- * @brief Move vector toward target without exceeding max_delta
+ * @brief Move vector toward target without exceeding maxDelta
  */
 static inline NX_Vec2 NX_Vec2MoveToward(NX_Vec2 from, NX_Vec2 to, float max_delta)
 {
@@ -2121,7 +2121,7 @@ static inline NX_Vec3 NX_Vec3Lerp(NX_Vec3 v0, NX_Vec3 v1, float t)
 }
 
 /**
- * @brief Move vector toward target by max_delta
+ * @brief Move vector toward target without exceeding maxDelta
  */
 static inline NX_Vec3 NX_Vec3MoveToward(NX_Vec3 from, NX_Vec3 to, float max_delta)
 {
@@ -2493,55 +2493,55 @@ static inline float NX_Vec4LengthSq(NX_Vec4 v)
 }
 
 /**
- * @brief Compute dot product between v1 and v2.
+ * @brief Compute dot product between v0 and v1.
  */
-static inline float NX_Vec4Dot(NX_Vec4 v1, NX_Vec4 v2)
+static inline float NX_Vec4Dot(NX_Vec4 v0, NX_Vec4 v1)
 {
-    return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
+    return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z + v0.w * v1.w;
 }
 
 /**
- * @brief Linear interpolation between v1 and v2.
+ * @brief Linear interpolation between two vectors
  */
-static inline NX_Vec4 NX_Vec4Lerp(NX_Vec4 v1, NX_Vec4 v2, float t)
+static inline NX_Vec4 NX_Vec4Lerp(NX_Vec4 v0, NX_Vec4 v1, float t)
 {
     float w1 = 1.0f - t;
     float w2 = t;
 
     NX_Vec4 result;
-    result.x = fmaf(w2, v2.x, w1 * v1.x);
-    result.y = fmaf(w2, v2.y, w1 * v1.y);
-    result.z = fmaf(w2, v2.z, w1 * v1.z);
-    result.w = fmaf(w2, v2.w, w1 * v1.w);
+    result.x = fmaf(w1, v0.x, w2 * v1.x);
+    result.y = fmaf(w1, v0.y, w2 * v1.y);
+    result.z = fmaf(w1, v0.z, w2 * v1.z);
+    result.w = fmaf(w1, v0.w, w2 * v1.w);
 
     return result;
 }
 
 /**
- * @brief Move current vector toward target vector by at most maxDelta.
+ * @brief Move vector toward target without exceeding maxDelta
  */
-static inline NX_Vec4 NX_Vec4MoveToward(NX_Vec4 current, NX_Vec4 target, float maxDelta)
+static inline NX_Vec4 NX_Vec4MoveToward(NX_Vec4 from, NX_Vec4 to, float maxDelta)
 {
-    float dx = target.x - current.x;
-    float dy = target.y - current.y;
-    float dz = target.z - current.z;
-    float dw = target.w - current.w;
+    float dx = to.x - from.x;
+    float dy = to.y - from.y;
+    float dz = to.z - from.z;
+    float dw = to.w - from.w;
 
     float distSq = dx * dx + dy * dy + dz * dz + dw * dw;
     float maxDeltaSq = maxDelta * maxDelta;
 
     if (distSq <= maxDeltaSq) {
-        return target;
+        return to;
     }
 
     float dist = sqrtf(distSq);
     float ratio = maxDelta / dist;
 
     NX_Vec4 result;
-    result.x = fmaf(dx, ratio, current.x);
-    result.y = fmaf(dy, ratio, current.y);
-    result.z = fmaf(dz, ratio, current.z);
-    result.w = fmaf(dw, ratio, current.w);
+    result.x = fmaf(dx, ratio, from.x);
+    result.y = fmaf(dy, ratio, from.y);
+    result.z = fmaf(dz, ratio, from.z);
+    result.w = fmaf(dw, ratio, from.w);
 
     return result;
 }
@@ -2771,13 +2771,16 @@ static inline bool NX_ColorApprox(NX_Color c0, NX_Color c1, float epsilon)
  */
 static inline NX_Color NX_ColorLerp(NX_Color a, NX_Color b, float t)
 {
-    float invT = 1.0f - t;
-    return NX_COLOR(
-        a.r * invT + b.r * t,
-        a.g * invT + b.g * t,
-        a.b * invT + b.b * t,
-        a.a * invT + b.a * t
-    );
+    float w1 = 1.0f - t;
+    float w2 = t;
+
+    NX_Color result;
+    result.r = fmaf(w1, a.r, w2 * b.r);
+    result.g = fmaf(w1, a.g, w2 * b.g);
+    result.b = fmaf(w1, a.b, w2 * b.b);
+    result.a = fmaf(w1, a.a, w2 * b.a);
+
+    return result;
 }
 
 /**
@@ -2835,13 +2838,13 @@ static inline NX_Color NX_ColorFromHSV(float h, float s, float v, float a)
     float t = v * (1.0f - s * (1.0f - f));
 
     switch (sector % 6) {
-        case 0: return NX_COLOR(v, t, p, a);
-        case 1: return NX_COLOR(q, v, p, a);
-        case 2: return NX_COLOR(p, v, t, a);
-        case 3: return NX_COLOR(p, q, v, a);
-        case 4: return NX_COLOR(t, p, v, a);
-        case 5: return NX_COLOR(v, p, q, a);
-        default: break;
+    case 0: return NX_COLOR(v, t, p, a);
+    case 1: return NX_COLOR(q, v, p, a);
+    case 2: return NX_COLOR(p, v, t, a);
+    case 3: return NX_COLOR(p, q, v, a);
+    case 4: return NX_COLOR(t, p, v, a);
+    case 5: return NX_COLOR(v, p, q, a);
+    default: break;
     }
 
     return NX_COLOR(v, v, v, a);
