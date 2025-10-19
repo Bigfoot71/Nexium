@@ -197,7 +197,8 @@ inline bool Frustum::containsObb(const NX_Vec3& center, const std::array<NX_Vec3
 
 inline simd::Float4 Frustum::containsObb(const simd::Vec3& center, const std::array<simd::Vec3, 3>& axes, const simd::Vec3& extents) const
 {
-    simd::Float4 mask(-1.0f);
+    simd::Float4 mask = simd::Float4::fromBits(0xFFFFFFFF);
+    const simd::Float4 epsilon(-1e-6f);
 
     for (int i = 0; i < PLANE_COUNT; i++)
     {
@@ -210,10 +211,10 @@ inline simd::Float4 Frustum::containsObb(const simd::Vec3& center, const std::ar
             abs(dot(plane, axes[1])) * extents.y() +
             abs(dot(plane, axes[2])) * extents.z();
 
-        mask = mask & (centerDistance + projectedRadius >= simd::Float4(-1e-6f));
+        mask &= (centerDistance + projectedRadius >= epsilon);
 
         if (simd::movemask(mask) == 0) { // all lanes are false
-            break;
+            return mask;
         }
     }
 
