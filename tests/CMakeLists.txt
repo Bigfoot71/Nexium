@@ -13,6 +13,7 @@ endfunction()
 
 add_hyperion_test("nx-instanced-material-shader" "${NX_ROOT_PATH}/tests/instanced_material_shader.c")
 add_hyperion_test("nx-material-shader" "${NX_ROOT_PATH}/tests/material_shader.c")
+add_hyperion_test("nx-frustum-culling" "${NX_ROOT_PATH}/tests/frustum_culling.c")
 add_hyperion_test("nx-render-texture" "${NX_ROOT_PATH}/tests/render_texture.c")
 add_hyperion_test("nx-dynamic-mesh" "${NX_ROOT_PATH}/tests/dynamic_mesh.c")
 add_hyperion_test("nx-shading-mode" "${NX_ROOT_PATH}/tests/shading_mode.c")
