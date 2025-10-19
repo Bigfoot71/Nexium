@@ -144,6 +144,10 @@ private:
     /** Sorted draw call array */
     util::BucketArray<int, DrawType, DRAW_TYPE_COUNT> mUniqueVisible;
 
+    /** Sorting cache */
+    util::DynamicArray<float> mSortKeysCenterDist;
+    util::DynamicArray<float> mSortKeysFarthestDist;
+
     /** Draw call data stored in VRAM */
     gpu::Buffer mSharedBuffer, mUniqueBuffer;
     gpu::StagingBuffer<NX_Mat4, 1> mBoneBuffer;
@@ -366,46 +370,52 @@ inline void DrawCallManager::culling(const Frustum& frustum, NX_Layer frustumCul
 
 inline void DrawCallManager::sorting(const ViewFrustum& frustum, const Environment& environment)
 {
-    if (environment.hasFlags(NX_ENV_SORT_OPAQUE)) {
-        mUniqueVisible.sort(DRAW_OPAQUE,
-            [this, &frustum](int a, int b) {
-                const DrawUnique& aUnique = mUniqueData[a];
-                const DrawUnique& bUnique = mUniqueData[b];
-                const DrawShared& aShared = mSharedData[aUnique.sharedDataIndex];
-                const DrawShared& bShared = mSharedData[bUnique.sharedDataIndex];
-                float maxDistA = frustum.getDistanceSquaredToCenterPoint(aUnique.mesh.aabb(), aShared.transform);
-                float maxDistB = frustum.getDistanceSquaredToCenterPoint(bUnique.mesh.aabb(), bShared.transform);
-                return maxDistA < maxDistB;
-            }
-        );
+    const bool needsOpaque = environment.hasFlags(NX_ENV_SORT_OPAQUE);
+    const bool needsPrepass = environment.hasFlags(NX_ENV_SORT_PREPASS);
+    const bool needsTransparent = environment.hasFlags(NX_ENV_SORT_TRANSPARENT);
+    
+    if (needsOpaque || needsPrepass)
+    {
+        const size_t count = mUniqueData.size();
+        mSortKeysCenterDist.resize(count);
+        
+        for (size_t i = 0; i < count; ++i) {
+            const DrawUnique& unique = mUniqueData[i];
+            const DrawShared& shared = mSharedData[unique.sharedDataIndex];
+            mSortKeysCenterDist[i] = frustum.getDistanceSqToCenterPoint(
+                unique.mesh.aabb(), shared.transform
+            );
+        }
+        
+        if (needsOpaque) {
+            mUniqueVisible.sort(DRAW_OPAQUE, [this](int a, int b) {
+                return mSortKeysCenterDist[a] < mSortKeysCenterDist[b];
+            });
+        }
+        
+        if (needsPrepass) {
+            mUniqueVisible.sort(DRAW_PREPASS, [this](int a, int b) {
+                return mSortKeysCenterDist[a] < mSortKeysCenterDist[b];
+            });
+        }
     }
+    
+    if (needsTransparent)
+    {
+        const size_t count = mUniqueData.size();
+        mSortKeysFarthestDist.resize(count);
 
-    if (environment.hasFlags(NX_ENV_SORT_PREPASS)) {
-        mUniqueVisible.sort(DRAW_PREPASS,
-            [this, &frustum](int a, int b) {
-                const DrawUnique& aUnique = mUniqueData[a];
-                const DrawUnique& bUnique = mUniqueData[b];
-                const DrawShared& aShared = mSharedData[aUnique.sharedDataIndex];
-                const DrawShared& bShared = mSharedData[bUnique.sharedDataIndex];
-                float maxDistA = frustum.getDistanceSquaredToCenterPoint(aUnique.mesh.aabb(), aShared.transform);
-                float maxDistB = frustum.getDistanceSquaredToCenterPoint(bUnique.mesh.aabb(), bShared.transform);
-                return maxDistA < maxDistB;
-            }
-        );
-    }
+        for (size_t i = 0; i < count; ++i) {
+            const DrawUnique& unique = mUniqueData[i];
+            const DrawShared& shared = mSharedData[unique.sharedDataIndex];
+            mSortKeysFarthestDist[i] = frustum.getDistanceSqToFarthestPoint(
+                unique.mesh.aabb(), shared.transform
+            );
+        }
 
-    if (environment.hasFlags(NX_ENV_SORT_TRANSPARENT)) {
-        mUniqueVisible.sort(DRAW_TRANSPARENT,
-            [this, &frustum](int a, int b) {
-                const DrawUnique& aUnique = mUniqueData[a];
-                const DrawUnique& bUnique = mUniqueData[b];
-                const DrawShared& aShared = mSharedData[aUnique.sharedDataIndex];
-                const DrawShared& bShared = mSharedData[bUnique.sharedDataIndex];
-                float maxDistA = frustum.getDistanceSquaredToFarthestPoint(aUnique.mesh.aabb(), aShared.transform);
-                float maxDistB = frustum.getDistanceSquaredToFarthestPoint(bUnique.mesh.aabb(), bShared.transform);
-                return maxDistA > maxDistB;
-            }
-        );
+        mUniqueVisible.sort(DRAW_TRANSPARENT, [this](int a, int b) {
+            return mSortKeysFarthestDist[a] > mSortKeysFarthestDist[b];
+        });
     }
 }
 

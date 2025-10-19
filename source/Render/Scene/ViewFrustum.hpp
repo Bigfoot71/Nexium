@@ -30,9 +30,9 @@ public:
     NX_Layer cullMask() const;
 
     /** Distance to view */
-    float getDistanceSquaredTo(const NX_Vec3& point) const;
-    float getDistanceSquaredToCenterPoint(const NX_BoundingBox& box, const NX_Transform& transform) const;
-    float getDistanceSquaredToFarthestPoint(const NX_BoundingBox& box, const NX_Transform& transform) const;
+    float getDistanceSqTo(const NX_Vec3& point) const;
+    float getDistanceSqToCenterPoint(const NX_BoundingBox& box, const NX_Transform& transform) const;
+    float getDistanceSqToFarthestPoint(const NX_BoundingBox& box, const NX_Transform& transform) const;
 
     /** Matrices */
     const NX_Vec3& viewPosition() const;
@@ -134,34 +134,36 @@ inline NX_Layer ViewFrustum::cullMask() const
     return mData.cullMask;
 }
 
-inline float ViewFrustum::getDistanceSquaredTo(const NX_Vec3& point) const
+inline float ViewFrustum::getDistanceSqTo(const NX_Vec3& point) const
 {
     return NX_Vec3DistanceSq(mData.position, point);
 }
 
-inline float ViewFrustum::getDistanceSquaredToCenterPoint(const NX_BoundingBox& box, const NX_Transform& transform) const
+inline float ViewFrustum::getDistanceSqToCenterPoint(const NX_BoundingBox& box, const NX_Transform& transform) const
 {
-    return NX_Vec3DistanceSq(mData.position, (box.min + box.max) * 0.5f * transform);
+    NX_Vec3 local = (box.min + box.max) * 0.5f;
+    NX_Vec3 world = local * transform;
+
+    return NX_Vec3DistanceSq(mData.position, world);
 }
 
-inline float ViewFrustum::getDistanceSquaredToFarthestPoint(const NX_BoundingBox& box, const NX_Transform& transform) const
+inline float ViewFrustum::getDistanceSqToFarthestPoint(const NX_BoundingBox& box, const NX_Transform& transform) const
 {
-    float maxDistSq = 0.0f;
+    const NX_Vec3 corners[8] = {
+        NX_VEC3(box.min.x, box.min.y, box.min.z) * transform,
+        NX_VEC3(box.max.x, box.min.y, box.min.z) * transform,
+        NX_VEC3(box.min.x, box.max.y, box.min.z) * transform,
+        NX_VEC3(box.max.x, box.max.y, box.min.z) * transform,
+        NX_VEC3(box.min.x, box.min.y, box.max.z) * transform,
+        NX_VEC3(box.max.x, box.min.y, box.max.z) * transform,
+        NX_VEC3(box.min.x, box.max.y, box.max.z) * transform,
+        NX_VEC3(box.max.x, box.max.y, box.max.z) * transform
+    };
 
-    for (int x = 0; x <= 1; ++x)
-     for (int y = 0; y <= 1; ++y)
-      for (int z = 0; z <= 1; ++z)
-    {
-        NX_Vec3 corner = {
-            x ? box.max.x : box.min.x,
-            y ? box.max.y : box.min.y,
-            z ? box.max.z : box.min.z
-        };
+    float maxDistSq = NX_Vec3DistanceSq(mData.position, corners[0]);
 
-        float distSq = NX_Vec3DistanceSq(
-            mData.position, corner * transform
-        );
-
+    for (int i = 1; i < 8; ++i) {
+        float distSq = NX_Vec3DistanceSq(mData.position, corners[i]);
         if (distSq > maxDistSq) maxDistSq = distSq;
     }
 
