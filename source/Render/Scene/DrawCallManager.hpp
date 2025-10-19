@@ -21,6 +21,7 @@
 #include "./ViewFrustum.hpp"
 #include "./VariantMesh.hpp"
 #include "./Culling.hpp"
+#include "./Frustum.hpp"
 
 #include <NX/NX_Render.h>
 #include <NX/NX_Math.h>
@@ -270,36 +271,42 @@ inline void DrawCallManager::culling(const Frustum& frustum, NX_Layer frustumCul
 {
     mUniqueVisible.clear();
 
-    for (const SharedData& shared : mSharedData)
-    {
-        if (shared.instanceCount == 0) [[likely]]
-        {
-            if (frustum.containsSphere(shared.sphere.center, shared.sphere.radius))
-            {
-                int uniqueStart = shared.uniqueDataIndex;
-                int uniqueEnd = uniqueStart + shared.uniqueDataCount;
-
-                for (int i = uniqueStart; i < uniqueEnd; ++i) {
-                    const UniqueData& u = mUniqueData[i];
-                    if ((frustumCullMask & u.mesh.layerMask()) != 0) {
-                        if (frustum.containsObb(u.obb)) {
-                            mUniqueVisible.emplace(u.type, i);
-                        }
-                    }
-                }
+    const auto addWithoutTest = [this, frustumCullMask](int start, int end) -> void {
+        for (int i = start; i < end; ++i) {
+            const UniqueData& u = mUniqueData[i];
+            if ((frustumCullMask & u.mesh.layerMask()) != 0) {
+                mUniqueVisible.emplace(u.type, i);
             }
         }
-        else
-        {
-            int uniqueStart = shared.uniqueDataIndex;
-            int uniqueEnd = uniqueStart + shared.uniqueDataCount;
+    };
 
-            for (int i = uniqueStart; i < uniqueEnd; ++i) {
-                const UniqueData& u = mUniqueData[i];
-                if ((frustumCullMask & u.mesh.layerMask()) != 0) {
+    const auto addWithTest = [this, &frustum, frustumCullMask](int start, int end) -> void {
+        for (int i = start; i < end; ++i) {
+            const UniqueData& u = mUniqueData[i];
+            if ((frustumCullMask & u.mesh.layerMask()) != 0) {
+                if (frustum.containsObb(u.obb)) {
                     mUniqueVisible.emplace(u.type, i);
                 }
             }
+        }
+    };
+
+    for (const SharedData& shared : mSharedData)
+    {
+        if (shared.instanceCount > 0) [[unlikely]] {
+            addWithoutTest(shared.uniqueDataIndex, shared.uniqueDataIndex + shared.uniqueDataCount);
+            continue;
+        }
+
+        switch (frustum.classifySphere(shared.sphere)) {
+        case Frustum::Outside:
+            break;
+        case Frustum::Inside:
+            addWithoutTest(shared.uniqueDataIndex, shared.uniqueDataIndex + shared.uniqueDataCount);
+            break;
+        case Frustum::Intersect:
+            addWithTest(shared.uniqueDataIndex, shared.uniqueDataIndex + shared.uniqueDataCount);
+            break;
         }
     }
 }

@@ -28,18 +28,25 @@ public:
         PLANE_COUNT
     };
 
+    enum Containment : uint8_t {
+        Outside, Inside, Intersect
+    };
+
 public:
     Frustum() = default;
 
     /** Frustum update */
     void update(const NX_Mat4& viewProj);
 
-    /** Frustum culling */
+    /** Contains or not */
     bool containsPoint(const NX_Vec3& position) const;
     bool containsPoints(const NX_Vec3* positions, int count) const;
-    bool containsSphere(const NX_Vec3& position, float radius) const;
+    bool containsSphere(const BoundingSphere& sphere) const;
     bool containsAabb(const NX_BoundingBox& aabb) const;
     bool containsObb(const OrientedBoundingBox& obb) const;
+
+    /** Classification */
+    Containment classifySphere(const BoundingSphere& sphere) const;
 
 private:
     /** Helper functions */
@@ -116,10 +123,10 @@ inline bool Frustum::containsPoints(const NX_Vec3* positions, int count) const
     return false;
 }
 
-inline bool Frustum::containsSphere(const NX_Vec3& position, float radius) const
+inline bool Frustum::containsSphere(const BoundingSphere& sphere) const
 {
     for (int i = 0; i < PLANE_COUNT; i++) {
-        if (distanceToPlane(mPlanes[i], position) < -radius) {
+        if (distanceToPlane(mPlanes[i], sphere.center) < -sphere.radius) {
             return false;
         }
     }
@@ -168,6 +175,19 @@ inline bool Frustum::containsObb(const OrientedBoundingBox& obb) const
     }
 
     return true;
+}
+
+inline Frustum::Containment Frustum::classifySphere(const BoundingSphere& sphere) const
+{
+    bool fullyInside = true;
+
+    for (int i = 0; i < PLANE_COUNT; ++i) {
+        float d = distanceToPlane(mPlanes[i], sphere.center);
+        if (d < -sphere.radius) return Containment::Outside;
+        if (d < sphere.radius) fullyInside = false;
+    }
+
+    return fullyInside ? Containment::Inside : Containment::Intersect;
 }
 
 /* === Private Implementation === */

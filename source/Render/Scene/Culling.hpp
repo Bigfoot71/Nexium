@@ -7,6 +7,25 @@
 
 namespace scene {
 
+/* === Bounding Sphere === */
+
+struct BoundingSphere {
+    NX_Vec3 center;
+    float radius;
+
+    BoundingSphere(const NX_BoundingBox& aabb, const NX_Transform& transform);
+};
+
+inline BoundingSphere::BoundingSphere(const NX_BoundingBox& aabb, const NX_Transform& transform)
+{
+    NX_Vec3 localCenter = (aabb.min + aabb.max) * 0.5f;
+    NX_Vec3 rotatedCenter = localCenter * transform.rotation;
+    this->center = transform.translation + rotatedCenter;
+
+    NX_Vec3 halfSize = (aabb.max - aabb.min) * 0.5f;
+    this->radius = NX_Vec3Length(halfSize * transform.scale);
+}
+
 /* === Oriented Bounding Box === */
 
 struct OrientedBoundingBox {
@@ -27,25 +46,6 @@ inline OrientedBoundingBox::OrientedBoundingBox(const NX_BoundingBox& aabb, cons
     this->axes[2] = NX_Vec3Rotate(NX_VEC3(0, 0, transform.scale.z), transform.rotation);
     this->extents = (aabb.max - aabb.min) * 0.5f;
 
-}
-
-/* === Bounding Sphere === */
-
-struct BoundingSphere {
-    NX_Vec3 center;
-    float radius;
-
-    BoundingSphere(const NX_BoundingBox& aabb, const NX_Transform& transform);
-};
-
-inline BoundingSphere::BoundingSphere(const NX_BoundingBox& aabb, const NX_Transform& transform)
-{
-    NX_Vec3 localCenter = (aabb.min + aabb.max) * 0.5f;
-    NX_Vec3 rotatedCenter = localCenter * transform.rotation;
-    this->center = transform.translation + rotatedCenter;
-
-    NX_Vec3 halfSize = (aabb.max - aabb.min) * 0.5f;
-    this->radius = NX_Vec3Length(halfSize * transform.scale);
 }
 
 } // namespace scene
