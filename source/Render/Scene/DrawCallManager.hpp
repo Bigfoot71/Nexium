@@ -272,28 +272,34 @@ inline void DrawCallManager::culling(const Frustum& frustum, NX_Layer frustumCul
 
     for (const SharedData& shared : mSharedData)
     {
-        if (shared.instanceCount == 0) {
-            if (!frustum.containsSphere(shared.sphere.center, shared.sphere.radius)) {
-                continue;
+        if (shared.instanceCount == 0) [[likely]]
+        {
+            if (frustum.containsSphere(shared.sphere.center, shared.sphere.radius))
+            {
+                int uniqueStart = shared.uniqueDataIndex;
+                int uniqueEnd = uniqueStart + shared.uniqueDataCount;
+
+                for (int i = uniqueStart; i < uniqueEnd; ++i) {
+                    const UniqueData& u = mUniqueData[i];
+                    if ((frustumCullMask & u.mesh.layerMask()) != 0) {
+                        if (frustum.containsObb(u.obb)) {
+                            mUniqueVisible.emplace(u.type, i);
+                        }
+                    }
+                }
             }
         }
-
-        int uniqueStart = shared.uniqueDataIndex;
-        int uniqueEnd = uniqueStart + shared.uniqueDataCount;
-
-        for (int i = uniqueStart; i < uniqueEnd; ++i)
+        else
         {
-            const UniqueData& u = mUniqueData[i];
+            int uniqueStart = shared.uniqueDataIndex;
+            int uniqueEnd = uniqueStart + shared.uniqueDataCount;
 
-            if ((frustumCullMask & u.mesh.layerMask()) == 0) {
-                continue;
+            for (int i = uniqueStart; i < uniqueEnd; ++i) {
+                const UniqueData& u = mUniqueData[i];
+                if ((frustumCullMask & u.mesh.layerMask()) != 0) {
+                    mUniqueVisible.emplace(u.type, i);
+                }
             }
-
-            if (shared.instanceCount == 0 && !frustum.containsObb(u.obb)) {
-                continue;
-            }
-
-            mUniqueVisible.emplace(u.type, i);
         }
     }
 }
