@@ -3265,8 +3265,8 @@ NXAPI NX_Mat4 NX_Mat4Mul(const NX_Mat4* NX_RESTRICT left, const NX_Mat4* NX_REST
  * @brief Multiply two arrays of matrices
  */
 NXAPI void NX_Mat4MulBatch(NX_Mat4* NX_RESTRICT results,
-                           const NX_Mat4* NX_RESTRICT leftMatrices,
-                           const NX_Mat4* NX_RESTRICT rightMatrices,
+                           const NX_Mat4* NX_RESTRICT left,
+                           const NX_Mat4* NX_RESTRICT right,
                            size_t count);
 
 /** @} */ // Mat4

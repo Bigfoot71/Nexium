@@ -982,64 +982,6 @@ NX_Mat4 NX_Mat4Mul(const NX_Mat4* NX_RESTRICT left, const NX_Mat4* NX_RESTRICT r
         _mm_storeu_ps(&R[i * 4], row);
     }
 
-#elif defined(NX_HAS_AVX)
-
-    __m128 col0 = _mm_loadu_ps(&B[0]);
-    __m128 col1 = _mm_loadu_ps(&B[4]);
-    __m128 col2 = _mm_loadu_ps(&B[8]);
-    __m128 col3 = _mm_loadu_ps(&B[12]);
-
-    for (int i = 0; i < 4; i++) {
-        __m128 ai0 = _mm_broadcast_ss(&A[i * 4 + 0]);
-        __m128 ai1 = _mm_broadcast_ss(&A[i * 4 + 1]);
-        __m128 ai2 = _mm_broadcast_ss(&A[i * 4 + 2]);
-        __m128 ai3 = _mm_broadcast_ss(&A[i * 4 + 3]);
-
-        __m128 row = _mm_add_ps(
-            _mm_add_ps(_mm_mul_ps(ai0, col0), _mm_mul_ps(ai1, col1)),
-            _mm_add_ps(_mm_mul_ps(ai2, col2), _mm_mul_ps(ai3, col3))
-        );
-
-        _mm_storeu_ps(&R[i * 4], row);
-    }
-
-#elif defined(NX_HAS_SSE42)
-
-    __m128 col0 = _mm_loadu_ps(&B[0]);
-    __m128 col1 = _mm_loadu_ps(&B[4]);
-    __m128 col2 = _mm_loadu_ps(&B[8]);
-    __m128 col3 = _mm_loadu_ps(&B[12]);
-
-    for (int i = 0; i < 4; i++) {
-        __m128 ai0 = _mm_set1_ps(A[i * 4 + 0]);
-        __m128 ai1 = _mm_set1_ps(A[i * 4 + 1]);
-        __m128 ai2 = _mm_set1_ps(A[i * 4 + 2]);
-        __m128 ai3 = _mm_set1_ps(A[i * 4 + 3]);
-
-        __m128 row = _mm_add_ps(
-            _mm_add_ps(_mm_mul_ps(ai0, col0), _mm_mul_ps(ai1, col1)),
-            _mm_add_ps(_mm_mul_ps(ai2, col2), _mm_mul_ps(ai3, col3))
-        );
-
-        _mm_storeu_ps(&R[i * 4], row);
-    }
-
-#elif defined(NX_HAS_SSE41)
-
-    __m128 col0 = _mm_loadu_ps(&B[0]);
-    __m128 col1 = _mm_loadu_ps(&B[4]);
-    __m128 col2 = _mm_loadu_ps(&B[8]);
-    __m128 col3 = _mm_loadu_ps(&B[12]);
-
-    for (int i = 0; i < 4; i++) {
-        __m128 ai = _mm_loadu_ps(&A[i * 4]);
-
-        R[i * 4 + 0] = _mm_cvtss_f32(_mm_dp_ps(ai, col0, 0xF1));
-        R[i * 4 + 1] = _mm_cvtss_f32(_mm_dp_ps(ai, col1, 0xF1));
-        R[i * 4 + 2] = _mm_cvtss_f32(_mm_dp_ps(ai, col2, 0xF1));
-        R[i * 4 + 3] = _mm_cvtss_f32(_mm_dp_ps(ai, col3, 0xF1));
-    }
-
 #elif defined(NX_HAS_SSE)
 
     __m128 col0 = _mm_loadu_ps(&B[0]);
@@ -1048,16 +990,24 @@ NX_Mat4 NX_Mat4Mul(const NX_Mat4* NX_RESTRICT left, const NX_Mat4* NX_RESTRICT r
     __m128 col3 = _mm_loadu_ps(&B[12]);
 
     for (int i = 0; i < 4; i++) {
-        __m128 ai0 = _mm_set1_ps(A[i * 4 + 0]);
-        __m128 ai1 = _mm_set1_ps(A[i * 4 + 1]);
-        __m128 ai2 = _mm_set1_ps(A[i * 4 + 2]);
-        __m128 ai3 = _mm_set1_ps(A[i * 4 + 3]);
+        #if defined(NX_HAS_AVX)
+            __m128 ai0 = _mm_broadcast_ss(&A[i * 4 + 0]);
+            __m128 ai1 = _mm_broadcast_ss(&A[i * 4 + 1]);
+            __m128 ai2 = _mm_broadcast_ss(&A[i * 4 + 2]);
+            __m128 ai3 = _mm_broadcast_ss(&A[i * 4 + 3]);
+        #else
+            __m128 ai0 = _mm_set1_ps(A[i * 4 + 0]);
+            __m128 ai1 = _mm_set1_ps(A[i * 4 + 1]);
+            __m128 ai2 = _mm_set1_ps(A[i * 4 + 2]);
+            __m128 ai3 = _mm_set1_ps(A[i * 4 + 3]);
+        #endif
 
-        __m128 row = _mm_add_ps(
-            _mm_add_ps(_mm_mul_ps(ai0, col0), _mm_mul_ps(ai1, col1)),
-            _mm_add_ps(_mm_mul_ps(ai2, col2), _mm_mul_ps(ai3, col3))
-        );
-
+        __m128 t0 = _mm_mul_ps(ai0, col0);
+        __m128 t1 = _mm_mul_ps(ai1, col1);
+        __m128 t2 = _mm_mul_ps(ai2, col2);
+        __m128 t3 = _mm_mul_ps(ai3, col3);
+        
+        __m128 row = _mm_add_ps(_mm_add_ps(t0, t1), _mm_add_ps(t2, t3));
         _mm_storeu_ps(&R[i * 4], row);
     }
 
@@ -1075,9 +1025,9 @@ NX_Mat4 NX_Mat4Mul(const NX_Mat4* NX_RESTRICT left, const NX_Mat4* NX_RESTRICT r
         float32x4_t ai3 = vdupq_n_f32(A[i * 4 + 3]);
 
         float32x4_t row = vmulq_f32(ai0, col0);
-        row = vfmaq_f32(row, ai1, col1);  // FMA: row += ai1 * col1
-        row = vfmaq_f32(row, ai2, col2);  // FMA: row += ai2 * col2
-        row = vfmaq_f32(row, ai3, col3);  // FMA: row += ai3 * col3
+        row = vfmaq_f32(row, ai1, col1);
+        row = vfmaq_f32(row, ai2, col2);
+        row = vfmaq_f32(row, ai3, col3);
 
         vst1q_f32(&R[i * 4], row);
     }
@@ -1096,9 +1046,9 @@ NX_Mat4 NX_Mat4Mul(const NX_Mat4* NX_RESTRICT left, const NX_Mat4* NX_RESTRICT r
         float32x4_t ai3 = vdupq_n_f32(A[i * 4 + 3]);
 
         float32x4_t row = vmulq_f32(ai0, col0);
-        row = vmlaq_f32(row, ai1, col1);  // FMA: row += ai1 * col1
-        row = vmlaq_f32(row, ai2, col2);  // FMA: row += ai2 * col2
-        row = vmlaq_f32(row, ai3, col3);  // FMA: row += ai3 * col3
+        row = vmlaq_f32(row, ai1, col1);
+        row = vmlaq_f32(row, ai2, col2);
+        row = vmlaq_f32(row, ai3, col3);
 
         vst1q_f32(&R[i * 4], row);
     }
@@ -1111,10 +1061,10 @@ NX_Mat4 NX_Mat4Mul(const NX_Mat4* NX_RESTRICT left, const NX_Mat4* NX_RESTRICT r
         const float ai2 = A[i * 4 + 2];
         const float ai3 = A[i * 4 + 3];
 
-        result.a[i * 4 + 0] = ai0 * B[0]  + ai1 * B[4]  + ai2 * B[8]  + ai3 * B[12];
-        result.a[i * 4 + 1] = ai0 * B[1]  + ai1 * B[5]  + ai2 * B[9]  + ai3 * B[13];
-        result.a[i * 4 + 2] = ai0 * B[2]  + ai1 * B[6]  + ai2 * B[10] + ai3 * B[14];
-        result.a[i * 4 + 3] = ai0 * B[3]  + ai1 * B[7]  + ai2 * B[11] + ai3 * B[15];
+        R[i * 4 + 0] = ai0 * B[0]  + ai1 * B[4]  + ai2 * B[8]  + ai3 * B[12];
+        R[i * 4 + 1] = ai0 * B[1]  + ai1 * B[5]  + ai2 * B[9]  + ai3 * B[13];
+        R[i * 4 + 2] = ai0 * B[2]  + ai1 * B[6]  + ai2 * B[10] + ai3 * B[14];
+        R[i * 4 + 3] = ai0 * B[3]  + ai1 * B[7]  + ai2 * B[11] + ai3 * B[15];
     }
 
 #endif
@@ -1123,195 +1073,175 @@ NX_Mat4 NX_Mat4Mul(const NX_Mat4* NX_RESTRICT left, const NX_Mat4* NX_RESTRICT r
 }
 
 void NX_Mat4MulBatch(NX_Mat4* NX_RESTRICT results,
-                     const NX_Mat4* NX_RESTRICT leftMatrices,
-                     const NX_Mat4* NX_RESTRICT rightMatrices,
+                     const NX_Mat4* NX_RESTRICT left,
+                     const NX_Mat4* NX_RESTRICT right,
                      size_t count)
 {
+    if (count == 0) return;
+
 #if defined(NX_HAS_FMA_AVX)
 
-    size_t simdCount = count & ~1;
+    size_t i = 0;
 
-    for (size_t batch = 0; batch < simdCount; batch += 2) {
-        __m128 b0_col0 = _mm_loadu_ps(&rightMatrices[batch].a[0]);
-        __m128 b0_col1 = _mm_loadu_ps(&rightMatrices[batch].a[4]);
-        __m128 b0_col2 = _mm_loadu_ps(&rightMatrices[batch].a[8]);
-        __m128 b0_col3 = _mm_loadu_ps(&rightMatrices[batch].a[12]);
+    if (count > 0) {
+        _mm_prefetch((char*)&left[0], _MM_HINT_T0);
+        _mm_prefetch((char*)&right[0], _MM_HINT_T0);
+    }
 
-        __m128 b1_col0 = _mm_loadu_ps(&rightMatrices[batch + 1].a[0]);
-        __m128 b1_col1 = _mm_loadu_ps(&rightMatrices[batch + 1].a[4]);
-        __m128 b1_col2 = _mm_loadu_ps(&rightMatrices[batch + 1].a[8]);
-        __m128 b1_col3 = _mm_loadu_ps(&rightMatrices[batch + 1].a[12]);
+    for (; i < count; i++) {
+        const float* NX_RESTRICT A = left[i].a;
+        const float* NX_RESTRICT B = right[i].a;
+        float* NX_RESTRICT R = results[i].a;
 
-        for (int i = 0; i < 4; i++) {
-            __m128 a0_i0 = _mm_broadcast_ss(&leftMatrices[batch].a[i * 4 + 0]);
-            __m128 a0_i1 = _mm_broadcast_ss(&leftMatrices[batch].a[i * 4 + 1]);
-            __m128 a0_i2 = _mm_broadcast_ss(&leftMatrices[batch].a[i * 4 + 2]);
-            __m128 a0_i3 = _mm_broadcast_ss(&leftMatrices[batch].a[i * 4 + 3]);
-
-            __m128 row0 = _mm_mul_ps(a0_i0, b0_col0);
-            row0 = _mm_fmadd_ps(a0_i1, b0_col1, row0);
-            row0 = _mm_fmadd_ps(a0_i2, b0_col2, row0);
-            row0 = _mm_fmadd_ps(a0_i3, b0_col3, row0);
-            _mm_storeu_ps(&results[batch].a[i * 4], row0);
-
-            __m128 a1_i0 = _mm_broadcast_ss(&leftMatrices[batch + 1].a[i * 4 + 0]);
-            __m128 a1_i1 = _mm_broadcast_ss(&leftMatrices[batch + 1].a[i * 4 + 1]);
-            __m128 a1_i2 = _mm_broadcast_ss(&leftMatrices[batch + 1].a[i * 4 + 2]);
-            __m128 a1_i3 = _mm_broadcast_ss(&leftMatrices[batch + 1].a[i * 4 + 3]);
-
-            __m128 row1 = _mm_mul_ps(a1_i0, b1_col0);
-            row1 = _mm_fmadd_ps(a1_i1, b1_col1, row1);
-            row1 = _mm_fmadd_ps(a1_i2, b1_col2, row1);
-            row1 = _mm_fmadd_ps(a1_i3, b1_col3, row1);
-            _mm_storeu_ps(&results[batch + 1].a[i * 4], row1);
+        if (i + 1 < count) {
+            _mm_prefetch((char*)&left[i + 1], _MM_HINT_T0);
+            _mm_prefetch((char*)&right[i + 1], _MM_HINT_T0);
         }
-    }
-
-    for (size_t i = simdCount; i < count; i++) {
-        results[i] = NX_Mat4Mul(&leftMatrices[i], &rightMatrices[i]);
-    }
-
-#elif defined(NX_HAS_AVX)
-
-    for (size_t batch = 0; batch < count; batch++) {
-        const float* A = leftMatrices[batch].a;
-        const float* B = rightMatrices[batch].a;
-        float* R = results[batch].a;
 
         __m128 col0 = _mm_loadu_ps(&B[0]);
         __m128 col1 = _mm_loadu_ps(&B[4]);
         __m128 col2 = _mm_loadu_ps(&B[8]);
         __m128 col3 = _mm_loadu_ps(&B[12]);
 
-        for (int i = 0; i < 4; i++) {
-            __m128 ai0 = _mm_broadcast_ss(&A[i * 4 + 0]);
-            __m128 ai1 = _mm_broadcast_ss(&A[i * 4 + 1]);
-            __m128 ai2 = _mm_broadcast_ss(&A[i * 4 + 2]);
-            __m128 ai3 = _mm_broadcast_ss(&A[i * 4 + 3]);
+        for (int row = 0; row < 4; row++) {
+            __m128 ai0 = _mm_broadcast_ss(&A[row * 4 + 0]);
+            __m128 ai1 = _mm_broadcast_ss(&A[row * 4 + 1]);
+            __m128 ai2 = _mm_broadcast_ss(&A[row * 4 + 2]);
+            __m128 ai3 = _mm_broadcast_ss(&A[row * 4 + 3]);
 
-            __m128 row = _mm_add_ps(
-                _mm_add_ps(_mm_mul_ps(ai0, col0), _mm_mul_ps(ai1, col1)),
-                _mm_add_ps(_mm_mul_ps(ai2, col2), _mm_mul_ps(ai3, col3))
-            );
-            _mm_storeu_ps(&R[i * 4], row);
+            __m128 result = _mm_mul_ps(ai0, col0);
+            result = _mm_fmadd_ps(ai1, col1, result);
+            result = _mm_fmadd_ps(ai2, col2, result);
+            result = _mm_fmadd_ps(ai3, col3, result);
+
+            _mm_storeu_ps(&R[row * 4], result);
         }
     }
 
 #elif defined(NX_HAS_SSE)
 
-    for (size_t batch = 0; batch < count; batch++) {
-        const float* A = leftMatrices[batch].a;
-        const float* B = rightMatrices[batch].a;
-        float* R = results[batch].a;
+    for (size_t i = 0; i < count; i++) {
+        const float* NX_RESTRICT A = left[i].a;
+        const float* NX_RESTRICT B = right[i].a;
+        float* NX_RESTRICT R = results[i].a;
 
-        if (batch + 1 < count) {
-            _mm_prefetch((const char*)&leftMatrices[batch + 1], _MM_HINT_T0);
-            _mm_prefetch((const char*)&rightMatrices[batch + 1], _MM_HINT_T0);
+        #if defined(NX_HAS_AVX)
+        if (i + 1 < count) {
+            _mm_prefetch((char*)&left[i + 1], _MM_HINT_T0);
+            _mm_prefetch((char*)&right[i + 1], _MM_HINT_T0);
         }
+        #endif
 
         __m128 col0 = _mm_loadu_ps(&B[0]);
         __m128 col1 = _mm_loadu_ps(&B[4]);
         __m128 col2 = _mm_loadu_ps(&B[8]);
         __m128 col3 = _mm_loadu_ps(&B[12]);
 
-        for (int i = 0; i < 4; i++) {
-            __m128 ai0 = _mm_set1_ps(A[i * 4 + 0]);
-            __m128 ai1 = _mm_set1_ps(A[i * 4 + 1]);
-            __m128 ai2 = _mm_set1_ps(A[i * 4 + 2]);
-            __m128 ai3 = _mm_set1_ps(A[i * 4 + 3]);
+        for (int row = 0; row < 4; row++) {
+            #if defined(NX_HAS_AVX)
+                __m128 ai0 = _mm_broadcast_ss(&A[row * 4 + 0]);
+                __m128 ai1 = _mm_broadcast_ss(&A[row * 4 + 1]);
+                __m128 ai2 = _mm_broadcast_ss(&A[row * 4 + 2]);
+                __m128 ai3 = _mm_broadcast_ss(&A[row * 4 + 3]);
+            #else
+                __m128 ai0 = _mm_set1_ps(A[row * 4 + 0]);
+                __m128 ai1 = _mm_set1_ps(A[row * 4 + 1]);
+                __m128 ai2 = _mm_set1_ps(A[row * 4 + 2]);
+                __m128 ai3 = _mm_set1_ps(A[row * 4 + 3]);
+            #endif
 
-            __m128 row = _mm_add_ps(
-                _mm_add_ps(_mm_mul_ps(ai0, col0), _mm_mul_ps(ai1, col1)),
-                _mm_add_ps(_mm_mul_ps(ai2, col2), _mm_mul_ps(ai3, col3))
-            );
-            _mm_storeu_ps(&R[i * 4], row);
+            __m128 t0 = _mm_mul_ps(ai0, col0);
+            __m128 t1 = _mm_mul_ps(ai1, col1);
+            __m128 t2 = _mm_mul_ps(ai2, col2);
+            __m128 t3 = _mm_mul_ps(ai3, col3);
+
+            __m128 result = _mm_add_ps(_mm_add_ps(t0, t1), _mm_add_ps(t2, t3));
+            _mm_storeu_ps(&R[row * 4], result);
         }
     }
 
 #elif defined(NX_HAS_NEON_FMA)
 
-    for (size_t batch = 0; batch < count; batch++) {
-        const float* A = leftMatrices[batch].a;
-        const float* B = rightMatrices[batch].a;
-        float* R = results[batch].a;
+    for (size_t i = 0; i < count; i++) {
+        const float* NX_RESTRICT A = left[i].a;
+        const float* NX_RESTRICT B = right[i].a;
+        float* NX_RESTRICT R = results[i].a;
+
+        if (i + 1 < count) {
+            __builtin_prefetch(&left[i + 1], 0, 0);
+            __builtin_prefetch(&right[i + 1], 0, 0);
+        }
 
         float32x4_t col0 = vld1q_f32(&B[0]);
         float32x4_t col1 = vld1q_f32(&B[4]);
         float32x4_t col2 = vld1q_f32(&B[8]);
         float32x4_t col3 = vld1q_f32(&B[12]);
 
-        for (int i = 0; i < 4; i++) {
-            float32x4_t ai0 = vdupq_n_f32(A[i * 4 + 0]);
-            float32x4_t ai1 = vdupq_n_f32(A[i * 4 + 1]);
-            float32x4_t ai2 = vdupq_n_f32(A[i * 4 + 2]);
-            float32x4_t ai3 = vdupq_n_f32(A[i * 4 + 3]);
+        for (int row = 0; row < 4; row++) {
+            float32x4_t ai0 = vdupq_n_f32(A[row * 4 + 0]);
+            float32x4_t ai1 = vdupq_n_f32(A[row * 4 + 1]);
+            float32x4_t ai2 = vdupq_n_f32(A[row * 4 + 2]);
+            float32x4_t ai3 = vdupq_n_f32(A[row * 4 + 3]);
 
-            float32x4_t row = vmulq_f32(ai0, col0);
-            row = vfmaq_f32(row, ai1, col1);
-            row = vfmaq_f32(row, ai2, col2);
-            row = vfmaq_f32(row, ai3, col3);
+            float32x4_t result = vmulq_f32(ai0, col0);
+            result = vfmaq_f32(result, ai1, col1);
+            result = vfmaq_f32(result, ai2, col2);
+            result = vfmaq_f32(result, ai3, col3);
 
-            vst1q_f32(&R[i * 4], row);
+            vst1q_f32(&R[row * 4], result);
         }
     }
 
 #elif defined(NX_HAS_NEON)
 
-    for (size_t batch = 0; batch < count; batch++) {
-        const float* A = leftMatrices[batch].a;
-        const float* B = rightMatrices[batch].a;
-        float* R = results[batch].a;
+    for (size_t i = 0; i < count; i++) {
+        const float* NX_RESTRICT A = left[i].a;
+        const float* NX_RESTRICT B = right[i].a;
+        float* NX_RESTRICT R = results[i].a;
+
+        if (i + 1 < count) {
+            __builtin_prefetch(&left[i + 1], 0, 0);
+            __builtin_prefetch(&right[i + 1], 0, 0);
+        }
 
         float32x4_t col0 = vld1q_f32(&B[0]);
         float32x4_t col1 = vld1q_f32(&B[4]);
         float32x4_t col2 = vld1q_f32(&B[8]);
         float32x4_t col3 = vld1q_f32(&B[12]);
 
-        for (int i = 0; i < 4; i++) {
-            float32x4_t ai0 = vdupq_n_f32(A[i * 4 + 0]);
-            float32x4_t ai1 = vdupq_n_f32(A[i * 4 + 1]);
-            float32x4_t ai2 = vdupq_n_f32(A[i * 4 + 2]);
-            float32x4_t ai3 = vdupq_n_f32(A[i * 4 + 3]);
+        for (int row = 0; row < 4; row++) {
+            float32x4_t ai0 = vdupq_n_f32(A[row * 4 + 0]);
+            float32x4_t ai1 = vdupq_n_f32(A[row * 4 + 1]);
+            float32x4_t ai2 = vdupq_n_f32(A[row * 4 + 2]);
+            float32x4_t ai3 = vdupq_n_f32(A[row * 4 + 3]);
 
-            float32x4_t row = vmulq_f32(ai0, col0);
-            row = vmlaq_f32(row, ai1, col1);
-            row = vmlaq_f32(row, ai2, col2);
-            row = vmlaq_f32(row, ai3, col3);
+            float32x4_t result = vmulq_f32(ai0, col0);
+            result = vmlaq_f32(result, ai1, col1);
+            result = vmlaq_f32(result, ai2, col2);
+            result = vmlaq_f32(result, ai3, col3);
 
-            vst1q_f32(&R[i * 4], row);
+            vst1q_f32(&R[row * 4], result);
         }
     }
 
 #else
 
-    for (size_t batch = 0; batch < count; batch++) {
-        const float* A = leftMatrices[batch].a;
-        const float* B = rightMatrices[batch].a;
-        float* R = results[batch].a;
+    for (size_t i = 0; i < count; i++) {
+        const float* NX_RESTRICT A = left[i].a;
+        const float* NX_RESTRICT B = right[i].a;
+        float* NX_RESTRICT R = results[i].a;
 
-        const float a00 = A[0], a01 = A[1], a02 = A[2], a03 = A[3];
-        R[0] = a00 * B[0] + a01 * B[4] + a02 * B[8] + a03 * B[12];
-        R[1] = a00 * B[1] + a01 * B[5] + a02 * B[9] + a03 * B[13];
-        R[2] = a00 * B[2] + a01 * B[6] + a02 * B[10] + a03 * B[14];
-        R[3] = a00 * B[3] + a01 * B[7] + a02 * B[11] + a03 * B[15];
+        for (int row = 0; row < 4; row++) {
+            const float ai0 = A[row * 4 + 0];
+            const float ai1 = A[row * 4 + 1];
+            const float ai2 = A[row * 4 + 2];
+            const float ai3 = A[row * 4 + 3];
 
-        const float a10 = A[4], a11 = A[5], a12 = A[6], a13 = A[7];
-        R[4] = a10 * B[0] + a11 * B[4] + a12 * B[8] + a13 * B[12];
-        R[5] = a10 * B[1] + a11 * B[5] + a12 * B[9] + a13 * B[13];
-        R[6] = a10 * B[2] + a11 * B[6] + a12 * B[10] + a13 * B[14];
-        R[7] = a10 * B[3] + a11 * B[7] + a12 * B[11] + a13 * B[15];
-
-        const float a20 = A[8], a21 = A[9], a22 = A[10], a23 = A[11];
-        R[8] = a20 * B[0] + a21 * B[4] + a22 * B[8] + a23 * B[12];
-        R[9] = a20 * B[1] + a21 * B[5] + a22 * B[9] + a23 * B[13];
-        R[10] = a20 * B[2] + a21 * B[6] + a22 * B[10] + a23 * B[14];
-        R[11] = a20 * B[3] + a21 * B[7] + a22 * B[11] + a23 * B[15];
-
-        const float a30 = A[12], a31 = A[13], a32 = A[14], a33 = A[15];
-        R[12] = a30 * B[0] + a31 * B[4] + a32 * B[8] + a33 * B[12];
-        R[13] = a30 * B[1] + a31 * B[5] + a32 * B[9] + a33 * B[13];
-        R[14] = a30 * B[2] + a31 * B[6] + a32 * B[10] + a33 * B[14];
-        R[15] = a30 * B[3] + a31 * B[7] + a32 * B[11] + a33 * B[15];
+            R[row * 4 + 0] = ai0 * B[0]  + ai1 * B[4]  + ai2 * B[8]  + ai3 * B[12];
+            R[row * 4 + 1] = ai0 * B[1]  + ai1 * B[5]  + ai2 * B[9]  + ai3 * B[13];
+            R[row * 4 + 2] = ai0 * B[2]  + ai1 * B[6]  + ai2 * B[10] + ai3 * B[14];
+            R[row * 4 + 3] = ai0 * B[3]  + ai1 * B[7]  + ai2 * B[11] + ai3 * B[15];
+        }
     }
 
 #endif
