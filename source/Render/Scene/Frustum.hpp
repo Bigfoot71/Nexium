@@ -9,7 +9,7 @@
 #ifndef NX_SCENE_FRUSTUM_HPP
 #define NX_SCENE_FRUSTUM_HPP
 
-#include "../../Detail/Simd.hpp"
+#include "./Culling.hpp"
 
 #include <NX/NX_Render.h>
 #include <NX/NX_Math.h>
@@ -39,18 +39,14 @@ public:
     bool containsPoints(const NX_Vec3* positions, int count) const;
     bool containsSphere(const NX_Vec3& position, float radius) const;
     bool containsAabb(const NX_BoundingBox& aabb) const;
-    bool containsObb(const NX_BoundingBox& aabb, const NX_Transform& transform) const;
-    bool containsObb(const NX_Vec3& center, const std::array<NX_Vec3, 3>& axes, const NX_Vec3& extents) const;
-    simd::Float4 containsObb(const simd::Vec3& center, const std::array<simd::Vec3, 3>& axes, const simd::Vec3& extents) const;
+    bool containsObb(const OrientedBoundingBox& obb) const;
 
 private:
     /** Helper functions */
     static float distanceToPlane(const NX_Vec4& plane, const NX_Vec3& position);
-    static simd::Float4 distanceToPlane(const simd::Vec4& plane, const simd::Vec3& position);
 
 private:
     NX_Vec4 mPlanes[6]{};
-    simd::Vec4 mVPlanes[6]{};
 };
 
 /* === Public Implementation === */
@@ -98,10 +94,6 @@ inline void Frustum::update(const NX_Mat4& viewProj)
         viewProj.m23 + viewProj.m22,
         viewProj.m33 + viewProj.m32
     });
-
-    for (int i = 0; i < 6; i++) {
-        mVPlanes[i] = simd::Vec4(mPlanes[i]);
-    }
 }
 
 inline bool Frustum::containsPoint(const NX_Vec3& position) const
@@ -157,35 +149,18 @@ inline bool Frustum::containsAabb(const NX_BoundingBox& aabb) const
     return true;
 }
 
-inline bool Frustum::containsObb(const NX_BoundingBox& aabb, const NX_Transform& transform) const
-{
-    NX_Vec3 localCenter = (aabb.min + aabb.max) * 0.5f;
-    NX_Vec3 extents = (aabb.max - aabb.min) * 0.5f;
-
-    NX_Vec3 scaledCenter = localCenter * transform.scale;
-    NX_Vec3 rotatedCenter = NX_Vec3Rotate(scaledCenter, transform.rotation);
-    NX_Vec3 worldCenter = rotatedCenter + transform.translation;
-
-    std::array<NX_Vec3, 3> obbAxes;
-    obbAxes[0] = NX_Vec3Rotate(NX_VEC3(transform.scale.x, 0, 0), transform.rotation);
-    obbAxes[1] = NX_Vec3Rotate(NX_VEC3(0, transform.scale.y, 0), transform.rotation);
-    obbAxes[2] = NX_Vec3Rotate(NX_VEC3(0, 0, transform.scale.z), transform.rotation);
-
-    return containsObb(worldCenter, obbAxes, extents);
-}
-
-inline bool Frustum::containsObb(const NX_Vec3& center, const std::array<NX_Vec3, 3>& axes, const NX_Vec3& extents) const
+inline bool Frustum::containsObb(const OrientedBoundingBox& obb) const
 {
     for (int i = 0; i < PLANE_COUNT; i++)
     {
         const NX_Vec4& plane = mPlanes[i];
 
-        float centerDistance = distanceToPlane(plane, center);
+        float centerDistance = distanceToPlane(plane, obb.center);
 
         float projectedRadius =
-            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), axes[0])) * extents.x +
-            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), axes[1])) * extents.y +
-            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), axes[2])) * extents.z;
+            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obb.axes[0])) * obb.extents.x +
+            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obb.axes[1])) * obb.extents.y +
+            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obb.axes[2])) * obb.extents.z;
 
         if (centerDistance + projectedRadius < -1e-6f) {
             return false;
@@ -195,42 +170,11 @@ inline bool Frustum::containsObb(const NX_Vec3& center, const std::array<NX_Vec3
     return true;
 }
 
-inline simd::Float4 Frustum::containsObb(const simd::Vec3& center, const std::array<simd::Vec3, 3>& axes, const simd::Vec3& extents) const
-{
-    simd::Float4 mask = simd::Float4::fromBits(0xFFFFFFFF);
-    const simd::Float4 epsilon(-1e-6f);
-
-    for (int i = 0; i < PLANE_COUNT; i++)
-    {
-        const simd::Vec4& plane = mVPlanes[i];
-
-        simd::Float4 centerDistance = distanceToPlane(plane, center);
-
-        simd::Float4 projectedRadius =
-            abs(dot(plane, axes[0])) * extents.x() +
-            abs(dot(plane, axes[1])) * extents.y() +
-            abs(dot(plane, axes[2])) * extents.z();
-
-        mask &= (centerDistance + projectedRadius >= epsilon);
-
-        if (simd::movemask(mask) == 0) { // all lanes are false
-            return mask;
-        }
-    }
-
-    return mask;
-}
-
 /* === Private Implementation === */
 
 inline float Frustum::distanceToPlane(const NX_Vec4& plane, const NX_Vec3& position)
 {
     return plane.x * position.x + plane.y * position.y + plane.z * position.z + plane.w;
-}
-
-inline simd::Float4 Frustum::distanceToPlane(const simd::Vec4& plane, const simd::Vec3& position)
-{
-    return plane.x() * position.x() + plane.y() * position.y() + plane.z() * position.z() + plane.w();
 }
 
 } // namespace scene
