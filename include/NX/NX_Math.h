@@ -3281,6 +3281,9 @@ NXAPI void NX_Mat4MulBatch(NX_Mat4* NX_RESTRICT results,
 /** Convert NX_Transform to a 4x4 matrix */
 NXAPI NX_Mat4 NX_TransformToMat4(const NX_Transform* transform);
 
+/** Calculation of the normal matrix of the transformation */
+NXAPI NX_Mat3 NX_TransformToNormalMat3(const NX_Transform* transform);
+
 /** Combine parent and child transform (parent first) */
 NXAPI NX_Transform NX_TransformCombine(const NX_Transform* parent, const NX_Transform* child);
 

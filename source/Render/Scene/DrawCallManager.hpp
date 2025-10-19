@@ -83,12 +83,12 @@ public:
     void push(const NX_Model& model, const NX_InstanceBuffer* instances, int instanceCount, const NX_Transform& transform);
     void clear();
 
+    /** Upload methods */
+    void upload();
+
     /** Culling and sorting */
     void culling(const Frustum& frustum, NX_Layer frustumCullMask);
     void sorting(const ViewFrustum& frustum, const Environment& environment);
-
-    /** Upload methods */
-    void upload();
 
     /** Draw */
     void draw(const gpu::Pipeline& pipeline, const UniqueData& unique, const SharedData& shared) const;
@@ -103,6 +103,10 @@ public:
     const gpu::Buffer& boneBuffer() const;
 
 private:
+    /** Internal operations */
+    int computeBoneMatrices(const NX_Model& model);
+
+    /** Helpers */
     static DrawType drawType(const NX_Material& material);
 
 private:
@@ -205,23 +209,8 @@ inline void DrawCallManager::push(const NX_Model& model, const NX_InstanceBuffer
 
     int boneMatrixOffset = -1;
 
-    if (model.boneCount > 0)
-    {
-        const NX_Mat4* boneMatrices = model.boneBindPose;
-
-        if (model.animMode == NX_ANIM_INTERNAL && model.anim != nullptr) {
-            if (model.boneCount != model.anim->boneCount) {
-                NX_INTERNAL_LOG(W, "RENDER: Model and animation bone counts differ");
-            }
-            int frame = static_cast<int>(model.animFrame + 0.5) % model.anim->frameCount;
-            boneMatrices = model.anim->frameGlobalPoses[frame];
-        }
-        else if (model.animMode == NX_ANIM_CUSTOM && model.boneOverride != nullptr) {
-            boneMatrices = model.boneOverride;
-        }
-
-        NX_Mat4* bones = mBoneBuffer.stageMap(model.boneCount, &boneMatrixOffset);
-        NX_Mat4MulBatch(bones, model.boneOffsets, boneMatrices, model.boneCount);
+    if (model.boneCount > 0) {
+        boneMatrixOffset = computeBoneMatrices(model);
     }
 
     /* --- Push draw calls data --- */
@@ -265,6 +254,70 @@ inline void DrawCallManager::clear()
 {
     mSharedData.clear();
     mUniqueData.clear();
+}
+
+inline void DrawCallManager::upload()
+{
+    mBoneBuffer.upload();
+
+    const size_t sharedSize = mSharedData.size();
+    const size_t uniqueSize = mUniqueData.size();
+    const size_t sharedBytes = sharedSize * sizeof(GPUSharedData);
+    const size_t uniqueBytes = uniqueSize * sizeof(GPUUniqueData);
+
+    mSharedBuffer.reserve(sharedBytes, false);
+    mUniqueBuffer.reserve(uniqueBytes, false);
+
+    GPUSharedData* sharedBuffer = mSharedBuffer.mapRange<GPUSharedData>(
+        0, sharedBytes,
+        GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
+    );
+
+    GPUUniqueData* uniqueBuffer = mUniqueBuffer.mapRange<GPUUniqueData>(
+        0, uniqueBytes,
+        GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
+    );
+
+    for (size_t i = 0; i < sharedSize; i++)
+    {
+        const SharedData& shared = mSharedData[i];
+
+        NX_Mat3 matNormal = NX_TransformToNormalMat3(&shared.transform);
+
+        GPUSharedData& gpuShared = sharedBuffer[i];
+        gpuShared.matModel = NX_TransformToMat4(&shared.transform);
+        gpuShared.matNormal = NX_Mat3ToMat4(&matNormal);
+        gpuShared.boneOffset = shared.boneMatrixOffset;
+        gpuShared.instancing = (shared.instanceCount > 0);
+        gpuShared.skinning = (shared.boneMatrixOffset >= 0);
+
+        const int uniqueStart = shared.uniqueDataIndex;
+        const int uniqueEnd = uniqueStart + shared.uniqueDataCount;
+
+        for (int j = uniqueStart; j < uniqueEnd; j++)
+        {
+            const UniqueData& unique = mUniqueData[j];
+            const NX_Material& material = unique.material;
+
+            GPUUniqueData& gpuUnique = uniqueBuffer[j];
+            gpuUnique.albedoColor = NX_ColorToVec4(material.albedo.color);
+            gpuUnique.emissionColor = NX_ColorToVec3(material.emission.color);
+            gpuUnique.emissionEnergy = material.emission.energy;
+            gpuUnique.aoLightAffect = material.orm.aoLightAffect;
+            gpuUnique.occlusion = material.orm.occlusion;
+            gpuUnique.roughness = material.orm.roughness;
+            gpuUnique.metalness = material.orm.metalness;
+            gpuUnique.normalScale = material.normal.scale;
+            gpuUnique.alphaCutOff = material.alphaCutOff;
+            gpuUnique.texOffset = material.texOffset;
+            gpuUnique.texScale = material.texScale;
+            gpuUnique.billboard = material.billboard;
+            gpuUnique.layerMask = unique.mesh.layerMask();
+        }
+    }
+
+    mSharedBuffer.unmap();
+    mUniqueBuffer.unmap();
 }
 
 inline void DrawCallManager::culling(const Frustum& frustum, NX_Layer frustumCullMask)
@@ -354,69 +407,6 @@ inline void DrawCallManager::sorting(const ViewFrustum& frustum, const Environme
             }
         );
     }
-}
-
-inline void DrawCallManager::upload()
-{
-    mBoneBuffer.upload();
-
-    mSharedBuffer.reserve(mSharedData.size() * sizeof(GPUSharedData), false);
-    mUniqueBuffer.reserve(mUniqueData.size() * sizeof(GPUUniqueData), false);
-
-    GPUSharedData* sharedBuffer = mSharedBuffer.mapRange<GPUSharedData>(
-        0, mSharedData.size() * sizeof(GPUSharedData),
-        GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
-    );
-
-    GPUUniqueData* uniqueBuffer = mUniqueBuffer.mapRange<GPUUniqueData>(
-        0, mUniqueData.size() * sizeof(GPUUniqueData),
-        GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
-    );
-
-    for (int i = 0; i < mSharedData.size(); i++)
-    {
-        const SharedData& shared = mSharedData[i];
-
-        NX_Mat4 matModel = NX_TransformToMat4(&shared.transform);
-        NX_Mat3 matNormal = NX_Mat3Normal(&matModel);
-
-        sharedBuffer[i] = GPUSharedData {
-            .matModel = matModel,
-            .matNormal = NX_Mat3ToMat4(&matNormal),
-            .boneOffset = shared.boneMatrixOffset,
-            .instancing = (shared.instanceCount > 0),
-            .skinning = (shared.boneMatrixOffset >= 0)
-        };
-
-        int uniqueStart = shared.uniqueDataIndex;
-        int uniqueEnd = uniqueStart + shared.uniqueDataCount;
-
-        for (int j = uniqueStart; j < uniqueEnd; j++)
-        {
-            const UniqueData& unique = mUniqueData[j];
-            const NX_Material& material = unique.material;
-            const VariantMesh& mesh = unique.mesh;
-
-            uniqueBuffer[j] = GPUUniqueData {
-                .albedoColor = NX_ColorToVec4(material.albedo.color),
-                .emissionColor = NX_ColorToVec3(material.emission.color),
-                .emissionEnergy = material.emission.energy,
-                .aoLightAffect = material.orm.aoLightAffect,
-                .occlusion = material.orm.occlusion,
-                .roughness = material.orm.roughness,
-                .metalness = material.orm.metalness,
-                .normalScale = material.normal.scale,
-                .alphaCutOff = material.alphaCutOff,
-                .texOffset = material.texOffset,
-                .texScale = material.texScale,
-                .billboard = material.billboard,
-                .layerMask = mesh.layerMask()
-            };
-        }
-    }
-
-    mSharedBuffer.unmap();
-    mUniqueBuffer.unmap();
 }
 
 inline void DrawCallManager::draw(const gpu::Pipeline& pipeline, const UniqueData& unique, const SharedData& shared) const
@@ -516,6 +506,28 @@ inline const gpu::Buffer& DrawCallManager::boneBuffer() const
 }
 
 /* === Private Implementation === */
+
+inline int DrawCallManager::computeBoneMatrices(const NX_Model& model)
+{
+    int boneMatrixOffset = -1;
+
+    const NX_Mat4* boneMatrices = model.boneBindPose;
+    if (model.animMode == NX_ANIM_INTERNAL && model.anim != nullptr) {
+        if (model.boneCount != model.anim->boneCount) {
+            NX_INTERNAL_LOG(W, "RENDER: Model and animation bone counts differ");
+        }
+        float frame = NX_Wrap(model.animFrame, 0.0f, model.anim->frameCount - 1.0f);
+        boneMatrices = model.anim->frameGlobalPoses[static_cast<int>(frame + 0.5f)];
+    }
+    else if (model.animMode == NX_ANIM_CUSTOM && model.boneOverride != nullptr) {
+        boneMatrices = model.boneOverride;
+    }
+
+    NX_Mat4* bones = mBoneBuffer.stageMap(model.boneCount, &boneMatrixOffset);
+    NX_Mat4MulBatch(bones, model.boneOffsets, boneMatrices, model.boneCount);
+
+    return boneMatrixOffset;
+}
 
 inline DrawType DrawCallManager::drawType(const NX_Material& material)
 {

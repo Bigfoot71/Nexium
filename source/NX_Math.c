@@ -445,33 +445,42 @@ NX_Mat3 NX_Mat3Inverse(const NX_Mat3* mat)
 
 NX_Mat3 NX_Mat3Normal(const NX_Mat4* mat)
 {
-    float det = mat->m00 * (mat->m11 * mat->m22 - mat->m12 * mat->m21) -
-                mat->m01 * (mat->m10 * mat->m22 - mat->m12 * mat->m20) +
-                mat->m02 * (mat->m10 * mat->m21 - mat->m11 * mat->m20);
+    float m00 = mat->m00, m01 = mat->m01, m02 = mat->m02;
+    float m10 = mat->m10, m11 = mat->m11, m12 = mat->m12;
+    float m20 = mat->m20, m21 = mat->m21, m22 = mat->m22;
+
+    float c00 = m11 * m22 - m12 * m21;
+    float c01 = m12 * m20 - m10 * m22;
+    float c02 = m10 * m21 - m11 * m20;
+
+    float det = m00 * c00 + m01 * c01 + m02 * c02;
 
     if (fabsf(det) < 1e-6f) {
-        NX_Mat3 result;
-        result.m00 = 1.0f; result.m01 = 0.0f; result.m02 = 0.0f;
-        result.m10 = 0.0f; result.m11 = 1.0f; result.m12 = 0.0f;
-        result.m20 = 0.0f; result.m21 = 0.0f; result.m22 = 1.0f;
-        return result;
+        return NX_MAT3_IDENTITY;
     }
 
     float invDet = 1.0f / det;
 
+    float c10 = m02 * m21 - m01 * m22;
+    float c11 = m00 * m22 - m02 * m20;
+    float c12 = m01 * m20 - m00 * m21;
+
+    float c20 = m01 * m12 - m02 * m11;
+    float c21 = m02 * m10 - m00 * m12;
+    float c22 = m00 * m11 - m01 * m10;
+
     NX_Mat3 result;
+    result.m00 = c00 * invDet;
+    result.m01 = c01 * invDet;
+    result.m02 = c02 * invDet;
 
-    result.m00 = (mat->m11 * mat->m22 - mat->m12 * mat->m21) * invDet;
-    result.m01 = (mat->m12 * mat->m20 - mat->m10 * mat->m22) * invDet;
-    result.m02 = (mat->m10 * mat->m21 - mat->m11 * mat->m20) * invDet;
+    result.m10 = c10 * invDet;
+    result.m11 = c11 * invDet;
+    result.m12 = c12 * invDet;
 
-    result.m10 = (mat->m02 * mat->m21 - mat->m01 * mat->m22) * invDet;
-    result.m11 = (mat->m00 * mat->m22 - mat->m02 * mat->m20) * invDet;
-    result.m12 = (mat->m01 * mat->m20 - mat->m00 * mat->m21) * invDet;
-
-    result.m20 = (mat->m01 * mat->m12 - mat->m02 * mat->m11) * invDet;
-    result.m21 = (mat->m02 * mat->m10 - mat->m00 * mat->m12) * invDet;
-    result.m22 = (mat->m00 * mat->m11 - mat->m01 * mat->m10) * invDet;
+    result.m20 = c20 * invDet;
+    result.m21 = c21 * invDet;
+    result.m22 = c22 * invDet;
 
     return result;
 }
@@ -1251,50 +1260,86 @@ void NX_Mat4MulBatch(NX_Mat4* NX_RESTRICT results,
 
 NX_Mat4 NX_TransformToMat4(const NX_Transform* transform)
 {
-    NX_Mat4 m;
-
     const NX_Vec3* t = &transform->translation;
     const NX_Quat* q = &transform->rotation;
     const NX_Vec3* s = &transform->scale;
 
-    float qlen = sqrtf(q->x * q->x + q->y * q->y + q->z * q->z + q->w * q->w);
-    if (qlen < 1e-6f) {
-        m.m00 = s->x; m.m01 = 0.0f; m.m02 = 0.0f; m.m03 = 0.0f;
-        m.m10 = 0.0f; m.m11 = s->y; m.m12 = 0.0f; m.m13 = 0.0f;
-        m.m20 = 0.0f; m.m21 = 0.0f; m.m22 = s->z; m.m23 = 0.0f;
-        m.m30 = t->x; m.m31 = t->y; m.m32 = t->z; m.m33 = 1.0f;
-        return m;
+    float qx = q->x, qy = q->y;
+    float qz = q->z, qw = q->w;
+
+    float qlen2 = qx * qx + qy * qy + qz * qz + qw * qw;
+    if (fabsf(qlen2 - 1.0f) > 1e-4f) {
+        if (qlen2 < 1e-12f) {
+            NX_Mat4 m = {
+                s->x, 0.0f, 0.0f, 0.0f,
+                0.0f, s->y, 0.0f, 0.0f,
+                0.0f, 0.0f, s->z, 0.0f,
+                t->x, t->y, t->z, 1.0f
+            };
+            return m;
+        }
+        float invLen = 1.0f / sqrtf(qlen2);
+        qx *= invLen; qy *= invLen; qz *= invLen; qw *= invLen;
     }
 
-    float invLen = 1.0f / qlen;
-    float qx = q->x * invLen;
-    float qy = q->y * invLen;
-    float qz = q->z * invLen;
-    float qw = q->w * invLen;
+    float x2 = 2.0f * qx, y2 = 2.0f * qy, z2 = 2.0f * qz;
+    float xx = qx * x2, yy = qy * y2, zz = qz * z2;
+    float xy = qx * y2, xz = qx * z2, yz = qy * z2;
+    float wx = qw * x2, wy = qw * y2, wz = qw * z2;
 
-    float qx2 = qx * qx, qy2 = qy * qy, qz2 = qz * qz;
-    float qxqy = qx * qy, qxqz = qx * qz, qxqw = qx * qw;
-    float qyqz = qy * qz, qyqw = qy * qw, qzqw = qz * qw;
+    float sx = s->x;
+    float sy = s->y;
+    float sz = s->z;
+    
+    NX_Mat4 m;
 
-    m.m00 = s->x * (1.0f - 2.0f * (qy2 + qz2));
-    m.m01 = s->y * (2.0f * (qxqy + qzqw));
-    m.m02 = s->z * (2.0f * (qxqz - qyqw));
+    m.m00 = (1.0f - yy - zz) * sx;
+    m.m01 = (xy + wz) * sy;
+    m.m02 = (xz - wy) * sz;
     m.m03 = 0.0f;
 
-    m.m10 = s->x * (2.0f * (qxqy - qzqw));
-    m.m11 = s->y * (1.0f - 2.0f * (qx2 + qz2));
-    m.m12 = s->z * (2.0f * (qyqz + qxqw));
+    m.m10 = (xy - wz) * sx;
+    m.m11 = (1.0f - xx - zz) * sy;
+    m.m12 = (yz + wx) * sz;
     m.m13 = 0.0f;
 
-    m.m20 = s->x * (2.0f * (qxqz + qyqw));
-    m.m21 = s->y * (2.0f * (qyqz - qxqw));
-    m.m22 = s->z * (1.0f - 2.0f * (qx2 + qy2));
+    m.m20 = (xz + wy) * sx;
+    m.m21 = (yz - wx) * sy;
+    m.m22 = (1.0f - xx - yy) * sz;
     m.m23 = 0.0f;
 
     m.m30 = t->x;
     m.m31 = t->y;
     m.m32 = t->z;
     m.m33 = 1.0f;
+    
+    return m;
+}
+
+NX_Mat3 NX_TransformToNormalMat3(const NX_Transform* t)
+{
+    float qx = t->rotation.x, qy = t->rotation.y;
+    float qz = t->rotation.z, qw = t->rotation.w;
+
+    float isx = 1.0f / t->scale.x;
+    float isy = 1.0f / t->scale.y;
+    float isz = 1.0f / t->scale.z;
+
+    float x2 = 2.0f * qx, y2 = 2.0f * qy, z2 = 2.0f * qz;
+    float xx = qx * x2, yy = qy * y2, zz = qz * z2;
+    float xy = qx * y2, xz = qx * z2, yz = qy * z2;
+    float wx = qw * x2, wy = qw * y2, wz = qw * z2;
+
+    NX_Mat3 m;
+    m.m00 = (1.0f - yy - zz) * isx;
+    m.m01 = (xy - wz) * isy;
+    m.m02 = (xz + wy) * isz;
+    m.m10 = (xy + wz) * isx;
+    m.m11 = (1.0f - xx - zz) * isy;
+    m.m12 = (yz - wx) * isz;
+    m.m20 = (xz - wy) * isx;
+    m.m21 = (yz + wx) * isy;
+    m.m22 = (1.0f - xx - yy) * isz;
 
     return m;
 }
