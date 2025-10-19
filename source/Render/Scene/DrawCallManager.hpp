@@ -328,42 +328,34 @@ inline void DrawCallManager::culling(const Frustum& frustum, NX_Layer frustumCul
 {
     mUniqueVisible.clear();
 
-    const auto addWithoutTest = [&](int start, int end) -> void {
-        for (int i = start; i < end; ++i) {
-            const UniqueData& u = mUniqueData[i];
-            if ((frustumCullMask & u.mesh.layerMask()) != 0) {
-                mUniqueVisible.emplace(u.type, i);
-            }
-        }
-    };
-
-    const auto addWithTest = [&](int start, int end) -> void {
-        for (int i = start; i < end; ++i) {
-            const UniqueData& u = mUniqueData[i];
-            if ((frustumCullMask & u.mesh.layerMask()) != 0) {
-                if (frustum.containsObb(u.obb)) {
-                    mUniqueVisible.emplace(u.type, i);
-                }
-            }
-        }
-    };
-
     for (const SharedData& shared : mSharedData)
     {
         if (shared.instanceCount > 0) [[unlikely]] {
-            addWithoutTest(shared.uniqueDataIndex, shared.uniqueDataIndex + shared.uniqueDataCount);
+            int end = shared.uniqueDataIndex + shared.uniqueDataCount;
+            for (int i = shared.uniqueDataIndex; i < end; ++i) {
+                const UniqueData& u = mUniqueData[i];
+                if ((frustumCullMask & u.mesh.layerMask()) != 0) {
+                    mUniqueVisible.emplace(u.type, i);
+                }
+            }
             continue;
         }
 
-        switch (frustum.classifySphere(shared.sphere)) {
-        case Frustum::Outside:
-            break;
-        case Frustum::Inside:
-            addWithoutTest(shared.uniqueDataIndex, shared.uniqueDataIndex + shared.uniqueDataCount);
-            break;
-        case Frustum::Intersect:
-            addWithTest(shared.uniqueDataIndex, shared.uniqueDataIndex + shared.uniqueDataCount);
-            break;
+        const Frustum::Containment containment = frustum.classifySphere(shared.sphere);
+        if (containment == Frustum::Outside) {
+            continue;
+        }
+
+        int end = shared.uniqueDataIndex + shared.uniqueDataCount;
+        bool needsObbTest = (containment == Frustum::Intersect);
+
+        for (int i = shared.uniqueDataIndex; i < end; ++i) {
+            const UniqueData& u = mUniqueData[i];
+            if ((frustumCullMask & u.mesh.layerMask()) != 0) [[likely]] {
+                if (!needsObbTest || frustum.containsObb(u.obb)) {
+                    mUniqueVisible.emplace(u.type, i);
+                }
+            }
         }
     }
 }
