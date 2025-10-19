@@ -13,7 +13,6 @@
 #include "./NX_Platform.h"
 #include "./NX_Macros.h"
 
-#include <string.h>
 #include <math.h>
 
 /* === Constants === */
@@ -1501,27 +1500,30 @@ static inline NX_IVec4 NX_IVec4Scale(NX_IVec4 v, int s)
  */
 
 /**
- * @brief Component-wise minimum of two vectors
+ * @brief Returns a vector containing the component-wise minimum of v0 and v1.
  */
-static inline NX_Vec2 NX_Vec2Min(NX_Vec2 v, NX_Vec2 min)
+static inline NX_Vec2 NX_Vec2Min(NX_Vec2 v0, NX_Vec2 v1)
 {
-    return NX_VEC2(NX_MIN(v.x, min.x), NX_MIN(v.y, min.y));
+    return NX_VEC2(fminf(v0.x, v1.x), fminf(v0.y, v1.y));
 }
 
 /**
- * @brief Component-wise maximum of two vectors
+ * @brief Returns a vector containing the component-wise maximum of v0 and v1.
  */
-static inline NX_Vec2 NX_Vec2Max(NX_Vec2 v, NX_Vec2 max)
+static inline NX_Vec2 NX_Vec2Max(NX_Vec2 v0, NX_Vec2 v1)
 {
-    return NX_VEC2(NX_MAX(v.x, max.x), NX_MAX(v.y, max.y));
+    return NX_VEC2(fmaxf(v0.x, v1.x), fmaxf(v0.y, v1.y));
 }
 
 /**
- * @brief Clamp vector components between min and max
+ * @brief Clamp each component of vector x to [min,max].
  */
 static inline NX_Vec2 NX_Vec2Clamp(NX_Vec2 v, NX_Vec2 min, NX_Vec2 max)
 {
-    return NX_VEC2(NX_CLAMP(v.x, min.x, max.x), NX_CLAMP(v.y, min.y, max.y));
+    return NX_VEC2(
+        fmaxf(fminf(v.x, max.x), min.x),
+        fmaxf(fminf(v.y, max.y), min.y)
+    );
 }
 
 /**
@@ -1626,7 +1628,10 @@ static inline NX_Vec2 NX_Vec2Scale(NX_Vec2 v, float s)
  */
 static inline NX_Vec2 NX_Vec2MulAdd(NX_Vec2 a, float s, NX_Vec2 b)
 {
-    return NX_VEC2(a.x * s + b.x, a.y * s + b.y);
+    return NX_VEC2(
+        fmaf(a.x, s, b.x),
+        fmaf(a.y, s, b.y)
+    );
 }
 
 /**
@@ -1745,10 +1750,14 @@ static inline NX_Vec2 NX_Vec2Direction(NX_Vec2 v0, NX_Vec2 v1)
  */
 static inline NX_Vec2 NX_Vec2Lerp(NX_Vec2 v0, NX_Vec2 v1, float t)
 {
-    return NX_VEC2(
-        v0.x + (v1.x - v0.x) * t,
-        v0.y + (v1.y - v0.y) * t
-    );
+    float w1 = 1.0f - t;
+    float w2 = t;
+
+    NX_Vec2 result;
+    result.x = fmaf(w1, v0.x, w2 * v1.x);
+    result.y = fmaf(w1, v0.y, w2 * v1.y);
+
+    return result;
 }
 
 /**
@@ -1756,15 +1765,24 @@ static inline NX_Vec2 NX_Vec2Lerp(NX_Vec2 v0, NX_Vec2 v1, float t)
  */
 static inline NX_Vec2 NX_Vec2MoveToward(NX_Vec2 from, NX_Vec2 to, float max_delta)
 {
-    NX_Vec2 delta = NX_VEC2(to.x - from.x, to.y - from.y);
-    float dist = sqrtf(delta.x * delta.x + delta.y * delta.y);
+    float dx = to.x - from.x;
+    float dy = to.y - from.y;
 
-    if (dist <= max_delta || dist < 1e-6f) {
+    float distSq = dx * dx + dy * dy;
+    float maxDeltaSq = max_delta * max_delta;
+
+    if (distSq <= maxDeltaSq) {
         return to;
     }
 
-    float scale = max_delta / dist;
-    return NX_VEC2(from.x + delta.x * scale, from.y + delta.y * scale);
+    float dist = sqrtf(distSq);
+    float ratio = max_delta / dist;
+
+    NX_Vec2 result;
+    result.x = fmaf(dx, ratio, from.x);
+    result.y = fmaf(dy, ratio, from.y);
+
+    return result;
 }
 
 /**
@@ -1785,13 +1803,14 @@ static inline NX_Vec2 NX_Vec2Perp(NX_Vec2 v)
 }
 
 /**
- * @brief Transform a 3D vector by 3x3 matrix
+ * @brief Transform a 2D vector by 3x3 matrix
  */
 static inline NX_Vec2 NX_Vec2TransformByMat3(NX_Vec2 v, const NX_Mat3* mat)
 {
     NX_Vec2 result;
-    result.x = mat->m00 * v.x + mat->m10 * v.y + mat->m20;
-    result.y = mat->m01 * v.x + mat->m11 * v.y + mat->m21;
+    result.x = fmaf(mat->m00, v.x, fmaf(mat->m10, v.y, mat->m20));
+    result.y = fmaf(mat->m01, v.x, fmaf(mat->m11, v.y, mat->m21));
+
     return result;
 }
 
@@ -1801,8 +1820,8 @@ static inline NX_Vec2 NX_Vec2TransformByMat3(NX_Vec2 v, const NX_Mat3* mat)
 static inline NX_Vec2 NX_Vec2TransformByMat4(NX_Vec2 v, const NX_Mat4* mat)
 {
     NX_Vec2 result;
-    result.x = mat->m00 * v.x + mat->m10 * v.y + mat->m30;
-    result.y = mat->m01 * v.x + mat->m11 * v.y + mat->m31;
+    result.x = fmaf(mat->m00, v.x, fmaf(mat->m10, v.y, mat->m30));
+    result.y = fmaf(mat->m01, v.x, fmaf(mat->m11, v.y, mat->m31));
 
     return result;
 }
@@ -1817,27 +1836,39 @@ static inline NX_Vec2 NX_Vec2TransformByMat4(NX_Vec2 v, const NX_Mat4* mat)
  */
 
 /**
- * @brief Component-wise minimum
+ * @brief Returns a vector containing the component-wise minimum of v0 and v1.
  */
-static inline NX_Vec3 NX_Vec3Min(NX_Vec3 v, NX_Vec3 min)
+static inline NX_Vec3 NX_Vec3Min(NX_Vec3 v0, NX_Vec3 v1)
 {
-    return NX_VEC3(NX_MIN(v.x, min.x), NX_MIN(v.y, min.y), NX_MIN(v.z, min.z));
+    return NX_VEC3(
+        fminf(v0.x, v1.x),
+        fminf(v0.y, v1.y),
+        fminf(v0.z, v1.z)
+    );
 }
 
 /**
- * @brief Component-wise maximum
+ * @brief Returns a vector containing the component-wise maximum of v0 and v1.
  */
-static inline NX_Vec3 NX_Vec3Max(NX_Vec3 v, NX_Vec3 max)
+static inline NX_Vec3 NX_Vec3Max(NX_Vec3 v0, NX_Vec3 v1)
 {
-    return NX_VEC3(NX_MAX(v.x, max.x), NX_MAX(v.y, max.y), NX_MAX(v.z, max.z));
+    return NX_VEC3(
+        fmaxf(v0.x, v1.x),
+        fmaxf(v0.y, v1.y),
+        fmaxf(v0.z, v1.z)
+    );
 }
 
 /**
- * @brief Clamp each component between min and max
+ * @brief Clamp each component of vector x to [min,max].
  */
 static inline NX_Vec3 NX_Vec3Clamp(NX_Vec3 v, NX_Vec3 min, NX_Vec3 max)
 {
-    return NX_VEC3(NX_CLAMP(v.x, min.x, max.x), NX_CLAMP(v.y, min.y, max.y), NX_CLAMP(v.z, min.z, max.z));
+    return NX_VEC3(
+        fmaxf(fminf(v.x, max.x), min.x),
+        fmaxf(fminf(v.y, max.y), min.y),
+        fmaxf(fminf(v.z, max.z), min.z)
+    );
 }
 
 /**
@@ -1943,7 +1974,11 @@ static inline NX_Vec3 NX_Vec3Scale(NX_Vec3 v, float s)
  */
 static inline NX_Vec3 NX_Vec3MulAdd(NX_Vec3 a, float s, NX_Vec3 b)
 {
-    return NX_VEC3(a.x * s + b.x, a.y * s + b.y, a.z * s + b.z);
+    return NX_VEC3(
+        fmaf(a.x, s, b.x),
+        fmaf(a.y, s, b.y),
+        fmaf(a.z, s, b.z)
+    );
 }
 
 /**
@@ -2074,11 +2109,15 @@ static inline NX_Vec3 NX_Vec3Direction(NX_Vec3 from, NX_Vec3 to)
  */
 static inline NX_Vec3 NX_Vec3Lerp(NX_Vec3 v0, NX_Vec3 v1, float t)
 {
-    return NX_VEC3(
-        v0.x + (v1.x - v0.x) * t,
-        v0.y + (v1.y - v0.y) * t,
-        v0.z + (v1.z - v0.z) * t
-    );
+    float w1 = 1.0f - t;
+    float w2 = t;
+
+    NX_Vec3 result;
+    result.x = fmaf(w1, v0.x, w2 * v1.x);
+    result.y = fmaf(w1, v0.y, w2 * v1.y);
+    result.z = fmaf(w1, v0.z, w2 * v1.z);
+
+    return result;
 }
 
 /**
@@ -2086,38 +2125,79 @@ static inline NX_Vec3 NX_Vec3Lerp(NX_Vec3 v0, NX_Vec3 v1, float t)
  */
 static inline NX_Vec3 NX_Vec3MoveToward(NX_Vec3 from, NX_Vec3 to, float max_delta)
 {
-    NX_Vec3 delta = NX_VEC3(to.x - from.x, to.y - from.y, to.z - from.z);
-    float dist = sqrtf(delta.x * delta.x + delta.y * delta.y + delta.z * delta.z);
+    float dx = to.x - from.x;
+    float dy = to.y - from.y;
+    float dz = to.z - from.z;
 
-    if (dist <= max_delta || dist < 1e-6f)
+    float distSq = dx * dx + dy * dy + dz * dz;
+    float maxDeltaSq = max_delta * max_delta;
+
+    if (distSq <= maxDeltaSq) {
         return to;
+    }
 
-    float scale = max_delta / dist;
-    return NX_VEC3(from.x + delta.x * scale, from.y + delta.y * scale, from.z + delta.z * scale);
+    float dist = sqrtf(distSq);
+    float ratio = max_delta / dist;
+
+    NX_Vec3 result;
+    result.x = fmaf(dx, ratio, from.x);
+    result.y = fmaf(dy, ratio, from.y);
+    result.z = fmaf(dz, ratio, from.z);
+
+    return result;
 }
 
 /**
  * @brief Reflect vector v around normal
+ * Formula: v - 2 * dot(v, normal) * normal
  */
 static inline NX_Vec3 NX_Vec3Reflect(NX_Vec3 v, NX_Vec3 normal)
 {
-    return NX_Vec3Sub(v, NX_Vec3Scale(normal, 2.0f * NX_Vec3Dot(v, normal)));
+    float dot = v.x * normal.x + v.y * normal.y + v.z * normal.z;
+    float factor = 2.0f * dot;
+
+    NX_Vec3 result;
+    result.x = fmaf(-factor, normal.x, v.x);
+    result.y = fmaf(-factor, normal.y, v.y);
+    result.z = fmaf(-factor, normal.z, v.z);
+
+    return result;
 }
 
 /**
  * @brief Project vector v onto another vector
+ * Formula: onto * (dot(v, onto) / lengthSq(onto))
  */
 static inline NX_Vec3 NX_Vec3Project(NX_Vec3 v, NX_Vec3 onto)
 {
-    return NX_Vec3Scale(onto, NX_Vec3Dot(v, onto) / NX_Vec3LengthSq(onto));
+    float dot = v.x * onto.x + v.y * onto.y + v.z * onto.z;
+    float lenSq = onto.x * onto.x + onto.y * onto.y + onto.z * onto.z;
+    float factor = dot / lenSq;
+
+    NX_Vec3 result;
+    result.x = onto.x * factor;
+    result.y = onto.y * factor;
+    result.z = onto.z * factor;
+
+    return result;
 }
 
 /**
  * @brief Reject vector v from another vector (component perpendicular)
+ * Formula: v - project(v, onto)
  */
 static inline NX_Vec3 NX_Vec3Reject(NX_Vec3 v, NX_Vec3 onto)
 {
-    return NX_Vec3Sub(v, NX_Vec3Project(v, onto));
+    float dot = v.x * onto.x + v.y * onto.y + v.z * onto.z;
+    float lenSq = onto.x * onto.x + onto.y * onto.y + onto.z * onto.z;
+    float factor = dot / lenSq;
+
+    NX_Vec3 result;
+    result.x = fmaf(-factor, onto.x, v.x);
+    result.y = fmaf(-factor, onto.y, v.y);
+    result.z = fmaf(-factor, onto.z, v.z);
+
+    return result;
 }
 
 /**
@@ -2133,14 +2213,19 @@ static inline NX_Vec3 NX_Vec3Transform(NX_Vec3 vec, const NX_Transform* trs)
 }
 
 /**
- * @brief Transform a 3D vector by 3x3 matrix
+ * @brief Transform a 3D vector by 3x3 matrix (rotation/scale only)
  */
 static inline NX_Vec3 NX_Vec3TransformByMat3(NX_Vec3 vec, const NX_Mat3* mat)
 {
+    float vx = vec.x;
+    float vy = vec.y;
+    float vz = vec.z;
+
     NX_Vec3 result;
-    result.x = mat->m00 * vec.x + mat->m10 * vec.y + mat->m20 * vec.z;
-    result.y = mat->m01 * vec.x + mat->m11 * vec.y + mat->m21 * vec.z;
-    result.z = mat->m02 * vec.x + mat->m12 * vec.y + mat->m22 * vec.z;
+    result.x = fmaf(mat->m00, vx, fmaf(mat->m10, vy, mat->m20 * vz));
+    result.y = fmaf(mat->m01, vx, fmaf(mat->m11, vy, mat->m21 * vz));
+    result.z = fmaf(mat->m02, vx, fmaf(mat->m12, vy, mat->m22 * vz));
+
     return result;
 }
 
@@ -2149,10 +2234,14 @@ static inline NX_Vec3 NX_Vec3TransformByMat3(NX_Vec3 vec, const NX_Mat3* mat)
  */
 static inline NX_Vec3 NX_Vec3TransformByMat4(NX_Vec3 v, const NX_Mat4* mat)
 {
+    float vx = v.x;
+    float vy = v.y;
+    float vz = v.z;
+
     NX_Vec3 result;
-    result.x = mat->m00 * v.x + mat->m10 * v.y + mat->m20 * v.z + mat->m30;
-    result.y = mat->m01 * v.x + mat->m11 * v.y + mat->m21 * v.z + mat->m31;
-    result.z = mat->m02 * v.x + mat->m12 * v.y + mat->m22 * v.z + mat->m32;
+    result.x = fmaf(mat->m00, vx, fmaf(mat->m10, vy, fmaf(mat->m20, vz, mat->m30)));
+    result.y = fmaf(mat->m01, vx, fmaf(mat->m11, vy, fmaf(mat->m21, vz, mat->m31)));
+    result.z = fmaf(mat->m02, vx, fmaf(mat->m12, vy, fmaf(mat->m22, vz, mat->m32)));
 
     return result;
 }
@@ -2167,38 +2256,42 @@ static inline NX_Vec3 NX_Vec3TransformByMat4(NX_Vec3 v, const NX_Mat4* mat)
  */
 
 /**
- * @brief Clamp each component of vector x to be >= min.
+ * @brief Returns a vector containing the component-wise minimum of v0 and v1.
  */
-static inline NX_Vec4 NX_Vec4Min(NX_Vec4 x, NX_Vec4 min)
+static inline NX_Vec4 NX_Vec4Min(NX_Vec4 v0, NX_Vec4 v1)
 {
-    for (int i = 0; i < 4; ++i) {
-        if (x.v[i] < min.v[i]) x.v[i] = min.v[i];
-    }
-    return x;
+    v0.x = fminf(v0.x, v1.x);
+    v0.y = fminf(v0.y, v1.y);
+    v0.z = fminf(v0.z, v1.z);
+    v0.w = fminf(v0.w, v1.w);
+
+    return v0;
 }
 
 /**
- * @brief Clamp each component of vector x to be <= max.
+ * @brief Returns a vector containing the component-wise maximum of v0 and v1.
  */
-static inline NX_Vec4 NX_Vec4Max(NX_Vec4 x, NX_Vec4 max)
+static inline NX_Vec4 NX_Vec4Max(NX_Vec4 v0, NX_Vec4 v1)
 {
-    for (int i = 0; i < 4; ++i) {
-        if (x.v[i] < max.v[i]) x.v[i] = max.v[i];
-    }
-    return x;
+    v0.x = fmaxf(v0.x, v1.x);
+    v0.y = fmaxf(v0.y, v1.y);
+    v0.z = fmaxf(v0.z, v1.z);
+    v0.w = fmaxf(v0.w, v1.w);
+
+    return v0;
 }
 
 /**
  * @brief Clamp each component of vector x to [min,max].
  */
-static inline NX_Vec4 NX_Vec4Clamp(NX_Vec4 x, NX_Vec4 min, NX_Vec4 max)
+static inline NX_Vec4 NX_Vec4Clamp(NX_Vec4 v, NX_Vec4 min, NX_Vec4 max)
 {
-    for (int i = 0; i < 4; ++i) {
-        if (x.v[i] < min.v[i]) x.v[i] = min.v[i];
-        else
-        if (x.v[i] > max.v[i]) x.v[i] = max.v[i];
-    }
-    return x;
+    v.x = fmaxf(fminf(v.x, max.x), min.x);
+    v.y = fmaxf(fminf(v.y, max.y), min.y);
+    v.z = fmaxf(fminf(v.z, max.z), min.z);
+    v.w = fmaxf(fminf(v.w, max.w), min.w);
+
+    return v;
 }
 
 /**
@@ -2206,9 +2299,11 @@ static inline NX_Vec4 NX_Vec4Clamp(NX_Vec4 x, NX_Vec4 min, NX_Vec4 max)
  */
 static inline NX_Vec4 NX_Vec4Abs(NX_Vec4 v)
 {
-    for (int i = 0; i < 4; ++i) {
-        v.v[i] = fabsf(v.v[i]);
-    }
+    v.x = fabsf(v.x);
+    v.y = fabsf(v.y);
+    v.z = fabsf(v.z);
+    v.w = fabsf(v.w);
+
     return v;
 }
 
@@ -2217,9 +2312,11 @@ static inline NX_Vec4 NX_Vec4Abs(NX_Vec4 v)
  */
 static inline NX_Vec4 NX_Vec4Neg(NX_Vec4 v)
 {
-    for (int i = 0; i < 4; ++i) {
-        v.v[i] = -v.v[i];
-    }
+    v.x = -v.x;
+    v.y = -v.y;
+    v.z = -v.z;
+    v.w = -v.w;
+
     return v;
 }
 
@@ -2228,23 +2325,23 @@ static inline NX_Vec4 NX_Vec4Neg(NX_Vec4 v)
  */
 static inline NX_Vec4 NX_Vec4Rcp(NX_Vec4 v)
 {
-    for (int i = 0; i < 4; ++i) {
-        v.v[i] = 1.0f / v.v[i];
-    }
+    v.x = 1.0f / v.x;
+    v.y = 1.0f / v.y;
+    v.z = 1.0f / v.z;
+    v.w = 1.0f / v.w;
+
     return v;
 }
 
 /**
  * @brief Test approximate equality between two vectors, within epsilon tolerance.
  */
-static inline int NX_Vec4Approx(NX_Vec4 v0, NX_Vec4 v1, float epsilon)
+static inline bool NX_Vec4Approx(NX_Vec4 v0, NX_Vec4 v1, float epsilon)
 {
-    for (int i = 0; i < 4; ++i) {
-        if (!(fabsf(v0.x - v1.x) < epsilon)) {
-            return false;
-        }
-    }
-    return true;
+    return (fabsf(v0.x - v1.x) < epsilon) &&
+           (fabsf(v0.y - v1.y) < epsilon) &&
+           (fabsf(v0.z - v1.z) < epsilon) &&
+           (fabsf(v0.w - v1.w) < epsilon);
 }
 
 /**
@@ -2261,54 +2358,64 @@ static inline NX_IVec4 NX_Vec4Equals(NX_Vec4 v0, NX_Vec4 v1)
 static inline NX_IVec4 NX_Vec4GreaterThan(NX_Vec4 v0, NX_Vec4 v1)
 {
     NX_IVec4 result;
-    for (int i = 0; i < 4; ++i) {
-        result.v[i] = (v0.v[i] > v1.v[i]);
-    }
+    result.x = (v0.x > v1.x);
+    result.y = (v0.y > v1.y);
+    result.z = (v0.z > v1.z);
+    result.w = (v0.x > v1.w);
+
     return result;
 }
 
 /**
  * @brief Add two vectors (component-wise).
  */
-static inline NX_Vec4 NX_Vec4Add(NX_Vec4 v1, NX_Vec4 v2)
+static inline NX_Vec4 NX_Vec4Add(NX_Vec4 v0, NX_Vec4 v1)
 {
-    for (int i = 0; i < 4; ++i) {
-        v1.v[i] += v2.v[i];
-    }
-    return v1;
+    v0.x += v1.x;
+    v0.y += v1.y;
+    v0.z += v1.z;
+    v0.w += v1.w;
+
+    return v0;
 }
 
 /**
  * @brief Subtract two vectors (component-wise).
  */
-static inline NX_Vec4 NX_Vec4Sub(NX_Vec4 v1, NX_Vec4 v2)
+static inline NX_Vec4 NX_Vec4Sub(NX_Vec4 v0, NX_Vec4 v1)
 {
-    for (int i = 0; i < 4; ++i) {
-        v1.v[i] -= v2.v[i];
-    }
-    return v1;
+    v0.x -= v1.x;
+    v0.y -= v1.y;
+    v0.z -= v1.z;
+    v0.w -= v1.w;
+
+    return v0;
 }
 
 /**
  * @brief Multiply two vectors (component-wise).
  */
-static inline NX_Vec4 NX_Vec4Mul(NX_Vec4 v1, NX_Vec4 v2)
+static inline NX_Vec4 NX_Vec4Mul(NX_Vec4 v0, NX_Vec4 v1)
 {
-    for (int i = 0; i < 4; ++i) {
-        v1.v[i] *= v2.v[i];
-    }
-    return v1;
+    v0.x *= v1.x;
+    v0.y *= v1.y;
+    v0.z *= v1.z;
+    v0.w *= v1.w;
+
+    return v0;
 }
 
 /**
  * @brief Divide two vectors (component-wise).
  */
-static inline NX_Vec4 NX_Vec4Div(NX_Vec4 v1, NX_Vec4 v2)
+static inline NX_Vec4 NX_Vec4Div(NX_Vec4 v0, NX_Vec4 v1)
 {
-    for (int i = 0; i < 4; ++i) {
-        v1.v[i] /= v2.v[i];
-    }
-    return v1;
+    v0.x /= v1.x;
+    v0.y /= v1.y;
+    v0.z /= v1.z;
+    v0.w /= v1.w;
+
+    return v0;
 }
 
 /**
@@ -2316,9 +2423,11 @@ static inline NX_Vec4 NX_Vec4Div(NX_Vec4 v1, NX_Vec4 v2)
  */
 static inline NX_Vec4 NX_Vec4Offset(NX_Vec4 v, float s)
 {
-    for (int i = 0; i < 4; ++i) {
-        v.v[i] += s;
-    }
+    v.x += s;
+    v.y += s;
+    v.z += s;
+    v.w += s;
+
     return v;
 }
 
@@ -2327,9 +2436,11 @@ static inline NX_Vec4 NX_Vec4Offset(NX_Vec4 v, float s)
  */
 static inline NX_Vec4 NX_Vec4Scale(NX_Vec4 v, float s)
 {
-    for (int i = 0; i < 4; ++i) {
-        v.v[i] *= s;
-    }
+    v.x *= s;
+    v.y *= s;
+    v.z *= s;
+    v.w *= s;
+
     return v;
 }
 
@@ -2338,9 +2449,11 @@ static inline NX_Vec4 NX_Vec4Scale(NX_Vec4 v, float s)
  */
 static inline NX_Vec4 NX_Vec4MulAdd(NX_Vec4 a, float s, NX_Vec4 b)
 {
-    for (int i = 0; i < 4; ++i) {
-        a.v[i] = a.v[i] * s + b.v[i];
-    }
+    a.x = fmaf(a.x, s, b.x);
+    a.y = fmaf(a.y, s, b.y);
+    a.z = fmaf(a.z, s, b.z);
+    a.w = fmaf(a.w, s, b.w);
+
     return a;
 }
 
@@ -2349,15 +2462,18 @@ static inline NX_Vec4 NX_Vec4MulAdd(NX_Vec4 a, float s, NX_Vec4 b)
  */
 static inline NX_Vec4 NX_Vec4Normalize(NX_Vec4 v)
 {
-    float len = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w);
-    if (len < 1e-4f) return NX_VEC4_ZERO;
+    float lenSq = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
+    float mask = (lenSq > 1e-8f) ? 1.0f : 0.0f;
 
-    float inv_len = 1.0f / len;
-    for (int i = 0; i < 4; ++i) {
-        v.v[i] *= inv_len;
-    }
+    float invLen = mask * (1.0f / sqrtf(lenSq + (1.0f - mask)));
 
-    return v;
+    NX_Vec4 result;
+    result.x = v.x * invLen;
+    result.y = v.y * invLen;
+    result.z = v.z * invLen;
+    result.w = v.w * invLen;
+
+    return result;
 }
 
 /**
@@ -2385,37 +2501,49 @@ static inline float NX_Vec4Dot(NX_Vec4 v1, NX_Vec4 v2)
 }
 
 /**
- * @brief Move current vector toward target vector by at most maxDelta.
- */
-static inline NX_Vec4 NX_Vec4MoveToward(NX_Vec4 current, NX_Vec4 target, float maxDelta)
-{
-    NX_Vec4 delta;
-    for (int i = 0; i < 4; ++i) {
-        delta.v[i] = target.v[i] - current.v[i];
-    }
-
-    float dist = sqrtf(delta.x * delta.x + delta.y * delta.y);
-    if (dist <= maxDelta) {
-        return target;
-    }
-
-    float ratio = maxDelta / dist;
-    for (int i = 0; i < 4; ++i) {
-        current.v[i] = delta.v[i] * ratio;
-    }
-
-    return current;
-}
-
-/**
  * @brief Linear interpolation between v1 and v2.
  */
 static inline NX_Vec4 NX_Vec4Lerp(NX_Vec4 v1, NX_Vec4 v2, float t)
 {
-    for (int i = 0; i < 4; ++i) {
-        v1.v[i] += t * (v2.v[i] - v1.v[i]);
+    float w1 = 1.0f - t;
+    float w2 = t;
+
+    NX_Vec4 result;
+    result.x = fmaf(w2, v2.x, w1 * v1.x);
+    result.y = fmaf(w2, v2.y, w1 * v1.y);
+    result.z = fmaf(w2, v2.z, w1 * v1.z);
+    result.w = fmaf(w2, v2.w, w1 * v1.w);
+
+    return result;
+}
+
+/**
+ * @brief Move current vector toward target vector by at most maxDelta.
+ */
+static inline NX_Vec4 NX_Vec4MoveToward(NX_Vec4 current, NX_Vec4 target, float maxDelta)
+{
+    float dx = target.x - current.x;
+    float dy = target.y - current.y;
+    float dz = target.z - current.z;
+    float dw = target.w - current.w;
+
+    float distSq = dx * dx + dy * dy + dz * dz + dw * dw;
+    float maxDeltaSq = maxDelta * maxDelta;
+
+    if (distSq <= maxDeltaSq) {
+        return target;
     }
-    return v1;
+
+    float dist = sqrtf(distSq);
+    float ratio = maxDelta / dist;
+
+    NX_Vec4 result;
+    result.x = fmaf(dx, ratio, current.x);
+    result.y = fmaf(dy, ratio, current.y);
+    result.z = fmaf(dz, ratio, current.z);
+    result.w = fmaf(dw, ratio, current.w);
+
+    return result;
 }
 
 /**
@@ -2424,10 +2552,10 @@ static inline NX_Vec4 NX_Vec4Lerp(NX_Vec4 v1, NX_Vec4 v2, float t)
 static inline NX_Vec4 NX_Vec4TransformByMat4(NX_Vec4 v, const NX_Mat4* mat)
 {
     NX_Vec4 result;
-    result.x = mat->m00 * v.x + mat->m10 * v.y + mat->m20 * v.z + mat->m30 * v.w;
-    result.y = mat->m01 * v.x + mat->m11 * v.y + mat->m21 * v.z + mat->m31 * v.w;
-    result.z = mat->m02 * v.x + mat->m12 * v.y + mat->m22 * v.z + mat->m32 * v.w;
-    result.w = mat->m03 * v.x + mat->m13 * v.y + mat->m23 * v.z + mat->m33 * v.w;
+    result.x = fmaf(mat->m00, v.x, fmaf(mat->m10, v.y, fmaf(mat->m20, v.z, mat->m30 * v.w)));
+    result.y = fmaf(mat->m01, v.x, fmaf(mat->m11, v.y, fmaf(mat->m21, v.z, mat->m31 * v.w)));
+    result.z = fmaf(mat->m02, v.x, fmaf(mat->m12, v.y, fmaf(mat->m22, v.z, mat->m32 * v.w)));
+    result.w = fmaf(mat->m03, v.x, fmaf(mat->m13, v.y, fmaf(mat->m23, v.z, mat->m33 * v.w)));
 
     return result;
 }
@@ -2909,9 +3037,14 @@ NXAPI NX_Quat NX_QuatFromMat4(const NX_Mat4* m);
 NXAPI NX_Mat4 NX_QuatToMat4(NX_Quat q);
 
 /**
+ * @brief Compute a quaternion that rotates the forward vector (-Z) to the given direction.
+ */
+NXAPI NX_Quat NX_QuatLookTo(NX_Vec3 direction, NX_Vec3 up);
+
+/**
  * @brief Compute a quaternion that rotates from the world forward (-Z) to point from 'from' to 'to'.
  */
-NXAPI NX_Quat NX_QuatLookAt(NX_Vec3 from, NX_Vec3 to, NX_Vec3 up);
+NXAPI NX_Quat NX_QuatLookAt(NX_Vec3 eye, NX_Vec3 target, NX_Vec3 up);
 
 /**
  * @brief Returns the forward direction (-Z) of the quaternion
