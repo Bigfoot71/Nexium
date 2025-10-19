@@ -271,7 +271,7 @@ inline void DrawCallManager::culling(const Frustum& frustum, NX_Layer frustumCul
 {
     mUniqueVisible.clear();
 
-    const auto addWithoutTest = [this, frustumCullMask](int start, int end) -> void {
+    const auto addWithoutTest = [&](int start, int end) -> void {
         for (int i = start; i < end; ++i) {
             const UniqueData& u = mUniqueData[i];
             if ((frustumCullMask & u.mesh.layerMask()) != 0) {
@@ -280,7 +280,7 @@ inline void DrawCallManager::culling(const Frustum& frustum, NX_Layer frustumCul
         }
     };
 
-    const auto addWithTest = [this, &frustum, frustumCullMask](int start, int end) -> void {
+    const auto addWithTest = [&](int start, int end) -> void {
         for (int i = start; i < end; ++i) {
             const UniqueData& u = mUniqueData[i];
             if ((frustumCullMask & u.mesh.layerMask()) != 0) {

@@ -571,26 +571,18 @@ inline Float4 clamp(const Float4& v, const Float4& low, const Float4& high)
 #endif
 }
 
-/* === Multi Vector === */
+/* === SoA SIMD === */
 
 template <int N>
-struct Vector {
+struct SoA {
     std::array<Float4, N> v{};
-
-    Vector() = default;
-    explicit Vector(float f);
+    SoA() = default;
 };
 
 template <int N>
-inline Vector<N>::Vector(float f)
+inline SoA<N> operator==(const SoA<N>& a, const SoA<N>& b)
 {
-    v.fill(Float4(f));
-}
-
-template <int N>
-inline Vector<N> operator==(const Vector<N>& a, const Vector<N>& b)
-{
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] == b.v[i];
     }
@@ -598,9 +590,9 @@ inline Vector<N> operator==(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N> operator!=(const Vector<N>& a, const Vector<N>& b)
+inline SoA<N> operator!=(const SoA<N>& a, const SoA<N>& b)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] != b.v[i];
     }
@@ -608,9 +600,9 @@ inline Vector<N> operator!=(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N> operator<(const Vector<N>& a, const Vector<N>& b)
+inline SoA<N> operator<(const SoA<N>& a, const SoA<N>& b)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] < b.v[i];
     }
@@ -618,9 +610,9 @@ inline Vector<N> operator<(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N> operator>(const Vector<N>& a, const Vector<N>& b)
+inline SoA<N> operator>(const SoA<N>& a, const SoA<N>& b)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] > b.v[i];
     }
@@ -628,9 +620,9 @@ inline Vector<N> operator>(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N> operator<=(const Vector<N>& a, const Vector<N>& b)
+inline SoA<N> operator<=(const SoA<N>& a, const SoA<N>& b)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] <= b.v[i];
     }
@@ -638,9 +630,9 @@ inline Vector<N> operator<=(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N> operator>=(const Vector<N>& a, const Vector<N>& b)
+inline SoA<N> operator>=(const SoA<N>& a, const SoA<N>& b)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] >= b.v[i];
     }
@@ -648,9 +640,9 @@ inline Vector<N> operator>=(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N> operator&(const Vector<N>& a, const Vector<N>& b)
+inline SoA<N> operator&(const SoA<N>& a, const SoA<N>& b)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] & b.v[i];
     }
@@ -658,9 +650,9 @@ inline Vector<N> operator&(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N> operator|(const Vector<N>& a, const Vector<N>& b)
+inline SoA<N> operator|(const SoA<N>& a, const SoA<N>& b)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] | b.v[i];
     }
@@ -668,9 +660,9 @@ inline Vector<N> operator|(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N> operator^(const Vector<N>& a, const Vector<N>& b)
+inline SoA<N> operator^(const SoA<N>& a, const SoA<N>& b)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] ^ b.v[i];
     }
@@ -678,9 +670,9 @@ inline Vector<N> operator^(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N> operator~(const Vector<N>& a)
+inline SoA<N> operator~(const SoA<N>& a)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = ~a.v[i];
     }
@@ -688,30 +680,30 @@ inline Vector<N> operator~(const Vector<N>& a)
 }
 
 template <int N>
-inline Vector<N>& operator&=(Vector<N>& a, const Vector<N>& b)
+inline SoA<N>& operator&=(SoA<N>& a, const SoA<N>& b)
 {
     a = a & b;
     return a;
 }
 
 template <int N>
-inline Vector<N>& operator|=(Vector<N>& a, const Vector<N>& b)
+inline SoA<N>& operator|=(SoA<N>& a, const SoA<N>& b)
 {
     a = a | b;
     return a;
 }
 
 template <int N>
-inline Vector<N>& operator^=(Vector<N>& a, const Vector<N>& b)
+inline SoA<N>& operator^=(SoA<N>& a, const SoA<N>& b)
 {
     a = a ^ b;
     return a;
 }
 
 template <int N>
-inline Vector<N> operator-(const Vector<N>& a)
+inline SoA<N> operator-(const SoA<N>& a)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = -a.v[i];
     }
@@ -719,9 +711,9 @@ inline Vector<N> operator-(const Vector<N>& a)
 }
 
 template <int N>
-inline Vector<N> operator+(const Vector<N>& a, const Vector<N>& b)
+inline SoA<N> operator+(const SoA<N>& a, const SoA<N>& b)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] + b.v[i];
     }
@@ -729,9 +721,9 @@ inline Vector<N> operator+(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N> operator-(const Vector<N>& a, const Vector<N>& b)
+inline SoA<N> operator-(const SoA<N>& a, const SoA<N>& b)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] - b.v[i];
     }
@@ -739,9 +731,9 @@ inline Vector<N> operator-(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N> operator*(const Vector<N>& a, const Vector<N>& b)
+inline SoA<N> operator*(const SoA<N>& a, const SoA<N>& b)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] * b.v[i];
     }
@@ -749,9 +741,9 @@ inline Vector<N> operator*(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N> operator/(const Vector<N>& a, const Vector<N>& b)
+inline SoA<N> operator/(const SoA<N>& a, const SoA<N>& b)
 {
-    Vector<N> r;
+    SoA<N> r;
     for (int i = 0; i < N; ++i) {
         r.v[i] = a.v[i] / b.v[i];
     }
@@ -759,28 +751,28 @@ inline Vector<N> operator/(const Vector<N>& a, const Vector<N>& b)
 }
 
 template <int N>
-inline Vector<N>& operator+=(Vector<N>& a, const Vector<N>& b)
+inline SoA<N>& operator+=(SoA<N>& a, const SoA<N>& b)
 {
     a = a + b;
     return a;
 }
 
 template <int N>
-inline Vector<N>& operator-=(Vector<N>& a, const Vector<N>& b)
+inline SoA<N>& operator-=(SoA<N>& a, const SoA<N>& b)
 {
     a = a - b;
     return a;
 }
 
 template <int N>
-inline Vector<N>& operator*=(Vector<N>& a, const Vector<N>& b)
+inline SoA<N>& operator*=(SoA<N>& a, const SoA<N>& b)
 {
     a = a * b;
     return a;
 }
 
 template <int N>
-inline Vector<N>& operator/=(Vector<N>& a, const Vector<N>& b)
+inline SoA<N>& operator/=(SoA<N>& a, const SoA<N>& b)
 {
     a = a / b;
     return a;
@@ -788,8 +780,8 @@ inline Vector<N>& operator/=(Vector<N>& a, const Vector<N>& b)
 
 /* === 2D Vector === */
 
-struct Vec2 : public Vector<2> {
-    using Base = Vector<2>;
+struct Vec2 : public SoA<2> {
+    using Base = SoA<2>;
     using Base::Base;
 
     Vec2(const NX_Vec2& vec);
@@ -863,8 +855,8 @@ inline Vec2 normalize(const Vec2& a)
 
 /* === 3D Vector === */
 
-struct Vec3 : public Vector<3> {
-    using Base = Vector<3>;
+struct Vec3 : public SoA<3> {
+    using Base = SoA<3>;
     using Base::Base;
 
     Vec3(const NX_Vec3& vec);
@@ -982,10 +974,10 @@ inline Vec3 cross(const Vec3& a, const Vec3& b)
     return r;
 }
 
-/* === Vector 4D === */
+/* === 4D Vector === */
 
-struct Vec4 : public Vector<4> {
-    using Base = Vector<4>;
+struct Vec4 : public SoA<4> {
+    using Base = SoA<4>;
     using Base::Base;
 
     Vec4(const NX_Vec4& vec);
