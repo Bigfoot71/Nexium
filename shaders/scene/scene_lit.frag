@@ -10,6 +10,7 @@
 
 #ifdef GL_ES
 precision highp float;
+precision mediump int;
 #endif
 
 /* === Includes === */

@@ -22,9 +22,9 @@ layout(location = 0) in vec2 vTexCoord;
 /* === Samplers === */
 
 #if defined(FIRST_PASS_CUBE)
-layout(binding = 0) uniform samplerCubeArray uTexShadow;
+layout(binding = 0) uniform highp samplerCubeArray uTexShadow;
 #elif defined(FIRST_PASS_2D)
-layout(binding = 0) uniform sampler2DArray uTexShadow;
+layout(binding = 0) uniform highp sampler2DArray uTexShadow;
 #else
 layout(binding = 0) uniform sampler2D uTexShadow;
 #endif
@@ -106,7 +106,7 @@ void main()
 {
     vec2 result = vec2(0.0);
 
-    float texelSize = 1.0 / textureSize(uTexShadow, 0).x;
+    float texelSize = 1.0 / float(textureSize(uTexShadow, 0).x);
     float blurRadius = uSoftness * texelSize;
 
 #if defined(FIRST_PASS_CUBE) || defined(FIRST_PASS_2D)

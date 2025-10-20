@@ -27,5 +27,5 @@ struct MeshData {
     vec2 texOffset;
     vec2 texScale;
     int billboard;
-    int layerMask;
+    uint layerMask;
 };
