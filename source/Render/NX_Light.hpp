@@ -152,8 +152,8 @@ private:
         std::array<scene::Frustum, 6> frustum{};
         std::array<NX_Mat4, 6> viewProj{};
         float slopeBias{0.005f};
-        float bias{0.008f};
-        float softness{1.0f};
+        float bias{0.001f};
+        float softness{2.0f};
     };
 
     struct ShadowState {
