@@ -2435,13 +2435,54 @@ NXAPI NX_Layer NX_GetShadowCullMask(const NX_Light* light);
  */
 NXAPI void NX_SetShadowCullMask(NX_Light* light, NX_Layer layers);
 
+/**
+ * @brief Gets the shadow slope bias.
+ * @param light Pointer to the NX_Light.
+ * @return Current shadow slope bias.
+ * @note Default value is 0.005.
+ */
 NXAPI float NX_GetShadowSlopeBias(NX_Light* light);
+
+/**
+ * @brief Sets the shadow slope bias.
+ * @param light Pointer to the NX_Light.
+ * @param slopeBias New shadow slope bias.
+ * @note Default value is 0.005.
+ */
 NXAPI void NX_SetShadowSlopeBias(NX_Light* light, float slopeBias);
 
+/**
+ * @brief Gets the shadow bias.
+ * @param light Pointer to the NX_Light.
+ * @return Current shadow bias.
+ * @note Default value is 0.001.
+ */
 NXAPI float NX_GetShadowBias(NX_Light* light);
+
+/**
+ * @brief Sets the shadow bias.
+ * @param light Pointer to the NX_Light.
+ * @param bias New shadow bias.
+ * @note Default value is 0.001.
+ */
 NXAPI void NX_SetShadowBias(NX_Light* light, float bias);
 
+/**
+ * @brief Gets the shadow softness (poisson disk radius).
+ * @param light Pointer to the NX_Light.
+ * @return Current shadow softness in texels.
+ * @note Default value is 2.0.
+ * @note A value below 1.0 produces hard shadows, larger values produce softer, more diffuse shadows.
+ */
 NXAPI float NX_GetShadowSoftness(const NX_Light* light);
+
+/**
+ * @brief Sets the shadow softness (poisson disk radius).
+ * @param light Pointer to the NX_Light.
+ * @param softness New shadow softness in texels.
+ * @note Default value is 2.0.
+ * @note A value below 1.0 produces hard shadows, larger values produce softer, more diffuse shadows.
+ */
 NXAPI void NX_SetShadowSoftness(NX_Light* light, float softness);
 
 /**
