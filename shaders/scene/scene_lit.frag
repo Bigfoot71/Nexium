@@ -25,26 +25,48 @@ precision mediump int;
 
 /* === Constants === */
 
-#define SHADOW_SAMPLES 16
+#ifndef SHADOW_SAMPLES
+#define SHADOW_SAMPLES 8
+#endif
 
-const vec2 POISSON_DISK[16] = vec2[](
-    vec2(-0.94201624, -0.39906216),
-    vec2(0.94558609, -0.76890725),
-    vec2(-0.094184101, -0.92938870),
-    vec2(0.34495938, 0.29387760),
-    vec2(-0.91588581, 0.45771432),
-    vec2(-0.81544232, -0.87912464),
-    vec2(-0.38277543, 0.27676845),
-    vec2(0.97484398, 0.75648379),
-    vec2(0.44323325, -0.97511554),
-    vec2(0.53742981, -0.47373420),
-    vec2(-0.26496911, -0.41893023),
-    vec2(0.79197514, 0.19090188),
-    vec2(-0.24188840, 0.99706507),
-    vec2(-0.81409955, 0.91437590),
-    vec2(0.19984126, 0.78641367),
-    vec2(0.14383161, -0.14100790)
+#if SHADOW_SAMPLES == 4
+const vec2 VOGEL_DISK[4] = vec2[4](
+    vec2(0.353553, 0.000000),
+    vec2(-0.451544, 0.413652),
+    vec2(0.069116, -0.787542),
+    vec2(0.569142, 0.742346)
 );
+#elif SHADOW_SAMPLES == 8
+const vec2 VOGEL_DISK[8] = vec2[8](
+    vec2(0.250000, 0.000000),
+    vec2(-0.319290, 0.292496),
+    vec2(0.048872, -0.556877),
+    vec2(0.402444, 0.524918),
+    vec2(-0.738535, -0.130636),
+    vec2(0.699605, -0.445031),
+    vec2(-0.234004, 0.870484),
+    vec2(-0.446271, -0.859268)
+);
+#elif SHADOW_SAMPLES == 16
+const vec2 VOGEL_DISK[16] = vec2[16](
+    vec2(0.176777, 0.000000),
+    vec2(-0.225772, 0.206826),
+    vec2(0.034558, -0.393771),
+    vec2(0.284571, 0.371173),
+    vec2(-0.522223, -0.092374),
+    vec2(0.494695, -0.314685),
+    vec2(-0.165466, 0.615525),
+    vec2(-0.315561, -0.607594),
+    vec2(0.684642, 0.250030),
+    vec2(-0.712256, 0.294009),
+    vec2(0.343354, -0.733729),
+    vec2(0.253730, 0.808932),
+    vec2(-0.764746, -0.443186),
+    vec2(0.897134, -0.197232),
+    vec2(-0.547507, 0.778772),
+    vec2(-0.126487, -0.976090)
+);
+#endif
 
 /* === Varyings === */
 
@@ -152,8 +174,8 @@ vec3 Specular(vec3 F0, float cLdotH, float cNdotH, float cNdotV, float cNdotL, f
 float InterleavedGradientNoise(vec2 pos)
 {
     // http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
-	const vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
-	return fract(magic.z * fract(dot(pos, magic.xy)));
+    const vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
+    return fract(magic.z * fract(dot(pos, magic.xy)));
 }
 
 float ShadowDir(in Light light, float NdotL)
@@ -173,20 +195,20 @@ float ShadowDir(in Light light, float NdotL)
     float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
     float currentDepth = lightToFragLen / light.range - bias;
 
-    /* --- Generate an additional debanding rotation for the poisson disk --- */
+    /* --- Calculate rotation of the vogel disk --- */
 
     float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
     float sr = sin(r), cr = cos(r);
 
     mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
 
-    /* --- Poisson Disk PCF Sampling --- */
+    /* --- Vogel disk PCF sampling --- */
 
     float softRadius = shadow.softness / float(textureSize(uTexShadowSpot, 0).x);
 
     float factor = 0.0;
-    for (int j = 0; j < SHADOW_SAMPLES; ++j) {
-        vec2 sampleDir = projCoords.xy + diskRot * POISSON_DISK[j] * softRadius;
+    for (int i = 0; i < SHADOW_SAMPLES; ++i) {
+        vec2 sampleDir = projCoords.xy + diskRot * VOGEL_DISK[i] * softRadius;
         factor += step(currentDepth, texture(uTexShadowDir, vec3(sampleDir, float(shadow.mapIndex))).r);
     }
 
@@ -199,8 +221,6 @@ float ShadowDir(in Light light, float NdotL)
 
     const float fadeStart = 0.85;
     float edgeFade = smoothstep(0.0, 1.0 - fadeStart, minDist);
-
-    /* --- Final Shadow Value --- */
 
     return mix(1.0, factor, edgeFade);
 }
@@ -229,24 +249,22 @@ float ShadowSpot(in Light light, float NdotL)
     float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
     float currentDepth = lightToFragLen / light.range - bias;
 
-    /* --- Generate an additional debanding rotation for the poisson disk --- */
+    /* --- Calculate rotation of the vogel disk --- */
 
     float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
     float sr = sin(r), cr = cos(r);
 
     mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
 
-    /* --- Poisson Disk PCF Sampling --- */
+    /* --- Vogel disk PCF sampling --- */
 
     float softRadius = shadow.softness / float(textureSize(uTexShadowSpot, 0).x);
 
     float factor = 0.0;
-    for (int j = 0; j < SHADOW_SAMPLES; ++j) {
-        vec2 sampleDir = projCoords.xy + diskRot * POISSON_DISK[j] * softRadius;
+    for (int i = 0; i < SHADOW_SAMPLES; ++i) {
+        vec2 sampleDir = projCoords.xy + diskRot * VOGEL_DISK[i] * softRadius;
         factor += step(currentDepth, texture(uTexShadowSpot, vec3(sampleDir, float(shadow.mapIndex))).r);
     }
-
-    /* --- Final Shadow Value --- */
 
     return factor / float(SHADOW_SAMPLES);
 }
@@ -270,25 +288,22 @@ float ShadowOmni(in Light light, float NdotL)
 
     mat3 OBN = M_OrthonormalBasis(dir);
 
-    /* --- Generate an additional debanding rotation for the poisson disk --- */
+    /* --- Calculate rotation of the vogel disk --- */
 
     float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
     float sr = sin(r), cr = cos(r);
 
     mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
 
-    /* --- Poisson Disk PCF Sampling --- */
+    /* --- Vogel disk PCF sampling --- */
 
     float softRadius = shadow.softness / float(textureSize(uTexShadowSpot, 0).x);
 
     float factor = 0.0;
-    for (int j = 0; j < SHADOW_SAMPLES; ++j) {
-        vec3 sampleDir = normalize(dir + OBN * vec3(diskRot * POISSON_DISK[j] * softRadius, 0.0));
-        float sampleDepth = texture(uTexShadowOmni, vec4(sampleDir, float(shadow.mapIndex))).r;
-        factor += step(currentDepth, sampleDepth);
+    for (int i = 0; i < SHADOW_SAMPLES; ++i) {
+        vec3 sampleDir = normalize(dir + OBN * vec3(diskRot * VOGEL_DISK[i] * softRadius, 0.0));
+        factor += step(currentDepth, texture(uTexShadowOmni, vec4(sampleDir, float(shadow.mapIndex))).r);
     }
-
-    /* --- Final Shadow Value --- */
 
     return factor / float(SHADOW_SAMPLES);
 }
