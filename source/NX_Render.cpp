@@ -3107,14 +3107,24 @@ void NX_SetShadowCullMask(NX_Light* light, NX_Layer layers)
     light->setShadowCullMask(layers);
 }
 
-float NX_GetShadowBleedingBias(const NX_Light* light)
+NXAPI float NX_GetShadowSlopeBias(NX_Light* light)
 {
-    return light->shadowBleedingBias();
+    return light->shadowSlopeBias();
 }
 
-void NX_SetShadowBleedingBias(NX_Light* light, float bias)
+NXAPI void NX_SetShadowSlopeBias(NX_Light* light, float slopeBias)
 {
-    light->setShadowBleedingBias(bias);
+    light->setShadowSlopeBias(slopeBias);
+}
+
+NXAPI float NX_GetShadowBias(NX_Light* light)
+{
+    return light->shadowBias();
+}
+
+NXAPI void NX_SetShadowBias(NX_Light* light, float bias)
+{
+    light->setShadowBias(bias);
 }
 
 float NX_GetShadowSoftness(const NX_Light* light)
@@ -3125,16 +3135,6 @@ float NX_GetShadowSoftness(const NX_Light* light)
 void NX_SetShadowSoftness(NX_Light* light, float softness)
 {
     light->setShadowSoftness(softness);
-}
-
-float NX_GetShadowLambda(const NX_Light* light)
-{
-    return light->shadowLambda();
-}
-
-void NX_SetShadowLambda(NX_Light* light, float lambda)
-{
-    light->setShadowLambda(lambda);
 }
 
 NX_ShadowUpdateMode NX_GetShadowUpdateMode(const NX_Light* light)

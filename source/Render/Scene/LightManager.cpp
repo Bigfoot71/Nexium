@@ -24,7 +24,7 @@ namespace scene {
 LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& assets, const NX_AppDesc& desc)
     : mPrograms(programs), mAssets(assets)
     , mFrameShadowUniform(GL_UNIFORM_BUFFER, sizeof(FrameShadowUniform), nullptr, GL_DYNAMIC_DRAW)
-    , mShadowResolution{desc.render3D.shadowRes > 0 ? desc.render3D.shadowRes : 1024}
+    , mShadowResolution{desc.render3D.shadowRes > 0 ? desc.render3D.shadowRes : 2048}
 {
     /* --- Calculation of the number of clusters according to the target size --- */
 
@@ -80,33 +80,15 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
 
     /* --- Create shadow maps --- */
 
-    // NOTE: On desktop GL we use EVSM for shadow maps, which requires
-    //       storing exponentials and therefore high precision. 
-    //       We use 32-bit float per pixel for that.
-    //       Since 32-bit float on OpenGL ES 3.2 relies on an extension,
-    //       to keep things simpler and reduce memory usage on these devices,
-    //       we use 16-bit format with VSM instead, similar in concept but 
-    //       without storing exponentials.
-
-    GLenum shadowFormat = GL_RG32F;
-    if (gCore->glProfile() == SDL_GL_CONTEXT_PROFILE_ES) {
-        shadowFormat = GL_RG16F;
-    }
-
     mTargetShadow[NX_LIGHT_DIR] = gpu::Texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_2D_ARRAY,
-            .internalFormat = shadowFormat,
+            .internalFormat = GL_R16F,
             .width = mShadowResolution,
             .height = mShadowResolution,
             .depth = 1,
-            .mipmap = desc.render3D.shadowDirMip,
-        },
-        gpu::TextureParam
-        {
-            .minFilter = static_cast<GLenum>(desc.render3D.shadowDirMip ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR),
-            .magFilter = GL_LINEAR
+            .mipmap = false
         }
     );
 
@@ -114,32 +96,22 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_2D_ARRAY,
-            .internalFormat = shadowFormat,
+            .internalFormat = GL_R16F,
             .width = mShadowResolution,
             .height = mShadowResolution,
             .depth = 1,
-            .mipmap = desc.render3D.shadowSpotMip,
-        },
-        gpu::TextureParam
-        {
-            .minFilter = static_cast<GLenum>(desc.render3D.shadowSpotMip ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR),
-            .magFilter = GL_LINEAR
+            .mipmap = false
         }
     );
 
     mTargetShadow[NX_LIGHT_OMNI] = gpu::Texture(
         gpu::TextureConfig {
             .target = GL_TEXTURE_CUBE_MAP_ARRAY,
-            .internalFormat = shadowFormat,
+            .internalFormat = GL_R16F,
             .width = mShadowResolution,
             .height = mShadowResolution,
             .depth = 1,
-            .mipmap = desc.render3D.shadowOmniMip,
-        },
-        gpu::TextureParam
-        {
-            .minFilter = static_cast<GLenum>(desc.render3D.shadowOmniMip ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR),
-            .magFilter = GL_LINEAR
+            .mipmap = false
         }
     );
 
@@ -161,30 +133,6 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
             {&mTargetShadow[i]}, &mShadowDepth
         );
     }
-
-    /* --- Create pre-blur framebuffer --- */
-
-    mTargetPreBlur = gpu::Texture(
-        gpu::TextureConfig
-        {
-            .target = GL_TEXTURE_2D,
-            .internalFormat = shadowFormat,
-            .width = mShadowResolution,
-            .height = mShadowResolution
-        },
-        gpu::TextureParam
-        {
-            .minFilter = GL_LINEAR,
-            .magFilter = GL_LINEAR,
-            .sWrap = GL_CLAMP_TO_EDGE,
-            .tWrap = GL_CLAMP_TO_EDGE,
-            .rWrap = GL_CLAMP_TO_EDGE
-        }
-    );
-
-    mFramebufferPreBlur = gpu::Framebuffer(
-        {&mTargetPreBlur}
-    );
 
     /* --- Reserve caches space --- */
 
@@ -326,13 +274,6 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
         return;
     }
 
-    /* --- Lambda to get the clear value --- */
-
-    const auto clearValue = [&](const NX_Light& light) {
-        if (gCore->glProfile() == SDL_GL_CONTEXT_PROFILE_ES) return NX_COLOR(1.0f, 1.0f, 0.0f, 0.0f);
-        else return NX_COLOR(expf(+light.shadowLambda()), expf(-light.shadowLambda()), 0.0f, 0.0f);
-    };
-
     /* --- Ensures that there are enough shadow maps in each texture array --- */
 
     for (int i = 0; i < mTargetShadow.size(); i++) {
@@ -373,13 +314,12 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             for (int face = 0; face < ((lightType == NX_LIGHT_OMNI) ? 6 : 1); ++face)
             {
                 mFramebufferShadow[lightType].setColorAttachmentTarget(0, data.mapIndex, face);
-                pipeline.clear(mFramebufferShadow[lightType], clearValue(light));
+                pipeline.clear(mFramebufferShadow[lightType], NX_COLOR_1(light.range()));
 
                 // REVIEW: We could use a better method for per-frame data...
                 mFrameShadowUniform->uploadObject(FrameShadowUniform {
                     .lightViewProj = light.viewProj(face),
                     .lightPosition = light.position(),
-                    .shadowLambda = light.shadowLambda(),
                     .lightRange = light.range(),
                     .elapsedTime = static_cast<float>(NX_GetElapsedTime())
                 });
@@ -407,77 +347,6 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     params.drawCalls.draw(pipeline, unique);
                 }
             }
-        }
-    }
-}
-
-void LightManager::preBlursShadowMaps(const ProcessParams& params)
-{
-    // NOTE: For cubemaps, we simply iterate over each face and
-    //       apply a fullscreen blur independently on each face
-    //       as if it were a regular texture. Technically, this
-    //       doesn't handle the cubemap borders, there are tricks
-    //       to deal with that, but so far no noticeable artifacts
-    //       or major visual issues have appeared for the shadows,
-    //       so as long as it works, we'll keep it this way!
-
-    if (mShadowNeedingUpdate.empty()) {
-        return;
-    }
-
-    gpu::Pipeline pipeline;
-
-    pipeline.setViewport(0, 0, mShadowResolution, mShadowResolution);
-    pipeline.setDepthMode(gpu::DepthMode::Disabled);
-
-    for (int i = 0; i < mFramebufferShadow.size(); ++i)
-    {
-        NX_LightType lightType = static_cast<NX_LightType>(i);
-        bool isOmni = (lightType == NX_LIGHT_OMNI);
-
-        for (uint32_t shadowIndex : mShadowNeedingUpdate.category(lightType))
-        {
-            const ActiveShadow& data = mActiveShadows[shadowIndex];
-
-            if (data.light->shadowSoftness() <= 0.0f) {
-                continue;
-            }
-
-            for (int face = 0; face < (isOmni ? 6 : 1); ++face)
-            {
-                /* --- First pass (horizontal) --- */
-
-                pipeline.bindFramebuffer(mFramebufferPreBlur);
-                mFramebufferPreBlur.invalidate({0});
-
-                pipeline.useProgram(mPrograms.shadowGaussianBlur(true, isOmni));
-                pipeline.bindTexture(0, mTargetShadow[lightType]);
-
-                pipeline.setUniformFloat1(2, data.light->shadowSoftness());
-                if (isOmni) pipeline.setUniformInt1(1, face);
-                pipeline.setUniformInt1(0, data.mapIndex);
-
-                pipeline.draw(GL_TRIANGLES, 3);
-
-                /* --- Second pass (vertical) --- */
-
-                pipeline.bindFramebuffer(mFramebufferShadow[i]);
-                mFramebufferShadow[lightType].setColorAttachmentTarget(0, data.mapIndex, face);
-                mFramebufferShadow[lightType].invalidate({0});
-
-                pipeline.useProgram(mPrograms.shadowGaussianBlur(false, isOmni));
-
-                pipeline.bindTexture(0, mTargetPreBlur);
-                pipeline.setUniformFloat1(2, data.light->shadowSoftness());
-
-                pipeline.draw(GL_TRIANGLES, 3);
-            }
-        }
-
-        /* --- Generates mipmaps if needed --- */
-
-        if (mTargetShadow[lightType].numLevels() > 1) {
-            mTargetShadow[lightType].generateMipmap();
         }
     }
 }

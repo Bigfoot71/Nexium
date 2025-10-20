@@ -45,9 +45,10 @@ public:
     /** Shadow data send to the GPU */
     struct ShadowGPU {
         alignas(16) NX_Mat4 viewProj{};
-        alignas(4) float bleedingBias{};
-        alignas(4) float lambda{};
         alignas(4) uint32_t mapIndex{};
+        alignas(4) float slopeBias{};
+        alignas(4) float bias{};
+        alignas(4) float softness{};
     };
 
 public:
@@ -73,9 +74,9 @@ public:
     float outerCutOff() const;
     bool isShadowActive() const;
     NX_Layer shadowCullMask() const;
-    float shadowBleedingBias() const;
+    float shadowSlopeBias() const;
+    float shadowBias() const;
     float shadowSoftness() const;
-    float shadowLambda() const;
     NX_ShadowUpdateMode shadowUpdateMode() const;
     float shadowUpdateInterval() const;
 
@@ -94,9 +95,9 @@ public:
     void setOuterCutOff(float radians);
     void setShadowActive(bool active);
     void setShadowCullMask(NX_Layer layers);
-    void setShadowBleedingBias(float bias);
+    void setShadowSlopeBias(float slopeBias);
+    void setShadowBias(float bias);
     void setShadowSoftness(float softness);
-    void setShadowLambda(float lambda);
     void setShadowUpdateMode(NX_ShadowUpdateMode mode);
     void setShadowUpdateInterval(float interval);
 
@@ -150,9 +151,9 @@ private:
         // NOTE: We store the viewProj matrices and frustums for each face in case of omni-light
         std::array<scene::Frustum, 6> frustum{};
         std::array<NX_Mat4, 6> viewProj{};
-        float bleedingBias{0.2f};
+        float slopeBias{0.005f};
+        float bias{0.008f};
         float softness{1.0f};
-        float lambda{60};
     };
 
     struct ShadowState {
@@ -488,19 +489,19 @@ inline NX_Layer NX_Light::shadowCullMask() const
     return mShadowCullMask;
 }
 
-inline float NX_Light::shadowBleedingBias() const
+inline float NX_Light::shadowSlopeBias() const
 {
-    return mShadowData.bleedingBias;
+    return mShadowData.slopeBias;
+}
+
+inline float NX_Light::shadowBias() const
+{
+    return mShadowData.bias;
 }
 
 inline float NX_Light::shadowSoftness() const
 {
     return mShadowData.softness;
-}
-
-inline float NX_Light::shadowLambda() const
-{
-    return mShadowData.lambda;
 }
 
 inline NX_ShadowUpdateMode NX_Light::shadowUpdateMode() const
@@ -756,19 +757,19 @@ inline void NX_Light::setShadowCullMask(NX_Layer layers)
     mShadowCullMask = layers;
 }
 
-inline void NX_Light::setShadowBleedingBias(float bias)
+inline void NX_Light::setShadowSlopeBias(float slopeBias)
 {
-    mShadowData.bleedingBias = bias;
+    mShadowData.slopeBias = slopeBias;
+}
+
+inline void NX_Light::setShadowBias(float bias)
+{
+    mShadowData.bias = bias;
 }
 
 inline void NX_Light::setShadowSoftness(float softness)
 {
     mShadowData.softness = softness;
-}
-
-inline void NX_Light::setShadowLambda(float lambda)
-{
-    mShadowData.lambda = lambda;
 }
 
 inline void NX_Light::setShadowUpdateMode(NX_ShadowUpdateMode mode)
@@ -790,9 +791,10 @@ inline void NX_Light::fillShadowGPU(ShadowGPU* shadow, int mapIndex) const
         shadow->viewProj = mShadowData.viewProj[0];
     }
 
-    shadow->bleedingBias = mShadowData.bleedingBias;
-    shadow->lambda = mShadowData.lambda;
     shadow->mapIndex = mapIndex;
+    shadow->slopeBias = mShadowData.slopeBias;
+    shadow->bias = mShadowData.bias;
+    shadow->softness = mShadowData.softness;
 }
 
 inline void NX_Light::fillLightGPU(LightGPU* light, int shadowIndex) const

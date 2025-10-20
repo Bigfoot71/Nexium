@@ -69,18 +69,6 @@ void main()
     float alpha = vInt.color.a * texture(uTexAlbedo, vInt.texCoord).a;
     if (alpha < sMeshData[uMeshDataIndex].alphaCutOff) discard;
 
-    // Normalized linear distance in [0,1]
     float d01 = length(vInt.position - uFrame.lightPosition) / uFrame.lightRange;
-
-#ifdef GL_ES
-    // VSM
-    float m1 = d01;
-    float m2 = d01 * d01;
-    FragDistance = vec4(m1, m2, 0.0, 1.0);
-#else
-    // EVSM
-    float pExp = exp(+uFrame.shadowLambda * d01);
-    float nExp = exp(-uFrame.shadowLambda * d01);
-    FragDistance = vec4(pExp, nExp, 0.0, 1.0);
-#endif
+    FragDistance = vec4(d01, 0.0, 0.0, 1.0);
 }

@@ -20,7 +20,6 @@
 #include <shaders/skybox.vert.h>
 #include <shaders/skybox.frag.h>
 
-#include <shaders/shadow_gaussian_blur.frag.h>
 #include <shaders/ssao_bilateral_blur.frag.h>
 #include <shaders/downsampling.frag.h>
 #include <shaders/screen_quad.frag.h>
@@ -162,35 +161,6 @@ gpu::Program& ProgramCache::output(NX_Tonemap tonemap)
     mOutput[tonemap] = gpu::Program(mVertexShaderScreen, frag);
 
     return mOutput[tonemap];
-}
-
-gpu::Program& ProgramCache::shadowGaussianBlur(bool firstPass, bool isCubemap)
-{
-    int index = 0;
-    if (firstPass) {
-        index = (isCubemap) ? 2 : 1;
-    }
-
-    if (mShadowGaussianBlur[index].isValid()) {
-        return mShadowGaussianBlur[index];
-    }
-
-    constexpr const char* defines[3] = {
-        "SECOND_PASS",
-        "FIRST_PASS_2D",
-        "FIRST_PASS_CUBE"
-    };
-
-    mShadowGaussianBlur[index] = gpu::Program(
-        mVertexShaderScreen,
-        gpu::Shader(
-            GL_FRAGMENT_SHADER,
-            SHADOW_GAUSSIAN_BLUR_FRAG,
-            {defines[index]}
-        )
-    );
-
-    return mShadowGaussianBlur[index];
 }
 
 gpu::Program& ProgramCache::ssaoBilateralBlur()

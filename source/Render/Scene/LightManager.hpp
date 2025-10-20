@@ -70,7 +70,6 @@ private:
     void uploadShadows(const ProcessParams& params);
     void computeClusters(const ProcessParams& params);
     void renderShadowMaps(const ProcessParams& params);
-    void preBlursShadowMaps(const ProcessParams& params);
 
 private:
     static constexpr float SlicesPerDepthOctave = 3.0f;     ///< Number of depth slices per depth octave
@@ -81,7 +80,6 @@ private:
     struct FrameShadowUniform {
         alignas(16) NX_Mat4 lightViewProj;
         alignas(16) NX_Vec3 lightPosition;
-        alignas(4) float shadowLambda;
         alignas(4) float lightRange;
         alignas(4) float elapsedTime;
     };
@@ -110,10 +108,6 @@ private:
     std::array<gpu::Framebuffer, 3> mFramebufferShadow{};   ///< Contains on framebuffer per light type
     std::array<gpu::Texture, 3> mTargetShadow{};            ///< Contains one texture array per light type (cubemap for omni-lights)
     gpu::Texture mShadowDepth{};                            ///< Common depth buffer for depth testing (TODO: Make it a renderbuffer)
-
-    /** Pre-blur temp buffer */
-    gpu::Framebuffer mFramebufferPreBlur{};
-    gpu::Texture mTargetPreBlur{};              ///< Temporary buffer used for the first shadow pre-blur pass
 
     /** Storage Buffers */
     gpu::Buffer mStorageLights{};       ///< Storage for lights data
@@ -165,7 +159,6 @@ inline void LightManager::process(const ProcessParams& params)
     uploadShadows(params);
     computeClusters(params);
     renderShadowMaps(params);
-    preBlursShadowMaps(params);
 }
 
 inline const gpu::Buffer& LightManager::lightsBuffer() const

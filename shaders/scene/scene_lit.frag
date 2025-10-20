@@ -23,6 +23,29 @@ precision mediump int;
 #include "../include/math.glsl"
 #include "../include/pbr.glsl"
 
+/* === Constants === */
+
+#define SHADOW_SAMPLES 16
+
+const vec2 POISSON_DISK[16] = vec2[](
+    vec2(-0.94201624, -0.39906216),
+    vec2(0.94558609, -0.76890725),
+    vec2(-0.094184101, -0.92938870),
+    vec2(0.34495938, 0.29387760),
+    vec2(-0.91588581, 0.45771432),
+    vec2(-0.81544232, -0.87912464),
+    vec2(-0.38277543, 0.27676845),
+    vec2(0.97484398, 0.75648379),
+    vec2(0.44323325, -0.97511554),
+    vec2(0.53742981, -0.47373420),
+    vec2(-0.26496911, -0.41893023),
+    vec2(0.79197514, 0.19090188),
+    vec2(-0.24188840, 0.99706507),
+    vec2(-0.81409955, 0.91437590),
+    vec2(0.19984126, 0.78641367),
+    vec2(0.14383161, -0.14100790)
+);
+
 /* === Varyings === */
 
 layout(location = 0) in VaryInternal {
@@ -126,104 +149,148 @@ vec3 Specular(vec3 F0, float cLdotH, float cNdotH, float cNdotV, float cNdotL, f
 
 /* === Shadow functions === */
 
-float ReduceLightBleeding(float pMax, float amount)
+float InterleavedGradientNoise(vec2 pos)
 {
-    return clamp((pMax - amount) / (1.0 - amount), 0.0, 1.0);
+    // http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
+	const vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
+	return fract(magic.z * fract(dot(pos, magic.xy)));
 }
 
-float ShadowDir(in Light light)
+float ShadowDir(in Light light, float NdotL)
 {
     Shadow shadow = sShadows[light.shadowIndex];
+
+    /* --- Light space projection --- */
 
     vec4 projPos = shadow.viewProj * vec4(vInt.position, 1.0);
     vec3 projCoords = projPos.xyz / projPos.w * 0.5 + 0.5;
 
-    float d01 = length(vInt.position - light.position) / light.range;
-    vec2 m = texture(uTexShadowDir, vec3(projCoords.xy, float(shadow.mapIndex))).rg;
+    /* --- Calculate current normalized depth and apply bias --- */
 
-#ifdef GL_ES
-    // VSM
-    float dx = d01 - m.x;
-    float v  = max(m.y - m.x * m.x, 1e-4);
-    float p  = v / (v + dx * dx);
-    float factor = ReduceLightBleeding(p, shadow.bleedingBias);
-#else
-    // EVSM
-    float nExp = exp(-shadow.lambda * d01);
-    float pExp = exp(+shadow.lambda * d01);
-    float p = min(m.x * nExp, m.y * pExp);
-    float factor = ReduceLightBleeding(p, shadow.bleedingBias);
-#endif
+    vec3 lightToFrag = vInt.position - light.position;
+    float lightToFragLen = length(lightToFrag);
+
+    float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
+    float currentDepth = lightToFragLen / light.range - bias;
+
+    /* --- Generate an additional debanding rotation for the poisson disk --- */
+
+    float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
+    float sr = sin(r), cr = cos(r);
+
+    mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
+
+    /* --- Poisson Disk PCF Sampling --- */
+
+    float softRadius = shadow.softness / float(textureSize(uTexShadowSpot, 0).x);
+
+    float factor = 0.0;
+    for (int j = 0; j < SHADOW_SAMPLES; ++j) {
+        vec2 sampleDir = projCoords.xy + diskRot * POISSON_DISK[j] * softRadius;
+        factor += step(currentDepth, texture(uTexShadowDir, vec3(sampleDir, float(shadow.mapIndex))).r);
+    }
+
+    factor /= float(SHADOW_SAMPLES);
+
+    /* --- Edge Fading --- */
 
     vec3 distToBorder = min(projCoords, 1.0 - projCoords);
     float minDist = min(distToBorder.x, min(distToBorder.y, distToBorder.z));
 
-    const float fadeStart = 0.85; // Start of attenuation (85% of the map)
+    const float fadeStart = 0.85;
     float edgeFade = smoothstep(0.0, 1.0 - fadeStart, minDist);
+
+    /* --- Final Shadow Value --- */
 
     return mix(1.0, factor, edgeFade);
 }
 
-float ShadowSpot(in Light light)
+float ShadowSpot(in Light light, float NdotL)
 {
     Shadow shadow = sShadows[light.shadowIndex];
+
+    /* --- Light space projection --- */
 
     vec4 projPos = shadow.viewProj * vec4(vInt.position, 1.0);
     vec3 projCoords = projPos.xyz / projPos.w * 0.5 + 0.5;
 
-    float d01 = length(vInt.position - light.position) / light.range;
-    vec2 m = texture(uTexShadowSpot, vec3(projCoords.xy, float(shadow.mapIndex))).rg;
+    /* --- Shadow map bounds check --- */
 
-#ifdef GL_ES
-    // VSM
-    float dx = d01 - m.x;
-    float v  = max(m.y - m.x * m.x, 1e-4);
-    float p  = v / (v + dx * dx);
-    float factor = ReduceLightBleeding(p, shadow.bleedingBias);
-#else
-    // EVSM
-    float nExp = exp(-shadow.lambda * d01);
-    float pExp = exp(+shadow.lambda * d01);
-    float p = min(m.x * nExp, m.y * pExp);
-    float factor = ReduceLightBleeding(p, shadow.bleedingBias);
-#endif
+    if (any(greaterThan(projCoords.xyz, vec3(1.0))) ||
+        any(lessThan(projCoords.xyz, vec3(0.0)))) {
+        return 1.0;
+    }
 
-    vec2 distToBorder = min(projCoords.xy, 1.0 - projCoords.xy);
-    float minDist = min(distToBorder.x, distToBorder.y);
+    /* --- Calculate current normalized depth and apply bias --- */
 
-    const float fadeStart = 0.85; // Start of attenuation (85% of the map)
-    float edgeFade = smoothstep(0.0, 1.0 - fadeStart, minDist);
+    vec3 lightToFrag = vInt.position - light.position;
+    float lightToFragLen = length(lightToFrag);
 
-    return mix(1.0, factor, edgeFade);
+    float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
+    float currentDepth = lightToFragLen / light.range - bias;
+
+    /* --- Generate an additional debanding rotation for the poisson disk --- */
+
+    float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
+    float sr = sin(r), cr = cos(r);
+
+    mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
+
+    /* --- Poisson Disk PCF Sampling --- */
+
+    float softRadius = shadow.softness / float(textureSize(uTexShadowSpot, 0).x);
+
+    float factor = 0.0;
+    for (int j = 0; j < SHADOW_SAMPLES; ++j) {
+        vec2 sampleDir = projCoords.xy + diskRot * POISSON_DISK[j] * softRadius;
+        factor += step(currentDepth, texture(uTexShadowSpot, vec3(sampleDir, float(shadow.mapIndex))).r);
+    }
+
+    /* --- Final Shadow Value --- */
+
+    return factor / float(SHADOW_SAMPLES);
 }
 
-float ShadowOmni(in Light light)
+float ShadowOmni(in Light light, float NdotL)
 {
     Shadow shadow = sShadows[light.shadowIndex];
 
+    /* --- Calculate light vector --- */
+
     vec3 lightToFrag = vInt.position - light.position;
-    float dist = length(lightToFrag);
+    float lightToFragLen = length(lightToFrag);
+    vec3 dir = lightToFrag / lightToFragLen;
 
-    vec3 direction = lightToFrag / dist;
-    float d01 = dist / light.range;
+    /* --- Calculate current normalized depth and apply bias --- */
 
-    vec2 m = texture(uTexShadowOmni, vec4(direction, float(shadow.mapIndex))).rg;
+    float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
+    float currentDepth = lightToFragLen / light.range - bias;
 
-#ifdef GL_ES
-    // VSM
-    float dx = d01 - m.x;
-    float v  = max(m.y - m.x * m.x, 1e-4);
-    float p  = v / (v + dx * dx);
-    float factor = ReduceLightBleeding(p, shadow.bleedingBias);
-#else
-    // EVSM
-    float nExp = exp(-shadow.lambda * d01);
-    float pExp = exp(+shadow.lambda * d01);
-    float p = min(m.x * nExp, m.y * pExp);
-    float factor = ReduceLightBleeding(p, shadow.bleedingBias);
-#endif
+    /* --- Build orthonormal basis for perturbation --- */
 
-    return factor;
+    mat3 OBN = M_OrthonormalBasis(dir);
+
+    /* --- Generate an additional debanding rotation for the poisson disk --- */
+
+    float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
+    float sr = sin(r), cr = cos(r);
+
+    mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
+
+    /* --- Poisson Disk PCF Sampling --- */
+
+    float softRadius = shadow.softness / float(textureSize(uTexShadowSpot, 0).x);
+
+    float factor = 0.0;
+    for (int j = 0; j < SHADOW_SAMPLES; ++j) {
+        vec3 sampleDir = normalize(dir + OBN * vec3(diskRot * POISSON_DISK[j] * softRadius, 0.0));
+        float sampleDepth = texture(uTexShadowOmni, vec4(sampleDir, float(shadow.mapIndex))).r;
+        factor += step(currentDepth, sampleDepth);
+    }
+
+    /* --- Final Shadow Value --- */
+
+    return factor / float(SHADOW_SAMPLES);
 }
 
 /* === IBL Functions === */
@@ -377,13 +444,13 @@ void main()
         if (light.shadowIndex >= 0) {
             switch (light.type) {
             case LIGHT_DIR:
-                shadow = ShadowDir(light);
+                shadow = ShadowDir(light, cNdotL);
                 break;
             case LIGHT_SPOT:
-                shadow = ShadowSpot(light);
+                shadow = ShadowSpot(light, cNdotL);
                 break;
             case LIGHT_OMNI:
-                shadow = ShadowOmni(light);
+                shadow = ShadowOmni(light, cNdotL);
                 break;
             }
         }

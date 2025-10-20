@@ -2435,58 +2435,14 @@ NXAPI NX_Layer NX_GetShadowCullMask(const NX_Light* light);
  */
 NXAPI void NX_SetShadowCullMask(NX_Light* light, NX_Layer layers);
 
-/**
- * @brief Gets the shadow bleeding bias.
- * @param light Pointer to the NX_Light.
- * @return Current bleeding bias value.
- * @note Helps reduce light bleeding near occluders. Default is 0.2.
- */
-NXAPI float NX_GetShadowBleedingBias(const NX_Light* light);
+NXAPI float NX_GetShadowSlopeBias(NX_Light* light);
+NXAPI void NX_SetShadowSlopeBias(NX_Light* light, float slopeBias);
 
-/**
- * @brief Sets the shadow bleeding bias.
- * @param light Pointer to the NX_Light.
- * @param bias New bleeding bias value.
- * @note Helps reduce light bleeding near occluders. Default is 0.2.
- */
-NXAPI void NX_SetShadowBleedingBias(NX_Light* light, float bias);
+NXAPI float NX_GetShadowBias(NX_Light* light);
+NXAPI void NX_SetShadowBias(NX_Light* light, float bias);
 
-/**
- * @brief Gets the shadow blur factor.
- * @param light Pointer to the NX_Light.
- * @return Current blur factor value.
- * @note Scales the offsets of the Gaussian pre-blur kernel applied to the shadow map.
- *       Factors <= 0.0 disable the blur. 1.0 uses the full kernel radius (default = 1.0).
- *       Values < 1.0 yield sharper shadows; values > 1.0 are allowed but not recommended.
- */
 NXAPI float NX_GetShadowSoftness(const NX_Light* light);
-
-/**
- * @brief Sets the shadow blur factor.
- * @param light Pointer to the NX_Light.
- * @param softness New blur factor value.
- * @note Scales the offsets of the Gaussian pre-blur kernel applied to the shadow map.
- *       Factors <= 0.0 disable the blur. 1.0 uses the full kernel radius (default = 1.0).
- *       Values < 1.0 yield sharper shadows; values > 1.0 are allowed but not recommended.
- */
 NXAPI void NX_SetShadowSoftness(NX_Light* light, float softness);
-
-/**
- * @brief Gets the shadow lambda factor (EVSM).
- * @param light Pointer to the NX_Light.
- * @return Current lambda value.
- * @note Used only in EVSM mode (not in GLES profile which uses VSM). Default is 60.
- */
-NXAPI float NX_GetShadowLambda(const NX_Light* light);
-
-/**
- * @brief Sets the shadow lambda factor (EVSM).
- * @param light Pointer to the NX_Light.
- * @param lambda New lambda value.
- * @note Used only in EVSM mode (not in GLES profile which uses VSM).
- *       Default is 40 for directional lights and 20 for spot/omni lights.
- */
-NXAPI void NX_SetShadowLambda(NX_Light* light, float lambda);
 
 /**
  * @brief Gets the shadow map update mode.
