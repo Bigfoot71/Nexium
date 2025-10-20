@@ -14,7 +14,7 @@
 
 * **Shading**: full PBR (Burley/Schlick GGX) with roughness, metalness, occlusion, normal and emission maps.
 * **Materials** texture scale/offset, alpha cutoff, cull and blend modes.
-* **Lighting**: forward clustered lighting and [EVSM](https://martincap.io/projects/evsm/) shadows (with [VSM](https://pierremezieres.github.io/site-co-master/references/vsm_paper.pdf) fallback for OpenGL ES 3.2)
+* **Lighting**: forward clustered lighting and soft shadows.
 * **Environment**: cubemaps for skyboxes and basic reflection probes
 * **Post-processing**: color adjustment, debanding, tonemapping (Reinhard, Filmic, ACES, AgX)
 
