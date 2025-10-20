@@ -88,6 +88,7 @@ public:
 
     ~Pipeline() noexcept;
 
+    void setPolygonOffset(float factor, float units) const noexcept;
     void setColorWrite(ColorWrite mode) const noexcept;
     void setDepthMode(DepthMode mode) const noexcept;
     void setDepthFunc(DepthFunc func) const noexcept;
@@ -201,6 +202,7 @@ private:
     static void withBufferBind(GLenum target, GLuint id, F&& func) noexcept;
 
 private:
+    void setPolygonOffset_Internal(float factor, float units) const noexcept;
     void setColorWrite_Internal(ColorWrite mode) const noexcept;
     void setDepthMode_Internal(DepthMode mode) const noexcept;
     void setDepthFunc_Internal(DepthFunc func) const noexcept;
@@ -222,6 +224,8 @@ private:
 
 private:
     /** Default pipeline state */
+    static constexpr float InitialPolygonOffsetFactor = 0.0f;
+    static constexpr float InitialPolygonOffsetUnits = 0.0f;
     static constexpr ColorWrite InitialColorWrite = ColorWrite::RGBA;
     static constexpr DepthMode InitialDepthMode = DepthMode::Disabled;
     static constexpr DepthFunc InitialDepthFunc = DepthFunc::Less;
@@ -229,6 +233,8 @@ private:
     static constexpr CullMode InitialCullMode = CullMode::Disabled;
 
     /** Current pipeline state */
+    static inline float sCurrentPolygonOffsetFactor = InitialPolygonOffsetFactor;
+    static inline float sCurrentPolygonOffsetUnits = InitialPolygonOffsetUnits;
     static inline ColorWrite sCurrentColorWrite = InitialColorWrite;
     static inline DepthMode sCurrentDepthMode = InitialDepthMode;
     static inline DepthFunc sCurrentDepthFunc = InitialDepthFunc;
@@ -292,6 +298,11 @@ Pipeline::Pipeline(F&& func) noexcept
 
 inline Pipeline::~Pipeline() noexcept
 {
+    if (sCurrentPolygonOffsetFactor != InitialPolygonOffsetFactor || sCurrentPolygonOffsetUnits != InitialPolygonOffsetUnits) {
+        setPolygonOffset_Internal(InitialPolygonOffsetFactor, InitialPolygonOffsetUnits);
+        sCurrentPolygonOffsetFactor = InitialPolygonOffsetFactor;
+        sCurrentPolygonOffsetUnits = InitialPolygonOffsetUnits;
+    }
     if (sCurrentColorWrite != InitialColorWrite) {
         setColorWrite_Internal(InitialColorWrite);
         sCurrentColorWrite = InitialColorWrite;
@@ -346,6 +357,15 @@ inline Pipeline::~Pipeline() noexcept
         sUsedProgram = nullptr;
     }
     sCurrentlyInstanced = false;
+}
+
+inline void Pipeline::setPolygonOffset(float factor, float units) const noexcept
+{
+    if (factor != sCurrentPolygonOffsetFactor || units != sCurrentPolygonOffsetUnits) {
+        setPolygonOffset_Internal(factor, units);
+        sCurrentPolygonOffsetFactor = factor;
+        sCurrentPolygonOffsetUnits = units;
+    }
 }
 
 inline void Pipeline::setColorWrite(ColorWrite mode) const noexcept
@@ -936,6 +956,17 @@ inline void Pipeline::withBufferBind(GLenum target, GLuint id, F&& func) noexcep
 
     if (prevVAO > 0) {
         glBindVertexArray(prevVAO);
+    }
+}
+
+inline void Pipeline::setPolygonOffset_Internal(float factor, float units) const noexcept
+{
+    if (factor == 0.0f && units == 0.0f) {
+        glDisable(GL_POLYGON_OFFSET_FILL);
+    }
+    else {
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(factor, units);
     }
 }
 
