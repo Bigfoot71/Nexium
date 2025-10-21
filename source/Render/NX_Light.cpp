@@ -20,25 +20,7 @@ void NX_Light::updateState(const scene::ViewFrustum& viewFrustum, bool* needsSha
         return;
     }
 
-    switch (mType) {
-    case NX_LIGHT_DIR:
-        // NOTE: The view/proj of directional lights must
-        //       always be updated relative to the camera
-        updateDirectionalViewProj(viewFrustum);
-        break;
-    case NX_LIGHT_SPOT:
-        if (mShadowState.vpDirty) {
-            mShadowState.vpDirty = false;
-            updateSpotViewProj();
-        }
-        break;
-    case NX_LIGHT_OMNI:
-        if (mShadowState.vpDirty) {
-            mShadowState.vpDirty = false;
-            updateOmniViewProj();
-        }
-        break;
-    }
+    /* --- Checks if the shadow map needs to be updated --- */
 
     if (mShadowState.forceUpdate) {
         mShadowState.forceUpdate = false;
@@ -54,6 +36,30 @@ void NX_Light::updateState(const scene::ViewFrustum& viewFrustum, bool* needsSha
     }
     else if (mShadowState.updateMode == NX_SHADOW_UPDATE_CONTINUOUS) {
         *needsShadowUpdate = true;
+    }
+
+    /* --- Update view projection if needed --- */
+
+    switch (mType) {
+    case NX_LIGHT_DIR:
+        // NOTE: The view/proj always needs to be updated relative
+        //       to the camera if the shadow map needs to be updated
+        if (*needsShadowUpdate) {
+            updateDirectionalViewProj(viewFrustum);
+        }
+        break;
+    case NX_LIGHT_SPOT:
+        if (mShadowState.vpDirty) {
+            mShadowState.vpDirty = false;
+            updateSpotViewProj();
+        }
+        break;
+    case NX_LIGHT_OMNI:
+        if (mShadowState.vpDirty) {
+            mShadowState.vpDirty = false;
+            updateOmniViewProj();
+        }
+        break;
     }
 }
 
