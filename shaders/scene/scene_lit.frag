@@ -635,7 +635,7 @@ void main()
 
     /* DEBUG: Clusters */
 
-    //vec4 dbgClusters = vec4(vec3((numDir + numSpot + numOmni) > 0 ? 1.0 : 0.0), 1.0);
-    //vec4 dbgClusters = vec4(float(numDir), float(numSpot), float(numOmni), 1.0);
+    //vec4 dbgClusters = vec4(vec3((lightCounts.x + lightCounts.y + lightCounts.z) > 0 ? 1.0 : 0.0), 1.0);
+    //vec4 dbgClusters = vec4(vec3(lightCounts), 1.0);
     //FragColor = mix(FragColor, dbgClusters, 0.05);
 }
