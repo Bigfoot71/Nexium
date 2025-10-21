@@ -408,9 +408,10 @@ void LightOmni(uint lightIndex, const in LightParams params, inout vec3 diffuse,
         float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
         float currentDepth = toLightDist01 - bias;
 
-        /* --- Build orthonormal basis for perturbation --- */
+        /* --- Get sampling direction and build orthonormal basis for perturbation --- */
 
-        mat3 OBN = M_OrthonormalBasis(L);
+        vec3 iL = -L;
+        mat3 OBN = M_OrthonormalBasis(iL);
 
         /* --- Vogel disk PCF sampling --- */
 
@@ -418,7 +419,7 @@ void LightOmni(uint lightIndex, const in LightParams params, inout vec3 diffuse,
 
         float shadowAtten = 0.0;
         for (int i = 0; i < SHADOW_SAMPLES; ++i) {
-            vec3 sampleDir = normalize(L + OBN * vec3(params.diskRotation * VOGEL_DISK[i] * softRadius, 0.0));
+            vec3 sampleDir = normalize(iL + OBN * vec3(params.diskRotation * VOGEL_DISK[i] * softRadius, 0.0));
             shadowAtten += step(currentDepth, texture(uTexShadowOmni, vec4(sampleDir, float(shadow.mapIndex))).r);
         }
 
