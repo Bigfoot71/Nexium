@@ -84,24 +84,48 @@ layout(location = 10) in VaryUser {
 
 /* === Storage Buffers === */
 
+/** 
+ * sMeshData[] : per-draw-call data
+ *   - Contains unique draw-call parameters
+ *   - One entry per rendered object
+ */
 layout(std430, binding = 1) buffer S_PerMeshBuffer {
     MeshData sMeshData[];
 };
 
+/** 
+ * sLights[] : list of active lights
+ *   - MUST be sorted CPU-side: DIR -> SPOT -> OMNI
+ *   - Shaders assume this order for sIndices and per-type offsets
+ */
 layout(std430, binding = 3) buffer S_LightBuffer {
     Light sLights[];
 };
 
+/** 
+ * sShadows[] : list of lights casting shadows
+ *   - Indexed via Light.shadowIndex when shadow casting is active
+ *   - Contains shadow map parameters per light
+ */
 layout(std430, binding = 4) buffer S_ShadowBuffer {
     Shadow sShadows[];
 };
 
+/** 
+ * sClusters[] : per-cluster info
+ *   - xyz = number of lights per type (numDir, numSpot, numOmni)
+ *   - w   = unused
+ */
 layout(std430, binding = 5) buffer S_ClusterBuffer {
-    uint sClusters[]; //< Contains number of lights for each tile
+    uvec4 sClusters[];
 };
 
+/** 
+ * sIndices[] : light indices per cluster
+ *   - Indices into sLights[], grouped by type: DIR -> SPOT -> OMNI
+ */
 layout(std430, binding = 6) buffer S_IndexBuffer {
-    uint sIndices[]; //< Contains the light indices for each tile, in increments of 'uMaxLightsPerTile'
+    uint sIndices[];
 };
 
 /* === Samplers === */
@@ -146,7 +170,7 @@ layout(location = 1) out vec4 FragNormal;
 
 #include "../override/scene.frag"
 
-/* === Lighting Functions === */
+/* === PBR Lighting Functions === */
 
 float Diffuse(float cLdotH, float cNdotV, float cNdotL, float roughness)
 {
@@ -169,143 +193,242 @@ vec3 Specular(vec3 F0, float cLdotH, float cNdotH, float cNdotV, float cNdotL, f
     return cNdotL * D * F * G; // Specular BRDF (Schlick GGX)
 }
 
-/* === Shadow functions === */
+/* === Light Functions === */
 
-float InterleavedGradientNoise(vec2 pos)
+struct LightParams {
+    vec3  F0, N, V;
+    float cNdotV;
+    float alphaGGX;
+    float dielectric;
+    mat2  diskRotation;
+};
+
+void LightDir(uint lightIndex, const in LightParams params, inout vec3 diffuse, inout vec3 specular)
 {
-    // http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
-    const vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
-    return fract(magic.z * fract(dot(pos, magic.xy)));
+    /* --- Checking the layer mask for lighting --- */
+
+    if ((sLights[lightIndex].cullMask & sMeshData[uMeshDataIndex].layerMask) == 0u) {
+        return;
+    }
+
+    Light light = sLights[lightIndex];
+
+    /* --- Compute light and halfway vectors --- */
+
+    vec3 L = -light.direction;
+
+    float NdotL = dot(params.N, L);
+    if (NdotL <= 0.0) return;
+
+    vec3 H = normalize(params.V + L);
+    float NdotH = max(dot(params.N, H), 0.0);
+    float LdotH = max(dot(L, H), 0.0);
+
+    /* --- Compute diffuse and specular contribution --- */
+
+    vec3 lightColE = light.color * light.energy;
+    vec3 diff = Diffuse(LdotH, params.cNdotV, NdotL, ROUGHNESS) * lightColE * params.dielectric;
+    vec3 spec = Specular(params.F0, LdotH, NdotH, params.cNdotV, NdotL, params.alphaGGX) * lightColE * light.specular;
+
+    /* --- Compute shadow attenuation --- */
+
+    float attenuation = 1.0;
+
+    if (light.shadowIndex >= 0)
+    {
+        Shadow shadow = sShadows[light.shadowIndex];
+
+        /* --- Light space projection --- */
+
+        vec4 projPos = shadow.viewProj * vec4(vInt.position, 1.0);
+        vec3 projCoords = projPos.xyz / projPos.w * 0.5 + 0.5;
+
+        /* --- Get current normalized depth with bias --- */
+
+        float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
+        float currentDepth = length(vInt.position - light.position) / light.range - bias;
+
+        /* --- Vogel disk PCF sampling --- */
+
+        float softRadius = shadow.softness / float(textureSize(uTexShadowDir, 0).x);
+
+        float shadowAtten = 0.0;
+        for (int i = 0; i < SHADOW_SAMPLES; ++i) {
+            vec2 sampleDir = projCoords.xy + params.diskRotation * VOGEL_DISK[i] * softRadius;
+            shadowAtten += step(currentDepth, texture(uTexShadowDir, vec3(sampleDir, float(shadow.mapIndex))).r);
+        }
+        shadowAtten /= float(SHADOW_SAMPLES);
+
+        /* --- Applying a fade to the edges of the projection --- */
+
+        vec3 distToBorder = min(projCoords, 1.0 - projCoords);
+        float edgeFade = smoothstep(0.0, 0.15, min(distToBorder.x, min(distToBorder.y, distToBorder.z)));
+
+        attenuation = mix(1.0, shadowAtten, edgeFade);
+    }
+
+    /* --- Add final contribution --- */
+
+    diffuse += diff * attenuation;
+    specular += spec * attenuation;
 }
 
-float ShadowDir(in Light light, float NdotL)
+void LightSpot(uint lightIndex, const in LightParams params, inout vec3 diffuse, inout vec3 specular)
 {
-    Shadow shadow = sShadows[light.shadowIndex];
+    /* --- Checking the layer mask for lighting --- */
 
-    /* --- Light space projection --- */
-
-    vec4 projPos = shadow.viewProj * vec4(vInt.position, 1.0);
-    vec3 projCoords = projPos.xyz / projPos.w * 0.5 + 0.5;
-
-    /* --- Calculate current normalized depth and apply bias --- */
-
-    vec3 lightToFrag = vInt.position - light.position;
-    float lightToFragLen = length(lightToFrag);
-
-    float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
-    float currentDepth = lightToFragLen / light.range - bias;
-
-    /* --- Calculate rotation of the vogel disk --- */
-
-    float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
-    float sr = sin(r), cr = cos(r);
-
-    mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
-
-    /* --- Vogel disk PCF sampling --- */
-
-    float softRadius = shadow.softness / float(textureSize(uTexShadowSpot, 0).x);
-
-    float factor = 0.0;
-    for (int i = 0; i < SHADOW_SAMPLES; ++i) {
-        vec2 sampleDir = projCoords.xy + diskRot * VOGEL_DISK[i] * softRadius;
-        factor += step(currentDepth, texture(uTexShadowDir, vec3(sampleDir, float(shadow.mapIndex))).r);
+    if ((sLights[lightIndex].cullMask & sMeshData[uMeshDataIndex].layerMask) == 0u) {
+        return;
     }
 
-    factor /= float(SHADOW_SAMPLES);
+    Light light = sLights[lightIndex];
 
-    /* --- Edge Fading --- */
+    /* --- Compute frag to light vector and distance --- */
 
-    vec3 distToBorder = min(projCoords, 1.0 - projCoords);
-    float minDist = min(distToBorder.x, min(distToBorder.y, distToBorder.z));
+    vec3 toLight = light.position - vInt.position;
+    float toLightDist = length(toLight);
 
-    const float fadeStart = 0.85;
-    float edgeFade = smoothstep(0.0, 1.0 - fadeStart, minDist);
+    float toLightDist01 = toLightDist / light.range;
+    if (toLightDist01 > 1.0) return;
 
-    return mix(1.0, factor, edgeFade);
+    /* --- Compute light and halfway vectors --- */
+
+    vec3 L = toLight / toLightDist; // normalize
+
+    float NdotL = dot(params.N, L);
+    if (NdotL <= 0.0) return;
+
+    vec3 H = normalize(params.V + L);
+    float NdotH = max(dot(params.N, H), 0.0);
+    float LdotH = max(dot(L, H), 0.0);
+
+    /* --- Compute diffuse and specular contribution --- */
+
+    vec3 lightColE = light.color * light.energy;
+    vec3 diff = Diffuse(LdotH, params.cNdotV, NdotL, ROUGHNESS) * lightColE * params.dielectric;
+    vec3 spec = Specular(params.F0, LdotH, NdotH, params.cNdotV, NdotL, params.alphaGGX) * lightColE * light.specular;
+
+    /* --- Compute distance and spotlight attenuation --- */
+
+    float attenuation = pow(1.0 - toLightDist01, light.attenuation);
+
+    float theta = dot(L, -light.direction);
+    float epsilon = (light.innerCutOff - light.outerCutOff);
+    attenuation *= smoothstep(0.0, 1.0, (theta - light.outerCutOff) / epsilon);
+
+    /* --- Compute shadow attenuation --- */
+
+    if (light.shadowIndex >= 0)
+    {
+        Shadow shadow = sShadows[light.shadowIndex];
+
+        /* --- Light space projection --- */
+
+        vec4 projPos = shadow.viewProj * vec4(vInt.position, 1.0);
+        vec3 projCoords = projPos.xyz / projPos.w * 0.5 + 0.5;
+
+        /* --- Get current normalized depth with bias --- */
+
+        float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
+        float currentDepth = toLightDist01 - bias;
+
+        /* --- Vogel disk PCF sampling --- */
+
+        float softRadius = shadow.softness / float(textureSize(uTexShadowSpot, 0).x);
+
+        float shadowAtten = 0.0;
+        for (int i = 0; i < SHADOW_SAMPLES; ++i) {
+            vec2 sampleDir = projCoords.xy + params.diskRotation * VOGEL_DISK[i] * softRadius;
+            shadowAtten += step(currentDepth, texture(uTexShadowSpot, vec3(sampleDir, float(shadow.mapIndex))).r);
+        }
+
+        shadowAtten /= float(SHADOW_SAMPLES);
+
+        /* --- Apply shadow attenuation with out of bounds mask --- */
+
+        bool outOfBounds = any(lessThan(projCoords, vec3(0.0))) ||
+                           any(greaterThan(projCoords, vec3(1.0)));
+
+        attenuation *= mix(shadowAtten, 1.0, float(outOfBounds));
+    }
+
+    /* --- Add final contribution --- */
+
+    diffuse += diff * attenuation;
+    specular += spec * attenuation;
 }
 
-float ShadowSpot(in Light light, float NdotL)
+void LightOmni(uint lightIndex, const in LightParams params, inout vec3 diffuse, inout vec3 specular)
 {
-    Shadow shadow = sShadows[light.shadowIndex];
+    /* --- Checking the layer mask for lighting --- */
 
-    /* --- Light space projection --- */
-
-    vec4 projPos = shadow.viewProj * vec4(vInt.position, 1.0);
-    vec3 projCoords = projPos.xyz / projPos.w * 0.5 + 0.5;
-
-    /* --- Shadow map bounds check --- */
-
-    if (any(greaterThan(projCoords.xyz, vec3(1.0))) ||
-        any(lessThan(projCoords.xyz, vec3(0.0)))) {
-        return 1.0;
+    if ((sLights[lightIndex].cullMask & sMeshData[uMeshDataIndex].layerMask) == 0u) {
+        return;
     }
 
-    /* --- Calculate current normalized depth and apply bias --- */
+    Light light = sLights[lightIndex];
 
-    vec3 lightToFrag = vInt.position - light.position;
-    float lightToFragLen = length(lightToFrag);
+    /* --- Compute frag to light vector and distance --- */
 
-    float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
-    float currentDepth = lightToFragLen / light.range - bias;
+    vec3 toLight = light.position - vInt.position;
+    float toLightDist = length(toLight);
 
-    /* --- Calculate rotation of the vogel disk --- */
+    float toLightDist01 = toLightDist / light.range;
+    if (toLightDist01 > 1.0) return;
 
-    float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
-    float sr = sin(r), cr = cos(r);
+    /* --- Compute light and halfway vectors --- */
 
-    mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
+    vec3 L = toLight / toLightDist; // normalize
 
-    /* --- Vogel disk PCF sampling --- */
+    float NdotL = dot(params.N, L);
+    if (NdotL <= 0.0) return;
 
-    float softRadius = shadow.softness / float(textureSize(uTexShadowSpot, 0).x);
+    vec3 H = normalize(params.V + L);
+    float NdotH = max(dot(params.N, H), 0.0);
+    float LdotH = max(dot(L, H), 0.0);
 
-    float factor = 0.0;
-    for (int i = 0; i < SHADOW_SAMPLES; ++i) {
-        vec2 sampleDir = projCoords.xy + diskRot * VOGEL_DISK[i] * softRadius;
-        factor += step(currentDepth, texture(uTexShadowSpot, vec3(sampleDir, float(shadow.mapIndex))).r);
+    /* --- Compute diffuse and specular contribution --- */
+
+    vec3 lightColE = light.color * light.energy;
+    vec3 diff = Diffuse(LdotH, params.cNdotV, NdotL, ROUGHNESS) * lightColE * params.dielectric;
+    vec3 spec = Specular(params.F0, LdotH, NdotH, params.cNdotV, NdotL, params.alphaGGX) * lightColE * light.specular;
+
+    /* --- Compute distance attenuation --- */
+
+    float attenuation = pow(1.0 - toLightDist01, light.attenuation);
+
+    /* --- Compute shadow attenuation --- */
+
+    if (light.shadowIndex >= 0)
+    {
+        Shadow shadow = sShadows[light.shadowIndex];
+
+        /* --- Get current normalized depth with bias --- */
+
+        float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
+        float currentDepth = toLightDist01 - bias;
+
+        /* --- Build orthonormal basis for perturbation --- */
+
+        mat3 OBN = M_OrthonormalBasis(L);
+
+        /* --- Vogel disk PCF sampling --- */
+
+        float softRadius = shadow.softness / float(textureSize(uTexShadowOmni, 0).x);
+
+        float shadowAtten = 0.0;
+        for (int i = 0; i < SHADOW_SAMPLES; ++i) {
+            vec3 sampleDir = normalize(L + OBN * vec3(params.diskRotation * VOGEL_DISK[i] * softRadius, 0.0));
+            shadowAtten += step(currentDepth, texture(uTexShadowOmni, vec4(sampleDir, float(shadow.mapIndex))).r);
+        }
+
+        attenuation *= shadowAtten / float(SHADOW_SAMPLES);
     }
 
-    return factor / float(SHADOW_SAMPLES);
-}
+    /* --- Add final contribution --- */
 
-float ShadowOmni(in Light light, float NdotL)
-{
-    Shadow shadow = sShadows[light.shadowIndex];
-
-    /* --- Calculate light vector --- */
-
-    vec3 lightToFrag = vInt.position - light.position;
-    float lightToFragLen = length(lightToFrag);
-    vec3 dir = lightToFrag / lightToFragLen;
-
-    /* --- Calculate current normalized depth and apply bias --- */
-
-    float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
-    float currentDepth = lightToFragLen / light.range - bias;
-
-    /* --- Build orthonormal basis for perturbation --- */
-
-    mat3 OBN = M_OrthonormalBasis(dir);
-
-    /* --- Calculate rotation of the vogel disk --- */
-
-    float r = M_TAU * InterleavedGradientNoise(gl_FragCoord.xy);
-    float sr = sin(r), cr = cos(r);
-
-    mat2 diskRot = mat2(vec2(cr, -sr), vec2(sr, cr));
-
-    /* --- Vogel disk PCF sampling --- */
-
-    float softRadius = shadow.softness / float(textureSize(uTexShadowSpot, 0).x);
-
-    float factor = 0.0;
-    for (int i = 0; i < SHADOW_SAMPLES; ++i) {
-        vec3 sampleDir = normalize(dir + OBN * vec3(diskRot * VOGEL_DISK[i] * softRadius, 0.0));
-        factor += step(currentDepth, texture(uTexShadowOmni, vec4(sampleDir, float(shadow.mapIndex))).r);
-    }
-
-    return factor / float(SHADOW_SAMPLES);
+    diffuse += diff * attenuation;
+    specular += spec * attenuation;
 }
 
 /* === IBL Functions === */
@@ -373,7 +496,7 @@ void main()
     /* --- Pre-calculation of ORM related data --- */ 
 
     float alphaGGX = max(ROUGHNESS * ROUGHNESS, 1e-6);
-    float oneMinusMetalness = 1.0 - METALNESS;
+    float dielectric = 1.0 - METALNESS;
 
     /* --- Calculation of the distance from the fragment to the camera in scene units --- */
 
@@ -393,111 +516,60 @@ void main()
     float NdotV = dot(N, V);
     float cNdotV = max(NdotV, 1e-4); // Clamped to avoid division by zero
 
-    /* --- Getting the cluster index and the number of lights in the cluster --- */
-
-    uvec3 clusterCoord = L_ClusterFromScreen(gl_FragCoord.xy / vec2(uFrame.screenSize),
-        -zLinear, uFrame.clusterCount, uFrame.clusterSliceScale, uFrame.clusterSliceBias);
-
-    uint clusterIndex = L_ClusterIndex(clusterCoord, uFrame.clusterCount);
-    uint lightCount = sClusters[clusterIndex];
-
-    // Mask light count if there are no active lights,
-    // sClusters may contain stale/garbage values otherwise.
-    lightCount *= uint(uFrame.hasActiveLights);
-
-    /* --- Loop through all light sources accumulating diffuse and specular light --- */
+    /* --- Accumulation of direct lighting --- */
 
     vec3 diffuse = vec3(0.0);
     vec3 specular = vec3(0.0);
 
-    for (uint i = 0u; i < lightCount; i++)
+    if (uFrame.hasActiveLights)
     {
-        /* --- Calculate light index and get light --- */
+        /* --- Calculate the shadow sampling disk rotation --- */
 
-        uint lightIndex = sIndices[clusterIndex * uFrame.maxLightsPerCluster + i];
-        Light light = sLights[lightIndex];
+        float r = M_TAU * M_HashIGN(gl_FragCoord.xy);
+        float sr = sin(r), cr = cos(r);
 
-        /* --- Compute light direction --- */
+        mat2 diskRotation = mat2(vec2(cr, -sr), vec2(sr, cr));
 
-        vec3 L = (light.type != LIGHT_DIR)
-            ? normalize(light.position - vInt.position)
-            : -light.direction;
+        /* --- Create commong light parameters struct --- */
 
-        /* --- Compute the dot product of the normal and light direction --- */
+        LightParams lightParams = LightParams(
+            F0, N, V, cNdotV, alphaGGX,
+            dielectric, diskRotation
+        );
 
-        float NdotL = dot(N, L);
-        if (NdotL <= 0.0) continue;
-        float cNdotL = min(NdotL, 1.0); // clamped NdotL
+        /* --- Getting the cluster index and the number of lights in the cluster --- */
 
-        /* --- Compute the halfway vector between the view and light directions --- */
+        uvec3 clusterCoord = L_ClusterFromScreen(gl_FragCoord.xy / vec2(uFrame.screenSize),
+            -zLinear, uFrame.clusterCount, uFrame.clusterSliceScale, uFrame.clusterSliceBias);
 
-        vec3 H = normalize(V + L);
+        uint clusterIndex = L_ClusterIndex(clusterCoord, uFrame.clusterCount);
+        uint baseIndex = clusterIndex * uFrame.maxLightsPerCluster;
+        uvec4 lightCounts = sClusters[clusterIndex];
 
-        float LdotH = max(dot(L, H), 0.0);
-        float cLdotH = min(LdotH, 1.0);
+        /* --- Loop through all light sources accumulating diffuse and specular light --- */
 
-        float NdotH = max(dot(N, H), 0.0);
-        float cNdotH = min(NdotH, 1.0);
-
-        /* --- Compute light color energy --- */
-
-        vec3 lightColE = light.color * light.energy;
-
-        /* --- Compute diffuse lighting --- */
-
-        vec3 diffLight = vec3(Diffuse(cLdotH, cNdotV, cNdotL, ROUGHNESS));
-        diffLight *= lightColE * oneMinusMetalness; // 0.0 for pure metal, 1.0 for dielectric
-
-        /* --- Compute specular lighting --- */
-
-        vec3 specLight = Specular(F0, cLdotH, cNdotH, cNdotV, cNdotL, alphaGGX);
-        specLight *= lightColE * light.specular;
-
-        /* --- Apply shadow factor if the light casts shadows --- */
-
-        float shadow = 1.0;
-        if (light.shadowIndex >= 0) {
-            switch (light.type) {
-            case LIGHT_DIR:
-                shadow = ShadowDir(light, cNdotL);
-                break;
-            case LIGHT_SPOT:
-                shadow = ShadowSpot(light, cNdotL);
-                break;
-            case LIGHT_OMNI:
-                shadow = ShadowOmni(light, cNdotL);
-                break;
-            }
+        uint offset = 0u; // dir
+        for (uint i = 0u; i < lightCounts.x; i++) {
+            uint lightIndex = sIndices[baseIndex + offset + i];
+            LightDir(lightIndex, lightParams, diffuse, specular);
         }
 
-        /* --- Apply attenuation based on the distance from the light --- */
-
-        if (light.type != LIGHT_DIR) {
-            float dist = length(light.position - vInt.position);
-            float atten = 1.0 - clamp(dist / light.range, 0.0, 1.0);
-            shadow *= atten * light.attenuation;
+        offset += lightCounts.x; // spot
+        for (uint i = 0u; i < lightCounts.y; i++) {
+            uint lightIndex = sIndices[baseIndex + offset + i];
+            LightSpot(lightIndex, lightParams, diffuse, specular);
         }
 
-        /* --- Apply spotlight effect if the light is a spotlight --- */
-
-        if (light.type == LIGHT_SPOT) {
-            float theta = dot(L, -light.direction);
-            float epsilon = (light.innerCutOff - light.outerCutOff);
-            shadow *= smoothstep(0.0, 1.0, (theta - light.outerCutOff) / epsilon);
+        offset += lightCounts.y; // omni
+        for (uint i = 0u; i < lightCounts.z; i++) {
+            uint lightIndex = sIndices[baseIndex + offset + i];
+            LightOmni(lightIndex, lightParams, diffuse, specular);
         }
 
-        /* --- Accumulate the diffuse and specular lighting contributions --- */
+        /* --- Compute AO light affect --- */
 
-        bool validLayer = ((light.cullMask & sMeshData[uMeshDataIndex].layerMask) != 0u);
-        float contribution = shadow * float(validLayer);
-
-        diffuse += diffLight * contribution;
-        specular += specLight * contribution;
+        diffuse *= mix(1.0, OCCLUSION, AO_LIGHT_AFFECT);
     }
-
-    /* --- Compute AO light affect --- */
-
-    diffuse *= mix(1.0, OCCLUSION, AO_LIGHT_AFFECT);
 
     /* --- Ambient diffuse from sky --- */
 
@@ -509,7 +581,7 @@ void main()
     }
 
     vec3 kS = IBL_FresnelSchlickRoughness(cNdotV, F0, ROUGHNESS);
-    vec3 kD = (1.0 - kS) * oneMinusMetalness;
+    vec3 kD = (1.0 - kS) * dielectric;
 
     skyDiffuse *= kD * uEnv.skyDiffuse * OCCLUSION;
 
@@ -561,7 +633,9 @@ void main()
 
     FragNormal = vec4(vec2(M_EncodeOctahedral(N)), vec2(1.0));
 
-    /* DEBUG: Tiles */
+    /* DEBUG: Clusters */
 
-    //FragColor = (lightCount == 0u) ? vec4(0.0) : vec4(1.0);
+    //vec4 dbgClusters = vec4(vec3((numDir + numSpot + numOmni) > 0 ? 1.0 : 0.0), 1.0);
+    //vec4 dbgClusters = vec4(float(numDir), float(numSpot), float(numOmni), 1.0);
+    //FragColor = mix(FragColor, dbgClusters, 0.05);
 }

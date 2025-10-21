@@ -62,7 +62,7 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
 
     mStorageClusters = gpu::Buffer(
         GL_SHADER_STORAGE_BUFFER,
-        clusterTotal * sizeof(uint32_t),
+        clusterTotal * 4 * sizeof(uint32_t),
         nullptr, GL_DYNAMIC_COPY
     );
 
@@ -153,11 +153,36 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
 
 void LightManager::updateState(const ProcessParams& params)
 {
+    constexpr size_t NumLightTypes = NX_LIGHT_TYPE_COUNT;
+
+    /* --- Count each active light type --- */
+
+    std::array<size_t, NumLightTypes> counts{};
+    for (const NX_Light& light : mLights) {
+        if (light.isActive()) {
+            ++counts[light.type()];
+        }
+    }
+
+    mActiveLights.resize(
+        counts[NX_LIGHT_DIR] +
+        counts[NX_LIGHT_SPOT] +
+        counts[NX_LIGHT_OMNI]
+    );
+
+    /* --- Prepare offsets for each type --- */
+
+    std::array<size_t, NumLightTypes> offsets{};
+
+    offsets[NX_LIGHT_DIR]  = 0;
+    offsets[NX_LIGHT_SPOT] = counts[NX_LIGHT_DIR];
+    offsets[NX_LIGHT_OMNI] = counts[NX_LIGHT_DIR] + counts[NX_LIGHT_SPOT];
+
+    /* --- Update and insert active lights --- */
+
     for (NX_Light& light : mLights)
     {
-        if (!light.isActive()) {
-            continue;
-        }
+        if (!light.isActive()) continue;
 
         bool needsShadowUpdate = false;
         light.updateState(params.viewFrustum, &needsShadowUpdate);
@@ -172,7 +197,8 @@ void LightManager::updateState(const ProcessParams& params)
             }
         }
 
-        mActiveLights.emplace(light.type(), &light, shadowIndex);
+        size_t& offset = offsets[light.type()];
+        mActiveLights[offset++] = ActiveLight(&light, shadowIndex);
     }
 }
 
@@ -233,7 +259,7 @@ void LightManager::computeClusters(const ProcessParams& params)
     mClusterCount.z = std::clamp(int(log2(params.viewFrustum.far() / params.viewFrustum.near()) * SlicesPerDepthOctave), 16, 64);
     int clusterTotal = mClusterCount.x * mClusterCount.y * mClusterCount.z;
 
-    mStorageClusters.reserve(clusterTotal * sizeof(uint32_t), false);
+    mStorageClusters.reserve(clusterTotal * 4 * sizeof(uint32_t), false);
     mStorageIndex.reserve(clusterTotal * MaxLightsPerCluster * sizeof(uint32_t), false);
     mStorageClusterAABB.reserve(clusterTotal * (sizeof(NX_Vec4) + sizeof(NX_Vec3)), false); //< minBounds and maxBounds with padding
 

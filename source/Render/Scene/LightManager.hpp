@@ -105,24 +105,24 @@ private:
     render::AssetCache& mAssets;
 
     /** Shadow framebuffers and targets (one per light type) */
-    std::array<gpu::Framebuffer, 3> mFramebufferShadow{};   ///< Contains on framebuffer per light type
-    std::array<gpu::Texture, 3> mTargetShadow{};            ///< Contains one texture array per light type (cubemap for omni-lights)
-    gpu::Texture mShadowDepth{};                            ///< Common depth buffer for depth testing (TODO: Make it a renderbuffer)
+    std::array<gpu::Framebuffer, NX_LIGHT_TYPE_COUNT> mFramebufferShadow{};     ///< Contains framebuffers per light type
+    std::array<gpu::Texture, NX_LIGHT_TYPE_COUNT> mTargetShadow{};              ///< Contains textures arrays per light type (cubemap for omni-lights)
+    gpu::Texture mShadowDepth{};                                                ///< Common depth buffer for depth testing (TODO: Make it a renderbuffer)
 
-    /** Storage Buffers */
-    gpu::Buffer mStorageLights{};       ///< Storage for lights data
-    gpu::Buffer mStorageShadow{};       ///< Storage for per light shadow data
-    gpu::Buffer mStorageClusters{};     ///< Storage for clusters (light count per clusters)
-    gpu::Buffer mStorageIndex{};        ///< Storage for light indices per clusters
-    gpu::Buffer mStorageClusterAABB{};  ///< Storage for cluster AABBs (from GPU light culling)
+    /** Storage buffers */
+    gpu::Buffer mStorageLights{};           ///< Active lights (sorted DIR -> SPOT -> OMNI)
+    gpu::Buffer mStorageShadow{};           ///< Per-light shadow data
+    gpu::Buffer mStorageClusters{};         ///< Per-cluster light counts (numDir, numSpot, numOmni)
+    gpu::Buffer mStorageIndex{};            ///< Per-cluster light indices (grouped by type)
+    gpu::Buffer mStorageClusterAABB{};      ///< Per-cluster AABBs (computed during culling)
 
-    /** Uniform Buffers */
-    util::ObjectRing<gpu::Buffer, 3> mFrameShadowUniform;
+    /** Uniform buffers */
+    util::ObjectRing<gpu::Buffer, 3> mFrameShadowUniform; ///< Triple-buffered uniform data for shadow rendering
 
     /** Per-frame caches */
-    util::BucketArray<ActiveLight, NX_LightType, 3> mActiveLights{};     //< Light pointers + indices to 'mActiveShadows'. Main array matches light SSBO layout (sorted by type).
-    util::BucketArray<ActiveShadow, NX_LightType, 3> mActiveShadows{};   //< Light pointers + texture array indices for shadow maps. Main array matches shadow SSBO layout (sorted by type).
-    util::BucketArray<uint32_t, NX_LightType, 3> mShadowNeedingUpdate{}; //< Global indices to 'mActiveShadows' (sorted by type).
+    util::DynamicArray<ActiveLight> mActiveLights{}; ///< Active lights (pointers + shadow indices), same order as mStorageLights
+    util::BucketArray<ActiveShadow, NX_LightType, NX_LIGHT_TYPE_COUNT> mActiveShadows{}; ///< Active shadow-casting lights, bucketed by type, same order as mStorageShadow
+    util::BucketArray<uint32_t, NX_LightType, NX_LIGHT_TYPE_COUNT> mShadowNeedingUpdate{}; ///< Indices of lights needing shadow updates, bucketed by type
 
     /** Additionnal Data */
     int mShadowResolution{};

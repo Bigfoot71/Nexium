@@ -12,6 +12,8 @@
 #define LIGHT_SPOT   1
 #define LIGHT_OMNI   2
 
+#define NUM_LIGHT_TYPE 3
+
 /* === Structures === */
 
 struct Light {

@@ -225,7 +225,8 @@ typedef enum NX_AnimMode {
 typedef enum NX_LightType {
     NX_LIGHT_DIR,               ///< Directional light, affects the entire scene with parallel rays.
     NX_LIGHT_SPOT,              ///< Spot light, emits light in a cone shape.
-    NX_LIGHT_OMNI               ///< Omni light, emits light in all directions from a single point.
+    NX_LIGHT_OMNI,              ///< Omni light, emits light in all directions from a single point.
+    NX_LIGHT_TYPE_COUNT
 } NX_LightType;
 
 /**

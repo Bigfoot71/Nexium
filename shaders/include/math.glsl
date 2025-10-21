@@ -109,6 +109,13 @@ vec3 M_DecodeOctahedral(vec2 encoded)
     return normalize(normal);
 }
 
+float M_HashIGN(vec2 pos)
+{
+    // http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
+    const vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
+    return fract(magic.z * fract(dot(pos, magic.xy)));
+}
+
 float M_Hash11(float p)
 {
     p = fract(p * .1031);

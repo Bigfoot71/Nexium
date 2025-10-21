@@ -16,6 +16,7 @@ precision highp float;
 
 #include "../include/environment.glsl"
 #include "../include/color.glsl"
+#include "../include/math.glsl"
 
 /* === Definitions === */
 
@@ -170,15 +171,6 @@ vec3 TonemapAgX(vec3 color)
     return color;
 }
 
-/* === Helper Functions === */
-
-float GradientNoise(vec2 uv)
-{
-    // Gradient noise from Jorge Jimenez's presentation:
-    // http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
-    return fract(52.9829189 * fract(dot(uv, vec2(0.06711056, 0.00583715))));
-}
-
 /* === Main Functions === */
 
 vec3 Tonemapping(vec3 color, float exposure, float pWhite) // inputs are LINEAR
@@ -213,7 +205,7 @@ vec3 Adjustments(vec3 color, float brightness, float contrast, float saturation)
 vec3 Debanding(vec3 color)
 {
     float ditherStrength = 255.0; // lower is stronger
-    return color + vec3((GradientNoise(gl_FragCoord.xy) - 0.5) / ditherStrength);
+    return color + vec3((M_HashIGN(gl_FragCoord.xy) - 0.5) / ditherStrength);
 }
 
 /* === Main program === */

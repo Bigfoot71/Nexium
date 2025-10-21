@@ -19,20 +19,39 @@ precision highp float;
 
 /* === Storage Buffers === */
 
+/** 
+ * sLights[] : list of active lights
+ *   - MUST be sorted CPU-side: DIR -> SPOT -> OMNI
+ *   - Shaders assume this order for sIndices and per-type offsets
+ */
 layout(std430, binding = 0) buffer LightBuffer {
     Light sLights[];
 };
 
+/** 
+ * sClusters[] : per-cluster info
+ *   - xyz = number of lights per type (numDir, numSpot, numOmni)
+ *   - w   = unused
+ */
 layout(std430, binding = 1) buffer ClusterBuffer {
-    uint sClusters[]; //< Contains number of lights for each cluster
+    uvec4 sClusters[];
 };
 
+/** 
+ * sIndices[] : light indices per cluster
+ *   - Indices into sLights[], grouped by type: DIR -> SPOT -> OMNI
+ */
 layout(std430, binding = 2) buffer IndexBuffer {
-    uint sIndices[]; //< Contains the light indices for each cluster
+    uint sIndices[];
 };
 
+/** 
+ * sClusterAABBs[] : AABBs for each cluster
+ *   - Calculated during cluster culling in this compute shader
+ *   - Can be reused in later passes
+ */
 layout(std430, binding = 3) buffer ClusterAABBBuffer {
-    Cluster sClusterAABBs[]; //< Contains AABB for each cluster
+    Cluster sClusterAABBs[];
 };
 
 /* === Uniform Buffers === */
@@ -66,7 +85,7 @@ void ClusterBounds(uvec3 clusterCoord, out vec3 minBounds, out vec3 maxBounds)
     float viewZNear = -zNearSlice;
     float viewZFar  = -zFarSlice;
 
-    // 4 corners in NDC (X,Y), Z = 1 because we’ll rescale in view space
+    // 4 corners in NDC (X,Y), Z = 1 because we'll rescale in view space
     vec4 ndcCorners[4] = vec4[4](
         vec4(ndcMin.x, ndcMin.y, 1.0, 1.0),
         vec4(ndcMax.x, ndcMin.y, 1.0, 1.0),
@@ -148,17 +167,17 @@ bool ConeAABBIntersect(vec3 coneApex, vec3 coneDir, float coneRange, float coneA
 
 /* === Light Volume Test === */
 
-bool OmniLightAffectsCluster(in Light L, vec3 clusterMin, vec3 clusterMax)
+bool OmniLightAffectsCluster(in Light light, vec3 clusterMin, vec3 clusterMax)
 {
-    vec3 lightViewPos = (uFrustum.view * vec4(L.position, 1.0)).xyz;
-    return SphereAABBIntersect(lightViewPos, L.range, clusterMin, clusterMax);
+    vec3 lightViewPos = (uFrustum.view * vec4(light.position, 1.0)).xyz;
+    return SphereAABBIntersect(lightViewPos, light.range, clusterMin, clusterMax);
 }
 
-bool SpotLightAffectsCluster(in Light L, vec3 clusterMin, vec3 clusterMax)
+bool SpotLightAffectsCluster(in Light light, vec3 clusterMin, vec3 clusterMax)
 {
-    vec3 lightViewPos = (uFrustum.view * vec4(L.position, 1.0)).xyz;
-    vec3 lightViewDir = normalize((uFrustum.view * vec4(L.direction, 0.0)).xyz);
-    return ConeAABBIntersect(lightViewPos, lightViewDir, L.range, L.outerCutOff, clusterMin, clusterMax);
+    vec3 lightViewPos = (uFrustum.view * vec4(light.position, 1.0)).xyz;
+    vec3 lightViewDir = normalize((uFrustum.view * vec4(light.direction, 0.0)).xyz);
+    return ConeAABBIntersect(lightViewPos, lightViewDir, light.range, light.outerCutOff, clusterMin, clusterMax);
 }
 
 /* === Program === */
@@ -167,7 +186,7 @@ layout(local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
 void main()
 {
-    /* --- Calculating cluster coordinates and its index --- */
+    /* --- Calculate cluster coordinates and its index --- */
 
     uvec3 clusterCoord = uvec3(gl_GlobalInvocationID.xyz);
     if (any(greaterThanEqual(clusterCoord, uClusterCount))) {
@@ -175,6 +194,7 @@ void main()
     }
 
     uint clusterId = L_ClusterIndex(clusterCoord, uClusterCount);
+    uint base = clusterId * uMaxLightsPerCluster;
 
     /* --- Calculate cluster bounds --- */
 
@@ -186,48 +206,43 @@ void main()
     sClusterAABBs[clusterId].minBounds = clusterMin;
     sClusterAABBs[clusterId].maxBounds = clusterMax;
 
-    /* --- Iteration and testing for each light --- */
+    /* --- Count and collect lights in separate passes --- */
 
-    uint appended = 0u;
+    uint numLights[NUM_LIGHT_TYPE] = uint[](0u, 0u, 0u);
+    uint currentOffset = 0u;
 
     for (uint i = 0u; i < uNumLights; ++i)
     {
-        Light L = sLights[i];
+        Light light = sLights[i];
 
-        /* --- Test if this light's layer mask is valid for current camera --- */
-
-        if ((uFrustum.cullMask & L.layerMask) == 0u) {
+        // Layer culling
+        if ((uFrustum.cullMask & light.layerMask) == 0u) {
             continue;
         }
 
-        /* --- Test if light affects this cluster based on light type --- */
+        // Frustum culling
+        bool affectsCluster = true;
+        if (light.type == LIGHT_SPOT) affectsCluster = SpotLightAffectsCluster(light, clusterMin, clusterMax);
+        if (light.type == LIGHT_OMNI) affectsCluster = OmniLightAffectsCluster(light, clusterMin, clusterMax);
+        if (!affectsCluster) continue;
 
-        bool affects = false;
-        switch (L.type) {
-        case LIGHT_DIR:
-            affects = true; // Directional lights affect all clusters
+        // Add light to cluster and update per-type counters
+        sIndices[base + currentOffset] = i;
+        numLights[light.type]++;
+        currentOffset++;
+
+        // Break loop if cluster is full
+        if (currentOffset >= uMaxLightsPerCluster) {
             break;
-        case LIGHT_OMNI:
-            affects = OmniLightAffectsCluster(L, clusterMin, clusterMax);
-            break;
-        case LIGHT_SPOT:
-            affects = SpotLightAffectsCluster(L, clusterMin, clusterMax);
-            break;
-        }
-
-        if (!affects) {
-            continue;
-        }
-
-        /* --- Add light to cluster if capacity allows --- */
-
-        if (appended < uint(uMaxLightsPerCluster)) {
-            uint base = clusterId * uMaxLightsPerCluster;
-            uint dst = base + appended;
-            sIndices[dst] = i;
-            appended++;
         }
     }
 
-    sClusters[clusterId] = appended;
+    /* --- Store counts per type --- */
+
+    sClusters[clusterId] = uvec4(
+        numLights[LIGHT_DIR],
+        numLights[LIGHT_SPOT],
+        numLights[LIGHT_OMNI],
+        0u
+    );
 }
