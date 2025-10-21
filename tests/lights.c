@@ -20,12 +20,12 @@ int main(void)
     NX_Material matSphere = NX_GetDefaultMaterial();
     matSphere.shading = NX_SHADING_UNLIT;
 
-    NX_Light* lights[128];
+    NX_Light* lights[256];
     for (int i = 0; i < NX_ARRAY_SIZE(lights); i++) {
         lights[i] = NX_CreateLight(NX_LIGHT_OMNI);
         NX_SetLightPosition(lights[i], NX_VEC3(
             NX_RandRangeFloat(NULL, -50, 50),
-            NX_RandRangeFloat(NULL, 2, 5),
+            NX_RandRangeFloat(NULL, 2, 4),
             NX_RandRangeFloat(NULL, -50, 50)
         ));
         NX_SetLightColor(lights[i], NX_ColorFromHSV(
