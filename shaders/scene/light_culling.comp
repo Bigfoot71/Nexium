@@ -126,43 +126,29 @@ bool SphereAABBIntersect(vec3 sphereCenter, float sphereRadius, vec3 aabbMin, ve
 
 bool ConeAABBIntersect(vec3 coneApex, vec3 coneDir, float coneRange, float coneAngleCos, vec3 aabbMin, vec3 aabbMax)
 {
-    // Use a bounding sphere for the cone as a first approximation
-    vec3 coneEnd = coneApex + coneDir * coneRange;
-    float coneRadius = coneRange * sqrt(max(0.0, 1.0 - coneAngleCos * coneAngleCos));
+    // Adapted according to Bart Wronski's method
+    // SEE: https://bartwronski.com/2017/04/13/cull-that-cone/
 
-    // Center of the bounding sphere at the midpoint of the cone
-    vec3 boundingSphereCenter = (coneApex + coneEnd) * 0.5;
-    float boundingSphereRadius = distance(coneApex, coneEnd) * 0.5 + coneRadius * 0.5;
+    // Create bounding sphere around AABB
+    vec3 aabbCenter = (aabbMin + aabbMax) * 0.5;
+    vec3 aabbExtent = (aabbMax - aabbMin) * 0.5;
+    float sphereRadius = length(aabbExtent);
 
-    if (!SphereAABBIntersect(boundingSphereCenter, boundingSphereRadius, aabbMin, aabbMax)) {
-        return false;
-    }
+    // Vector from cone apex to sphere center
+    vec3 V = aabbCenter - coneApex;
+    float VlenSq = dot(V, V);
+    float V1len = dot(V, coneDir); // Projection on cone axis
 
-    // More accurate test, checks if the AABB actually intersects the cone
-    // To simplify, we test whether at least one corner of the AABB is in the cone
-    vec3 corners[8] = vec3[8](
-        vec3(aabbMin.x, aabbMin.y, aabbMin.z),
-        vec3(aabbMax.x, aabbMin.y, aabbMin.z),
-        vec3(aabbMin.x, aabbMax.y, aabbMin.z),
-        vec3(aabbMax.x, aabbMax.y, aabbMin.z),
-        vec3(aabbMin.x, aabbMin.y, aabbMax.z),
-        vec3(aabbMax.x, aabbMin.y, aabbMax.z),
-        vec3(aabbMin.x, aabbMax.y, aabbMax.z),
-        vec3(aabbMax.x, aabbMax.y, aabbMax.z)
-    );
+    // Distance from sphere center to closest point on cone surface
+    float coneSinAngle = sqrt(1.0 - coneAngleCos * coneAngleCos);
+    float distanceClosestPoint = coneAngleCos * sqrt(VlenSq - V1len * V1len) - V1len * coneSinAngle;
 
-    for (int i = 0; i < 8; i++) {
-        vec3 toCorner = corners[i] - coneApex;
-        float distanceToApex = length(toCorner);
-        if (distanceToApex <= coneRange) {
-            float cosAngle = dot(normalize(toCorner), coneDir);
-            if (cosAngle >= coneAngleCos) {
-                return true;
-            }
-        }
-    }
+    // Three culling tests
+    bool angleCull = distanceClosestPoint > sphereRadius;
+    bool frontCull = V1len > sphereRadius + coneRange;
+    bool backCull = V1len < -sphereRadius;
 
-    return false;
+    return !(angleCull || frontCull || backCull);
 }
 
 /* === Light Volume Test === */
@@ -177,6 +163,12 @@ bool SpotLightAffectsCluster(in Light light, vec3 clusterMin, vec3 clusterMax)
 {
     vec3 lightViewPos = (uFrustum.view * vec4(light.position, 1.0)).xyz;
     vec3 lightViewDir = normalize((uFrustum.view * vec4(light.direction, 0.0)).xyz);
+
+    // For very wide angles (> 80°), use a spherical test
+    if (light.outerCutOff < 0.17) { // cos(80°) ~= 0.17
+        return SphereAABBIntersect(lightViewPos, light.range, clusterMin, clusterMax);
+    }
+
     return ConeAABBIntersect(lightViewPos, lightViewDir, light.range, light.outerCutOff, clusterMin, clusterMax);
 }
 
