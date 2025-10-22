@@ -13,117 +13,129 @@ namespace gpu {
 
 /* === Public Implementation === */
 
-void Buffer::realloc(GLsizeiptr size, const void* data) noexcept
+void Buffer::realloc(GLsizeiptr newSize, const void* data) noexcept
 {
-    SDL_assert(size > 0);
+    SDL_assert(newSize > 0);
 
     if (!isValid()) {
-        NX_INTERNAL_LOG(E, "GPU: Cannot set data on invalid buffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot realloc an invalid buffer (id=%u)", mID);
         return;
     }
 
-    if (size <= 0) {
-        NX_INTERNAL_LOG(E, "GPU: Invalid buffer size: %lld", static_cast<long long>(size));
+    if (newSize <= 0) {
+        NX_INTERNAL_LOG(E, "GPU: Invalid buffer size: %lld", static_cast<long long>(newSize));
         return;
     }
 
-    mSize = size;
+    Pipeline::withBufferBind(mTarget, mID, [&]()
+    {
+        if (newSize != mSize) {
+            glBufferData(mTarget, newSize, data, mUsage);
+            mSize = newSize;
+        }
+        else {
+            glBufferData(mTarget, mSize, nullptr, mUsage);
+            if (data) {
+                glBufferSubData(mTarget, 0, mSize, data);
+            }
+        }
 
-    Pipeline::withBufferBind(mTarget, mID, [&]() {
-        glBufferData(mTarget, size, data, mUsage);
-        if (glGetError() != GL_NO_ERROR) {
-            NX_INTERNAL_LOG(E, "GPU: Failed to set buffer data");
+        const GLenum err = glGetError();
+        if (err != GL_NO_ERROR) {
+            NX_INTERNAL_LOG(E, "GPU: Buffer (id=%u) realloc failed (error 0x%04X, size=%lld)",
+                            mID, err, static_cast<long long>(newSize));
         }
     });
 }
 
-void Buffer::realloc(GLsizeiptr size, bool keepData) noexcept
+void Buffer::realloc(GLsizeiptr newSize, bool keepData) noexcept
 {
-    SDL_assert(size > 0);
+    SDL_assert(newSize > 0);
 
     if (!isValid()) {
-        NX_INTERNAL_LOG(E, "GPU: Cannot set data on invalid buffer");
+        NX_INTERNAL_LOG(E, "GPU: Cannot realloc an invalid buffer (id=%u)", mID);
         return;
     }
 
-    if (size <= 0) {
-        NX_INTERNAL_LOG(E, "GPU: Invalid buffer size: %lld", static_cast<long long>(size));
+    if (newSize <= 0) {
+        NX_INTERNAL_LOG(E, "GPU: Invalid buffer size: %lld", static_cast<long long>(newSize));
+        return;
+    }
+
+    if (newSize == mSize) {
         return;
     }
 
     const GLsizeiptr oldSize = mSize;
 
-    Pipeline::withBufferBind(mTarget, mID,
-        [&]()
-        {
-            /* --- If no need to keep the data we call glBufferData with NULL --- */
+    Pipeline::withBufferBind(mTarget, mID, [&]()
+    {
+        const GLsizeiptr preserveSize = std::min(oldSize, newSize);
 
-            if (!keepData) {
-                glBufferData(mTarget, size, nullptr, mUsage);
-                if (glGetError() != GL_NO_ERROR) {
-                    NX_INTERNAL_LOG(E, "GPU: Failed to set buffer data");
-                    return;
-                }
-                mSize = size;
+        /* --- Case without data preservation --- */
+
+        if (!keepData || preserveSize <= 0) {
+            glBufferData(mTarget, newSize, nullptr, mUsage);
+            const GLenum err = glGetError();
+            if (err != GL_NO_ERROR) {
+                NX_INTERNAL_LOG(E, "GPU: Buffer realloc failed (id=%u, error=0x%04X, size=%lld)",
+                                mID, err, static_cast<long long>(newSize));
                 return;
             }
-
-            /* --- Create temporary buffer to keep the current data --- */
-
-            const GLsizeiptr preserveSize = std::min(oldSize, size);
-
-            GLuint tempBuffer;
-            glGenBuffers(1, &tempBuffer);
-
-            glBindBuffer(GL_COPY_READ_BUFFER, mID);
-            glBindBuffer(GL_COPY_WRITE_BUFFER, tempBuffer);
-
-            glBufferData(GL_COPY_WRITE_BUFFER, preserveSize, nullptr, GL_STATIC_COPY);
-            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, preserveSize);
-
-            GLenum error = glGetError();
-            if (error != GL_NO_ERROR) {
-                NX_INTERNAL_LOG(E, "GPU: Failed to copy buffer data to temp buffer (error: %d)", error);
-                glDeleteBuffers(1, &tempBuffer);
-                return;
-            }
-
-            /* --- Reallocate the main buffer with the new size --- */
-
-            glBindBuffer(mTarget, mID);
-            glBufferData(mTarget, size, nullptr, mUsage);
-
-            error = glGetError();
-            if (error != GL_NO_ERROR) {
-                NX_INTERNAL_LOG(E, "GPU: Failed to reallocate buffer (error: %d)", error);
-                glDeleteBuffers(1, &tempBuffer);
-                return;
-            }
-
-            /* --- Copy preserved data from temporary buffer --- */
-
-            glBindBuffer(GL_COPY_READ_BUFFER, tempBuffer);
-            glBindBuffer(GL_COPY_WRITE_BUFFER, mID);
-
-            glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, preserveSize);
-
-            error = glGetError();
-            if (error != GL_NO_ERROR) {
-                NX_INTERNAL_LOG(E, "GPU: Failed to restore buffer data (error: %d)", error);
-            }
-
-            glBindBuffer(GL_COPY_READ_BUFFER, 0);
-            glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-
-            /* --- Clear the temporary buffer --- */
-
-            glDeleteBuffers(1, &tempBuffer);
-
-            if (error == GL_NO_ERROR) {
-                mSize = size;
-            }
+            mSize = newSize;
+            return;
         }
-    );
+
+        /* --- Cases with data preservation --- */
+
+        GLuint tempBuffer = 0;
+        glGenBuffers(1, &tempBuffer);
+        glBindBuffer(GL_COPY_READ_BUFFER, mID);
+        glBindBuffer(GL_COPY_WRITE_BUFFER, tempBuffer);
+
+        glBufferData(GL_COPY_WRITE_BUFFER, preserveSize, nullptr, GL_STATIC_COPY);
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, preserveSize);
+
+        GLenum err = glGetError();
+        if (err != GL_NO_ERROR) {
+            NX_INTERNAL_LOG(E, "GPU: Failed to copy buffer data to temp buffer (id=%u, err=0x%04X, size=%lld)",
+                            mID, err, static_cast<long long>(preserveSize));
+            glDeleteBuffers(1, &tempBuffer);
+            return;
+        }
+
+        /* --- Main reallocation --- */
+
+        glBindBuffer(mTarget, mID);
+        glBufferData(mTarget, newSize, nullptr, mUsage);
+
+        err = glGetError();
+        if (err != GL_NO_ERROR) {
+            NX_INTERNAL_LOG(E, "GPU: Failed to realloc main buffer (id=%u, err=0x%04X, newSize=%lld)",
+                            mID, err, static_cast<long long>(newSize));
+            glDeleteBuffers(1, &tempBuffer);
+            return;
+        }
+
+        /* --- Copy back from temporary buffer --- */
+
+        glBindBuffer(GL_COPY_READ_BUFFER, tempBuffer);
+        glBindBuffer(GL_COPY_WRITE_BUFFER, mID);
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, preserveSize);
+
+        err = glGetError();
+        if (err != GL_NO_ERROR) {
+            NX_INTERNAL_LOG(E, "GPU: Failed to restore preserved data (id=%u, err=0x%04X, preserved=%lld)",
+                            mID, err, static_cast<long long>(preserveSize));
+        }
+        else {
+            mSize = newSize;
+        }
+
+        glBindBuffer(GL_COPY_READ_BUFFER, 0);
+        glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+        glDeleteBuffers(1, &tempBuffer);
+    });
 }
 
 bool Buffer::upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept
