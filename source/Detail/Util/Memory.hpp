@@ -14,6 +14,9 @@
 
 namespace util {
 
+/**
+ * @brief Allocates memory for a given number of elements.
+ */
 template <typename T = void>
 inline T* malloc(size_t count = 1)
 {
@@ -24,6 +27,9 @@ inline T* malloc(size_t count = 1)
     return static_cast<T*>(SDL_malloc(count * sizeof(T)));
 }
 
+/**
+ * @brief Allocates and zero-initializes memory for a given number of elements.
+ */
 template <typename T = void>
 inline T* calloc(size_t count = 1)
 {
@@ -34,11 +40,17 @@ inline T* calloc(size_t count = 1)
     return static_cast<T*>(SDL_calloc(count, sizeof(T)));
 }
 
+/**
+ * @brief Allocates and zero-initializes memory with explicit element size.
+ */
 inline void* calloc(size_t count, size_t size)
 {
     return SDL_calloc(count, size);
 }
 
+/**
+ * @brief Reallocates previously allocated memory to a new size.
+ */
 template <typename T = void>
 inline T* realloc(T* mem, size_t count)
 {
@@ -49,11 +61,14 @@ inline T* realloc(T* mem, size_t count)
     return static_cast<T*>(SDL_realloc(mem, count * sizeof(T)));
 }
 
+/**
+ * @brief Frees previously allocated memory.
+ */
 inline void free(void* mem)
 {
     return SDL_free(mem);
 }
 
-} // namespace mem
+} // namespace util
 
 #endif // NX_UTIL_MEMORY_HPP
