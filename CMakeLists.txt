@@ -116,6 +116,14 @@ if(NX_ZLIB_VENDORED)
 
     add_subdirectory("${NX_ROOT_PATH}/external/zlib")
 
+    # Other vendored dependencies might look for ZLIB
+    # So we create this alias so they can use our zlib
+    if(TARGET zlibstatic)
+        add_library(ZLIB::ZLIB ALIAS zlibstatic)
+    elseif(TARGET zlib)
+        add_library(ZLIB::ZLIB ALIAS zlib)
+    endif()
+
     list(APPEND NX_EXTERNAL_INSTALL_TARGETS "zlibstatic")
     list(APPEND NX_EXTERNAL_LIBS "zlibstatic")
 
@@ -189,7 +197,6 @@ if(NX_ASSIMP_VENDORED)
     set(ASSIMP_INJECT_DEBUG_POSTFIX     OFF CACHE BOOL "")
     set(ASSIMP_WARNINGS_AS_ERRORS       OFF CACHE BOOL "")
     set(ASSIMP_BUILD_TESTS              OFF CACHE BOOL "")
-    set(ASSIMP_BUILD_ZLIB               OFF CACHE BOOL "")
     set(ASSIMP_INSTALL                  OFF CACHE BOOL "")
 
     set(ASSIMP_IGNORE_GIT_HASH          ON CACHE BOOL "")
@@ -244,6 +251,10 @@ if(NX_ASSIMP_VENDORED)
     set(ASSIMP_BUILD_X3D_IMPORTER       OFF CACHE BOOL "")
     set(ASSIMP_BUILD_3MF_IMPORTER       OFF CACHE BOOL "")
     set(ASSIMP_BUILD_MMD_IMPORTER       OFF CACHE BOOL "")
+
+    if(NX_ZLIB_VENDORED)
+        set(ASSIMP_BUILD_ZLIB OFF CACHE BOOL "" FORCE)
+    endif()
 
     add_subdirectory("${NX_ROOT_PATH}/external/assimp")
 
