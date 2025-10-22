@@ -1,5 +1,7 @@
 #include "./NX_Shader.hpp"
 
+#include "../Assets/ShaderDecoder.hpp"
+
 #include <shaders/shape.vert.h>
 #include <shaders/shape.frag.h>
 
@@ -9,11 +11,14 @@ NX_Shader::NX_Shader()
 {
     /* --- Compile shaders --- */
 
-    gpu::Shader vertShape(GL_VERTEX_SHADER, SHAPE_VERT);
-    gpu::Shader fragShapeColor(GL_FRAGMENT_SHADER, SHAPE_FRAG, {"SHAPE_COLOR"});
-    gpu::Shader fragShapeTexture(GL_FRAGMENT_SHADER, SHAPE_FRAG, {"SHAPE_TEXTURE"});
-    gpu::Shader fragTextBitmap(GL_FRAGMENT_SHADER, SHAPE_FRAG, {"TEXT_BITMAP"});
-    gpu::Shader fragTextSDF(GL_FRAGMENT_SHADER, SHAPE_FRAG, {"TEXT_SDF"});
+    assets::ShaderDecoder vertStr(SHAPE_VERT, SHAPE_VERT_SIZE);
+    assets::ShaderDecoder fragStr(SHAPE_FRAG, SHAPE_FRAG_SIZE);
+
+    gpu::Shader vertShape(GL_VERTEX_SHADER, vertStr);
+    gpu::Shader fragShapeColor(GL_FRAGMENT_SHADER, fragStr, {"SHAPE_COLOR"});
+    gpu::Shader fragShapeTexture(GL_FRAGMENT_SHADER, fragStr, {"SHAPE_TEXTURE"});
+    gpu::Shader fragTextBitmap(GL_FRAGMENT_SHADER, fragStr, {"TEXT_BITMAP"});
+    gpu::Shader fragTextSDF(GL_FRAGMENT_SHADER, fragStr, {"TEXT_SDF"});
 
     /* --- Link all programs --- */
 
@@ -32,8 +37,8 @@ NX_Shader::NX_Shader(const char* vert, const char* frag)
 
     /* --- Prepare base sources --- */
 
-    util::String vertStr = SHAPE_VERT;
-    util::String fragStr = SHAPE_FRAG;
+    util::String vertStr = assets::ShaderDecoder(SHAPE_VERT, SHAPE_VERT_SIZE).code();
+    util::String fragStr = assets::ShaderDecoder(SHAPE_FRAG, SHAPE_FRAG_SIZE).code();
 
     /* --- Insert user code --- */
 

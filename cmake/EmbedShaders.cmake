@@ -10,9 +10,10 @@ function(process_shader shader_file output_file_var)
         COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/generated/include/shaders"
         COMMAND "${PYTHON_EXECUTABLE}" "${NX_ROOT_PATH}/scripts/glsl_processor.py" 
                 "${shader_file}" "${CMAKE_CURRENT_BINARY_DIR}/shader_${shader_name}.tmp"
+                --compress
         COMMAND "${PYTHON_EXECUTABLE}" "${NX_ROOT_PATH}/scripts/bin2c.py" 
                 --file "${CMAKE_CURRENT_BINARY_DIR}/shader_${shader_name}.tmp" 
-                --name "${shader_name}" --mode text "${output_file}"
+                --name "${shader_name}" --mode binary "${output_file}"
         COMMAND ${CMAKE_COMMAND} -E remove "${CMAKE_CURRENT_BINARY_DIR}/shader_${shader_name}.tmp"
         DEPENDS "${shader_file}"
         COMMENT "Processing shader: ${shader_file}"
