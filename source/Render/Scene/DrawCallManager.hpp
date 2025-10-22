@@ -466,10 +466,6 @@ inline void DrawCallManager::draw(const gpu::Pipeline& pipeline, const UniqueDat
             pipeline.drawInstanced(primitive, vertexCount, shared.instanceCount) :
             pipeline.draw(primitive, vertexCount);
     }
-
-    if (useInstancing) [[unlikely]] {
-        buffer->unbindInstances();
-    }
 }
 
 inline void DrawCallManager::draw(const gpu::Pipeline& pipeline, const UniqueData& unique) const
