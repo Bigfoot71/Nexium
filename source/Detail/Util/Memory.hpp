@@ -14,26 +14,37 @@
 
 namespace util {
 
-template <typename T>
+template <typename T = void>
 inline T* malloc(size_t count = 1)
 {
-    static_assert(!std::is_same_v<T, void>);
+    if constexpr (std::is_same_v<T, void>) {
+        return SDL_malloc(count);
+    }
 
     return static_cast<T*>(SDL_malloc(count * sizeof(T)));
 }
 
-template <typename T>
+template <typename T = void>
 inline T* calloc(size_t count = 1)
 {
-    static_assert(!std::is_same_v<T, void>);
+    if constexpr (std::is_same_v<T, void>) {
+        return SDL_calloc(count, 1);
+    }
 
     return static_cast<T*>(SDL_calloc(count, sizeof(T)));
 }
 
-template <typename T>
+inline void* calloc(size_t count, size_t size)
+{
+    return SDL_calloc(count, size);
+}
+
+template <typename T = void>
 inline T* realloc(T* mem, size_t count)
 {
-    static_assert(!std::is_same_v<T, void>);
+    if constexpr (std::is_same_v<T, void>) {
+        return SDL_realloc(mem, count);
+    }
 
     return static_cast<T*>(SDL_realloc(mem, count * sizeof(T)));
 }
