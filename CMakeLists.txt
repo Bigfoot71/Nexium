@@ -115,19 +115,10 @@ if(NX_ZLIB_VENDORED)
     set(ZLIB_PREFIX             OFF CACHE BOOL "")
 
     set(_OLD_PIC ${CMAKE_POSITION_INDEPENDENT_CODE})
-
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
     add_subdirectory("${NX_ROOT_PATH}/external/zlib")
-
     set(CMAKE_POSITION_INDEPENDENT_CODE ${_OLD_PIC})
-
-    # Other vendored dependencies might look for ZLIB
-    # So we create this alias so they can use our zlib
-    if(TARGET zlibstatic)
-        add_library(ZLIB::ZLIB ALIAS zlibstatic)
-    elseif(TARGET zlib)
-        add_library(ZLIB::ZLIB ALIAS zlib)
-    endif()
 
     list(APPEND NX_EXTERNAL_INSTALL_TARGETS "zlibstatic")
     list(APPEND NX_EXTERNAL_LIBS "zlibstatic")
@@ -258,9 +249,10 @@ if(NX_ASSIMP_VENDORED)
     set(ASSIMP_BUILD_MMD_IMPORTER       OFF CACHE BOOL "")
 
     if(NX_ZLIB_VENDORED)
-
+        # If zlib is already provided, we tell assimp not to build it
         set(ASSIMP_BUILD_ZLIB OFF CACHE BOOL "" FORCE)
-
+        # And we provide the information that assimp needs to use our zlib
+        # Assimp does a find_package(ZLIB) so we "simulate" a result
         set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
         set(ZLIB_INCLUDE_DIR "${NX_ROOT_PATH}/external/zlib" CACHE PATH "" FORCE)
         set(ZLIB_LIBRARIES zlibstatic CACHE STRING "" FORCE)
