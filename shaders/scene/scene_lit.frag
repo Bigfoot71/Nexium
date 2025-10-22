@@ -510,6 +510,8 @@ void main()
     /* --- Sample normal and compute view direction vector --- */
 
     vec3 N = normalize(vInt.tbn * NormalScale(NORMAL_MAP.rgb * 2.0 - 1.0, NORMAL_SCALE));
+    N *= (gl_FrontFacing ? 1.0 : -1.0);
+
     vec3 V = normalize(uFrustum.position - vInt.position);
 
     /* --- Compute the dot product of the normal and view direction --- */
