@@ -11,6 +11,7 @@
 
 #include <SDL3/SDL_stdinc.h>
 #include <type_traits>
+#include <memory>
 
 namespace util {
 
@@ -67,6 +68,47 @@ inline T* realloc(T* mem, size_t count)
 inline void free(void* mem)
 {
     return SDL_free(mem);
+}
+
+/**
+ * @brief Custom deleter using util::free.
+ */
+template <typename T = void>
+struct Deleter {
+    void operator()(T* ptr) const noexcept {
+        util::free(ptr);
+    }
+};
+
+/**
+ * @brief Alias for std::unique_ptr using util::Deleter.
+ */
+template <typename T>
+using UniquePtr = std::unique_ptr<T, Deleter<T>>;
+
+/**
+ * @brief Allocates memory and returns a util::UniquePtr.
+ */
+template <typename T>
+inline UniquePtr<T> makeUnique(size_t count = 1)
+{
+    return UniquePtr<T>(util::malloc<T>(count));
+}
+
+/**
+ * @brief Alias for std::shared_ptr.
+ */
+template <typename T>
+using SharedPtr = std::shared_ptr<T>;
+
+/**
+ * @brief Allocates memory and returns a util::SharedPtr using util::Deleter.
+ */
+template <typename T>
+inline SharedPtr<T> makeShared(size_t count = 1)
+{
+    T* ptr = util::malloc<T>(count);
+    return SharedPtr<T>(ptr, Deleter<T>{});
 }
 
 } // namespace util
