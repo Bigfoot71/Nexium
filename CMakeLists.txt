@@ -189,6 +189,7 @@ if(NX_ASSIMP_VENDORED)
     set(ASSIMP_INJECT_DEBUG_POSTFIX     OFF CACHE BOOL "")
     set(ASSIMP_WARNINGS_AS_ERRORS       OFF CACHE BOOL "")
     set(ASSIMP_BUILD_TESTS              OFF CACHE BOOL "")
+    set(ASSIMP_BUILD_ZLIB               OFF CACHE BOOL "")
     set(ASSIMP_INSTALL                  OFF CACHE BOOL "")
 
     set(ASSIMP_IGNORE_GIT_HASH          ON CACHE BOOL "")
@@ -248,10 +249,6 @@ if(NX_ASSIMP_VENDORED)
 
     list(APPEND NX_EXTERNAL_INSTALL_TARGETS "assimp")
     list(APPEND NX_EXTERNAL_LIBS "assimp")
-
-    if(ASSIMP_BUILD_ZLIB)
-        list(APPEND NX_EXTERNAL_INSTALL_TARGETS "zlibstatic")
-    endif()
 
 elseif()
     find_package(assimp REQUIRED)
