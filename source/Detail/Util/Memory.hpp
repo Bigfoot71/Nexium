@@ -16,7 +16,8 @@
 namespace util {
 
 /**
- * @brief Allocates memory for a given number of elements.
+ * @brief Allocates memory using SDL_malloc.
+ * @tparam T Element type to allocate. If void, allocates raw bytes.
  */
 template <typename T = void>
 inline T* malloc(size_t count = 1)
@@ -24,12 +25,14 @@ inline T* malloc(size_t count = 1)
     if constexpr (std::is_same_v<T, void>) {
         return SDL_malloc(count);
     }
-
-    return static_cast<T*>(SDL_malloc(count * sizeof(T)));
+    else {
+        return static_cast<T*>(SDL_malloc(count * sizeof(T)));
+    }
 }
 
 /**
- * @brief Allocates and zero-initializes memory for a given number of elements.
+ * @brief Allocates zero-initialized memory using SDL_calloc.
+ * @tparam T Element type to allocate. If void, allocates raw bytes.
  */
 template <typename T = void>
 inline T* calloc(size_t count = 1)
@@ -37,12 +40,13 @@ inline T* calloc(size_t count = 1)
     if constexpr (std::is_same_v<T, void>) {
         return SDL_calloc(count, 1);
     }
-
-    return static_cast<T*>(SDL_calloc(count, sizeof(T)));
+    else {
+        return static_cast<T*>(SDL_calloc(count, sizeof(T)));
+    }
 }
 
 /**
- * @brief Allocates and zero-initializes memory with explicit element size.
+ * @brief Allocates zero-initialized memory using SDL_calloc (non-templated overload).
  */
 inline void* calloc(size_t count, size_t size)
 {
@@ -50,7 +54,8 @@ inline void* calloc(size_t count, size_t size)
 }
 
 /**
- * @brief Reallocates previously allocated memory to a new size.
+ * @brief Reallocates memory using SDL_realloc.
+ * @tparam T Element type of the memory block. If void, uses raw byte size.
  */
 template <typename T = void>
 inline T* realloc(T* mem, size_t count)
@@ -58,12 +63,13 @@ inline T* realloc(T* mem, size_t count)
     if constexpr (std::is_same_v<T, void>) {
         return SDL_realloc(mem, count);
     }
-
-    return static_cast<T*>(SDL_realloc(mem, count * sizeof(T)));
+    else {
+        return static_cast<T*>(SDL_realloc(mem, count * sizeof(T)));
+    }
 }
 
 /**
- * @brief Frees previously allocated memory.
+ * @brief Frees memory using SDL_free.
  */
 inline void free(void* mem)
 {
