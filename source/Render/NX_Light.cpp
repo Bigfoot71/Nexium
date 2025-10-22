@@ -8,6 +8,7 @@
 
 #include "./NX_Light.hpp"
 #include "./Core/Helper.hpp"
+#include "NX/NX_Macros.h"
 
 /* === Public Implementation === */
 
@@ -59,6 +60,9 @@ void NX_Light::updateState(const scene::ViewFrustum& viewFrustum, bool* needsSha
             mShadowState.vpDirty = false;
             updateOmniViewProj();
         }
+        break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
         break;
     }
 }

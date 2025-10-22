@@ -250,6 +250,9 @@ inline NX_Vec3 NX_Light::position() const
             result = omni.position;
         }
         break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
+        break;
     }
 
     return result;
@@ -276,6 +279,9 @@ inline NX_Vec3 NX_Light::direction() const
         {
             NX_INTERNAL_LOG(W, "RENDER: Cannot retrieve direction of an omni-directional light (operation ignored)");
         }
+        break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
         break;
     }
 
@@ -311,6 +317,9 @@ inline NX_Color NX_Light::color() const
             result.b = omni.color.z;
         }
         break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
+        break;
     }
 
     return result;
@@ -338,6 +347,9 @@ inline float NX_Light::energy() const
             const Omni& omni = std::get<Omni>(mData);
             result = omni.energy;
         }
+        break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
         break;
     }
 
@@ -367,6 +379,9 @@ inline float NX_Light::specular() const
             result = omni.specular;
         }
         break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
+        break;
     }
 
     return result;
@@ -395,6 +410,9 @@ inline float NX_Light::range() const
             result = omni.range;
         }
         break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
+        break;
     }
 
     return result;
@@ -422,6 +440,9 @@ inline float NX_Light::attenuation() const
             result = omni.attenuation;
         }
         break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
+        break;
     }
 
     return result;
@@ -448,6 +469,9 @@ inline float NX_Light::innerCutOff() const
             NX_INTERNAL_LOG(W, "RENDER: Cannot retrieve inner cutoff to an omni-directional light (operation ignored)");
         }
         break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
+        break;
     }
 
     return result;
@@ -473,6 +497,9 @@ inline float NX_Light::outerCutOff() const
         {
             NX_INTERNAL_LOG(W, "RENDER: Cannot retrieve outer cutoff to an omni-directional light (operation ignored)");
         }
+        break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
         break;
     }
 
@@ -551,6 +578,9 @@ inline void NX_Light::setPosition(NX_Vec3 position)
             omni.position = position;
         }
         break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
+        break;
     }
 }
 
@@ -574,6 +604,9 @@ inline void NX_Light::setDirection(NX_Vec3 direction)
         {
             NX_INTERNAL_LOG(W, "RENDER: Cannot assign direction to an omni-directional light (operation ignored)");
         }
+        break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
         break;
     }
 }
@@ -599,6 +632,9 @@ inline void NX_Light::setColor(NX_Color color)
             omni.color = NX_VEC3(color.r, color.g, color.b);
         }
         break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
+        break;
     }
 }
 
@@ -623,6 +659,9 @@ inline void NX_Light::setEnergy(float energy)
             omni.energy = energy;
         }
         break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
+        break;
     }
 }
 
@@ -646,6 +685,9 @@ inline void NX_Light::setSpecular(float specular)
             Omni& omni = std::get<Omni>(mData);
             omni.specular = specular;
         }
+        break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
         break;
     }
 }
@@ -673,6 +715,9 @@ inline void NX_Light::setRange(float range)
             omni.range = range;
         }
         break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
+        break;
     }
 }
 
@@ -696,6 +741,9 @@ inline void NX_Light::setAttenuation(float attenuation)
             omni.attenuation = attenuation;
         }
         break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
+        break;
     }
 }
 
@@ -717,6 +765,9 @@ inline void NX_Light::setInnerCutOff(float radians)
         {
             NX_INTERNAL_LOG(W, "RENDER: Cannot assign inner cutoff to an omni-directional light (operation ignored)");
         }
+        break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
         break;
     }
 }
@@ -740,6 +791,9 @@ inline void NX_Light::setOuterCutOff(float radians)
         {
             NX_INTERNAL_LOG(W, "RENDER: Cannot assign outer cutoff to an omni-directional light (operation ignored)");
         }
+        break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
         break;
     }
 }
@@ -844,6 +898,9 @@ inline void NX_Light::fillLightGPU(LightGPU* light, int shadowIndex) const
             light->attenuation = omni.attenuation;
             light->type = NX_LIGHT_OMNI;
         }
+        break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
         break;
     }
 
