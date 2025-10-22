@@ -873,7 +873,7 @@ char* NX_DecompressText(const void* data, size_t dataSize)
 char* NX_EncodeBase64(const void* data, size_t dataSize, size_t* outputSize)
 {
     // Base64 conversion table according to RFC 4648
-    static constexpr char b64Table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    constexpr char b64Table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     /* --- Validation of input parameters --- */
 
