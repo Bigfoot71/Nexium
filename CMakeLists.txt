@@ -36,6 +36,7 @@ option(NX_BUILD_SHARED "Build Nexium as a shared library" OFF)
 option(NX_INSTALL "Enable installation of the Nexium library" ${NX_IS_MAIN})
 
 option(NX_SDL3_VENDORED "Build SDL3 from vendored submodule" OFF)
+option(NX_ZLIB_VENDORED "Build zlib from vendored submodule" OFF)
 option(NX_PHYSFS_VENDORED "Build PhysFS from vendored submodule" OFF)
 option(NX_FREETYPE_VENDORED "Build Freetype from vendored submodule" OFF)
 option(NX_ASSIMP_VENDORED "Build Assimp from vendored submodule" OFF)
@@ -99,6 +100,28 @@ if(NX_SDL3_VENDORED)
 else()
     find_package(SDL3 REQUIRED)
     list(APPEND NX_EXTERNAL_LIBS "SDL3::SDL3")
+endif()
+
+# Configure zlib
+
+if(NX_ZLIB_VENDORED)
+
+    set(ZLIB_BUILD_STATIC       ON CACHE BOOL "")
+
+    set(ZLIB_BUILD_TESTING      OFF CACHE BOOL "")
+    set(ZLIB_BUILD_SHARED       OFF CACHE BOOL "")
+    set(ZLIB_BUILD_MINIZIP      OFF CACHE BOOL "")
+    set(ZLIB_INSTALL            OFF CACHE BOOL "")
+    set(ZLIB_PREFIX             OFF CACHE BOOL "")
+
+    add_subdirectory("${NX_ROOT_PATH}/external/zlib")
+
+    list(APPEND NX_EXTERNAL_INSTALL_TARGETS "zlibstatic")
+    list(APPEND NX_EXTERNAL_LIBS "zlibstatic")
+
+else()
+    find_package(ZLIB REQUIRED)
+    list(APPEND NX_EXTERNAL_LIBS ZLIB::ZLIB)
 endif()
 
 # Configure PhysFS
