@@ -114,7 +114,12 @@ if(NX_ZLIB_VENDORED)
     set(ZLIB_INSTALL            OFF CACHE BOOL "")
     set(ZLIB_PREFIX             OFF CACHE BOOL "")
 
+    set(_OLD_PIC ${CMAKE_POSITION_INDEPENDENT_CODE})
+
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     add_subdirectory("${NX_ROOT_PATH}/external/zlib")
+
+    set(CMAKE_POSITION_INDEPENDENT_CODE ${_OLD_PIC})
 
     # Other vendored dependencies might look for ZLIB
     # So we create this alias so they can use our zlib
@@ -253,7 +258,12 @@ if(NX_ASSIMP_VENDORED)
     set(ASSIMP_BUILD_MMD_IMPORTER       OFF CACHE BOOL "")
 
     if(NX_ZLIB_VENDORED)
+
         set(ASSIMP_BUILD_ZLIB OFF CACHE BOOL "" FORCE)
+
+        set(ZLIB_FOUND TRUE CACHE BOOL "" FORCE)
+        set(ZLIB_INCLUDE_DIR "${NX_ROOT_PATH}/external/zlib" CACHE PATH "" FORCE)
+        set(ZLIB_LIBRARIES zlibstatic CACHE STRING "" FORCE)
     endif()
 
     add_subdirectory("${NX_ROOT_PATH}/external/assimp")
