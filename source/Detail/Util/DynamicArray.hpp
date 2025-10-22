@@ -9,7 +9,7 @@
 #ifndef NX_UTIL_DYNAMIC_ARRAY_HPP
 #define NX_UTIL_DYNAMIC_ARRAY_HPP
 
-#include <SDL3/SDL_stdinc.h>
+#include "./Memory.hpp"
 #include <type_traits>
 #include <algorithm>
 #include <iterator>
@@ -204,7 +204,7 @@ template<typename T>
 DynamicArray<T>::~DynamicArray() noexcept
 {
     clear();
-    SDL_free(mData);
+    util::free(mData);
 }
 
 template<typename T>
@@ -221,7 +221,7 @@ DynamicArray<T>& DynamicArray<T>::operator=(DynamicArray&& other) noexcept
 {
     if (this != &other) {
         clear();
-        SDL_free(mData);
+        util::free(mData);
         mData = other.mData;
         mSize = other.mSize;
         mCapacity = other.mCapacity;
@@ -425,7 +425,7 @@ void DynamicArray<T>::shrink_to_fit() noexcept
 {
     if (mSize < mCapacity) {
         if (mSize == 0) {
-            SDL_free(mData);
+            util::free(mData);
             mData = nullptr;
             mCapacity = 0;
         }
@@ -772,7 +772,7 @@ template<typename T>
 [[nodiscard]] bool DynamicArray<T>::reallocate(size_type new_capacity) noexcept
 {
     if (new_capacity == 0) {
-        SDL_free(mData);
+        util::free(mData);
         mData = nullptr;
         mCapacity = 0;
         return true;
@@ -782,7 +782,7 @@ template<typename T>
         return false;
     }
 
-    T* new_data = static_cast<T*>(SDL_malloc(new_capacity * sizeof(T)));
+    T* new_data = util::malloc<T>(new_capacity);
     if (!new_data) {
         return false;
     }
@@ -800,7 +800,7 @@ template<typename T>
             if (!construct_at(new_data + i, std::move(mData[i]))) {
                 // Fail, clean up and abandon
                 destroy_range(new_data, new_data + moved);
-                SDL_free(new_data);
+                util::free(new_data);
                 return false;
             }
             destroy_at(mData + i);
@@ -808,7 +808,7 @@ template<typename T>
         }
     }
 
-    SDL_free(mData);
+    util::free(mData);
     mData = new_data;
     mCapacity = new_capacity;
     return true;

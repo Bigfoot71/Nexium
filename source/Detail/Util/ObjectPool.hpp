@@ -9,7 +9,7 @@
 #ifndef NX_UTIL_OBJECT_POOL_HPP
 #define NX_UTIL_OBJECT_POOL_HPP
 
-#include <SDL3/SDL_stdinc.h>
+#include "./Memory.hpp"
 #include <type_traits>
 #include <cstddef>
 #include <utility>
@@ -162,7 +162,7 @@ ObjectPool<T, PoolSize>::~ObjectPool() noexcept
     while (current) {
         Pool* next = current->mNext;
         current->~Pool();
-        SDL_free(current);
+        util::free(current);
         current = next;
     }
 }
@@ -185,7 +185,7 @@ ObjectPool<T, PoolSize>& ObjectPool<T, PoolSize>::operator=(ObjectPool&& other) 
         while (current) {
             Pool* next = current->mNext;
             current->~Pool();
-            SDL_free(current);
+            util::free(current);
             current = next;
         }
 
@@ -338,7 +338,7 @@ typename ObjectPool<T, PoolSize>::ReverseIterator ObjectPool<T, PoolSize>::rend(
 template<typename T, std::size_t PoolSize>
 typename ObjectPool<T, PoolSize>::Pool* ObjectPool<T, PoolSize>::allocateNewPool() noexcept
 {
-    Pool* newPool = static_cast<Pool*>(SDL_malloc(sizeof(Pool)));
+    Pool* newPool = util::malloc<Pool>();
     if (!newPool) {
         return nullptr; // Allocation failure
     }

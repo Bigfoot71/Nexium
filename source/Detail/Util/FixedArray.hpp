@@ -9,7 +9,7 @@
 #ifndef NX_UTIL_FIXED_ARRAY_HPP
 #define NX_UTIL_FIXED_ARRAY_HPP
 
-#include <SDL3/SDL_stdinc.h>
+#include "./Memory.hpp"
 #include <SDL3/SDL_assert.h>
 #include <type_traits>
 #include <algorithm>
@@ -147,7 +147,7 @@ FixedArray<T>::FixedArray(size_type max_capacity) noexcept
     : mData(nullptr), mSize(0), mCapacity(0)
 {
     if (max_capacity > 0) {
-        mData = static_cast<T*>(SDL_malloc(max_capacity * sizeof(T)));
+        mData = util::malloc<T>(max_capacity);
         if (mData) {
             mCapacity = max_capacity;
         }
@@ -191,7 +191,7 @@ template<typename T>
 FixedArray<T>::~FixedArray() noexcept
 {
     clear();
-    SDL_free(mData);
+    util::free(mData);
 }
 
 template<typename T>
@@ -208,7 +208,7 @@ FixedArray<T>& FixedArray<T>::operator=(FixedArray&& other) noexcept
 {
     if (this != &other) {
         clear();
-        SDL_free(mData);
+        util::free(mData);
         mData = other.mData;
         mSize = other.mSize;
         mCapacity = other.mCapacity;
@@ -510,12 +510,12 @@ bool FixedArray<T>::reset(size_t size) noexcept
     SDL_assert(size > 0);
 
     if (mData != nullptr) {
-        SDL_free(mData);
+        util::free(mData);
         mCapacity = 0;
         mSize = 0;
     }
 
-    mData = static_cast<T*>(SDL_malloc(size * sizeof(T)));
+    mData = util::malloc<T>(size);
     if (mData == nullptr) {
         return false;
     }
