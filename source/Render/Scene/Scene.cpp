@@ -236,6 +236,7 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
         pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_PREPASS));
 
+        pipeline.setPolygonOffset(mat.depth.factor, mat.depth.units);
         pipeline.setDepthFunc(render::getDepthFunc(mat.depth.test));
         pipeline.setCullMode(render::getCullMode(mat.cull));
 
@@ -292,6 +293,7 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         shader.bindTextures(pipeline, unique.textures, mAssets.textureWhite().gpuTexture());
         shader.bindUniforms(pipeline, unique.dynamicRangeIndex);
 
+        pipeline.setPolygonOffset(mat.depth.factor, mat.depth.units);
         pipeline.setDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : render::getDepthFunc(mat.depth.test));
         pipeline.setBlendMode(render::getBlendMode(mat.blend));
         pipeline.setCullMode(render::getCullMode(mat.cull));

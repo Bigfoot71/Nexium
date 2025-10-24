@@ -562,6 +562,8 @@ typedef struct NX_Material {
 
     struct {
         NX_DepthTest test;          ///< Controls whether a fragment is visible compared to others. Default: NX_DEPTH_TEST_LESS
+        float factor;               ///< Factor used for polygon offset. Default: 0.0f
+        float units;                ///< Units used for poylhon offset. Default: 0.0f
         bool prePass;               ///< Enable depth pre-pass to reduce overdraw or support alpha cutoff; may be costly with heavy vertex shaders. Default: false
     } depth;
 
@@ -1662,6 +1664,8 @@ NXAPI void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap*
  *   - scale: 1.0
  * - Depth:
  *   - test: NX_DEPTH_TEST_LESS
+ *   - factor: 0.0
+ *   - units: 0.0
  *   - prePass: false
  * - alphaCutOff: 1e-6 (disables discard by default)
  * - texOffset: (0, 0)
