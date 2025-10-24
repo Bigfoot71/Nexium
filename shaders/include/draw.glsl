@@ -24,6 +24,7 @@ struct MeshData {
     float metalness;
     float normalScale;
     float alphaCutOff;
+    float depthOffset;
     vec2 texOffset;
     vec2 texScale;
     int billboard;

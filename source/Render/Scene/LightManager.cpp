@@ -361,7 +361,6 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
                     NX_MaterialShader& shader = mPrograms.materialShader(unique.material.shader);
                     pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_SHADOW));
-                    pipeline.setPolygonOffset(unique.material.depth.factor, unique.material.depth.units);
                     pipeline.setCullMode(render::getCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
 
                     shader.bindTextures(pipeline, unique.textures, mAssets.textureWhite().gpuTexture());

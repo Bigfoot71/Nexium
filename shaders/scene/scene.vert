@@ -149,4 +149,8 @@ void main()
 #else
     gl_Position = uFrustum.viewProj * vec4(vInt.position, 1.0);
 #endif
+
+    /* --- Apply depth offset --- */
+
+    gl_Position.z += sMeshData[uMeshDataIndex].depthOffset * gl_Position.w;
 }

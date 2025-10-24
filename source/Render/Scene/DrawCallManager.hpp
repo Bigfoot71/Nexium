@@ -130,8 +130,9 @@ private:
         alignas(4) float metalness;
         alignas(4) float normalScale;
         alignas(4) float alphaCutOff;
-        alignas(4) NX_Vec2 texOffset;
-        alignas(4) NX_Vec2 texScale;
+        alignas(4) float depthOffset;
+        alignas(8) NX_Vec2 texOffset;
+        alignas(8) NX_Vec2 texScale;
         alignas(4) int32_t billboard;
         alignas(4) uint32_t layerMask;
     };
@@ -313,6 +314,7 @@ inline void DrawCallManager::upload()
             gpuUnique.metalness = material.orm.metalness;
             gpuUnique.normalScale = material.normal.scale;
             gpuUnique.alphaCutOff = material.alphaCutOff;
+            gpuUnique.depthOffset = material.depth.offset;
             gpuUnique.texOffset = material.texOffset;
             gpuUnique.texScale = material.texScale;
             gpuUnique.billboard = material.billboard;
