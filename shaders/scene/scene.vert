@@ -152,5 +152,8 @@ void main()
 
     /* --- Apply depth offset --- */
 
-    gl_Position.z += sMeshData[uMeshDataIndex].depthOffset * gl_Position.w;
+    float dOffset = sMeshData[uMeshDataIndex].depthOffset;
+    float dScale = sMeshData[uMeshDataIndex].depthScale;
+
+    gl_Position.z = dOffset * gl_Position.w + (gl_Position.z * dScale);
 }

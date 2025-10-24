@@ -131,6 +131,7 @@ private:
         alignas(4) float normalScale;
         alignas(4) float alphaCutOff;
         alignas(4) float depthOffset;
+        alignas(4) float depthScale;
         alignas(8) NX_Vec2 texOffset;
         alignas(8) NX_Vec2 texScale;
         alignas(4) int32_t billboard;
@@ -315,6 +316,7 @@ inline void DrawCallManager::upload()
             gpuUnique.normalScale = material.normal.scale;
             gpuUnique.alphaCutOff = material.alphaCutOff;
             gpuUnique.depthOffset = material.depth.offset;
+            gpuUnique.depthScale = material.depth.scale;
             gpuUnique.texOffset = material.texOffset;
             gpuUnique.texScale = material.texScale;
             gpuUnique.billboard = material.billboard;

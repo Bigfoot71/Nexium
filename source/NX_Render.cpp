@@ -1836,6 +1836,7 @@ NX_Material NX_GetDefaultMaterial(void)
         .depth = {
             .test = NX_DEPTH_TEST_LESS,
             .offset = 0.0f,
+            .scale = 1.0f,
             .prePass = false
         },
         .alphaCutOff = 1e-6f,

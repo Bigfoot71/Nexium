@@ -562,7 +562,8 @@ typedef struct NX_Material {
 
     struct {
         NX_DepthTest test;          ///< Controls whether a fragment is visible compared to others. Default: NX_DEPTH_TEST_LESS
-        float offset;               ///< Offset applied to the depth written to the depth buffer. Default: 0.0f
+        float offset;               ///< Additive depth offset in clip space; + = farther, - = closer. Default: 0.0f
+        float scale;                ///< Multiplicative depth scale in clip space; <1 = closer, >1 = farther. Default: 1.0f
         bool prePass;               ///< Enable depth pre-pass to reduce overdraw or support alpha cutoff; may be costly with heavy vertex shaders. Default: false
     } depth;
 
@@ -1664,6 +1665,7 @@ NXAPI void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap*
  * - Depth:
  *   - test: NX_DEPTH_TEST_LESS
  *   - offset: 0.0
+ *   - scale: 1.0
  *   - prePass: false
  * - alphaCutOff: 1e-6 (disables discard by default)
  * - texOffset: (0, 0)

@@ -25,6 +25,7 @@ struct MeshData {
     float normalScale;
     float alphaCutOff;
     float depthOffset;
+    float depthScale;
     vec2 texOffset;
     vec2 texScale;
     int billboard;
