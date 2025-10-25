@@ -2919,13 +2919,23 @@ static inline NX_Color NX_ColorFromHSL(float h, float s, float l, float a)
 }
 
 /**
- * @brief Computes the relative luminance of a color.
- * @param color Input color.
- * @return Luminance value in [0.0, 1.0].
+ * @brief Computes the relative luminance of a color using Rec.601 coefficients.
+ * @param color Input color (typically in sRGB space).
+ * @return Luminance value.
  */
-static inline float NX_GetColorLuminance(NX_Color color)
+static inline float NX_GetColorLuminanceRec601(NX_Color color)
 {
     return 0.299f * color.r + 0.587f * color.g + 0.114f * color.b;
+}
+
+/**
+ * @brief Computes the relative luminance of a color using Rec.709 coefficients.
+ * @param color Input color (typically in linear RGB space).
+ * @return Luminance value.
+ */
+static inline float NX_GetColorLuminanceRec709(NX_Color color)
+{
+    return 0.2126f * color.r + 0.7152f * color.g + 0.0722f * color.b;
 }
 
 /**
@@ -2939,13 +2949,24 @@ static inline float NX_GetColorBrightness(NX_Color color)
 }
 
 /**
- * @brief Converts a color to grayscale using luminance.
- * @param color Input color.
+ * @brief Converts a color to grayscale using Rec.601 luminance coefficients.
+ * @param color Input color (typically in sRGB space).
  * @return Grayscale color with preserved alpha.
  */
-static inline NX_Color NX_GetColorGrayscale(NX_Color color)
+static inline NX_Color NX_GetColorGrayscaleRec601(NX_Color color)
 {
-    float gray = NX_GetColorLuminance(color);
+    float gray = NX_GetColorLuminanceRec601(color);
+    return NX_COLOR(gray, gray, gray, color.a);
+}
+
+/**
+ * @brief Converts a color to grayscale using Rec.709 luminance coefficients.
+ * @param color Input color (typically in linear RGB space).
+ * @return Grayscale color with preserved alpha.
+ */
+static inline NX_Color NX_GetColorGrayscaleRec709(NX_Color color)
+{
+    float gray = NX_GetColorLuminanceRec709(color);
     return NX_COLOR(gray, gray, gray, color.a);
 }
 
