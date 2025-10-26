@@ -41,12 +41,28 @@
 /**
  * @brief Swaps two variables of compatible types
  */
-#define NX_SWAP(a, b) \
-    do { \
-        __auto_type _temp = (a); \
-        (a) = (b); \
-        (b) = _temp; \
-    } while(0)
+#if defined(__cplusplus)
+#   define NX_SWAP(a, b) \
+        do { \
+            decltype(a) _temp = (a); \
+            (a) = (b); \
+            (b) = _temp; \
+        } while(0)
+#elif defined(_MSC_VER)
+#   define NX_SWAP(a, b) \
+        do { \
+            __typeof(a) _temp = (a); \
+            (a) = (b); \
+            (b) = _temp; \
+        } while(0)
+#else
+#   define NX_SWAP(a, b) \
+        do { \
+            __auto_type _temp = (a); \
+            (a) = (b); \
+            (b) = _temp; \
+        } while(0)
+#endif
 
 /**
  * @brief Checks if a pointer is aligned to a boundary
