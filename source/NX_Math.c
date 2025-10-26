@@ -1573,27 +1573,38 @@ NX_Mat3 NX_TransformToNormalMat3(const NX_Transform* t)
     float qx = t->rotation.x, qy = t->rotation.y;
     float qz = t->rotation.z, qw = t->rotation.w;
 
-    float isx = 1.0f / t->scale.x;
-    float isy = 1.0f / t->scale.y;
-    float isz = 1.0f / t->scale.z;
-
     float x2 = 2.0f * qx, y2 = 2.0f * qy, z2 = 2.0f * qz;
     float xx = qx * x2, yy = qy * y2, zz = qz * z2;
     float xy = qx * y2, xz = qx * z2, yz = qy * z2;
     float wx = qw * x2, wy = qw * y2, wz = qw * z2;
 
-    NX_Mat3 m;
-    m.m00 = (1.0f - yy - zz) * isx;
-    m.m01 = (xy - wz) * isy;
-    m.m02 = (xz + wy) * isz;
-    m.m10 = (xy + wz) * isx;
-    m.m11 = (1.0f - xx - zz) * isy;
-    m.m12 = (yz - wx) * isz;
-    m.m20 = (xz - wy) * isx;
-    m.m21 = (yz + wx) * isy;
-    m.m22 = (1.0f - xx - yy) * isz;
+    float r00 = 1.0f - yy - zz, r01 = xy - wz, r02 = xz + wy;
+    float r10 = xy + wz, r11 = 1.0f - xx - zz, r12 = yz - wx;
+    float r20 = xz - wy, r21 = yz + wx, r22 = 1.0f - xx - yy;
 
-    return m;
+    float sx = t->scale.x, sy = t->scale.y, sz = t->scale.z;
+    float m00 = r00 * sx, m01 = r01 * sx, m02 = r02 * sx;
+    float m10 = r10 * sy, m11 = r11 * sy, m12 = r12 * sy;
+    float m20 = r20 * sz, m21 = r21 * sz, m22 = r22 * sz;
+
+    float det = m00 * (m11 * m22 - m12 * m21)
+              - m01 * (m10 * m22 - m12 * m20)
+              + m02 * (m10 * m21 - m11 * m20);
+
+    float invDet = 1.0f / det;
+
+    NX_Mat3 result;
+    result.m00 = (m11 * m22 - m12 * m21) * invDet;
+    result.m01 = (m02 * m21 - m01 * m22) * invDet;
+    result.m02 = (m01 * m12 - m02 * m11) * invDet;
+    result.m10 = (m12 * m20 - m10 * m22) * invDet;
+    result.m11 = (m00 * m22 - m02 * m20) * invDet;
+    result.m12 = (m02 * m10 - m00 * m12) * invDet;
+    result.m20 = (m10 * m21 - m11 * m20) * invDet;
+    result.m21 = (m01 * m20 - m00 * m21) * invDet;
+    result.m22 = (m00 * m11 - m01 * m10) * invDet;
+
+    return result;
 }
 
 NX_Transform NX_TransformCombine(const NX_Transform* parent, const NX_Transform* child)
