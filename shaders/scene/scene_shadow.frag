@@ -14,6 +14,7 @@ precision highp float;
 
 /* === Includes === */
 
+#include "../include/lights.glsl"
 #include "../include/draw.glsl"
 
 /* === Defines === */
@@ -69,6 +70,10 @@ void main()
     float alpha = vInt.color.a * texture(uTexAlbedo, vInt.texCoord).a;
     if (alpha < sMeshData[uMeshDataIndex].alphaCutOff) discard;
 
-    float d01 = length(vInt.position - uFrame.lightPosition) / uFrame.lightRange;
-    FragDistance = vec4(d01, 0.0, 0.0, 1.0);
+    float depth = gl_FragCoord.z;
+    if (uFrame.lightType != LIGHT_DIR) {
+        depth = length(vInt.position - uFrame.lightPosition) / uFrame.lightRange;
+    }
+
+    FragDistance = vec4(depth, 0.0, 0.0, 1.0);
 }

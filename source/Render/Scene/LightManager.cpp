@@ -347,6 +347,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     .lightViewProj = light.viewProj(face),
                     .lightPosition = light.position(),
                     .lightRange = light.range(),
+                    .lightType = light.type(),
                     .elapsedTime = static_cast<float>(NX_GetElapsedTime())
                 });
                 pipeline.bindUniform(0, *mFrameShadowUniform);

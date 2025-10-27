@@ -81,6 +81,7 @@ private:
         alignas(16) NX_Mat4 lightViewProj;
         alignas(16) NX_Vec3 lightPosition;
         alignas(4) float lightRange;
+        alignas(4) int32_t lightType;
         alignas(4) float elapsedTime;
     };
 

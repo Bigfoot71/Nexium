@@ -246,7 +246,7 @@ void LightDir(uint lightIndex, const in LightParams params, inout vec3 diffuse, 
         /* --- Get current normalized depth with bias --- */
 
         float bias = max(shadow.bias, shadow.slopeBias * (1.0 - NdotL));
-        float currentDepth = length(vInt.position - light.position) / light.range - bias;
+        float currentDepth = projCoords.z - bias;
 
         /* --- Vogel disk PCF sampling --- */
 
