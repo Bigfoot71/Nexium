@@ -16,7 +16,7 @@ int main(void)
     NX_Init("Nexium - Animation", 800, 450, NX_FLAG_VSYNC_HINT);
     NX_AddSearchPath(RESOURCES_PATH, false);
 
-    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(100.0f), NX_VEC2_ONE, NX_VEC3_UP);
+    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(100.0f), NX_IVEC2_ONE, NX_VEC3_UP);
 
     int animCount = 0;
     NX_ModelAnimation** anims = NX_LoadModelAnimations("models/CesiumMan.glb", &animCount, 30);

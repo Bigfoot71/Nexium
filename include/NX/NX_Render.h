@@ -1832,7 +1832,7 @@ NXAPI void NX_DestroyMesh(NX_Mesh* mesh);
  * @param normal Normal vector for the quad surface.
  * @return Pointer to a newly generated NX_Mesh.
  */
-NXAPI NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_Vec2 subDiv, NX_Vec3 normal);
+NXAPI NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_IVec2 subDiv, NX_Vec3 normal);
 
 /**
  * @brief Generates a cube mesh.
@@ -1840,7 +1840,7 @@ NXAPI NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_Vec2 subDiv, NX_Vec3 normal);
  * @param subDiv Subdivision along each axis.
  * @return Pointer to a newly generated NX_Mesh.
  */
-NXAPI NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_Vec3 subDiv);
+NXAPI NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_IVec3 subDiv);
 
 /**
  * @brief Generates a sphere mesh.

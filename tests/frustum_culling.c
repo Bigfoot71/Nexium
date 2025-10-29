@@ -20,7 +20,7 @@ int main(void)
 
     NX_InitEx("Nexium - Frustum Culling", 800, 450, &desc);
 
-    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_1(0.5f), NX_VEC3_ONE);
+    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_1(0.5f), NX_IVEC3_ONE);
     NX_Material material = NX_GetDefaultMaterial();
     material.shading = NX_SHADING_UNLIT;
 

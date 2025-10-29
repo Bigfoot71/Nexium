@@ -15,8 +15,8 @@ int main(void)
 {
     NX_Init("Nexium - Post Process", 800, 450, NX_FLAG_VSYNC_HINT);
 
-    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_VEC2_ONE, NX_VEC3_UP);
-    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_1(0.5f), NX_VEC3_ONE);
+    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_IVEC2_ONE, NX_VEC3_UP);
+    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_1(0.5f), NX_IVEC3_ONE);
     NX_Material mat = NX_GetDefaultMaterial();
 
     NX_Light* light = NX_CreateLight(NX_LIGHT_DIR);

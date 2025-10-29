@@ -6,8 +6,8 @@ int main(void)
     NX_Init("Nexium - Billboard", 800, 450, NX_FLAG_VSYNC_HINT);
     NX_AddSearchPath(RESOURCES_PATH, false);
 
-    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_VEC2_ONE, NX_VEC3_UP);
-    NX_Mesh* sprite = NX_GenMeshQuad(NX_VEC2_1(1.0f), NX_VEC2_ONE, NX_VEC3_BACK);
+    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_IVEC2_ONE, NX_VEC3_UP);
+    NX_Mesh* sprite = NX_GenMeshQuad(NX_VEC2_1(1.0f), NX_IVEC2_ONE, NX_VEC3_BACK);
 
     NX_Material matSprite = NX_GetDefaultMaterial();
     matSprite.albedo.texture = NX_LoadTexture("images/spritesheet.png");

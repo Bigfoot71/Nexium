@@ -26,7 +26,7 @@ int main(void)
         .vignetteSoftness = 1.5
     });
 
-    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_VEC2_ONE, NX_VEC3_UP);
+    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_IVEC2_ONE, NX_VEC3_UP);
     NX_Model* model = NX_LoadModel("models/CesiumMan.glb");
 
     int animCount = 0;

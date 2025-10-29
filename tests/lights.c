@@ -13,8 +13,8 @@ int main(void)
 
     NX_InitEx("Nexium - Lights", 800, 450, &desc);
 
-    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(100.0f), NX_VEC2_ONE, NX_VEC3_UP);
-    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_1(0.5f), NX_VEC3_ONE);
+    NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(100.0f), NX_IVEC2_ONE, NX_VEC3_UP);
+    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_1(0.5f), NX_IVEC3_ONE);
     NX_Mesh* sphere = NX_GenMeshSphere(0.1f, 16, 8);
 
     NX_Material matSphere = NX_GetDefaultMaterial();

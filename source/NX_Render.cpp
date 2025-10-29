@@ -1966,14 +1966,14 @@ void NX_DestroyMesh(NX_Mesh* mesh)
     gRender->meshes.destroyMesh(mesh);
 }
 
-NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_Vec2 subDiv, NX_Vec3 normal)
+NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_IVec2 subDiv, NX_Vec3 normal)
 {
     /* --- Parameter validation --- */
 
     size.x = std::max(0.1f, size.x);
     size.y = std::max(0.1f, size.y);
-    int segX = int(std::max(1.0f, subDiv.x));
-    int segY = int(std::max(1.0f, subDiv.y));
+    int segX = std::max(1, subDiv.x);
+    int segY = std::max(1, subDiv.y);
 
     float length = std::sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
     if (length < 0.001f) {
@@ -2079,13 +2079,13 @@ NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_Vec2 subDiv, NX_Vec3 normal)
     return mesh;
 }
 
-NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_Vec3 subDiv)
+NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_IVec3 subDiv)
 {
     /* --- Parameter validation --- */
 
-    int segX = int(std::max(1.0f, subDiv.x));
-    int segY = int(std::max(1.0f, subDiv.y));
-    int segZ = int(std::max(1.0f, subDiv.z));
+    int segX = std::max(1, subDiv.x);
+    int segY = std::max(1, subDiv.y);
+    int segZ = std::max(1, subDiv.z);
 
     /* --- Memory allocation --- */
 

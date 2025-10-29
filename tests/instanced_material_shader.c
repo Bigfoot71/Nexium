@@ -20,7 +20,7 @@ int main(void)
         "shaders/instanced_material.frag"
     );
 
-    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_ONE, NX_VEC3_ONE);
+    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_ONE, NX_IVEC3_ONE);
     NX_Material material = NX_GetDefaultMaterial();
     material.emission.energy = 1.0f;
     material.shader = shader;

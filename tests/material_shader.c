@@ -16,7 +16,7 @@ int main(void)
     NX_Texture* tex1 = NX_CreateTexture(&im1);
     NX_DestroyImage(&im1);
 
-    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_ONE, NX_VEC3_ONE);
+    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_ONE, NX_IVEC3_ONE);
     NX_Material material = NX_GetDefaultMaterial();
     material.shader = shader;
 

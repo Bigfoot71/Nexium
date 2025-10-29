@@ -20,8 +20,8 @@ int main(void)
     NX_InitEx("Nexium - Shading Mode", 800, 450, &desc);
     NX_AddSearchPath(RESOURCES_PATH, false);
 
-    NX_Mesh* quad = NX_GenMeshQuad(NX_VEC2(100, 100), NX_VEC2_ONE, NX_VEC3_UP);
-    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_ONE, NX_VEC3_ONE);
+    NX_Mesh* quad = NX_GenMeshQuad(NX_VEC2(100, 100), NX_IVEC2_ONE, NX_VEC3_UP);
+    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_ONE, NX_IVEC3_ONE);
     NX_Material material = NX_GetDefaultMaterial();
 
     NX_Light* light = NX_CreateLight(NX_LIGHT_SPOT);

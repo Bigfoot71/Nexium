@@ -25,8 +25,8 @@ int main(void)
 
     NX_Font* font = NX_LoadFont("fonts/Eater-Regular.ttf", NX_FONT_SDF, 32, NULL, 0);
 
-    NX_Mesh* quad = NX_GenMeshQuad(NX_VEC2(100, 100), NX_VEC2_ONE, NX_VEC3_UP);
-    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_ONE, NX_VEC3_ONE);
+    NX_Mesh* quad = NX_GenMeshQuad(NX_VEC2(100, 100), NX_IVEC2_ONE, NX_VEC3_UP);
+    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_ONE, NX_IVEC3_ONE);
 
     NX_Material matQuad = NX_GetDefaultMaterial();
     matQuad.albedo.color = NX_GREEN;
