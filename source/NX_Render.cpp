@@ -102,7 +102,7 @@ NX_Font* NX_LoadFont(const char* filePath, NX_FontType type, int baseSize, int* 
     size_t dataSize = 0;
     void* fileData = NX_LoadFile(filePath, &dataSize);
     NX_Font* font = NX_LoadFontFromMem(fileData, dataSize, type, baseSize, codepoints, codepointCount);
-    SDL_free(fileData);
+    util::free(fileData);
     return font;
 }
 
@@ -164,8 +164,8 @@ NX_Shader* NX_LoadShader(const char* vertFile, const char* fragFile)
 
     NX_Shader* shader = gRender->programs.createShader(vertCode, fragCode);
 
-    SDL_free(vertCode);
-    SDL_free(fragCode);
+    util::free(vertCode);
+    util::free(fragCode);
 
     return shader;
 }
@@ -627,8 +627,8 @@ void NX_DrawRectRounded2D(float x, float y, float w, float h, float radius, int 
         for (int i = 0; i <= segments; i++) {
             float angle = startAngle + i * angleStep;
             gRender->overlay.addVertex(
-                cx + cosf(angle) * radius,
-                cy + sinf(angle) * radius,
+                cx + std::cos(angle) * radius,
+                cy + std::sin(angle) * radius,
                 0.5f, 0.5f
             );
             if (i > 0) {
@@ -697,7 +697,7 @@ void NX_DrawRectRoundedBorder2D(float x, float y, float w, float h, float radius
     /* --- Pre-calculation ​​and declaration of the draw call that will be made */
 
     float halfThickness = thickness * 0.5f;
-    float innerRadius = fmaxf(0.0f, radius - halfThickness);
+    float innerRadius = std::max(0.0f, radius - halfThickness);
     float outerRadius = radius + halfThickness;
 
     int arcVertices = (segments + 1) * 2;
@@ -732,8 +732,8 @@ void NX_DrawRectRoundedBorder2D(float x, float y, float w, float h, float radius
         // Generation of pairs of vertices and quads
         for (int i = 0; i <= segments; i++) {
             float angle = startAngle + i * angleStep;
-            float cosA = cosf(angle);
-            float sinA = sinf(angle);
+            float cosA = std::cos(angle);
+            float sinA = std::sin(angle);
 
             // Vertices inner/outer
             gRender->overlay.addVertex(cx + cosA * innerRadius, cy + sinA * innerRadius, 0.5f, 0.5f);
@@ -806,8 +806,8 @@ void NX_DrawCircle2D(NX_Vec2 center, float radius, int segments)
     gRender->overlay.addVertex(center.x, center.y, 0.5f, 0.5f);
 
     float delta = NX_TAU / segments;
-    float cosDelta = cosf(delta);
-    float sinDelta = sinf(delta);
+    float cosDelta = std::cos(delta);
+    float sinDelta = std::sin(delta);
 
     float inv2r = 1.0f / (2.0f * radius);
 
@@ -846,8 +846,8 @@ void NX_DrawCircleBorder2D(NX_Vec2 p, float radius, int segments, float thicknes
     }
 
     float delta = NX_TAU / segments;
-    float cosDelta = cosf(delta);
-    float sinDelta = sinf(delta);
+    float cosDelta = std::cos(delta);
+    float sinDelta = std::sin(delta);
 
     float cx = radius;
     float cy = 0.0f;
@@ -880,8 +880,8 @@ void NX_DrawEllipse2D(NX_Vec2 center, NX_Vec2 radius, int segments)
     gRender->overlay.addVertex(center.x, center.y, 0.5f, 0.5f);
 
     float delta = NX_TAU / segments;
-    float cosDelta = cosf(delta);
-    float sinDelta = sinf(delta);
+    float cosDelta = std::cos(delta);
+    float sinDelta = std::sin(delta);
 
     float inv2rx = 1.0f / (2.0f * radius.x);
     float inv2ry = 1.0f / (2.0f * radius.y);
@@ -924,8 +924,8 @@ void NX_DrawEllipseBorder2D(NX_Vec2 p, NX_Vec2 r, int segments, float thickness)
     }
 
     float delta = NX_TAU / segments;
-    float cosDelta = cosf(delta);
-    float sinDelta = sinf(delta);
+    float cosDelta = std::cos(delta);
+    float sinDelta = std::sin(delta);
 
     NX_Vec2 u = { 1.0f, 0.0f };
     NX_Vec2 prev = p + NX_Vec2{ r.x * u.x, r.y * u.y };
@@ -953,11 +953,11 @@ void NX_DrawPieSlice2D(NX_Vec2 center, float radius, float startAngle, float end
 
     float deltaAngle = angleDiff / segments;
 
-    float cosDelta = cosf(deltaAngle);
-    float sinDelta = sinf(deltaAngle);
+    float cosDelta = std::cos(deltaAngle);
+    float sinDelta = std::sin(deltaAngle);
 
-    float cosA = cosf(startAngle);
-    float sinA = sinf(startAngle);
+    float cosA = std::cos(startAngle);
+    float sinA = std::sin(startAngle);
 
     gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, segments + 2, segments * 3);
 
@@ -1001,11 +1001,11 @@ void NX_DrawPieSliceBorder2D(NX_Vec2 center, float radius, float startAngle, flo
     if (angleDiff < 0.0f) angleDiff += NX_TAU;
 
     float deltaAngle = angleDiff / segments;
-    float cosDelta = cosf(deltaAngle);
-    float sinDelta = sinf(deltaAngle);
+    float cosDelta = std::cos(deltaAngle);
+    float sinDelta = std::sin(deltaAngle);
 
-    float cosA = cosf(startAngle);
-    float sinA = sinf(startAngle);
+    float cosA = std::cos(startAngle);
+    float sinA = std::sin(startAngle);
 
     NX_Vec2 start_pt = { center.x + radius * cosA, center.y + radius * sinA };
     NX_DrawLine2D(center, start_pt, thickness);
@@ -1035,8 +1035,8 @@ void NX_DrawRing2D(NX_Vec2 center, float innerRadius, float outerRadius, int seg
     uint16_t baseIndex = gRender->overlay.nextVertexIndex();
 
     float deltaAngle = NX_TAU / segments;
-    float cosDelta = cosf(deltaAngle);
-    float sinDelta = sinf(deltaAngle);
+    float cosDelta = std::cos(deltaAngle);
+    float sinDelta = std::sin(deltaAngle);
 
     float cosA = 1.0f;
     float sinA = 0.0f;
@@ -1089,8 +1089,8 @@ void NX_DrawRingBorder2D(NX_Vec2 center, float innerRadius, float outerRadius, i
     }
 
     float deltaAngle = NX_TAU / segments;
-    float cosDelta = cosf(deltaAngle);
-    float sinDelta = sinf(deltaAngle);
+    float cosDelta = std::cos(deltaAngle);
+    float sinDelta = std::sin(deltaAngle);
 
     float cosA = 1.0f;
     float sinA = 0.0f;
@@ -1126,11 +1126,11 @@ void NX_DrawRingArc2D(NX_Vec2 center, float innerRadius, float outerRadius,
 
     float deltaAngle = angleDiff / segments;
 
-    float cosDelta = cosf(deltaAngle);
-    float sinDelta = sinf(deltaAngle);
+    float cosDelta = std::cos(deltaAngle);
+    float sinDelta = std::sin(deltaAngle);
 
-    float cosA = cosf(startAngle);
-    float sinA = sinf(startAngle);
+    float cosA = std::cos(startAngle);
+    float sinA = std::sin(startAngle);
 
     gRender->overlay.ensureDrawCall(overlay::DrawCall::Mode::SHAPE, (segments + 1) * 2, segments * 6);
 
@@ -1188,11 +1188,11 @@ void NX_DrawRingArcBorder2D(NX_Vec2 center, float innerRadius, float outerRadius
     if (angleDiff < 0.0f) angleDiff += NX_TAU;
 
     float deltaAngle = angleDiff / segments;
-    float cosDelta = cosf(deltaAngle);
-    float sinDelta = sinf(deltaAngle);
+    float cosDelta = std::cos(deltaAngle);
+    float sinDelta = std::sin(deltaAngle);
 
-    float cosA = cosf(startAngle);
-    float sinA = sinf(startAngle);
+    float cosA = std::cos(startAngle);
+    float sinA = std::sin(startAngle);
 
     NX_Vec2 outerStart = { center.x + outerRadius * cosA, center.y + outerRadius * sinA };
     NX_Vec2 innerStart = { center.x + innerRadius * cosA, center.y + innerRadius * sinA };
@@ -1238,11 +1238,11 @@ void NX_DrawArc2D(NX_Vec2 center, float radius,
 
     float deltaAngle = angleDiff / segments;
 
-    float cosDelta = cosf(deltaAngle);
-    float sinDelta = sinf(deltaAngle);
+    float cosDelta = std::cos(deltaAngle);
+    float sinDelta = std::sin(deltaAngle);
 
-    float x = radius * cosf(startAngle);
-    float y = radius * sinf(startAngle);
+    float x = radius * std::cos(startAngle);
+    float y = radius * std::sin(startAngle);
 
     float prevX = center.x + x;
     float prevY = center.y + y;
@@ -1595,8 +1595,8 @@ NX_Camera NX_GetDefaultCamera(void)
 
 void NX_UpdateCameraOrbital(NX_Camera* camera, NX_Vec3 center, float distance, float height, float rotation)
 {
-    camera->position.x = center.x + distance * cosf(rotation);
-    camera->position.z = center.z + distance * sinf(rotation);
+    camera->position.x = center.x + distance * std::cos(rotation);
+    camera->position.z = center.z + distance * std::sin(rotation);
     camera->position.y = center.y + height;
 
     camera->rotation = NX_QuatLookAt(camera->position, center, NX_VEC3_UP);
@@ -1873,8 +1873,8 @@ NX_MaterialShader* NX_LoadMaterialShader(const char* vertFile, const char* fragF
 
     NX_MaterialShader* shader = gRender->programs.createMaterialShader(vertCode, fragCode);
 
-    SDL_free(vertCode);
-    SDL_free(fragCode);
+    util::free(vertCode);
+    util::free(fragCode);
 
     return shader;
 }
@@ -1912,12 +1912,21 @@ NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int v
 
     /* --- Copies of input data --- */
 
-    NX_Vertex3D* vCopy = static_cast<NX_Vertex3D*>(SDL_malloc(vertexCount * sizeof(NX_Vertex3D)));
+    NX_Vertex3D* vCopy = util::malloc<NX_Vertex3D>(vertexCount);
+    if (vCopy == nullptr) {
+        NX_INTERNAL_LOG(E, "RENDER: Failed to create mesh; Unable to allocate memory for vertices");
+        return nullptr;
+    }
     SDL_memcpy(vCopy, vertices, vertexCount * sizeof(NX_Vertex3D));
 
     uint32_t* iCopy = nullptr;
     if (indices != nullptr && indexCount > 0) {
-        iCopy = static_cast<uint32_t*>(SDL_malloc(indexCount * sizeof(uint32_t)));
+        iCopy = util::malloc<uint32_t>(indexCount);
+        if (iCopy == nullptr) {
+            NX_INTERNAL_LOG(E, "RENDER: Failed to create mesh; Unable to allocate memory for indices");
+            util::free(vCopy);
+            return nullptr;
+        }
         SDL_memcpy(iCopy, indices, indexCount * sizeof(uint32_t));
     }
 
@@ -1930,8 +1939,8 @@ NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int v
     );
 
     if (mesh == nullptr) {
-        SDL_free(vCopy);
-        SDL_free(iCopy);
+        util::free(vCopy);
+        util::free(iCopy);
         return nullptr;
     }
 
@@ -1961,12 +1970,12 @@ NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_Vec2 subDiv, NX_Vec3 normal)
 {
     /* --- Parameter validation --- */
 
-    size.x = fmaxf(0.1f, size.x);
-    size.y = fmaxf(0.1f, size.y);
-    int segX = (int)fmaxf(1.0f, subDiv.x);
-    int segY = (int)fmaxf(1.0f, subDiv.y);
+    size.x = std::max(0.1f, size.x);
+    size.y = std::max(0.1f, size.y);
+    int segX = int(std::max(1.0f, subDiv.x));
+    int segY = int(std::max(1.0f, subDiv.y));
 
-    float length = sqrtf(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
+    float length = std::sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
     if (length < 0.001f) {
         normal = NX_VEC3(0.0f, 0.0f, 1.0f);
         length = 1.0f;
@@ -1980,25 +1989,25 @@ NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_Vec2 subDiv, NX_Vec3 normal)
     int vertexCount = (segX + 1) * (segY + 1);
     int indexCount = segX * segY * 6;
 
-    NX_Vertex3D* vertices = static_cast<NX_Vertex3D*>(SDL_malloc(sizeof(NX_Vertex3D) * vertexCount));
-    uint32_t* indices = static_cast<uint32_t*>(SDL_malloc(sizeof(uint32_t) * indexCount));
+    NX_Vertex3D* vertices = util::malloc<NX_Vertex3D>(vertexCount);
+    uint32_t* indices = util::malloc<uint32_t>(indexCount);
 
     if (!vertices || !indices) {
-        SDL_free(vertices);
-        SDL_free(indices);
+        util::free(vertices);
+        util::free(indices);
         return nullptr;
     }
 
     /* --- Orientation vectors --- */
 
-    NX_Vec3 reference = (fabsf(normal.y) < 0.9f) ? NX_VEC3(0.0f, 1.0f, 0.0f) : NX_VEC3(1.0f, 0.0f, 0.0f);
+    NX_Vec3 reference = (std::abs(normal.y) < 0.9f) ? NX_VEC3(0.0f, 1.0f, 0.0f) : NX_VEC3(1.0f, 0.0f, 0.0f);
 
     NX_Vec3 tangent;
     tangent.x = normal.y * reference.z - normal.z * reference.y;
     tangent.y = normal.z * reference.x - normal.x * reference.z;
     tangent.z = normal.x * reference.y - normal.y * reference.x;
 
-    float tangentLength = sqrtf(tangent.x * tangent.x + tangent.y * tangent.y + tangent.z * tangent.z);
+    float tangentLength = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y + tangent.z * tangent.z);
     tangent.x /= tangentLength;
     tangent.y /= tangentLength;
     tangent.z /= tangentLength;
@@ -2062,8 +2071,8 @@ NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_Vec2 subDiv, NX_Vec3 normal)
     );
 
     if (mesh == nullptr) {
-        SDL_free(vertices);
-        SDL_free(indices);
+        util::free(vertices);
+        util::free(indices);
         return nullptr;
     }
 
@@ -2074,9 +2083,9 @@ NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_Vec3 subDiv)
 {
     /* --- Parameter validation --- */
 
-    int segX = (int)fmaxf(1.0f, subDiv.x);
-    int segY = (int)fmaxf(1.0f, subDiv.y);
-    int segZ = (int)fmaxf(1.0f, subDiv.z);
+    int segX = int(std::max(1.0f, subDiv.x));
+    int segY = int(std::max(1.0f, subDiv.y));
+    int segZ = int(std::max(1.0f, subDiv.z));
 
     /* --- Memory allocation --- */
 
@@ -2090,12 +2099,12 @@ NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_Vec3 subDiv)
     int indicesTopBottom = segX * segZ * 6;
     int indexCount = 2 * (indicesFrontBack + indicesLeftRight + indicesTopBottom);
 
-    NX_Vertex3D* vertices = static_cast<NX_Vertex3D*>(SDL_malloc(sizeof(NX_Vertex3D) * vertexCount));
-    uint32_t* indices = static_cast<uint32_t*>(SDL_malloc(sizeof(uint32_t) * indexCount));
+    NX_Vertex3D* vertices = util::malloc<NX_Vertex3D>(vertexCount);
+    uint32_t* indices = util::malloc<uint32_t>(indexCount);
 
     if (!vertices || !indices) {
-        SDL_free(vertices);
-        SDL_free(indices);
+        util::free(vertices);
+        util::free(indices);
         return nullptr;
     }
 
@@ -2203,8 +2212,8 @@ NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_Vec3 subDiv)
     );
 
     if (mesh == nullptr) {
-        SDL_free(vertices);
-        SDL_free(indices);
+        util::free(vertices);
+        util::free(indices);
         return nullptr;
     }
 
@@ -2215,21 +2224,21 @@ NX_Mesh* NX_GenMeshSphere(float radius, int slices, int rings)
 {
     /* --- Parameter validation --- */
 
-    radius = fmaxf(0.1f, radius);
-    slices = (int)fmaxf(3, slices);
-    rings = (int)fmaxf(2, rings);
+    radius = std::max(0.1f, radius);
+    slices = int(std::max(3, slices));
+    rings = int(std::max(2, rings));
 
     /* --- Memory allocation --- */
 
     int vertexCount = (rings + 1) * (slices + 1);
     int indexCount = rings * slices * 6;
 
-    NX_Vertex3D* vertices = static_cast<NX_Vertex3D*>(SDL_malloc(sizeof(NX_Vertex3D) * vertexCount));
-    uint32_t* indices = static_cast<uint32_t*>(SDL_malloc(sizeof(uint32_t) * indexCount));
+    NX_Vertex3D* vertices = util::malloc<NX_Vertex3D>(vertexCount);
+    uint32_t* indices = util::malloc<uint32_t>(indexCount);
 
     if (!vertices || !indices) {
-        SDL_free(vertices);
-        SDL_free(indices);
+        util::free(vertices);
+        util::free(indices);
         return nullptr;
     }
 
@@ -2242,15 +2251,15 @@ NX_Mesh* NX_GenMeshSphere(float radius, int slices, int rings)
 
     for (int ring = 0; ring <= rings; ring++) {
         float phi = ring * piOverRings;
-        float sinPhi = sinf(phi);
-        float cosPhi = cosf(phi);
+        float sinPhi = std::sin(phi);
+        float cosPhi = std::cos(phi);
         float y = radius * cosPhi;
         float ringRadius = radius * sinPhi;
 
         for (int slice = 0; slice <= slices; slice++) {
             float theta = slice * tauOverSlices;
-            float sinTheta = sinf(theta);
-            float cosTheta = cosf(theta);
+            float sinTheta = std::sin(theta);
+            float cosTheta = std::cos(theta);
 
             NX_Vertex3D& vertex = vertices[vertexIndex++];
 
@@ -2303,8 +2312,8 @@ NX_Mesh* NX_GenMeshSphere(float radius, int slices, int rings)
     );
 
     if (mesh == nullptr) {
-        SDL_free(vertices);
-        SDL_free(indices);
+        util::free(vertices);
+        util::free(indices);
         return nullptr;
     }
 
@@ -2315,11 +2324,11 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
 {
     /* --- Parameter validation --- */
 
-    topRadius = fmaxf(0.0f, topRadius);
-    bottomRadius = fmaxf(0.0f, bottomRadius);
-    height = fmaxf(0.1f, height);
-    slices = (int)fmaxf(3, slices);
-    rings = (int)fmaxf(1, rings);
+    topRadius = std::max(0.0f, topRadius);
+    bottomRadius = std::max(0.0f, bottomRadius);
+    height = std::max(0.1f, height);
+    slices = std::max(3, slices);
+    rings = std::max(1, rings);
 
     if (topRadius == 0.0f && bottomRadius == 0.0f) {
         bottomRadius = 1.0f;
@@ -2337,12 +2346,12 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
     int bottomCapIndices = (bottomCap && bottomRadius > 0.0f) ? slices * 3 : 0;
     int indexCount = sideIndices + topCapIndices + bottomCapIndices;
 
-    NX_Vertex3D* vertices = static_cast<NX_Vertex3D*>(SDL_malloc(sizeof(NX_Vertex3D) * vertexCount));
-    uint32_t* indices = static_cast<uint32_t*>(SDL_malloc(sizeof(uint32_t) * indexCount));
+    NX_Vertex3D* vertices = util::malloc<NX_Vertex3D>(vertexCount);
+    uint32_t* indices = util::malloc<uint32_t>(indexCount);
 
     if (!vertices || !indices) {
-        SDL_free(vertices);
-        SDL_free(indices);
+        util::free(vertices);
+        util::free(indices);
         return nullptr;
     }
 
@@ -2356,7 +2365,7 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
     NX_Vec3 sideNormalBase;
     if (topRadius != bottomRadius) {
         float radiusDiff = bottomRadius - topRadius;
-        float normalLength = sqrtf(radiusDiff * radiusDiff + height * height);
+        float normalLength = std::sqrt(radiusDiff * radiusDiff + height * height);
         sideNormalBase = NX_VEC3(radiusDiff / normalLength, height / normalLength, 0.0f);
     }
     else {
@@ -2374,8 +2383,8 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
 
         for (int slice = 0; slice <= slices; slice++) {
             float angle = slice * angleStep;
-            float cosAngle = cosf(angle);
-            float sinAngle = sinf(angle);
+            float cosAngle = std::cos(angle);
+            float sinAngle = std::sin(angle);
 
             NX_Vertex3D& vertex = vertices[vertexIndex++];
 
@@ -2425,8 +2434,8 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
 
         for (int slice = 0; slice <= slices; slice++) {
             float angle = slice * angleStep;
-            float cosAngle = cosf(angle);
-            float sinAngle = sinf(angle);
+            float cosAngle = std::cos(angle);
+            float sinAngle = std::sin(angle);
 
             NX_Vertex3D& vertex = vertices[vertexIndex++];
 
@@ -2461,8 +2470,8 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
 
         for (int slice = 0; slice <= slices; slice++) {
             float angle = slice * angleStep;
-            float cosAngle = cosf(angle);
-            float sinAngle = sinf(angle);
+            float cosAngle = std::cos(angle);
+            float sinAngle = std::sin(angle);
 
             NX_Vertex3D& vertex = vertices[vertexIndex++];
 
@@ -2493,8 +2502,8 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
     );
 
     if (mesh == nullptr) {
-        SDL_free(vertices);
-        SDL_free(indices);
+        util::free(vertices);
+        util::free(indices);
         return nullptr;
     }
 
@@ -2505,10 +2514,10 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
 {
     /* --- Parameter validation --- */
 
-    radius = fmaxf(0.1f, radius);
-    height = fmaxf(0.0f, height);
-    slices = NX_MAX(3, slices);
-    rings = NX_MAX(2, rings);
+    radius = std::max(0.1f, radius);
+    height = std::max(0.0f, height);
+    slices = std::max(3, slices);
+    rings = std::max(2, rings);
 
     int hemisphereRings = NX_MAX(1, rings / 2);
 
@@ -2528,12 +2537,12 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
     int hemisphereIndices = hemisphereRings * slices * 6;
     int indexCount = cylinderIndices + 2 * hemisphereIndices;
 
-    NX_Vertex3D* vertices = static_cast<NX_Vertex3D*>(SDL_malloc(sizeof(NX_Vertex3D) * vertexCount));
-    uint32_t* indices = static_cast<uint32_t*>(SDL_malloc(sizeof(uint32_t) * indexCount));
+    NX_Vertex3D* vertices = util::malloc<NX_Vertex3D>(vertexCount);
+    uint32_t* indices = util::malloc<uint32_t>(indexCount);
 
     if (!vertices || !indices) {
-        SDL_free(vertices);
-        SDL_free(indices);
+        util::free(vertices);
+        util::free(indices);
         return nullptr;
     }
 
@@ -2551,15 +2560,15 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
 
     for (int ring = 0; ring <= hemisphereRings; ring++) {
         float phi = (float)ring / hemisphereRings * PI_OVER_2;
-        float sinPhi = sinf(phi);
-        float cosPhi = cosf(phi);
+        float sinPhi = std::sin(phi);
+        float cosPhi = std::cos(phi);
         float y = halfHeight + radius * cosPhi;
         float ringRadius = radius * sinPhi;
 
         for (int slice = 0; slice <= slices; slice++) {
             float theta = slice * angleStep;
-            float sinTheta = sinf(theta);
-            float cosTheta = cosf(theta);
+            float sinTheta = std::sin(theta);
+            float cosTheta = std::cos(theta);
 
             NX_Vertex3D& vertex = vertices[vertexIndex++];
 
@@ -2602,8 +2611,8 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
     if (height > 0.0f) {
         for (int slice = 0; slice <= slices; slice++) {
             float theta = slice * angleStep;
-            float sinTheta = sinf(theta);
-            float cosTheta = cosf(theta);
+            float sinTheta = std::sin(theta);
+            float cosTheta = std::cos(theta);
 
             NX_Vertex3D& topVertex = vertices[vertexIndex++];
             topVertex.position.x = radius * cosTheta;
@@ -2620,8 +2629,8 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
 
         for (int slice = 0; slice <= slices; slice++) {
             float theta = slice * angleStep;
-            float sinTheta = sinf(theta);
-            float cosTheta = cosf(theta);
+            float sinTheta = std::sin(theta);
+            float cosTheta = std::cos(theta);
 
             NX_Vertex3D& bottomVertex = vertices[vertexIndex++];
             bottomVertex.position.x = radius * cosTheta;
@@ -2659,15 +2668,15 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
 
     for (int ring = startRing; ring <= hemisphereRings; ring++) {
         float phi = PI_OVER_2 + (float)ring / hemisphereRings * PI_OVER_2;
-        float sinPhi = sinf(phi);
-        float cosPhi = cosf(phi);
+        float sinPhi = std::sin(phi);
+        float cosPhi = std::cos(phi);
         float y = -halfHeight + radius * cosPhi;
         float ringRadius = radius * sinPhi;
 
         for (int slice = 0; slice <= slices; slice++) {
             float theta = slice * angleStep;
-            float sinTheta = sinf(theta);
-            float cosTheta = cosf(theta);
+            float sinTheta = std::sin(theta);
+            float cosTheta = std::cos(theta);
 
             NX_Vertex3D& vertex = vertices[vertexIndex++];
 
@@ -2714,8 +2723,8 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
     );
 
     if (mesh == nullptr) {
-        SDL_free(vertices);
-        SDL_free(indices);
+        util::free(vertices);
+        util::free(indices);
         return nullptr;
     }
 
@@ -2872,7 +2881,7 @@ NX_Model* NX_LoadModel(const char* filePath)
     }
 
     NX_Model* model = gRender->models.loadModel(fileData, fileSize, helper::getFileExt(filePath));
-    SDL_free(fileData);
+    util::free(fileData);
 
     return model;
 }
@@ -2927,7 +2936,7 @@ NX_ModelAnimation** NX_LoadModelAnimations(const char* filePath, int* animCount,
     size_t fileSize = 0;
     void* fileData = NX_LoadFile(filePath, &fileSize);
     NX_ModelAnimation** animations = gRender->models.loadAnimations(fileData, fileSize, helper::getFileExt(filePath), animCount, targetFrameRate);
-    SDL_free(fileData);
+    util::free(fileData);
     return animations;
 }
 
