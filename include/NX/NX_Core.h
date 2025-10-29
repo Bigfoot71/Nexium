@@ -296,11 +296,11 @@ typedef enum NX_Key {
  */
 typedef uint8_t NX_MouseButton;
 
-#define NX_MOUSE_BUTTON_LEFT    0x01  /**< Left mouse button */
-#define NX_MOUSE_BUTTON_MIDDLE  0x02  /**< Middle mouse button (wheel click) */
-#define NX_MOUSE_BUTTON_RIGHT   0x04  /**< Right mouse button */
-#define NX_MOUSE_BUTTON_X1      0x08  /**< Extra button 1 (usually back) */
-#define NX_MOUSE_BUTTON_X2      0x10  /**< Extra button 2 (usually forward) */
+#define NX_MOUSE_BUTTON_LEFT    0x01  ///< Left mouse button
+#define NX_MOUSE_BUTTON_MIDDLE  0x02  ///< Middle mouse button (wheel click)
+#define NX_MOUSE_BUTTON_RIGHT   0x04  ///< Right mouse button
+#define NX_MOUSE_BUTTON_X1      0x08  ///< Extra button 1 (usually back)
+#define NX_MOUSE_BUTTON_X2      0x10  ///< Extra button 2 (usually forward)
 
 /**
  * @brief Logging levels.
@@ -309,15 +309,15 @@ typedef uint8_t NX_MouseButton;
  * Functions like `NX_Log` and `NX_SetLogPriority` use these levels.
  */
 typedef enum NX_LogLevel {
-    NX_LOG_INVALID, /**< Invalid log level */
-    NX_LOG_TRACE,   /**< Trace-level messages for detailed debugging */
-    NX_LOG_VERBOSE, /**< Verbose messages */
-    NX_LOG_DEBUG,   /**< Debug messages */
-    NX_LOG_INFO,    /**< Informational messages */
-    NX_LOG_WARN,    /**< Warning messages */
-    NX_LOG_ERROR,   /**< Error messages */
-    NX_LOG_FATAL,   /**< Fatal error messages */
-    NX_LOG_COUNT    /**< Number of log levels */
+    NX_LOG_INVALID,         ///< Invalid log level
+    NX_LOG_TRACE,           ///< Trace-level messages for detailed debugging
+    NX_LOG_VERBOSE,         ///< Verbose messages
+    NX_LOG_DEBUG,           ///< Debug messages
+    NX_LOG_INFO,            ///< Informational messages
+    NX_LOG_WARN,            ///< Warning messages
+    NX_LOG_ERROR,           ///< Error messages
+    NX_LOG_FATAL,           ///< Fatal error messages
+    NX_LOG_COUNT            ///< Number of log levels
 } NX_LogLevel;
 
 /** @} */ // end of Enums
