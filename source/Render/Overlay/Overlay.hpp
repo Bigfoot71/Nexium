@@ -177,7 +177,7 @@ inline void Overlay::setColor(NX_Color color)
 inline void Overlay::push()
 {
     if (!mMatrixStack.push_back(*mMatrixStack.back())) {
-        NX_INTERNAL_LOG(E, "RENDER: Transformation 2D stack overflow");
+        NX_LOG(E, "RENDER: Transformation 2D stack overflow");
     }
 }
 

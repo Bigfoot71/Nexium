@@ -10,7 +10,8 @@
 #define NX_RENDER_POOL_TEXTURE_HPP
 
 #include "../../Detail/Util/ObjectPool.hpp"
-#include "../../Core/NX_InternalLog.hpp"
+#include <NX/NX_Log.h>
+
 #include "../NX_RenderTexture.hpp"
 #include "../NX_Texture.hpp"
 
@@ -48,12 +49,12 @@ inline NX_Texture* PoolTexture::createTexture(const NX_Image& image, NX_TextureW
 {
     NX_Texture* texture = mTextures.create(image, mDefaultFilter, wrap, mDefaultFilter);
     if (texture == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to load texture; Object pool issue");
+        NX_LOG(E, "RENDER: Failed to load texture; Object pool issue");
         return texture;
     }
 
     if (!texture->isValid()) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to load texture; GPU-side issue");
+        NX_LOG(E, "RENDER: Failed to load texture; GPU-side issue");
         mTextures.destroy(texture);
         return nullptr;
     }
@@ -77,12 +78,12 @@ inline NX_RenderTexture* PoolTexture::createRenderTexture(int w, int h)
 {
     NX_RenderTexture* renderTexture = mRenderTextures.create(w, h);
     if (renderTexture == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to create render texture; Object pool issue");
+        NX_LOG(E, "RENDER: Failed to create render texture; Object pool issue");
         return renderTexture;
     }
 
     if (!renderTexture->isValid()) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to create render texture; GPU-side issue");
+        NX_LOG(E, "RENDER: Failed to create render texture; GPU-side issue");
         mRenderTextures.destroy(renderTexture);
         return nullptr;
     }

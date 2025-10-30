@@ -212,7 +212,7 @@ void NX_SetWindowTitle(const char* title)
 void NX_SetWindowIcon(const NX_Image* icon)
 {
     if (icon == nullptr || icon->pixels == nullptr) {
-        NX_INTERNAL_LOG(E, "CORE: Failed to set window icon; Invalid icon data");
+        NX_LOG(E, "CORE: Failed to set window icon; Invalid icon data");
         return;
     }
 
@@ -239,19 +239,19 @@ void NX_SetWindowIcon(const NX_Image* icon)
         format = SDL_PIXELFORMAT_RGBA128_FLOAT, bpp = 16;
         break;
     default:
-        NX_INTERNAL_LOG(E, "CORE: Failed to set window icon; Unsupported format");
+        NX_LOG(E, "CORE: Failed to set window icon; Unsupported format");
         return;
     }
 
     SDL_Surface* surface = SDL_CreateSurfaceFrom(icon->w, icon->h, format, 
                                                  icon->pixels, bpp * icon->w);
     if (surface == nullptr) {
-        NX_INTERNAL_LOG(E, "CORE: Failed to set window icon; %s", SDL_GetError());
+        NX_LOG(E, "CORE: Failed to set window icon; %s", SDL_GetError());
         return;
     }
 
     if (!SDL_SetWindowIcon(gCore->window(), surface)) {
-        NX_INTERNAL_LOG(E, "CORE: Failed to set window icon; %s", SDL_GetError());
+        NX_LOG(E, "CORE: Failed to set window icon; %s", SDL_GetError());
     }
 
     SDL_DestroySurface(surface);
@@ -983,7 +983,7 @@ void* NX_DecodeBase64(const char* text, size_t* outputSize)
     }
 
     if (textLength % 4 != 0) {
-        NX_INTERNAL_LOG(W, "CORE: Invalid Base64 string length (not multiple of 4)");
+        NX_LOG(W, "CORE: Invalid Base64 string length (not multiple of 4)");
         return nullptr;
     }
 
@@ -1000,7 +1000,7 @@ void* NX_DecodeBase64(const char* text, size_t* outputSize)
     /* --- Validation of padding (maximum 2 '=' characters) --- */
 
     if (paddingCount > 2) {
-        NX_INTERNAL_LOG(W, "CORE: Invalid Base64 padding");
+        NX_LOG(W, "CORE: Invalid Base64 padding");
         return nullptr;
     }
 
@@ -1008,7 +1008,7 @@ void* NX_DecodeBase64(const char* text, size_t* outputSize)
 
     const int decodedSize = (textLength / 4) * 3 - paddingCount;
     if (decodedSize < 0) {
-        NX_INTERNAL_LOG(W, "CORE: Invalid Base64 string");
+        NX_LOG(W, "CORE: Invalid Base64 string");
         return nullptr;
     }
 
@@ -1047,7 +1047,7 @@ void* NX_DecodeBase64(const char* text, size_t* outputSize)
         if (v0 == 255 || v1 == 255 || 
             (v2 == 255 && c2 != '=') || 
             (v3 == 255 && c3 != '=')) {
-            NX_INTERNAL_LOG(W, "CORE: Invalid Base64 character detected");
+            NX_LOG(W, "CORE: Invalid Base64 character detected");
             util::free(decodedData);
             return nullptr;
         }

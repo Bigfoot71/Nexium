@@ -148,12 +148,12 @@ template <typename Derived>
 void ShaderOverride<Derived>::setTexture(int slot, const gpu::Texture* texture)
 {
     if (slot < 0 || slot >= SAMPLER_COUNT) {
-        NX_INTERNAL_LOG(E, "RENDER: Texture slot %d is out of range [0, %d)", slot, SAMPLER_COUNT);
+        NX_LOG(E, "RENDER: Texture slot %d is out of range [0, %d)", slot, SAMPLER_COUNT);
         return;
     }
 
     if (!mTextures[slot].exists) {
-        NX_INTERNAL_LOG(E, "RENDER: Texture slot %d is not defined in this shader", slot);
+        NX_LOG(E, "RENDER: Texture slot %d is not defined in this shader", slot);
         return;
     }
 
@@ -164,12 +164,12 @@ template <typename Derived>
 void ShaderOverride<Derived>::updateStaticBuffer(size_t offset, size_t size, const void* data)
 {
     if (!mStaticBuffer.isValid()) {
-        NX_INTERNAL_LOG(E, "RENDER: No static uniform buffer allocated for this shader");
+        NX_LOG(E, "RENDER: No static uniform buffer allocated for this shader");
         return;
     }
 
     if (offset + size > mStaticBuffer.size()) {
-        NX_INTERNAL_LOG(E, 
+        NX_LOG(E, 
             "RENDER: Upload out of bounds (offset=%zu + size=%zu > buffer=%zu)",
             offset, size, mStaticBuffer.size()
         );
@@ -183,12 +183,12 @@ template <typename Derived>
 void ShaderOverride<Derived>::updateDynamicBuffer(size_t size, const void* data)
 {
     if (!mDynamicBuffer.buffer.isValid()) {
-        NX_INTERNAL_LOG(W, "RENDER: No dynamic uniform buffer allocated for this shader");
+        NX_LOG(W, "RENDER: No dynamic uniform buffer allocated for this shader");
         return;
     }
 
     if (size % 16 != 0) {
-        NX_INTERNAL_LOG(W, "RENDER: Dynamic buffer upload size (%zu) must be a multiple of 16 (std140 layout)", size);
+        NX_LOG(W, "RENDER: Dynamic buffer upload size (%zu) must be a multiple of 16 (std140 layout)", size);
         return;
     }
 
@@ -208,7 +208,7 @@ void ShaderOverride<Derived>::updateDynamicBuffer(size_t size, const void* data)
         }
         
         if (newSize > maxUBOSize) {
-            NX_INTERNAL_LOG(E,
+            NX_LOG(E,
                 "RENDER: Dynamic buffer resize failed (required=%zu > GPU limit=%zu)",
                 newSize, maxUBOSize
             );

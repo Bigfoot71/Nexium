@@ -8,15 +8,14 @@
 
 #include "./NX_AudioStream.hpp"
 #include "./NX_AudioState.hpp"
-
-#include "../Core/NX_InternalLog.hpp"
+#include <NX/NX_Log.h>
 
 /* === Public Implementation === */
 
 NX_AudioStream::NX_AudioStream(const char* filePath)
 {
     if (!filePath) {
-        NX_INTERNAL_LOG(E, "AUDIO: File path is null");
+        NX_LOG(E, "AUDIO: File path is null");
         return;
     }
 
@@ -25,7 +24,7 @@ NX_AudioStream::NX_AudioStream(const char* filePath)
     size_t fileSize = 0;
     void* fileData = NX_LoadFile(filePath, &fileSize);
     if (!fileData) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to load music file: %s", filePath);
+        NX_LOG(E, "AUDIO: Failed to load music file: %s", filePath);
         return;
     }
 
@@ -33,13 +32,13 @@ NX_AudioStream::NX_AudioStream(const char* filePath)
 
     NX_AudioFormat format = getAudioFormat(static_cast<const uint8_t*>(fileData), fileSize);
     if (format == NX_AudioFormat::Unknown) {
-        NX_INTERNAL_LOG(E, "AUDIO: Unknown or unsupported audio format in file: %s", filePath);
+        NX_LOG(E, "AUDIO: Unknown or unsupported audio format in file: %s", filePath);
         SDL_free(fileData);
         return;
     }
 
     if (!initDecoder(fileData, fileSize, format)) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to initialize decoder for file: %s", filePath);
+        NX_LOG(E, "AUDIO: Failed to initialize decoder for file: %s", filePath);
         SDL_free(fileData);
         return;
     }
@@ -50,7 +49,7 @@ NX_AudioStream::NX_AudioStream(const char* filePath)
 
     alGenBuffers(BufferCount, mBuffers);
     if (alGetError() != AL_NO_ERROR) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to generate OpenAL buffers for music");
+        NX_LOG(E, "AUDIO: Failed to generate OpenAL buffers for music");
         closeDecoder();
         return;
     }
@@ -59,7 +58,7 @@ NX_AudioStream::NX_AudioStream(const char* filePath)
 
     alGenSources(1, &mSource);
     if (alGetError() != AL_NO_ERROR) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to generate OpenAL source for music");
+        NX_LOG(E, "AUDIO: Failed to generate OpenAL source for music");
         alDeleteBuffers(BufferCount, mBuffers);
         closeDecoder();
         return;

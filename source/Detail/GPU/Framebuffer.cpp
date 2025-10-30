@@ -18,7 +18,7 @@ namespace gpu {
 void Framebuffer::setDrawBuffers(std::initializer_list<int> buffers) noexcept
 {
     if (!isValid()) {
-        NX_INTERNAL_LOG(E, "GPU: Cannot set draw buffers on invalid framebuffer");
+        NX_LOG(E, "GPU: Cannot set draw buffers on invalid framebuffer");
         return;
     }
 
@@ -35,7 +35,7 @@ void Framebuffer::setDrawBuffers(std::initializer_list<int> buffers) noexcept
 void Framebuffer::enableDrawBuffers() noexcept
 {
     if (!isValid()) {
-        NX_INTERNAL_LOG(E, "GPU: Cannot enable draw buffers on invalid framebuffer");
+        NX_LOG(E, "GPU: Cannot enable draw buffers on invalid framebuffer");
         return;
     }
 
@@ -52,7 +52,7 @@ void Framebuffer::enableDrawBuffers() noexcept
 void Framebuffer::disableDrawBuffers() noexcept
 {
     if (!isValid()) {
-        NX_INTERNAL_LOG(E, "GPU: Cannot disable draw buffers on invalid framebuffer");
+        NX_LOG(E, "GPU: Cannot disable draw buffers on invalid framebuffer");
         return;
     }
 
@@ -65,7 +65,7 @@ void Framebuffer::disableDrawBuffers() noexcept
 void Framebuffer::invalidate(std::initializer_list<int> buffers) noexcept
 {
     if (!isValid()) {
-        NX_INTERNAL_LOG(E, "GPU: Cannot invalidate an invalid framebuffer");
+        NX_LOG(E, "GPU: Cannot invalidate an invalid framebuffer");
         return;
     }
 
@@ -83,7 +83,7 @@ void Framebuffer::invalidate(std::initializer_list<int> buffers) noexcept
 void Framebuffer::invalidate() noexcept
 {
     if (!isValid()) {
-        NX_INTERNAL_LOG(E, "GPU: Cannot invalidate an invalid framebuffer");
+        NX_LOG(E, "GPU: Cannot invalidate an invalid framebuffer");
         return;
     }
 
@@ -359,7 +359,7 @@ bool Framebuffer::checkFramebufferComplete(GLuint framebuffer) noexcept
             statusStr = "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
             break;
         }
-        NX_INTERNAL_LOG(E, "GPU: Framebuffer incomplete: %s (0x%x)", statusStr, status);
+        NX_LOG(E, "GPU: Framebuffer incomplete: %s (0x%x)", statusStr, status);
         SDL_assert(false);
         return false;
     }

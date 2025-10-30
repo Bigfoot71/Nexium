@@ -1,7 +1,7 @@
 #ifndef NX_RENDER_SCENE_IMPORTER_HPP
 #define NX_RENDER_SCENE_IMPORTER_HPP
 
-#include "../../../Core/NX_InternalLog.hpp"
+#include <NX/NX_Log.h>
 
 #include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
@@ -49,7 +49,7 @@ inline SceneImporter::SceneImporter(const void* data, uint32_t size, const char*
 
     mScene = mImporter.ReadFileFromMemory(data, size, flags, hint);
     if (!mScene || !mScene->mRootNode || mScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) {
-        NX_INTERNAL_LOG(E, "RENDER: Assimp error; %s", mImporter.GetErrorString());
+        NX_LOG(E, "RENDER: Assimp error; %s", mImporter.GetErrorString());
         mImporter.FreeScene();
         mScene = nullptr;
     }

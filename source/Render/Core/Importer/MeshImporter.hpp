@@ -51,13 +51,13 @@ inline bool MeshImporter::loadMeshes(NX_Model* model)
 
     model->meshes = static_cast<NX_Mesh**>(SDL_calloc(model->meshCount, sizeof(NX_Mesh*)));
     if (model->meshes == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to allocate memory for meshes; The model will be invalid");
+        NX_LOG(E, "RENDER: Unable to allocate memory for meshes; The model will be invalid");
         return false;
     }
 
     model->meshMaterials = static_cast<int*>(SDL_calloc(model->meshCount, sizeof(int)));
     if (model->meshMaterials == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to allocate memory for mesh materials array; The model will be invalid");
+        NX_LOG(E, "RENDER: Unable to allocate memory for mesh materials array; The model will be invalid");
         SDL_free(model->meshes);
         return false;
     }
@@ -104,7 +104,7 @@ inline bool MeshImporter::loadRecursive(NX_Model* model, const aiNode* node, con
         }
 
         if (model->meshes[meshIndex] == nullptr) {
-            NX_INTERNAL_LOG(E, "RENDER: Unable to load mesh [%d]; The model will be invalid", node->mMeshes[i]);
+            NX_LOG(E, "RENDER: Unable to load mesh [%d]; The model will be invalid", node->mMeshes[i]);
             return false;
         }
     }
@@ -124,14 +124,14 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
     /* --- Validate input parameters --- */
 
     if (!mesh) {
-        NX_INTERNAL_LOG(E, "RENDER: Invalid parameters during assimp mesh processing");
+        NX_LOG(E, "RENDER: Invalid parameters during assimp mesh processing");
         return nullptr;
     }
 
     /* --- Validate mesh data presence --- */
 
     if (mesh->mNumVertices == 0 || mesh->mNumFaces == 0) {
-        NX_INTERNAL_LOG(E, "RENDER: Empty mesh detected during assimp mesh processing");
+        NX_LOG(E, "RENDER: Empty mesh detected during assimp mesh processing");
         return nullptr;
     }
 
@@ -142,13 +142,13 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
 
     NX_Vertex3D* vertices = static_cast<NX_Vertex3D*>(SDL_calloc(vertexCount, sizeof(NX_Vertex3D)));
     if (!vertices) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to allocate memory for vertices");
+        NX_LOG(E, "RENDER: Unable to allocate memory for vertices");
         return nullptr;
     }
 
     uint32_t* indices = static_cast<uint32_t*>(SDL_calloc(indexCount, sizeof(uint32_t)));
     if (!indices) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to allocate memory for indices");
+        NX_LOG(E, "RENDER: Unable to allocate memory for indices");
         SDL_free(vertices);
         return nullptr;
     }
@@ -247,7 +247,7 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
         {
             const aiBone* bone = mesh->mBones[boneIndex];
             if (!bone) {
-                NX_INTERNAL_LOG(W, "RENDER: nullptr bone at index %zu", boneIndex);
+                NX_LOG(W, "RENDER: nullptr bone at index %zu", boneIndex);
                 continue;
             }
 
@@ -262,7 +262,7 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
 
                 // Validate vertex ID
                 if (vertexId >= vertexCount) {
-                    NX_INTERNAL_LOG(E, "RENDER: Invalid vertex ID %u in bone weights (max: %zu)", vertexId, vertexCount);
+                    NX_LOG(E, "RENDER: Invalid vertex ID %u in bone weights (max: %zu)", vertexId, vertexCount);
                     continue;
                 }
 
@@ -337,14 +337,14 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
     for (size_t i = 0; i < mesh->mNumFaces; i++) {
         const aiFace* face = &mesh->mFaces[i];
         if (face->mNumIndices != 3) {
-            NX_INTERNAL_LOG(E, "RENDER: Non-triangular face detected (indices: %u)", face->mNumIndices);
+            NX_LOG(E, "RENDER: Non-triangular face detected (indices: %u)", face->mNumIndices);
             SDL_free(vertices);
             SDL_free(indices);
             return nullptr;
         }
         for (uint32_t j = 0; j < 3; j++) {
             if (face->mIndices[j] >= mesh->mNumVertices) {
-                NX_INTERNAL_LOG(E, "RENDER: Invalid vertex index (%u >= %u)", face->mIndices[j], mesh->mNumVertices);
+                NX_LOG(E, "RENDER: Invalid vertex index (%u >= %u)", face->mIndices[j], mesh->mNumVertices);
                 SDL_free(vertices);
                 SDL_free(indices);
                 return nullptr;
@@ -358,7 +358,7 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
     /* --- Final validation: index count consistency --- */
 
     if (indexOffset != indexCount) {
-        NX_INTERNAL_LOG(E, "RENDER: Inconsistency in the number of indices (%zu != %zu)", indexOffset, indexCount);
+        NX_LOG(E, "RENDER: Inconsistency in the number of indices (%zu != %zu)", indexOffset, indexCount);
         SDL_free(vertices);
         SDL_free(indices);
         return nullptr;

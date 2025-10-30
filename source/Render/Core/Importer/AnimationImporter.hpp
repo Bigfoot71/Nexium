@@ -53,7 +53,7 @@ inline NX_ModelAnimation** AnimationImporter::loadAnimations(int* animCount, int
     *animCount = 0;
 
     if (mImporter.animationCount() == 0) {
-        NX_INTERNAL_LOG(E, "RENDER: No animations found");
+        NX_LOG(E, "RENDER: No animations found");
         return nullptr;
     }
 
@@ -62,7 +62,7 @@ inline NX_ModelAnimation** AnimationImporter::loadAnimations(int* animCount, int
     ));
 
     if (animations == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to allocate memory for animations");
+        NX_LOG(E, "RENDER: Unable to allocate memory for animations");
         return nullptr;
     }
 
@@ -74,18 +74,18 @@ inline NX_ModelAnimation** AnimationImporter::loadAnimations(int* animCount, int
             successCount++;
         }
         else {
-            NX_INTERNAL_LOG(E, "RENDER: Failed to process animation %d", i);
+            NX_LOG(E, "RENDER: Failed to process animation %d", i);
         }
     }
 
     if (successCount == 0) {
-        NX_INTERNAL_LOG(E, "RENDER: No animations were successfully loaded");
+        NX_LOG(E, "RENDER: No animations were successfully loaded");
         SDL_free(animations);
         return nullptr;
     }
 
     if (successCount < mImporter.animationCount()) {
-        NX_INTERNAL_LOG(W, "RENDER: Only %d out of %d animations were successfully loaded", successCount, mImporter.animationCount());
+        NX_LOG(W, "RENDER: Only %d out of %d animations were successfully loaded", successCount, mImporter.animationCount());
         NX_ModelAnimation** resizedAnims = static_cast<NX_ModelAnimation**>(SDL_realloc(animations, successCount * sizeof(NX_ModelAnimation*)));
         if (resizedAnims) animations = resizedAnims;
     }
@@ -135,7 +135,7 @@ inline bool AnimationImporter::loadAnimation(NX_ModelAnimation* animation, const
     }
 
     if (boneCounter == 0) {
-        NX_INTERNAL_LOG(W, "RENDER: No bones found for animation '%s'", animation->name);
+        NX_LOG(W, "RENDER: No bones found for animation '%s'", animation->name);
         return false;
     }
 
@@ -148,7 +148,7 @@ inline bool AnimationImporter::loadAnimation(NX_ModelAnimation* animation, const
     animation->frameLocalPoses = static_cast<NX_Transform**>(SDL_calloc(animation->frameCount, sizeof(NX_Transform*)));
 
     if (!animation->bones || !animation->frameGlobalPoses || !animation->frameLocalPoses) {
-        NX_INTERNAL_LOG(E, "RENDER: Allocation failed");
+        NX_LOG(E, "RENDER: Allocation failed");
         SDL_free(animation->bones);
         SDL_free(animation->frameGlobalPoses);
         SDL_free(animation->frameLocalPoses);
@@ -180,7 +180,7 @@ inline bool AnimationImporter::loadAnimation(NX_ModelAnimation* animation, const
         animation->frameGlobalPoses[f] = static_cast<NX_Mat4*>(SDL_calloc(animation->boneCount, sizeof(NX_Mat4)));
         animation->frameLocalPoses[f] = static_cast<NX_Transform*>(SDL_calloc(animation->boneCount, sizeof(NX_Transform)));
         if (!animation->frameGlobalPoses[f] || !animation->frameLocalPoses[f]) {
-            NX_INTERNAL_LOG(E, "RENDER: Failed to allocate frame %d", f);
+            NX_LOG(E, "RENDER: Failed to allocate frame %d", f);
             for (int i = 0; i <= f; i++) {
                 SDL_free(animation->frameGlobalPoses[i]);
                 SDL_free(animation->frameLocalPoses[i]);

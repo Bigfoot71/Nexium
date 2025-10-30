@@ -43,7 +43,7 @@ StagingBuffer<T, BufferCount>::StagingBuffer(GLenum target, int initialCapacity)
     : mBuffer(target, initialCapacity * sizeof(T), nullptr, GL_STATIC_DRAW)
 {
     if (!mStagingBuffer.reserve(initialCapacity)) {
-        NX_INTERNAL_LOG(E, "RENDER: Staging buffer memory reservation failed (requested: %i entries)", initialCapacity);
+        NX_LOG(E, "RENDER: Staging buffer memory reservation failed (requested: %i entries)", initialCapacity);
     }
 }
 

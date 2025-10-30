@@ -7,8 +7,8 @@
  */
 
 #include "./NX_AudioClip.hpp"
+#include <NX/NX_Log.h>
 
-#include "../Core/NX_InternalLog.hpp"
 #include "./NX_AudioFormat.hpp"
 #include "./NX_AudioState.hpp"
 
@@ -18,12 +18,12 @@ NX_AudioClip::NX_AudioClip(const char* filePath, int channelCount)
     : mSources(channelCount, channelCount)
 {
     if (channelCount <= 0) {
-        NX_INTERNAL_LOG(E, "AUDIO: Invalid channel count %d", channelCount);
+        NX_LOG(E, "AUDIO: Invalid channel count %d", channelCount);
         return;
     }
 
     if (!filePath) {
-        NX_INTERNAL_LOG(E, "AUDIO: Null file path");
+        NX_LOG(E, "AUDIO: Null file path");
         return;
     }
 
@@ -32,7 +32,7 @@ NX_AudioClip::NX_AudioClip(const char* filePath, int channelCount)
     size_t fileSize = 0;
     void* fileData = NX_LoadFile(filePath, &fileSize);
     if (!fileData) {
-        NX_INTERNAL_LOG(E, "AUDIO: Unable to load file '%s'", filePath);
+        NX_LOG(E, "AUDIO: Unable to load file '%s'", filePath);
         return;
     }
 
@@ -55,7 +55,7 @@ NX_AudioClip::NX_AudioClip(const char* filePath, int channelCount)
             audioData = loadOGG(fileData, fileSize);
             break;
         default:
-            NX_INTERNAL_LOG(E, "AUDIO: Unknown audio format for '%s'", filePath);
+            NX_LOG(E, "AUDIO: Unknown audio format for '%s'", filePath);
             SDL_free(fileData);
             return;
     }
@@ -63,7 +63,7 @@ NX_AudioClip::NX_AudioClip(const char* filePath, int channelCount)
     SDL_free(fileData);
 
     if (!audioData.pcmData) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to decode audio file '%s'", filePath);
+        NX_LOG(E, "AUDIO: Failed to decode audio file '%s'", filePath);
         return;
     }
 
@@ -71,7 +71,7 @@ NX_AudioClip::NX_AudioClip(const char* filePath, int channelCount)
 
     alGenBuffers(1, &mBuffer);
     if (alGetError() != AL_NO_ERROR) {
-        NX_INTERNAL_LOG(E, "AUDIO: Could not generate OpenAL buffer");
+        NX_LOG(E, "AUDIO: Could not generate OpenAL buffer");
         cleanupRawData(audioData);
         return;
     }
@@ -80,7 +80,7 @@ NX_AudioClip::NX_AudioClip(const char* filePath, int channelCount)
 
     alBufferData(mBuffer, audioData.format, audioData.pcmData, audioData.pcmDataSize, audioData.sampleRate);
     if (alGetError() != AL_NO_ERROR) {
-        NX_INTERNAL_LOG(E, "AUDIO: Could not buffer data to OpenAL");
+        NX_LOG(E, "AUDIO: Could not buffer data to OpenAL");
         alDeleteBuffers(1, &mBuffer);
         cleanupRawData(audioData);
         return;
@@ -94,7 +94,7 @@ NX_AudioClip::NX_AudioClip(const char* filePath, int channelCount)
 
     alGenSources(channelCount, mSources.data());
     if (alGetError() != AL_NO_ERROR) {
-        NX_INTERNAL_LOG(E, "AUDIO: Could not generate OpenAL sources");
+        NX_LOG(E, "AUDIO: Could not generate OpenAL sources");
         alDeleteBuffers(1, &mBuffer);
         return;
     }
@@ -104,7 +104,7 @@ NX_AudioClip::NX_AudioClip(const char* filePath, int channelCount)
     for (int i = 0; i < channelCount; i++) {
         alSourcei(mSources[i], AL_BUFFER, mBuffer);
         if (alGetError() != AL_NO_ERROR) {
-            NX_INTERNAL_LOG(E, "AUDIO: Could not attach buffer to source %d", i);
+            NX_LOG(E, "AUDIO: Could not attach buffer to source %d", i);
             alDeleteSources(channelCount, mSources.data());
             alDeleteBuffers(1, &mBuffer);
             return;

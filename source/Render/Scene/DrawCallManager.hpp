@@ -163,15 +163,15 @@ inline DrawCallManager::DrawCallManager(int initialCapacity)
     , mBoneBuffer(GL_SHADER_STORAGE_BUFFER, 1024)
 {
     if (!mSharedData.reserve(initialCapacity)) {
-        NX_INTERNAL_LOG(E, "RENDER: Shared draw call data array pre-allocation failed (requested: %i entries)", initialCapacity);
+        NX_LOG(E, "RENDER: Shared draw call data array pre-allocation failed (requested: %i entries)", initialCapacity);
     }
 
     if (!mUniqueData.reserve(initialCapacity)) {
-        NX_INTERNAL_LOG(E, "RENDER: Unique draw call data array pre-allocation failed (requested: %i entries)", initialCapacity);
+        NX_LOG(E, "RENDER: Unique draw call data array pre-allocation failed (requested: %i entries)", initialCapacity);
     }
 
     if (!mUniqueVisible.reserve(initialCapacity)) {
-        NX_INTERNAL_LOG(E, "RENDER: Visible unique draw call list pre-allocation failed (requested: %i entries)", initialCapacity);
+        NX_LOG(E, "RENDER: Visible unique draw call list pre-allocation failed (requested: %i entries)", initialCapacity);
     }
 }
 
@@ -516,7 +516,7 @@ inline int DrawCallManager::computeBoneMatrices(const NX_Model& model)
     const NX_Mat4* boneMatrices = model.boneBindPose;
     if (model.animMode == NX_ANIM_INTERNAL && model.anim != nullptr) {
         if (model.boneCount != model.anim->boneCount) {
-            NX_INTERNAL_LOG(W, "RENDER: Model and animation bone counts differ");
+            NX_LOG(W, "RENDER: Model and animation bone counts differ");
         }
         float frame = NX_Wrap(model.animFrame, 0.0f, model.anim->frameCount - 1.0f);
         boneMatrices = model.anim->frameGlobalPoses[static_cast<int>(frame + 0.5f)];

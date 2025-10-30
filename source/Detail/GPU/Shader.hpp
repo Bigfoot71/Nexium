@@ -9,10 +9,11 @@
 #ifndef NX_GPU_SHADER_HPP
 #define NX_GPU_SHADER_HPP
 
-#include "../../Core/NX_InternalLog.hpp"
 #include "../../Core/NX_CoreState.hpp"      //< Used to get OpenGL profile used (Core/ES)
 
 #include <NX/NX_Core.h>
+#include <NX/NX_Log.h>
+
 #include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_video.h>
 #include <glad/gles2.h>
@@ -54,7 +55,7 @@ inline Shader::Shader(GLenum stage, const char* source, std::initializer_list<co
     : mStage(stage)
 {
     if (!source) {
-        NX_INTERNAL_LOG(E, "GPU: Failed to create shader; Source is null");
+        NX_LOG(E, "GPU: Failed to create shader; Source is null");
         SDL_assert(false);
         return;
     }
@@ -63,7 +64,7 @@ inline Shader::Shader(GLenum stage, const char* source, std::initializer_list<co
 
     mID = glCreateShader(stage);
     if (mID == 0) {
-        NX_INTERNAL_LOG(E, "GPU: Failed to create shader object");
+        NX_LOG(E, "GPU: Failed to create shader object");
         SDL_assert(false);
         return;
     }
@@ -107,10 +108,10 @@ inline Shader::Shader(GLenum stage, const char* source, std::initializer_list<co
         if (logLength > 0) {
             std::string errorLog(logLength, '\0');
             glGetShaderInfoLog(mID, logLength, nullptr, errorLog.data());
-            NX_INTERNAL_LOG(E, "GPU: Failed to compile %s shader:\n%s", stageToString(stage), errorLog.c_str());
+            NX_LOG(E, "GPU: Failed to compile %s shader:\n%s", stageToString(stage), errorLog.c_str());
         }
         else {
-            NX_INTERNAL_LOG(E, "GPU: Failed to compile %s shader (no error log available)", stageToString(stage));
+            NX_LOG(E, "GPU: Failed to compile %s shader (no error log available)", stageToString(stage));
         }
 
         glDeleteShader(mID);

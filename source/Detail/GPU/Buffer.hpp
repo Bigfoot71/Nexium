@@ -9,7 +9,7 @@
 #ifndef NX_GPU_BUFFER_HPP
 #define NX_GPU_BUFFER_HPP
 
-#include "../../Core/NX_InternalLog.hpp"
+#include <NX/NX_Log.h>
 
 #include <NX/NX_Core.h>
 #include <SDL3/SDL_assert.h>
@@ -89,17 +89,17 @@ inline Buffer::Buffer(GLenum target, GLsizeiptr size, const void* data, GLenum u
     SDL_assert(size > 0);
 
     if (!isValidTarget(target)) {
-        NX_INTERNAL_LOG(E, "GPU: Invalid buffer target: 0x%x", target);
+        NX_LOG(E, "GPU: Invalid buffer target: 0x%x", target);
         return;
     }
 
     if (!isValidUsage(usage)) {
-        NX_INTERNAL_LOG(E, "GPU: Invalid buffer usage: 0x%x", usage);
+        NX_LOG(E, "GPU: Invalid buffer usage: 0x%x", usage);
         return;
     }
 
     if (size <= 0) {
-        NX_INTERNAL_LOG(E, "GPU: Invalid buffer size: %lld", static_cast<long long>(size));
+        NX_LOG(E, "GPU: Invalid buffer size: %lld", static_cast<long long>(size));
         return;
     }
 

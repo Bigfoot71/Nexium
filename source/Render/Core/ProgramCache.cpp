@@ -191,7 +191,7 @@ gpu::Program& ProgramCache::output(NX_Tonemap tonemap)
         tonemapper = "TONEMAPPER TONEMAP_AGX";
         break;
     default:
-        NX_INTERNAL_LOG(W, "RENDER: Unknown tonemap mode (%i); Linear will be used", tonemap);
+        NX_LOG(W, "RENDER: Unknown tonemap mode (%i); Linear will be used", tonemap);
         break;
     }
 
@@ -289,7 +289,7 @@ gpu::Program& ProgramCache::bloomPost(NX_Bloom mode)
         bloomMode = "BLOOM_SCREEN";
         break;
     default:
-        NX_INTERNAL_LOG(W, "RENDER: Unknown bloom mode (%i); Mix will be used", mode);
+        NX_LOG(W, "RENDER: Unknown bloom mode (%i); Mix will be used", mode);
         break;
     }
 

@@ -58,7 +58,7 @@ inline NX_Cubemap* PoolCubemap::createCubemap(const NX_Image& image)
     NX_Cubemap* cubemap = mPoolCubemaps.create(image, mPrograms.cubemapFromEquirectangular());
 
     if (cubemap == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to load cubemap; Object pool issue");
+        NX_LOG(E, "RENDER: Failed to load cubemap; Object pool issue");
         return nullptr;
     }
 
@@ -87,7 +87,7 @@ inline NX_ReflectionProbe* PoolCubemap::createReflectionProbe(const NX_Cubemap& 
     NX_ReflectionProbe* probe = mPoolProbes.create(cubemap, mPrograms.cubemapIrradiance(), mPrograms.cubemapPrefilter());
 
     if (probe == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to load reflection probe; Object pool issue");
+        NX_LOG(E, "RENDER: Failed to load reflection probe; Object pool issue");
         return nullptr;
     }
 

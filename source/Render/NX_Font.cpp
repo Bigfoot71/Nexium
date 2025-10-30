@@ -8,8 +8,8 @@
 
 #include "./NX_Font.hpp"
 
-#include "../Core/NX_InternalLog.hpp"
 #include <NX/NX_Render.h>
+#include <NX/NX_Log.h>
 
 /* === FreeType Includes === */
 
@@ -56,7 +56,7 @@ NX_Font::NX_Font(const void* fileData, size_t dataSize, NX_FontType type, int ba
     );
 
     if (!atlasGenerated) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to generate font atlas");
+        NX_LOG(E, "RENDER: Failed to generate font atlas");
         SDL_free(mGlyphs);
         return;
     }
@@ -86,7 +86,7 @@ NX_Font::NX_Font(const void* fileData, size_t dataSize, NX_FontType type, int ba
     NX_DestroyImage(&atlas);
 
     if (!mTexture.isValid()) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to upload font atlas");
+        NX_LOG(E, "RENDER: Failed to upload font atlas");
         SDL_free(mGlyphs);
         return;
     }
@@ -236,7 +236,7 @@ bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int da
         ftGlyphFlags |= FT_LOAD_TARGET_NORMAL;
         break;
     default:
-        NX_INTERNAL_LOG(E, "RENDER: Faild to load font; Invalid font type (%i)", fontType);
+        NX_LOG(E, "RENDER: Faild to load font; Invalid font type (%i)", fontType);
         return false;
     }
 

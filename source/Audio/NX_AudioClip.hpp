@@ -10,9 +10,9 @@
 #define NX_AUDIO_CLIP_HPP
 
 #include "../Detail/Util/FixedArray.hpp"
-#include "../Core/NX_InternalLog.hpp"
 
 #include <NX/NX_Core.h>
+#include <NX/NX_Log.h>
 
 #include <SDL3/SDL_stdinc.h>
 #include <stb_vorbis.h>
@@ -190,7 +190,7 @@ inline NX_AudioClip::RawData NX_AudioClip::loadWAV(const void* data, size_t data
     drwav wav;
 
     if (!drwav_init_memory(&wav, data, data_size, nullptr)) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to initialize WAV decoder");
+        NX_LOG(E, "AUDIO: Failed to initialize WAV decoder");
         return result;
     }
 
@@ -202,7 +202,7 @@ inline NX_AudioClip::RawData NX_AudioClip::loadWAV(const void* data, size_t data
         result.format = AL_FORMAT_STEREO16;
     }
     else {
-        NX_INTERNAL_LOG(E, "AUDIO: Unsupported WAV format (channels: %u, bits: %u)", wav.channels, wav.bitsPerSample);
+        NX_LOG(E, "AUDIO: Unsupported WAV format (channels: %u, bits: %u)", wav.channels, wav.bitsPerSample);
         drwav_uninit(&wav);
         return result;
     }
@@ -215,7 +215,7 @@ inline NX_AudioClip::RawData NX_AudioClip::loadWAV(const void* data, size_t data
     result.sampleRate = wav.sampleRate;
 
     if (!result.pcmData) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to allocate memory for PCM data");
+        NX_LOG(E, "AUDIO: Failed to allocate memory for PCM data");
         drwav_uninit(&wav);
         result = {};
         return result;
@@ -225,7 +225,7 @@ inline NX_AudioClip::RawData NX_AudioClip::loadWAV(const void* data, size_t data
     drwav_uninit(&wav);
 
     if (frames_read != totalFrames) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to read all PCM frames");
+        NX_LOG(E, "AUDIO: Failed to read all PCM frames");
         SDL_free(result.pcmData);
         result = {};
     }
@@ -245,7 +245,7 @@ inline NX_AudioClip::RawData NX_AudioClip::loadFLAC(const void* data, size_t dat
     );
 
     if (!pcmData) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to decode FLAC file");
+        NX_LOG(E, "AUDIO: Failed to decode FLAC file");
         return result;
     }
 
@@ -256,7 +256,7 @@ inline NX_AudioClip::RawData NX_AudioClip::loadFLAC(const void* data, size_t dat
         result.format = AL_FORMAT_STEREO16;
     }
     else {
-        NX_INTERNAL_LOG(E, "AUDIO: Unsupported number of channels (%u) in FLAC file", channels);
+        NX_LOG(E, "AUDIO: Unsupported number of channels (%u) in FLAC file", channels);
         drflac_free(pcmData, nullptr);
         return result;
     }
@@ -279,7 +279,7 @@ inline NX_AudioClip::RawData NX_AudioClip::loadMP3(const void* data, size_t data
     );
 
     if (!pcmData) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to decode MP3 file");
+        NX_LOG(E, "AUDIO: Failed to decode MP3 file");
         return result;
     }
 
@@ -290,7 +290,7 @@ inline NX_AudioClip::RawData NX_AudioClip::loadMP3(const void* data, size_t data
         result.format = AL_FORMAT_STEREO16;
     }
     else {
-        NX_INTERNAL_LOG(E, "AUDIO: Unsupported number of channels (%u) in MP3 file", config.channels);
+        NX_LOG(E, "AUDIO: Unsupported number of channels (%u) in MP3 file", config.channels);
         drmp3_free(pcmData, nullptr);
         return result;
     }
@@ -314,7 +314,7 @@ inline NX_AudioClip::RawData NX_AudioClip::loadOGG(const void* data, size_t data
     );
 
     if (total_samples == -1 || !pcmData) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to decode OGG file");
+        NX_LOG(E, "AUDIO: Failed to decode OGG file");
         return result;
     }
 
@@ -325,7 +325,7 @@ inline NX_AudioClip::RawData NX_AudioClip::loadOGG(const void* data, size_t data
         result.format = AL_FORMAT_STEREO16;
     }
     else {
-        NX_INTERNAL_LOG(E, "AUDIO: Unsupported number of channels (%d) in OGG file", channels);
+        NX_LOG(E, "AUDIO: Unsupported number of channels (%d) in OGG file", channels);
         SDL_free(pcmData);
         return result;
     }

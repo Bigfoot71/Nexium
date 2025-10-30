@@ -10,8 +10,7 @@
 #define NX_AUDIO_STREAM_HPP
 
 #include "./NX_AudioFormat.hpp"
-
-#include "../Core/NX_InternalLog.hpp"
+#include <NX/NX_Log.h>
 
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_assert.h>
@@ -195,7 +194,7 @@ inline bool NX_AudioStream::initDecoder(const void* data, size_t dataSize, NX_Au
         mAlFormat = AL_FORMAT_STEREO16;
     }
     else {
-        NX_INTERNAL_LOG(E, "AUDIO: Unsupported number of channels (%d)", mChannels);
+        NX_LOG(E, "AUDIO: Unsupported number of channels (%d)", mChannels);
         closeDecoder();
         return false;
     }

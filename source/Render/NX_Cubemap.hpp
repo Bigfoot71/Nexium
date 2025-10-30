@@ -97,7 +97,7 @@ inline NX_Cubemap::NX_Cubemap(const NX_Image& image, gpu::Program& programEquire
     }
 
     if (!mTexture.isValid()) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to determine skybox cubemap layout");
+        NX_LOG(E, "RENDER: Unable to determine skybox cubemap layout");
         return;
     }
 

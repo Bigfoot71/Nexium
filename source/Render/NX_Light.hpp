@@ -193,7 +193,7 @@ inline NX_Light::NX_Light(NX_LightType type)
         mData = Omni();
         break;
     default:
-        NX_INTERNAL_LOG(W, "RENDER: Invalid light type (%i); The light will be invalid");
+        NX_LOG(W, "RENDER: Invalid light type (%i); The light will be invalid");
         break;
     }
 }
@@ -277,7 +277,7 @@ inline NX_Vec3 NX_Light::direction() const
         break;
     case NX_LIGHT_OMNI:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot retrieve direction of an omni-directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot retrieve direction of an omni-directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_TYPE_COUNT:
@@ -425,7 +425,7 @@ inline float NX_Light::attenuation() const
     switch (mType) {
     case NX_LIGHT_DIR:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot retrieve attenuation of a directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot retrieve attenuation of a directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_SPOT:
@@ -455,7 +455,7 @@ inline float NX_Light::innerCutOff() const
     switch (mType) {
     case NX_LIGHT_DIR:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot retrieve inner cutoff to a directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot retrieve inner cutoff to a directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_SPOT:
@@ -466,7 +466,7 @@ inline float NX_Light::innerCutOff() const
         break;
     case NX_LIGHT_OMNI:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot retrieve inner cutoff to an omni-directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot retrieve inner cutoff to an omni-directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_TYPE_COUNT:
@@ -484,7 +484,7 @@ inline float NX_Light::outerCutOff() const
     switch (mType) {
     case NX_LIGHT_DIR:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot retrieve outer cutoff to a directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot retrieve outer cutoff to a directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_SPOT:
@@ -495,7 +495,7 @@ inline float NX_Light::outerCutOff() const
         break;
     case NX_LIGHT_OMNI:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot retrieve outer cutoff to an omni-directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot retrieve outer cutoff to an omni-directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_TYPE_COUNT:
@@ -561,7 +561,7 @@ inline void NX_Light::setPosition(NX_Vec3 position)
     switch (mType) {
     case NX_LIGHT_DIR:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot assign position to a directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot assign position to a directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_SPOT:
@@ -602,7 +602,7 @@ inline void NX_Light::setDirection(NX_Vec3 direction)
         break;
     case NX_LIGHT_OMNI:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot assign direction to an omni-directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot assign direction to an omni-directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_TYPE_COUNT:
@@ -726,7 +726,7 @@ inline void NX_Light::setAttenuation(float attenuation)
     switch (mType) {
     case NX_LIGHT_DIR:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot assign attenuation to a directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot assign attenuation to a directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_SPOT:
@@ -752,7 +752,7 @@ inline void NX_Light::setInnerCutOff(float radians)
     switch (mType) {
     case NX_LIGHT_DIR:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot assign inner cutoff to a directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot assign inner cutoff to a directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_SPOT:
@@ -763,7 +763,7 @@ inline void NX_Light::setInnerCutOff(float radians)
         break;
     case NX_LIGHT_OMNI:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot assign inner cutoff to an omni-directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot assign inner cutoff to an omni-directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_TYPE_COUNT:
@@ -777,7 +777,7 @@ inline void NX_Light::setOuterCutOff(float radians)
     switch (mType) {
     case NX_LIGHT_DIR:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot assign outer cutoff to a directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot assign outer cutoff to a directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_SPOT:
@@ -789,7 +789,7 @@ inline void NX_Light::setOuterCutOff(float radians)
         break;
     case NX_LIGHT_OMNI:
         {
-            NX_INTERNAL_LOG(W, "RENDER: Cannot assign outer cutoff to an omni-directional light (operation ignored)");
+            NX_LOG(W, "RENDER: Cannot assign outer cutoff to an omni-directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_TYPE_COUNT:

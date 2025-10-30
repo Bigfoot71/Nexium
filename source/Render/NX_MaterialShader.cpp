@@ -96,7 +96,7 @@ NX_MaterialShader::NX_MaterialShader(const char* vert, const char* frag)
         int alignedSize = NX_ALIGN_UP(8 * bufferSize[DYNAMIC_UNIFORM], alignment);
         mDynamicBuffer.buffer = gpu::Buffer(GL_UNIFORM_BUFFER, alignedSize, nullptr, GL_DYNAMIC_DRAW);
         if (!mDynamicBuffer.ranges.reserve(8)) {
-            NX_INTERNAL_LOG(E, "RENDER: Dynamic uniform buffer range info reservation failed (requested: 8 entries)");
+            NX_LOG(E, "RENDER: Dynamic uniform buffer range info reservation failed (requested: 8 entries)");
         }
     }
 

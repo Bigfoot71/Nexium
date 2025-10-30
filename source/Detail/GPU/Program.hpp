@@ -10,13 +10,13 @@
 #define NX_GPU_PROGRAM_HPP
 
 #include <NX/NX_Math.h>
-#include <SDL3/SDL_assert.h>
+#include <NX/NX_Log.h>
 
-#include "../../Core/NX_InternalLog.hpp"
 #include "../Util/FixedArray.hpp"
 #include "../BuildInfo.hpp"
 #include "./Shader.hpp"
 
+#include <SDL3/SDL_assert.h>
 #include <glad/gles2.h>
 #include <cstring>
 #include <string>
@@ -407,7 +407,7 @@ template<typename... Shaders>
 inline bool Program::initProgram(const Shaders&... shaders) noexcept
 {
     if (!(shaders.isValid() && ...)) {
-        NX_INTERNAL_LOG(E, "GPU: Failed to create program; Invalid shaders");
+        NX_LOG(E, "GPU: Failed to create program; Invalid shaders");
         return false;
     }
 
@@ -417,19 +417,19 @@ inline bool Program::initProgram(const Shaders&... shaders) noexcept
 
     mID = glCreateProgram();
     if (mID == 0) {
-        NX_INTERNAL_LOG(E, "GPU: Failed to create program object");
+        NX_LOG(E, "GPU: Failed to create program object");
         return false;
     }
 
     (glAttachShader(mID, shaders.id()), ...);
 
     if (!linkProgram()) {
-        NX_INTERNAL_LOG(E, "GPU: Failed to link program");
+        NX_LOG(E, "GPU: Failed to link program");
         return false;
     }
 
     if (!createUniformCache()) {
-        NX_INTERNAL_LOG(E, "GPU: Failed to create uniform cache");
+        NX_LOG(E, "GPU: Failed to create uniform cache");
         return false;
     }
 
@@ -449,10 +449,10 @@ inline bool Program::linkProgram() noexcept
         if (logLength > 0) {
             std::string errorLog(logLength, '\0');
             glGetProgramInfoLog(mID, logLength, nullptr, errorLog.data());
-            NX_INTERNAL_LOG(E, "GPU: Failed to link program: %s", errorLog.c_str());
+            NX_LOG(E, "GPU: Failed to link program: %s", errorLog.c_str());
         }
         else {
-            NX_INTERNAL_LOG(E, "GPU: Failed to link program (no error log available)");
+            NX_LOG(E, "GPU: Failed to link program (no error log available)");
         }
     }
 
@@ -470,7 +470,7 @@ inline bool Program::validateShaderStages(const Shaders&... shaders) noexcept
     // Compute pipeline: only one compute shader
     if (std::find(stages.begin(), stages.end(), GL_COMPUTE_SHADER) != stages.end()) {
         if (count != 1) {
-            NX_INTERNAL_LOG(E, "GPU: Compute pipeline requires exactly one compute shader");
+            NX_LOG(E, "GPU: Compute pipeline requires exactly one compute shader");
             return false;
         }
         return true;
@@ -480,7 +480,7 @@ inline bool Program::validateShaderStages(const Shaders&... shaders) noexcept
     bool hasVertex = std::find(stages.begin(), stages.end(), GL_VERTEX_SHADER) != stages.end();
     bool hasFragment = std::find(stages.begin(), stages.end(), GL_FRAGMENT_SHADER) != stages.end();
     if (!hasVertex || !hasFragment) {
-        NX_INTERNAL_LOG(E, "GPU: Graphics pipeline requires at least vertex and fragment shaders");
+        NX_LOG(E, "GPU: Graphics pipeline requires at least vertex and fragment shaders");
         return false;
     }
 
@@ -488,7 +488,7 @@ inline bool Program::validateShaderStages(const Shaders&... shaders) noexcept
     std::array<GLenum, count> sortedStages = stages;
     std::sort(sortedStages.begin(), sortedStages.end());
     if (std::adjacent_find(sortedStages.begin(), sortedStages.end()) != sortedStages.end()) {
-        NX_INTERNAL_LOG(E, "GPU: Duplicate shader stages detected");
+        NX_LOG(E, "GPU: Duplicate shader stages detected");
         return false;
     }
     

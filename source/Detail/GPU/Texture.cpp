@@ -16,7 +16,7 @@ namespace gpu {
 void Texture::realloc(const TextureConfig& config) noexcept
 {
     if (!isValid()) {
-        NX_INTERNAL_LOG(E, "GPU: Cannot replace invalid texture");
+        NX_LOG(E, "GPU: Cannot replace invalid texture");
         return;
     }
 
@@ -148,7 +148,7 @@ void Texture::createTexture(const TextureConfig& config, const TextureParam& par
 
     glGenTextures(1, &mID);
     if (mID == 0) {
-        NX_INTERNAL_LOG(E, "GPU: Failed to create texture object");
+        NX_LOG(E, "GPU: Failed to create texture object");
         return;
     }
 
@@ -217,7 +217,7 @@ void Texture::allocateTexture(const TextureConfig& config) noexcept
         glGetError(); // Clean up previous errors
         if (allocateWithFormat(currentFormat)) {
             if (currentFormat != config.internalFormat) {
-                NX_INTERNAL_LOG(W, "GPU: Format %s not supported for %s, using fallback %s",
+                NX_LOG(W, "GPU: Format %s not supported for %s, using fallback %s",
                     formatToString(config.internalFormat), targetToString(config.target), formatToString(currentFormat));
                 sFormatFallbacks[key] = currentFormat;
             }
@@ -237,7 +237,7 @@ void Texture::allocateTexture(const TextureConfig& config) noexcept
 
     /* --- All formats failed --- */
 
-    NX_INTERNAL_LOG(E, "GPU: All formats failed for %s (%dx%dx%d), texture creation failed",
+    NX_LOG(E, "GPU: All formats failed for %s (%dx%dx%d), texture creation failed",
         targetToString(config.target), config.width, config.height, config.depth);
 
     sFormatFallbacks[key] = GL_NONE;    // Mark as tested but failed
@@ -347,11 +347,11 @@ void Texture::setAnisotropy_Bound(float anisotropy) noexcept
     {
         if (GLAD_GL_EXT_texture_filter_anisotropic) {
             glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &sMaxAnisotropy);
-            NX_INTERNAL_LOG(D, "GPU: Anisotropic filtering supported, max anisotropy: %.1f", sMaxAnisotropy);
+            NX_LOG(D, "GPU: Anisotropic filtering supported, max anisotropy: %.1f", sMaxAnisotropy);
         }
         else {
             sMaxAnisotropy = 1.0f;
-            NX_INTERNAL_LOG(D, "GPU: Anisotropic filtering not supported");
+            NX_LOG(D, "GPU: Anisotropic filtering not supported");
         }
 
         sAnisotropyInitialized = true;

@@ -9,12 +9,11 @@
 #include <NX/NX_Image.h>
 #include <NX/NX_Core.h>
 #include <NX/NX_Math.h>
+#include <NX/NX_Log.h>
 
 #include <SDL3/SDL_stdinc.h>
 #include <stdint.h>
 #include <fp16.h>
-
-#include "./Core/NX_InternalLog.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_NO_STDIO
@@ -339,7 +338,7 @@ NX_Image NX_CreateImageFromMem(const void* pixels, int w, int h, NX_PixelFormat 
 
     void* dstPixels = SDL_malloc(size * dstBpp);
     if (dstPixels == NULL) {
-        NX_INTERNAL_LOG(E, "IMAGE: failed to allocate %zu bytes for image creation from memory", size * dstBpp);
+        NX_LOG(E, "IMAGE: failed to allocate %zu bytes for image creation from memory", size * dstBpp);
         return image;
     }
 
@@ -378,20 +377,20 @@ NX_Image NX_LoadImage(const char* filePath)
 {
     NX_Image image = { 0 };
     if (!filePath) {
-        NX_INTERNAL_LOG(E, "IMAGE: File path is null");
+        NX_LOG(E, "IMAGE: File path is null");
         return image;
     }
     
     size_t fileSize;
     void* fileData = NX_LoadFile(filePath, &fileSize);
     if (!fileData) {
-        NX_INTERNAL_LOG(E, "IMAGE: Failed to load file: %s", filePath);
+        NX_LOG(E, "IMAGE: Failed to load file: %s", filePath);
         return image;
     }
     
     image = NX_LoadImageFromMem(fileData, fileSize);
     if (image.pixels == NULL) {
-        NX_INTERNAL_LOG(E, "IMAGE: Failed to load image: %s", filePath);
+        NX_LOG(E, "IMAGE: Failed to load image: %s", filePath);
     }
     
     return image;
@@ -401,20 +400,20 @@ NX_Image NX_LoadImageAsData(const char* filePath)
 {
     NX_Image image = { 0 };
     if (!filePath) {
-        NX_INTERNAL_LOG(E, "IMAGE: File path is null");
+        NX_LOG(E, "IMAGE: File path is null");
         return image;
     }
     
     size_t fileSize;
     void* fileData = NX_LoadFile(filePath, &fileSize);
     if (!fileData) {
-        NX_INTERNAL_LOG(E, "IMAGE: Failed to load file: %s", filePath);
+        NX_LOG(E, "IMAGE: Failed to load file: %s", filePath);
         return image;
     }
     
     image = NX_LoadImageAsDataFromMem(fileData, fileSize);
     if (image.pixels == NULL) {
-        NX_INTERNAL_LOG(E, "IMAGE: Failed to load image: %s", filePath);
+        NX_LOG(E, "IMAGE: Failed to load image: %s", filePath);
     }
     
     return image;
@@ -759,7 +758,7 @@ void NX_ConvertImage(NX_Image* image, NX_PixelFormat format)
 
     void* pixels = SDL_malloc(size * bpp);
     if (pixels == NULL) {
-        NX_INTERNAL_LOG(E, "IMAGE: failed to allocate %zu bytes for image conversion", size * bpp);
+        NX_LOG(E, "IMAGE: failed to allocate %zu bytes for image conversion", size * bpp);
         return;
     }
 
@@ -889,7 +888,7 @@ NX_Image DecodeImage(const void* data, size_t size, int reqChannels)
     }
     
     if (!pixels) {
-        NX_INTERNAL_LOG(E, "IMAGE: Failed to decode image");
+        NX_LOG(E, "IMAGE: Failed to decode image");
         return image;
     }
 
@@ -897,7 +896,7 @@ NX_Image DecodeImage(const void* data, size_t size, int reqChannels)
     NX_PixelFormat format = GetPixelFormat(finalChannels, isHDR);
     
     if (format == 0) {
-        NX_INTERNAL_LOG(E, "IMAGE: Unsupported channel count (%d)", finalChannels);
+        NX_LOG(E, "IMAGE: Unsupported channel count (%d)", finalChannels);
         stbi_image_free(pixels);
         return image;
     }

@@ -307,6 +307,7 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/NX_Rand.cpp"
     "${NX_ROOT_PATH}/source/NX_Image.c"
     "${NX_ROOT_PATH}/source/NX_Math.c"
+    "${NX_ROOT_PATH}/source/NX_Log.c"
 
 )
 

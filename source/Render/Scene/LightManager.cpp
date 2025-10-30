@@ -137,15 +137,15 @@ LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& a
     /* --- Reserve caches space --- */
 
     if (!mActiveLights.reserve(32)) {
-        NX_INTERNAL_LOG(E, "RENDER: Active lights cache pre-allocation failed (requested: 32 entries)");
+        NX_LOG(E, "RENDER: Active lights cache pre-allocation failed (requested: 32 entries)");
     }
 
     if (!mActiveShadows.reserve(8)) {
-        NX_INTERNAL_LOG(E, "RENDER: Active shadows cache pre-allocation failed (requested: 8 entries)");
+        NX_LOG(E, "RENDER: Active shadows cache pre-allocation failed (requested: 8 entries)");
     }
 
     if (!mShadowNeedingUpdate.reserve(8)) {
-        NX_INTERNAL_LOG(E, "RENDER: Shadows needing update cache pre-allocation failed (requested: 8 entries)");
+        NX_LOG(E, "RENDER: Shadows needing update cache pre-allocation failed (requested: 8 entries)");
     }
 }
 

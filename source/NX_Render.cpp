@@ -10,8 +10,7 @@
 #include <NX/NX_Image.h>
 #include <NX/NX_Core.h>
 #include <NX/NX_Math.h>
-
-#include "./Core/NX_InternalLog.hpp"
+#include <NX/NX_Log.h>
 
 #include "./Render/NX_RenderState.hpp"
 #include "./Render/NX_InstanceBuffer.hpp"
@@ -24,7 +23,7 @@
 NX_Texture* NX_CreateTexture(const NX_Image* image)
 {
     if (image == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to load texture; Image is null");
+        NX_LOG(E, "RENDER: Failed to load texture; Image is null");
         return nullptr;
     }
     return gRender->textures.createTexture(*image);
@@ -1906,7 +1905,7 @@ NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int v
     /* --- Validation of parameters --- */
 
     if (vertices == nullptr || vertexCount == 0) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to create mesh; Vertices and their count cannot be null");
+        NX_LOG(E, "RENDER: Failed to create mesh; Vertices and their count cannot be null");
         return nullptr;
     }
 
@@ -1950,7 +1949,7 @@ NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int v
 NX_Mesh* NX_CreateMeshFrom(NX_PrimitiveType type, NX_Vertex3D* vertices, int vertexCount, uint32_t* indices, int indexCount)
 {
     if (vertices == nullptr || vertexCount == 0) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to vertex mesh; Vertices and their count cannot be null");
+        NX_LOG(E, "RENDER: Failed to vertex mesh; Vertices and their count cannot be null");
         return nullptr;
     }
 
@@ -2876,7 +2875,7 @@ NX_Model* NX_LoadModel(const char* filePath)
     size_t fileSize = 0;
     void* fileData = NX_LoadFile(filePath, &fileSize);
     if (fileData == nullptr || fileSize == 0) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to load model data: %s", filePath);
+        NX_LOG(E, "RENDER: Failed to load model data: %s", filePath);
         return nullptr;
     }
 

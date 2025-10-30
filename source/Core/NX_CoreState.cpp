@@ -7,8 +7,7 @@
  */
 
 #include "./NX_CoreState.hpp"
-
-#include "./NX_InternalLog.hpp"
+#include <NX/NX_Log.h>
 
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_stdinc.h>
@@ -65,11 +64,11 @@ NX_CoreState::NX_CoreState(const char* title, int w, int h, const NX_AppDesc& de
 
     if (desc.memory.malloc && desc.memory.calloc && desc.memory.realloc && desc.memory.free) {
         if (!SDL_SetMemoryFunctions(desc.memory.malloc, desc.memory.calloc, desc.memory.realloc, desc.memory.free)) {
-            NX_INTERNAL_LOG(W, "CORE: Failed to set custom memory functions; %s", SDL_GetError());
+            NX_LOG(W, "CORE: Failed to set custom memory functions; %s", SDL_GetError());
         }
     }
     else if (desc.memory.malloc || desc.memory.calloc || desc.memory.realloc || desc.memory.free) {
-        NX_INTERNAL_LOG(W, "CORE: Failed to set custom memory functions; If you define at least one memory function, they must all be defined", SDL_GetError());
+        NX_LOG(W, "CORE: Failed to set custom memory functions; If you define at least one memory function, they must all be defined", SDL_GetError());
     }
 
     /* --- Init app metadata --- */
@@ -124,7 +123,7 @@ NX_CoreState::NX_CoreState(const char* title, int w, int h, const NX_AppDesc& de
     if (testWindow) {
         SDL_GLContext testContext = SDL_GL_CreateContext(testWindow);
         if (!testContext) {
-            NX_INTERNAL_LOG(W, "CORE: OpenGL 4.5 not supported, falling back to OpenGL ES 3.2");
+            NX_LOG(W, "CORE: OpenGL 4.5 not supported, falling back to OpenGL ES 3.2");
             useOpenGLES = true;
         }
         else {
@@ -189,10 +188,10 @@ NX_CoreState::NX_CoreState(const char* title, int w, int h, const NX_AppDesc& de
 
     /* --- Print debug infos --- */
 
-    NX_INTERNAL_LOG(D, "CORE: GL Vendor     : %s", glGetString(GL_VENDOR));
-    NX_INTERNAL_LOG(D, "CORE: GL Renderer   : %s", glGetString(GL_RENDERER));
-    NX_INTERNAL_LOG(D, "CORE: GL Version    : %s", glGetString(GL_VERSION));
-    NX_INTERNAL_LOG(D, "CORE: GLSL Version  : %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    NX_LOG(D, "CORE: GL Vendor     : %s", glGetString(GL_VENDOR));
+    NX_LOG(D, "CORE: GL Renderer   : %s", glGetString(GL_RENDERER));
+    NX_LOG(D, "CORE: GL Version    : %s", glGetString(GL_VERSION));
+    NX_LOG(D, "CORE: GLSL Version  : %s", glGetString(GL_SHADING_LANGUAGE_VERSION));
 }
 
 NX_CoreState::~NX_CoreState()

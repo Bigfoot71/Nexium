@@ -46,7 +46,7 @@ inline bool MaterialImporter::loadMaterials(NX_Model* model)
     model->materialCount = mImporter.materialCount();
     model->materials = static_cast<NX_Material*>(SDL_malloc(model->materialCount * sizeof(NX_Material)));
     if (model->materials == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Unable to allocate memory for materials; The model will be invalid");
+        NX_LOG(E, "RENDER: Unable to allocate memory for materials; The model will be invalid");
         return false;
     }
 

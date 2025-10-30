@@ -62,7 +62,7 @@ inline NX_Model* PoolModel::loadModel(const void* fileData, size_t fileSize, con
 
     NX_Model* model = mPoolModel.create();
     if (model == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to load model; Object pool issue");
+        NX_LOG(E, "RENDER: Failed to load model; Object pool issue");
         return nullptr;
     }
 

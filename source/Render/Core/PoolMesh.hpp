@@ -55,7 +55,7 @@ inline NX_Mesh* PoolMesh::createMesh(
 
     NX_Mesh* mesh = mMeshes.create();
     if (mesh == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to load mesh; Object pool issue");
+        NX_LOG(E, "RENDER: Failed to load mesh; Object pool issue");
         return nullptr;
     }
 
@@ -64,7 +64,7 @@ inline NX_Mesh* PoolMesh::createMesh(
     if (upload) {
         mesh->buffer = mVertexBuffers.create(vertices, vertexCount, indices, indexCount);
         if (mesh->buffer == nullptr) {
-            NX_INTERNAL_LOG(E, "RENDER: Failed to load mesh; Object pool issue when creating vertex buffer");
+            NX_LOG(E, "RENDER: Failed to load mesh; Object pool issue when creating vertex buffer");
             mMeshes.destroy(mesh);
             return nullptr;
         }
@@ -138,7 +138,7 @@ inline void PoolMesh::updateMesh(NX_Mesh* mesh)
     if (mesh->buffer == nullptr) {
         mesh->buffer = mVertexBuffers.create(mesh->vertices, mesh->vertexCount, mesh->indices, mesh->indexCount);
         if (mesh->buffer == nullptr) {
-            NX_INTERNAL_LOG(E, "RENDER: Failed to upload mesh; Object pool issue when creating vertex buffer");
+            NX_LOG(E, "RENDER: Failed to upload mesh; Object pool issue when creating vertex buffer");
         }
         return;
     }
@@ -151,7 +151,7 @@ inline NX_DynamicMesh* PoolMesh::createDynamicMesh(size_t initialCapacity)
 {
     NX_DynamicMesh* mesh = mDynamicMeshes.create(initialCapacity);
     if (!mesh) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to create dynamic mesh; Object pool issue");
+        NX_LOG(E, "RENDER: Failed to create dynamic mesh; Object pool issue");
         return nullptr;
     }
 
@@ -169,7 +169,7 @@ inline NX_InstanceBuffer* PoolMesh::createInstanceBuffer(NX_InstanceData bitfiel
 {
     NX_InstanceBuffer* instances = mInstanceBuffers.create(bitfield, count);
     if (!instances) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to create instance buffer; Object pool issue");
+        NX_LOG(E, "RENDER: Failed to create instance buffer; Object pool issue");
         return nullptr;
     }
 

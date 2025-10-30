@@ -7,8 +7,7 @@
  */
 
 #include "./NX_AudioState.hpp"
-
-#include "../Core/NX_InternalLog.hpp"
+#include <NX/NX_Log.h>
 
 #include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_timer.h>
@@ -219,7 +218,7 @@ NX_AudioState::NX_AudioState()
     // Create mutex and condition variable
     mStreamThreadMutex = SDL_CreateMutex();
     if (mStreamThreadMutex == nullptr) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to create stream thread mutex");
+        NX_LOG(E, "AUDIO: Failed to create stream thread mutex");
         cleanupDecodeBufferPool();
         alcMakeContextCurrent(nullptr);
         alcDestroyContext(mALContext);
@@ -229,7 +228,7 @@ NX_AudioState::NX_AudioState()
 
     mStreamThreadCondition = SDL_CreateCondition();
     if (mStreamThreadCondition == nullptr) {
-        NX_INTERNAL_LOG(E, "AUDIO: Failed to create stream thread condition");
+        NX_LOG(E, "AUDIO: Failed to create stream thread condition");
         SDL_DestroyMutex(mStreamThreadMutex);
         cleanupDecodeBufferPool();
         alcMakeContextCurrent(nullptr);
@@ -245,7 +244,7 @@ NX_AudioState::NX_AudioState()
     // Create and start the streaming thread
     mStreamThread = SDL_CreateThread(updateStreamThread, "AudioStreamThread", this);
     if (mStreamThread == nullptr) {
-        NX_INTERNAL_LOG(W, "AUDIO: Failed to create stream streaming thread");
+        NX_LOG(W, "AUDIO: Failed to create stream streaming thread");
         SDL_DestroyCondition(mStreamThreadCondition);
         SDL_DestroyMutex(mStreamThreadMutex);
         mStreamThreadCondition = nullptr;
@@ -320,7 +319,7 @@ void NX_AudioState::initDecodeBufferPool()
     for (size_t i = 0; i < MaxDecodeBuffers; ++i) {
         mDecodeBuffers[i] = static_cast<uint8_t*>(SDL_malloc(DecodeBufferSize));
         if (!mDecodeBuffers[i]) {
-            NX_INTERNAL_LOG(E, "AUDIO: Failed to allocate decode buffer %zu", i);
+            NX_LOG(E, "AUDIO: Failed to allocate decode buffer %zu", i);
             // Clean up already allocated buffers
             for (size_t j = 0; j < i; ++j) {
                 SDL_free(mDecodeBuffers[j]);
@@ -485,7 +484,7 @@ void NX_AudioState::updateStreams()
         }
         else if (sourceState != AL_PLAYING && !stream->mIsPaused && queued > 0) {
             // Source stopped unexpectedly, restart it
-            NX_INTERNAL_LOG(W, "AUDIO: Stream source stopped unexpectedly, restarting...");
+            NX_LOG(W, "AUDIO: Stream source stopped unexpectedly, restarting...");
             alSourcePlay(stream->mSource);
         }
     }

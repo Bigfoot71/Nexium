@@ -9,11 +9,10 @@
 #include <NX/NX_Init.h>
 #include <NX/NX_Core.h>
 #include <NX/NX_Rand.h>
+#include <NX/NX_Log.h>
 
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_time.h>
-
-#include "./Core/NX_InternalLog.hpp"
 
 #include "./Core/NX_CoreState.hpp"
 #include "./Audio/NX_AudioState.hpp"
@@ -47,7 +46,7 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
     /* --- Ensures that the application description is valid --- */
 
     if (desc == nullptr) {
-        NX_INTERNAL_LOG(E, "CORE: Failed to initialize Nexium; App description cannot be null");
+        NX_LOG(E, "CORE: Failed to initialize Nexium; App description cannot be null");
         return false;
     }
 
@@ -59,7 +58,7 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
         gRender = std::make_unique<NX_RenderState>(*desc);
     }
     catch (const std::exception& e) {
-        NX_INTERNAL_LOG(E, e.what());
+        NX_LOG(E, e.what());
         gRender.reset();
         gAudio.reset();
         gCore.reset();

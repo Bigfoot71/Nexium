@@ -82,12 +82,12 @@ inline void NX_InstanceBuffer::update(NX_InstanceData type, size_t offset, size_
     count *= TypeSizes[type];
 
     if (!buffer.isValid()) {
-        NX_INTERNAL_LOG(E, "RENDER: Cannot upload to instance buffer; type '%s' is not initialized.", TypeNames[type]);
+        NX_LOG(E, "RENDER: Cannot upload to instance buffer; type '%s' is not initialized.", TypeNames[type]);
         return;
     }
 
     if (offset + count > buffer.size()) {
-        NX_INTERNAL_LOG(E, "RENDER: Upload range out of bounds for type '%s' (offset %zu + count %zu > buffer size %zu).",
+        NX_LOG(E, "RENDER: Upload range out of bounds for type '%s' (offset %zu + count %zu > buffer size %zu).",
                         TypeNames[type], offset, count, buffer.size());
         return;
     }
@@ -112,7 +112,7 @@ inline void* NX_InstanceBuffer::map(NX_InstanceData type)
     gpu::Buffer& buffer = mBuffers[type];
 
     if (!buffer.isValid()) {
-        NX_INTERNAL_LOG(E, "RENDER: Cannot map instance buffer; type '%s' is not initialized.", TypeNames[type]);
+        NX_LOG(E, "RENDER: Cannot map instance buffer; type '%s' is not initialized.", TypeNames[type]);
         return nullptr;
     }
 
@@ -128,12 +128,12 @@ inline void* NX_InstanceBuffer::mapRange(NX_InstanceData type, size_t offset, si
     count *= TypeSizes[type];
 
     if (!buffer.isValid()) {
-        NX_INTERNAL_LOG(E, "RENDER: Cannot map instance buffer range; type '%s' is not initialized.", TypeNames[type]);
+        NX_LOG(E, "RENDER: Cannot map instance buffer range; type '%s' is not initialized.", TypeNames[type]);
         return nullptr;
     }
 
     if (offset + count > buffer.size()) {
-        NX_INTERNAL_LOG(E, "RENDER: Map range out of bounds for type '%s' (offset %zu + count %zu > buffer size %zu).",
+        NX_LOG(E, "RENDER: Map range out of bounds for type '%s' (offset %zu + count %zu > buffer size %zu).",
                         TypeNames[type], offset, count, buffer.size());
         return nullptr;
     }

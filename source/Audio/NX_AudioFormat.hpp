@@ -10,10 +10,10 @@
 #define NX_AUDIO_FORMAT_HPP
 
 #include <NX/NX_Core.h>
+#include <NX/NX_Log.h>
+
 #include <SDL3/SDL_stdinc.h>
 #include <al.h>
-
-#include "../Core/NX_InternalLog.hpp"
 
 /* === Enums === */
 
@@ -76,24 +76,24 @@ inline NX_AudioFormat getAudioFormat(const uint8_t* data, size_t size)
         // Check for other common OGG codecs and report them as unsupported
         for (size_t i = 28; i < size - 8; i++) {
             if (SDL_memcmp(data + i, "OpusHead", 8) == 0) {
-                NX_INTERNAL_LOG(E, "AUDIO: OGG Opus codec detected but not supported (only OGG Vorbis is supported)");
+                NX_LOG(E, "AUDIO: OGG Opus codec detected but not supported (only OGG Vorbis is supported)");
                 return NX_AudioFormat::Unknown;
             }
             if (data[i] == 0x80 && SDL_memcmp(data + i + 1, "theora", 6) == 0) {
-                NX_INTERNAL_LOG(E, "AUDIO: OGG Theora codec detected but not supported (video codec, only OGG Vorbis audio is supported)");
+                NX_LOG(E, "AUDIO: OGG Theora codec detected but not supported (video codec, only OGG Vorbis audio is supported)");
                 return NX_AudioFormat::Unknown;
             }
             if (data[i] == 0x7F && SDL_memcmp(data + i + 1, "FLAC", 4) == 0) {
-                NX_INTERNAL_LOG(E, "AUDIO: OGG FLAC codec detected but not supported (use native FLAC format instead)");
+                NX_LOG(E, "AUDIO: OGG FLAC codec detected but not supported (use native FLAC format instead)");
                 return NX_AudioFormat::Unknown;
             }
             if (SDL_memcmp(data + i, "Speex   ", 8) == 0) {
-                NX_INTERNAL_LOG(E, "AUDIO: OGG Speex codec detected but not supported (only OGG Vorbis is supported)");
+                NX_LOG(E, "AUDIO: OGG Speex codec detected but not supported (only OGG Vorbis is supported)");
                 return NX_AudioFormat::Unknown;
             }
         }
 
-        NX_INTERNAL_LOG(E, "AUDIO: OGG container detected but codec not recognized or supported (only OGG Vorbis is supported)");
+        NX_LOG(E, "AUDIO: OGG container detected but codec not recognized or supported (only OGG Vorbis is supported)");
         return NX_AudioFormat::Unknown;
     }
 

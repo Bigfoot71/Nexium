@@ -10,7 +10,8 @@
 #define NX_RENDER_POOL_FONT_HPP
 
 #include "../../Detail/Util/ObjectPool.hpp"
-#include "../../Core/NX_InternalLog.hpp"
+#include <NX/NX_Log.h>
+
 #include "../NX_Font.hpp"
 
 namespace render {
@@ -32,7 +33,7 @@ inline NX_Font* PoolFont::create(const void* fileData, size_t dataSize, NX_FontT
 {
     NX_Font* font = mPool.create(fileData, dataSize, type, baseSize, codepoints, codepointCount);
     if (font == nullptr) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to load font; Object pool issue");
+        NX_LOG(E, "RENDER: Failed to load font; Object pool issue");
     }
     if (!font->isValid()) {
         mPool.destroy(font);

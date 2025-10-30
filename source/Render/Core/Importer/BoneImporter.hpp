@@ -66,7 +66,7 @@ inline bool BoneImporter::processBones(NX_Model* model)
     model->bones = static_cast<NX_BoneInfo*>(SDL_malloc(maxPossibleBones * sizeof(NX_BoneInfo)));
 
     if (!model->boneOffsets || !model->boneBindPose || !model->bones) {
-        NX_INTERNAL_LOG(E, "RENDER: Failed to allocate memory for model bones");
+        NX_LOG(E, "RENDER: Failed to allocate memory for model bones");
         SDL_free(model->boneBindPose);
         SDL_free(model->boneOffsets);
         SDL_free(model->bones);
