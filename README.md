@@ -7,6 +7,7 @@
 **Nexium** is a C library inspired by [raylib](https://www.raylib.com/), but focused on advanced 3D rendering. If you enjoy raylib’s simplicity but are looking for a modern all-in-one 3D framework, Nexium is for you.
 
 > ⚠️ Nexium is in active development and not yet stable.
+> ⚠️ A major refactoring is underway and big changes may happen suddenly.
 
 ## Features (so far)
 
