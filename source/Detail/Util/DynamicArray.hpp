@@ -9,7 +9,7 @@
 #ifndef NX_UTIL_DYNAMIC_ARRAY_HPP
 #define NX_UTIL_DYNAMIC_ARRAY_HPP
 
-#include "./Memory.hpp"
+#include <NX/NX_Memory.h>
 #include <type_traits>
 #include <algorithm>
 #include <iterator>
@@ -204,7 +204,7 @@ template<typename T>
 DynamicArray<T>::~DynamicArray() noexcept
 {
     clear();
-    util::free(mData);
+    NX_Free(mData);
 }
 
 template<typename T>
@@ -221,7 +221,7 @@ DynamicArray<T>& DynamicArray<T>::operator=(DynamicArray&& other) noexcept
 {
     if (this != &other) {
         clear();
-        util::free(mData);
+        NX_Free(mData);
         mData = other.mData;
         mSize = other.mSize;
         mCapacity = other.mCapacity;
@@ -425,7 +425,7 @@ void DynamicArray<T>::shrink_to_fit() noexcept
 {
     if (mSize < mCapacity) {
         if (mSize == 0) {
-            util::free(mData);
+            NX_Free(mData);
             mData = nullptr;
             mCapacity = 0;
         }
@@ -772,7 +772,7 @@ template<typename T>
 [[nodiscard]] bool DynamicArray<T>::reallocate(size_type new_capacity) noexcept
 {
     if (new_capacity == 0) {
-        util::free(mData);
+        NX_Free(mData);
         mData = nullptr;
         mCapacity = 0;
         return true;
@@ -782,7 +782,7 @@ template<typename T>
         return false;
     }
 
-    T* new_data = util::malloc<T>(new_capacity);
+    T* new_data = NX_Malloc<T>(new_capacity);
     if (!new_data) {
         return false;
     }
@@ -800,7 +800,7 @@ template<typename T>
             if (!construct_at(new_data + i, std::move(mData[i]))) {
                 // Fail, clean up and abandon
                 destroy_range(new_data, new_data + moved);
-                util::free(new_data);
+                NX_Free(new_data);
                 return false;
             }
             destroy_at(mData + i);
@@ -808,7 +808,7 @@ template<typename T>
         }
     }
 
-    util::free(mData);
+    NX_Free(mData);
     mData = new_data;
     mCapacity = new_capacity;
     return true;

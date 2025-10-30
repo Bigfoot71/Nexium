@@ -1,7 +1,7 @@
 #ifndef NX_ASSETS_SHADER_DECODER_HPP
 #define NX_ASSETS_SHADER_DECODER_HPP
 
-#include <NX/NX_Core.h>
+#include <NX/NX_DataCodec.h>
 
 #include "../Detail/Util/Memory.hpp"
 

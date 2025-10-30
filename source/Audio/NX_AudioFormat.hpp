@@ -9,7 +9,6 @@
 #ifndef NX_AUDIO_FORMAT_HPP
 #define NX_AUDIO_FORMAT_HPP
 
-#include <NX/NX_Core.h>
 #include <NX/NX_Log.h>
 
 #include <SDL3/SDL_stdinc.h>

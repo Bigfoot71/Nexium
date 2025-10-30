@@ -2,6 +2,7 @@
 #define NX_UTIL_OBJECT_RING_HPP
 
 #include <SDL3/SDL_stdinc.h>
+#include <NX/NX_Memory.h>
 #include <array>
 
 namespace util {

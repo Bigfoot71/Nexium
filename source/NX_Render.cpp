@@ -6,9 +6,9 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
+#include <NX/NX_Filesystem.h>
 #include <NX/NX_Render.h>
 #include <NX/NX_Image.h>
-#include <NX/NX_Core.h>
 #include <NX/NX_Math.h>
 #include <NX/NX_Log.h>
 

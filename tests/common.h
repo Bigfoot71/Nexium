@@ -30,7 +30,7 @@ static inline void CMN_UpdateCamera(NX_Camera* camera, NX_Vec3 center, float dis
     }
     else {
         NX_Vec3 move = NX_GetKeyVec3(NX_KEY_W, NX_KEY_S, NX_KEY_A, NX_KEY_D);
-        move = NX_Vec3Scale(move, 10.0f * NX_GetFrameTime());
+        move = NX_Vec3Scale(move, 10.0f * NX_GetDeltaTime());
 
         NX_Vec2 rot = NX_Vec2Scale(NX_GetMouseDelta(), -0.01f);
 

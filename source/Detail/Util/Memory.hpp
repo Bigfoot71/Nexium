@@ -9,80 +9,18 @@
 #ifndef NX_UTIL_MEMORY_HPP
 #define NX_UTIL_MEMORY_HPP
 
-#include <SDL3/SDL_stdinc.h>
-#include <type_traits>
+#include <NX/NX_Memory.h>
 #include <memory>
 
 namespace util {
 
 /**
- * @brief Allocates memory using SDL_malloc.
- * @tparam T Element type to allocate. If void, allocates raw bytes.
- */
-template <typename T = void>
-inline T* malloc(size_t count = 1)
-{
-    if constexpr (std::is_same_v<T, void>) {
-        return SDL_malloc(count);
-    }
-    else {
-        return static_cast<T*>(SDL_malloc(count * sizeof(T)));
-    }
-}
-
-/**
- * @brief Allocates zero-initialized memory using SDL_calloc.
- * @tparam T Element type to allocate. If void, allocates raw bytes.
- */
-template <typename T = void>
-inline T* calloc(size_t count = 1)
-{
-    if constexpr (std::is_same_v<T, void>) {
-        return SDL_calloc(count, 1);
-    }
-    else {
-        return static_cast<T*>(SDL_calloc(count, sizeof(T)));
-    }
-}
-
-/**
- * @brief Allocates zero-initialized memory using SDL_calloc (non-templated overload).
- */
-inline void* calloc(size_t count, size_t size)
-{
-    return SDL_calloc(count, size);
-}
-
-/**
- * @brief Reallocates memory using SDL_realloc.
- * @tparam T Element type of the memory block. If void, uses raw byte size.
- */
-template <typename T = void>
-inline T* realloc(T* mem, size_t count)
-{
-    if constexpr (std::is_same_v<T, void>) {
-        return SDL_realloc(mem, count);
-    }
-    else {
-        return static_cast<T*>(SDL_realloc(mem, count * sizeof(T)));
-    }
-}
-
-/**
- * @brief Frees memory using SDL_free.
- */
-inline void free(void* mem)
-{
-    return SDL_free(mem);
-}
-
-/**
- * @brief Custom deleter using util::free.
+ * @brief Custom deleter using NX_Free.
  */
 template <typename T = void>
 struct Deleter {
     void operator()(T* ptr) const noexcept {
-        util::free(ptr);
+        NX_Free(ptr);
     }
 };
 
@@ -98,7 +36,7 @@ using UniquePtr = std::unique_ptr<T, Deleter<T>>;
 template <typename T>
 inline UniquePtr<T> makeUnique(size_t count = 1)
 {
-    return UniquePtr<T>(util::malloc<T>(count));
+    return UniquePtr<T>(NX_Malloc<T>(count));
 }
 
 /**
@@ -113,7 +51,7 @@ using SharedPtr = std::shared_ptr<T>;
 template <typename T>
 inline SharedPtr<T> makeShared(size_t count = 1)
 {
-    T* ptr = util::malloc<T>(count);
+    T* ptr = NX_Malloc<T>(count);
     return SharedPtr<T>(ptr, Deleter<T>{});
 }
 

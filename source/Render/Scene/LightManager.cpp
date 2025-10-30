@@ -12,6 +12,8 @@
 #include "./DrawCallManager.hpp"
 #include "../NX_Texture.hpp"
 
+#include <NX/NX_Runtime.h>
+#include <NX/NX_Display.h>
 #include <NX/NX_Render.h>
 #include <NX/NX_Macros.h>
 #include <NX/NX_Math.h>

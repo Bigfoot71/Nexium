@@ -58,6 +58,10 @@ typedef enum NX_LogLevel {
 // FUNCTIONS DECLARATIONS
 // ============================================================================
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 /**
  * @brief Set the minimum log priority.
  * @param log Log level to set as minimum (messages below this level will be ignored).
@@ -99,5 +103,9 @@ NXAPI void NX_LogE(const char* msg, ...);
 
 /** @brief Log a fatal error message */
 NXAPI void NX_LogF(const char* msg, ...);
+
+#if defined(__cplusplus)
+} // extern "C"
+#endif
 
 #endif // NX_LOG_H

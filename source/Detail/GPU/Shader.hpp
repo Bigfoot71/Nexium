@@ -9,9 +9,7 @@
 #ifndef NX_GPU_SHADER_HPP
 #define NX_GPU_SHADER_HPP
 
-#include "../../Core/NX_CoreState.hpp"      //< Used to get OpenGL profile used (Core/ES)
-
-#include <NX/NX_Core.h>
+#include "../../INX_GlobalState.h"     //< Used to get OpenGL profile used (Core/ES)
 #include <NX/NX_Log.h>
 
 #include <SDL3/SDL_assert.h>
@@ -73,7 +71,7 @@ inline Shader::Shader(GLenum stage, const char* source, std::initializer_list<co
 
     std::string finalSource;
 
-    if (gCore->glProfile() == SDL_GL_CONTEXT_PROFILE_ES) {
+    if (INX_Display.glProfile == SDL_GL_CONTEXT_PROFILE_ES) {
         finalSource = "#version 320 es\n";
     }
     else {

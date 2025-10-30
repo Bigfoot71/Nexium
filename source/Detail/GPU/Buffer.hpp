@@ -11,7 +11,6 @@
 
 #include <NX/NX_Log.h>
 
-#include <NX/NX_Core.h>
 #include <SDL3/SDL_assert.h>
 #include <glad/gles2.h>
 

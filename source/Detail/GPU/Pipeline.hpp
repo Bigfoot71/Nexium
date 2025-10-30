@@ -9,7 +9,7 @@
 #ifndef NX_GPU_PIPELINE_HPP
 #define NX_GPU_PIPELINE_HPP
 
-#include "../../Core/NX_CoreState.hpp"  //< Used to get OpenGL profile used (Core/ES)
+#include "../../INX_GlobalState.h"  //< Used to get OpenGL profile used (Core/ES)
 
 #include "./VertexArray.hpp"
 #include "./Framebuffer.hpp"
@@ -272,7 +272,7 @@ inline Pipeline::Pipeline() noexcept
         setBlendMode_Internal(InitialBlendMode);
         setCullMode_Internal(InitialCullMode);
 
-        if (gCore->glProfile() != SDL_GL_CONTEXT_PROFILE_ES) {
+        if (INX_Display.glProfile != SDL_GL_CONTEXT_PROFILE_ES) {
             // NOTE: Enabled by default in GLES 3.2, this avoids cubemap seams issue...
             // SEE: https://www.khronos.org/opengl/wiki/Cubemap_Texture#Seamless_cubemap
             // SEE: https://registry.khronos.org/OpenGL/specs/es/3.2/es_spec_3.2.pdf#section.G.2

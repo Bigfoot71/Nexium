@@ -12,7 +12,7 @@
 #include "../Util/FixedArray.hpp"
 #include "./Buffer.hpp"
 
-#include <NX/NX_Core.h>
+#include <NX/NX_Math.h>
 #include <glad/gles2.h>
 
 #include <initializer_list>

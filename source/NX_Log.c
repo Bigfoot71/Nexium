@@ -1,13 +1,10 @@
-/* NX_Log.h -- API definition for Nexium's log module
+/* NX_Log.c -- API definition for Nexium's log module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
  * This software is provided 'as-is', without any express or implied warranty.
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
-
-#ifndef NX_CORE_INTERNAL_LOG_HPP
-#define NX_CORE_INTERNAL_LOG_HPP
 
 #include <SDL3/SDL_log.h>
 #include <NX/NX_Log.h>
@@ -85,5 +82,3 @@ void NX_LogF(const char* msg, ...)
     SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_CRITICAL, msg, args);
     va_end(args);
 }
-
-#endif // NX_CORE_INTERNAL_LOG_HPP

@@ -25,7 +25,7 @@ int main(void)
     while (NX_FrameStep())
     {
         CMN_UpdateCamera(&camera, NX_VEC3(0, 1, 0), 2.0f, 1.0f);
-        model->animFrame += 40 * NX_GetFrameTime();
+        model->animFrame += 40 * NX_GetDeltaTime();
 
         NX_Begin3D(&camera, NULL, target);
         NX_DrawMesh3D(ground, NULL, NULL);

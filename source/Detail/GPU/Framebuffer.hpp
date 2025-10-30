@@ -14,7 +14,6 @@
 #include "../BuildInfo.hpp"
 #include "./Texture.hpp"
 
-#include <NX/NX_Core.h>
 #include <NX/NX_Log.h>
 
 #include <SDL3/SDL_stdinc.h>

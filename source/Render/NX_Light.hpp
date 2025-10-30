@@ -15,7 +15,6 @@
 #include <NX/NX_Macros.h>
 #include <NX/NX_Render.h>
 #include <NX/NX_Math.h>
-#include <NX/NX_Core.h>
 
 #include <SDL3/SDL_assert.h>
 #include <variant>

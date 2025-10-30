@@ -9,7 +9,8 @@
 #ifndef NX_GPU_TEXTURE_HPP
 #define NX_GPU_TEXTURE_HPP
 
-#include <NX/NX_Core.h>
+#include <NX/NX_Math.h>
+
 #include <SDL3/SDL_assert.h>
 #include <glad/gles2.h>
 

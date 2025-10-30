@@ -7,6 +7,8 @@
  */
 
 #include "./NX_AudioClip.hpp"
+
+#include <NX/NX_Filesystem.h>
 #include <NX/NX_Log.h>
 
 #include "./NX_AudioFormat.hpp"

@@ -11,7 +11,7 @@
 
 #include "../Detail/Util/FixedArray.hpp"
 
-#include <NX/NX_Core.h>
+#include <NX/NX_Math.h>
 #include <NX/NX_Log.h>
 
 #include <SDL3/SDL_stdinc.h>

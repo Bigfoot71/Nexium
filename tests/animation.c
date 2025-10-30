@@ -48,7 +48,7 @@ int main(void)
     {
         CMN_UpdateCamera(&camera, NX_VEC3(0, 1, 0), 2.0f, 1.0f);
         instanceCount = NX_CLAMP(instanceCount + NX_GetMouseWheel().y, 1, MAX_INSTANCE);
-        model->animFrame += 40 * NX_GetFrameTime();
+        model->animFrame += 40 * NX_GetDeltaTime();
 
         NX_Begin3D(&camera, NULL, NULL);
         {

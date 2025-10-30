@@ -10,7 +10,7 @@
 #define NX_RENDER_HELPER_HPP
 
 #include "../../Detail/GPU/Pipeline.hpp"
-#include "../../Core/NX_CoreState.hpp"
+#include "../../INX_GlobalState.h"
 
 #include <NX/NX_Render.h>
 #include <NX/NX_Image.h>
@@ -54,7 +54,7 @@ inline GLenum getInternalFormat(NX_PixelFormat format, bool framebuffer)
     // we currently force 16-bit float formats (GL_RGBA16F, etc.) for FBO color attachments.
     // This behavior may need to be revisited later.
 
-    if (gCore->glProfile() == SDL_GL_CONTEXT_PROFILE_ES /*&& !GLAD_GL_EXT_color_buffer_float*/) {
+    if (INX_Display.glProfile == SDL_GL_CONTEXT_PROFILE_ES /*&& !GLAD_GL_EXT_color_buffer_float*/) {
         switch (format) {
         case NX_PIXEL_FORMAT_R32F: internalFormat = GL_R16F; break;
         case NX_PIXEL_FORMAT_RG32F: internalFormat = GL_RG16F; break;

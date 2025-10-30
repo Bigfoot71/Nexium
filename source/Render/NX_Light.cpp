@@ -7,8 +7,11 @@
  */
 
 #include "./NX_Light.hpp"
+
+#include <NX/NX_Runtime.h>
+#include <NX/NX_Macros.h>
+
 #include "./Core/Helper.hpp"
-#include "NX/NX_Macros.h"
 
 /* === Public Implementation === */
 
@@ -29,7 +32,7 @@ void NX_Light::updateState(const scene::ViewFrustum& viewFrustum, bool* needsSha
     }
 
     if (mShadowState.updateMode == NX_SHADOW_UPDATE_INTERVAL) {
-        mShadowState.timerSec += NX_GetFrameTime();
+        mShadowState.timerSec += NX_GetDeltaTime();
         if (mShadowState.timerSec >= mShadowState.intervalSec) {
             mShadowState.timerSec -= mShadowState.intervalSec;
             *needsShadowUpdate = true;

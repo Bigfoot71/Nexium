@@ -8,8 +8,10 @@
 
 #include "./Scene.hpp"
 
+#include <NX/NX_Runtime.h>
+#include <NX/NX_Display.h>
+#include <NX/NX_Window.h>
 #include <NX/NX_Render.h>
-#include <NX/NX_Core.h>
 
 #include "../../Detail/BuildInfo.hpp"
 #include "../NX_ReflectionProbe.hpp"

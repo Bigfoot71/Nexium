@@ -51,7 +51,7 @@ int main(void)
             NX_DrawRectBorder2D(200, y + 3, 300, 24, 2);
 
             if (isPlaying) {
-                currentTime[i] += NX_GetFrameTime();
+                currentTime[i] += NX_GetDeltaTime();
                 float t = currentTime[i] / NX_GetAudioStreamDuration(streams[i]);
                 NX_DrawRect2D(200, y + 3, t * 300, 24);
             }

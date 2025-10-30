@@ -10,7 +10,7 @@
 #define NX_SCENE_LIGHT_MANAGER_HPP
 
 #include <NX/NX_Render.h>
-#include <NX/NX_Core.h>
+#include <NX/NX_Init.h>
 
 #include "../../Detail/Util/ObjectPool.hpp"
 #include "../../Detail/Util/ObjectRing.hpp"

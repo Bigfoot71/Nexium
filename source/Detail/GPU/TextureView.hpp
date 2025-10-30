@@ -10,6 +10,7 @@
 #define NX_GPU_TEXTURE_VIEW_HPP
 
 #include "./Texture.hpp"
+#include <NX/NX_Math.h>
 
 namespace gpu {
 

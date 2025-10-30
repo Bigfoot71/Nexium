@@ -9,7 +9,8 @@
 #ifndef NX_UTIL_STRING_HPP
 #define NX_UTIL_STRING_HPP
 
-#include "./Memory.hpp"
+#include <SDL3/SDL_stdinc.h>
+#include <NX/NX_Memory.h>
 #include <utility>
 
 namespace util {
@@ -495,7 +496,7 @@ inline String& String::replace(size_t pos, size_t len, const char* str) noexcept
         size_t newSize = mSize - actualLen + replaceLen;
 
         if (newSize >= mCapacity) {
-            char* newData = util::malloc<char>(newSize + 1);
+            char* newData = NX_Malloc<char>(newSize + 1);
             if (!newData) return *this;
 
             SDL_memcpy(newData, mData, pos);
@@ -503,7 +504,7 @@ inline String& String::replace(size_t pos, size_t len, const char* str) noexcept
             SDL_memcpy(newData + pos + replaceLen, mData + pos + actualLen, mSize - pos - actualLen);
             newData[newSize] = '\0';
 
-            util::free(mData);
+            NX_Free(mData);
             mData = newData;
             mSize = newSize;
             mCapacity = newSize + 1;
@@ -653,7 +654,7 @@ inline void String::swap(String& other) noexcept
 inline void String::allocate(size_t size) noexcept
 {
     mCapacity = size + 1;
-    mData = util::malloc<char>(mCapacity);
+    mData = NX_Malloc<char>(mCapacity);
     if (mData) {
         mData[0] = '\0';
     }
@@ -670,7 +671,7 @@ inline void String::reallocate(size_t newCapacity) noexcept
         return;
     }
 
-    char* newData = util::realloc<char>(mData, newCapacity + 1);
+    char* newData = NX_Realloc<char>(mData, newCapacity + 1);
     if (newData) {
         mData = newData;
         mCapacity = newCapacity + 1;
@@ -684,7 +685,7 @@ inline void String::reallocate(size_t newCapacity) noexcept
 inline void String::free_data() noexcept
 {
     if (mData) {
-        util::free(mData);
+        NX_Free(mData);
         mData = nullptr;
     }
     mSize = 0;

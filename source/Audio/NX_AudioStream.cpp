@@ -8,6 +8,8 @@
 
 #include "./NX_AudioStream.hpp"
 #include "./NX_AudioState.hpp"
+
+#include <NX/NX_Filesystem.h>
 #include <NX/NX_Log.h>
 
 /* === Public Implementation === */

@@ -44,7 +44,7 @@ int main(void)
             "Nexium - BunnyMark - Bunnies: %i - FPS: %i", bunnyCount, NX_GetFPS()
         ));
 
-        float delta = NX_GetFrameTime();
+        float delta = NX_GetDeltaTime();
 
         if (NX_IsMouseButtonPressed(NX_MOUSE_BUTTON_LEFT)) {
             NX_Vec2 position = NX_GetMousePosition();

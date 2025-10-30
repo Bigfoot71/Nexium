@@ -1,8 +1,5 @@
 #include <NX/Nexium.h>
 #include "./common.h"
-#include "NX/NX_Core.h"
-#include "NX/NX_Init.h"
-#include "NX/NX_Render.h"
 
 /* === Points Test Arrays === */
 

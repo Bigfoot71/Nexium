@@ -10,6 +10,11 @@
 #define NX_RENDER_OVERLAY_HPP
 
 #include "../NX_Font.hpp"
+
+#include <NX/NX_Runtime.h>
+#include <NX/NX_Display.h>
+#include <NX/NX_Window.h>
+#include <NX/NX_Init.h>
 #include <NX/NX_Math.h>
 
 #include "../../Detail/Util/StaticArray.hpp"
