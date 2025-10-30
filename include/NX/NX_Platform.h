@@ -9,25 +9,6 @@
 #ifndef NX_PLATFORM_H
 #define NX_PLATFORM_H
 
-#if defined(_WIN32)
-#   if defined(__TINYC__)
-#       define __declspec(x) __attribute__((x))
-#   endif
-#   if defined(NX_BUILD_SHARED)
-#       define NXAPI __declspec(dllexport)
-#   elif defined(NX_USE_SHARED)
-#       define NXAPI __declspec(dllimport)
-#   endif
-#else
-#   if defined(NX_BUILD_SHARED)
-#       define NXAPI __attribute__((visibility("default")))
-#   endif
-#endif
-
-#ifndef NXAPI
-#   define NXAPI extern
-#endif
-
 #ifndef NX_RESTRICT
 #   if defined(__cplusplus) || defined(_MSC_VER)
 #       define NX_RESTRICT __restrict

@@ -9,9 +9,9 @@
 #ifndef NX_CORE_H
 #define NX_CORE_H
 
-#include "./NX_Platform.h"
 #include "./NX_Image.h"
 #include "./NX_Math.h"
+#include "./NX_API.h"
 
 #include <stdint.h>
 #include <stdarg.h>

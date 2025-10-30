@@ -9,7 +9,7 @@
 #ifndef NX_CODEPOINT_H
 #define NX_CODEPOINT_H
 
-#include "./NX_Platform.h"
+#include "./NX_API.h"
 
 #if defined(__cplusplus)
 extern "C" {

@@ -12,6 +12,7 @@
 #include "./NX_BitUtils.h"
 #include "./NX_Platform.h"
 #include "./NX_Macros.h"
+#include "./NX_API.h"
 
 #include <math.h>
 

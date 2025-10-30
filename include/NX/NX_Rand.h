@@ -9,7 +9,7 @@
 #ifndef NX_RAND_H
 #define NX_RAND_H
 
-#include "./NX_Platform.h"
+#include "./NX_API.h"
 
 #include <stdbool.h>
 #include <stdint.h>

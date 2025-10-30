@@ -10,6 +10,8 @@
 #define NX_INIT_H
 
 #include "./NX_Math.h"
+#include "./NX_API.h"
+
 #include <stdint.h>
 
 /* === Enums === */

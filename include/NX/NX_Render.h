@@ -9,9 +9,10 @@
 #ifndef NX_RENDER_H
 #define NX_RENDER_H
 
-#include "./NX_Platform.h"
 #include "./NX_Image.h"
 #include "./NX_Math.h"
+#include "./NX_API.h"
+
 #include <stdint.h>
 
 /* === Enums === */

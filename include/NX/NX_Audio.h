@@ -9,7 +9,7 @@
 #ifndef NX_AUDIO_H
 #define NX_AUDIO_H
 
-#include "./NX_Platform.h"
+#include "./NX_API.h"
 #include <stdbool.h>
 
 /* === Types === */

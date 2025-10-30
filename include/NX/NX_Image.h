@@ -10,6 +10,7 @@
 #define NX_IMAGE_H
 
 #include "./NX_Math.h"
+#include "./NX_API.h"
 
 /* === Enums === */
 
