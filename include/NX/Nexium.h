@@ -38,6 +38,8 @@
 #include "./NX_BitUtils.h"
 #include "./NX_DataCodec.h"
 #include "./NX_Clipboard.h"
+#include "./NX_AudioClip.h"
 #include "./NX_Filesystem.h"
+#include "./NX_AudioStream.h"
 
 #endif // NEXIUM_H

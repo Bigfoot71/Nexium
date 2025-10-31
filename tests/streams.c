@@ -1,5 +1,6 @@
 #include <NX/Nexium.h>
 #include "./common.h"
+#include "NX/NX_AudioStream.h"
 
 enum AudioFormat {
     WAV, FLAC, MP3, OGG, COUNT
@@ -62,6 +63,10 @@ int main(void)
         }
 
         NX_End2D();
+    }
+
+    for (int i = 0; i < COUNT; i++) {
+        NX_DestroyAudioStream(streams[i]);
     }
 
     NX_Quit();

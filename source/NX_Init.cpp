@@ -14,14 +14,15 @@
 
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_stdinc.h>
+#include <SDL3/SDL_error.h>
 #include <SDL3/SDL_video.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_init.h>
 #include <SDL3/SDL_log.h>
 #include <glad/gles2.h>
 #include <physfs.h>
+#include <alc.h>
 
-#include "./Audio/NX_AudioState.hpp"
 #include "./Render/NX_RenderState.hpp"
 
 #include <memory>
@@ -31,11 +32,11 @@
 // ============================================================================
 
 INX_DisplayState  INX_Display{};
+INX_AudioState    INX_Audio{};
 INX_KeyboardState INX_Keyboard{};
 INX_MouseState    INX_Mouse{};
 INX_FrameState    INX_Frame{};
 
-std::unique_ptr<NX_AudioState> gAudio;
 std::unique_ptr<NX_RenderState> gRender;
 
 // ============================================================================
@@ -248,6 +249,28 @@ static bool INX_InitDisplayState(const char* title, int w, int h, const NX_AppDe
     return true;
 }
 
+static bool INX_InitAudioState()
+{
+    SDL_memset(&INX_Audio, 0, sizeof(INX_Audio));
+
+    INX_Audio.alDevice = alcOpenDevice(nullptr);
+    if (INX_Audio.alDevice == nullptr) {
+        NX_LogF("AUDIO: Failed to create OpenAL device; ", SDL_GetError());
+    }
+
+    INX_Audio.alContext = alcCreateContext(INX_Audio.alDevice, nullptr);
+    if (INX_Audio.alContext == nullptr) {
+        alcCloseDevice(INX_Audio.alDevice);
+        NX_LogF("AUDIO: Failed to create OpenAL context; ", SDL_GetError());
+    }
+
+    if (!alcMakeContextCurrent(INX_Audio.alContext)) {
+        return false;
+    }
+
+    return true;
+}
+
 static bool INX_InitKeyboardState()
 {
     SDL_memset(&INX_Keyboard, 0, sizeof(INX_Keyboard));
@@ -315,14 +338,16 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
         return false;
     }
 
+    if (!INX_InitAudioState()) {
+        return false;
+    }
+
     try {
-        gAudio = std::make_unique<NX_AudioState>();
         gRender = std::make_unique<NX_RenderState>(*desc);
     }
     catch (const std::exception& e) {
         NX_LOG(E, e.what());
         gRender.reset();
-        gAudio.reset();
         return false;
     }
 
@@ -346,7 +371,12 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
 void NX_Quit(void)
 {
     gRender.reset();
-    gAudio.reset();
+
+    alcDestroyContext(INX_Audio.alContext);
+    INX_Audio.alContext = nullptr;
+
+    alcCloseDevice(INX_Audio.alDevice);
+    INX_Audio.alDevice = nullptr;
 
     SDL_GL_DestroyContext(INX_Display.glContext);
     INX_Display.glContext = nullptr;

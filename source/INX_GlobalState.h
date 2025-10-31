@@ -6,6 +6,7 @@
 #include <SDL3/SDL_scancode.h>
 #include <SDL3/SDL_mouse.h>
 #include <SDL3/SDL_video.h>
+#include <alc.h>
 
 // ============================================================================
 // GLOBAL STATES
@@ -16,6 +17,11 @@ extern struct INX_DisplayState {
     SDL_GLContext glContext;
     SDL_GLProfile glProfile;
 } INX_Display;
+
+extern struct INX_AudioState {
+    ALCcontext* alContext;
+    ALCdevice* alDevice;
+} INX_Audio;
 
 extern struct INX_KeyboardState {
     Uint8 keys[SDL_SCANCODE_COUNT];     //< MSB = Current | LSB = Previous

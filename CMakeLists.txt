@@ -293,17 +293,14 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/Render/NX_Light.cpp"
     "${NX_ROOT_PATH}/source/Render/NX_Font.cpp"
 
-    "${NX_ROOT_PATH}/source/Audio/NX_AudioStream.cpp"
-    "${NX_ROOT_PATH}/source/Audio/NX_AudioState.cpp"
-    "${NX_ROOT_PATH}/source/Audio/NX_AudioClip.cpp"
-
+    "${NX_ROOT_PATH}/source/NX_AudioStream.cpp"
+    "${NX_ROOT_PATH}/source/NX_AudioClip.cpp"
     "${NX_ROOT_PATH}/source/NX_DataCodec.cpp"
     "${NX_ROOT_PATH}/source/NX_Filesystem.c"
     "${NX_ROOT_PATH}/source/NX_Codepoint.c"
     "${NX_ROOT_PATH}/source/NX_Clipboard.c"
     "${NX_ROOT_PATH}/source/NX_Keyboard.c"
     "${NX_ROOT_PATH}/source/NX_Render.cpp"
-    "${NX_ROOT_PATH}/source/NX_Audio.cpp"
     "${NX_ROOT_PATH}/source/NX_Display.c"
     "${NX_ROOT_PATH}/source/NX_Runtime.c"
     "${NX_ROOT_PATH}/source/NX_Init.cpp"
@@ -313,6 +310,7 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/NX_Memory.c"
     "${NX_ROOT_PATH}/source/NX_Mouse.c"
     "${NX_ROOT_PATH}/source/NX_Image.c"
+    "${NX_ROOT_PATH}/source/NX_Audio.c"
     "${NX_ROOT_PATH}/source/NX_Math.c"
     "${NX_ROOT_PATH}/source/NX_Log.c"
 

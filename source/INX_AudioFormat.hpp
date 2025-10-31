@@ -1,4 +1,4 @@
-/* NX_AudioFormat.hpp -- Contains some helper functions
+/* INX_AudioFormat.hpp -- Contains some helper functions
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef NX_AUDIO_FORMAT_HPP
-#define NX_AUDIO_FORMAT_HPP
+#ifndef INX_AUDIO_FORMAT_HPP
+#define INX_AUDIO_FORMAT_HPP
 
 #include <NX/NX_Log.h>
 
@@ -16,7 +16,7 @@
 
 /* === Enums === */
 
-enum class NX_AudioFormat {
+enum class INX_AudioFormat {
     Unknown,
     WAV,
     FLAC,
@@ -26,7 +26,7 @@ enum class NX_AudioFormat {
 
 /* === Helper Functions === */
 
-inline const char* getAudioFormatName(ALenum format)
+inline const char* INX_GetAudioFormatName(ALenum format)
 {
     switch (format) {
     case AL_FORMAT_MONO8:
@@ -44,22 +44,22 @@ inline const char* getAudioFormatName(ALenum format)
     return "Unknown";
 }
 
-inline NX_AudioFormat getAudioFormat(const uint8_t* data, size_t size)
+inline INX_AudioFormat INX_GetAudioFormat(const uint8_t* data, size_t size)
 {
     // Check for WAV format (RIFF + WAVE)
     if (size >= 12 && SDL_memcmp(data, "RIFF", 4) == 0 && SDL_memcmp(data + 8, "WAVE", 4) == 0) {
-        return NX_AudioFormat::WAV;
+        return INX_AudioFormat::WAV;
     }
 
     // Check for FLAC format
     if (size >= 4 && SDL_memcmp(data, "fLaC", 4) == 0) {
-        return NX_AudioFormat::FLAC;
+        return INX_AudioFormat::FLAC;
     }
 
     // Check for MP3 format (ID3 tag or sync frame)
     if (size >= 3 && (SDL_memcmp(data, "ID3", 3) == 0 ||
         (size >= 2 && data[0] == 0xFF && (data[1] & 0xE0) == 0xE0))) {
-        return NX_AudioFormat::MP3;
+        return INX_AudioFormat::MP3;
     }
 
     // Check for OGG container format
@@ -68,7 +68,7 @@ inline NX_AudioFormat getAudioFormat(const uint8_t* data, size_t size)
         // Vorbis identification header starts with packet type 0x01 followed by "vorbis"
         for (size_t i = 28; i < size - 6; i++) {
             if (data[i] == 0x01 && SDL_memcmp(data + i + 1, "vorbis", 6) == 0) {
-                return NX_AudioFormat::OGG;
+                return INX_AudioFormat::OGG;
             }
         }
 
@@ -76,27 +76,27 @@ inline NX_AudioFormat getAudioFormat(const uint8_t* data, size_t size)
         for (size_t i = 28; i < size - 8; i++) {
             if (SDL_memcmp(data + i, "OpusHead", 8) == 0) {
                 NX_LOG(E, "AUDIO: OGG Opus codec detected but not supported (only OGG Vorbis is supported)");
-                return NX_AudioFormat::Unknown;
+                return INX_AudioFormat::Unknown;
             }
             if (data[i] == 0x80 && SDL_memcmp(data + i + 1, "theora", 6) == 0) {
                 NX_LOG(E, "AUDIO: OGG Theora codec detected but not supported (video codec, only OGG Vorbis audio is supported)");
-                return NX_AudioFormat::Unknown;
+                return INX_AudioFormat::Unknown;
             }
             if (data[i] == 0x7F && SDL_memcmp(data + i + 1, "FLAC", 4) == 0) {
                 NX_LOG(E, "AUDIO: OGG FLAC codec detected but not supported (use native FLAC format instead)");
-                return NX_AudioFormat::Unknown;
+                return INX_AudioFormat::Unknown;
             }
             if (SDL_memcmp(data + i, "Speex   ", 8) == 0) {
                 NX_LOG(E, "AUDIO: OGG Speex codec detected but not supported (only OGG Vorbis is supported)");
-                return NX_AudioFormat::Unknown;
+                return INX_AudioFormat::Unknown;
             }
         }
 
         NX_LOG(E, "AUDIO: OGG container detected but codec not recognized or supported (only OGG Vorbis is supported)");
-        return NX_AudioFormat::Unknown;
+        return INX_AudioFormat::Unknown;
     }
 
-    return NX_AudioFormat::Unknown;
+    return INX_AudioFormat::Unknown;
 }
 
-#endif // NX_AUDIO_FORMAT_HPP
+#endif // INX_AUDIO_FORMAT_HPP

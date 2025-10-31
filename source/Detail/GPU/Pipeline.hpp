@@ -21,6 +21,7 @@
 #include <glad/gles2.h>
 
 #include <initializer_list>
+#include <concepts>
 #include <array>
 
 namespace gpu {
