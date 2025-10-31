@@ -12,12 +12,15 @@
 #include "./NX_Math.h"
 #include "./NX_API.h"
 
-/* === Enums === */
+// ============================================================================
+// TYPES DEFINITIONS
+// ============================================================================
 
 /**
  * @brief Pixel format enumeration
  */
 typedef enum NX_PixelFormat {
+    NX_PIXEL_FORMAT_INVALID,
     NX_PIXEL_FORMAT_R8,         ///< Single channel 8-bit red
     NX_PIXEL_FORMAT_RG8,        ///< Dual channel 8-bit red-green
     NX_PIXEL_FORMAT_RGB8,       ///< Three channel 8-bit red-green-blue
@@ -32,8 +35,6 @@ typedef enum NX_PixelFormat {
     NX_PIXEL_FORMAT_RGBA32F,    ///< Four channel 32-bit float red-green-blue-alpha
 } NX_PixelFormat;
 
-/* === Structures === */
-
 /**
  * @brief Image data structure
  */
@@ -43,62 +44,13 @@ typedef struct NX_Image {
     NX_PixelFormat format;      ///< Pixel format of the image data
 } NX_Image;
 
-/* === Public API === */
+// ============================================================================
+// FUNCTIONS DECLARATIONS
+// ============================================================================
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
-/** @defgroup Pixel Pixel Functions
- *  @brief Low-level pixel manipulation functions
- *  @{
- */
-
-/**
- * @brief Get the number of bytes per pixel for a given format
- * @param format The pixel format
- * @return Number of bytes per pixel
- */
-NXAPI int NX_GetPixelBytes(NX_PixelFormat format);
-
-/**
- * @brief Get the number of channels for a given pixel format
- * @param format The pixel format
- * @return Number of channels (1-4)
- */
-NXAPI int NX_GetPixelChannels(NX_PixelFormat format);
-
-/**
- * @brief Get the number of bytes per channel for a given format
- * @param format The pixel format
- * @return Number of bytes per channel
- */
-NXAPI int NX_GetPixelChannelBytes(NX_PixelFormat format);
-
-/**
- * @brief Write a color value to a specific pixel in a pixel buffer
- * @param pixels Pointer to the pixel buffer
- * @param index Pixel index in the buffer
- * @param format Pixel format of the buffer
- * @param color Color value to write
- */
-NXAPI void NX_WritePixel(void* pixels, int index, NX_PixelFormat format, NX_Color color);
-
-/**
- * @brief Read a color value from a specific pixel in a pixel buffer
- * @param pixels Pointer to the pixel buffer
- * @param index Pixel index in the buffer
- * @param format Pixel format of the buffer
- * @return Color value read from the pixel
- */
-NXAPI NX_Color NX_ReadPixel(const void* pixels, int index, NX_PixelFormat format);
-
-/** @} */ // end of Pixel
-
-/** @defgroup Image Image Functions
- *  @brief High-level image creation, manipulation and processing functions
- *  @{
- */
 
 /**
  * @brief Create a new image filled with zeros
@@ -238,6 +190,14 @@ NXAPI NX_Image NX_GenImageGradientSquare(int w, int h, float density, NX_Color i
 NXAPI NX_Image NX_GenImageChecked(int w, int h, int xChecks, int yChecks, NX_Color c0, NX_Color c1);
 
 /**
+ * @brief Create a copy of the given image, optionally converting its pixel format
+ * @param image Source image to copy
+ * @param format Target pixel format (if different from source, conversion is performed)
+ * @return New image copy in the specified format
+ */
+NXAPI NX_Image NX_CopyImage(const NX_Image* image, NX_PixelFormat format);
+
+/**
  * @brief Composes an RGB image by mapping each source image to its corresponding color channel.
  *
  * This function creates a new RGB image by sampling the red, green, and blue channels
@@ -335,7 +295,44 @@ NXAPI void NX_BlitImage(
     const NX_Image* src, int srcX, int srcY, int srcW, int srcH,
     const NX_Image* dst, int dstX, int dstY, int dstW, int dstH);
 
-/** @} */ // end of Image
+/**
+ * @brief Get the number of bytes per pixel for a given format
+ * @param format The pixel format
+ * @return Number of bytes per pixel
+ */
+NXAPI int NX_GetPixelBytes(NX_PixelFormat format);
+
+/**
+ * @brief Get the number of channels for a given pixel format
+ * @param format The pixel format
+ * @return Number of channels (1-4)
+ */
+NXAPI int NX_GetPixelChannels(NX_PixelFormat format);
+
+/**
+ * @brief Get the number of bytes per channel for a given format
+ * @param format The pixel format
+ * @return Number of bytes per channel
+ */
+NXAPI int NX_GetPixelChannelBytes(NX_PixelFormat format);
+
+/**
+ * @brief Write a color value to a specific pixel in a pixel buffer
+ * @param pixels Pointer to the pixel buffer
+ * @param index Pixel index in the buffer
+ * @param format Pixel format of the buffer
+ * @param color Color value to write
+ */
+NXAPI void NX_WritePixel(void* pixels, int index, NX_PixelFormat format, NX_Color color);
+
+/**
+ * @brief Read a color value from a specific pixel in a pixel buffer
+ * @param pixels Pointer to the pixel buffer
+ * @param index Pixel index in the buffer
+ * @param format Pixel format of the buffer
+ * @return Color value read from the pixel
+ */
+NXAPI NX_Color NX_ReadPixel(const void* pixels, int index, NX_PixelFormat format);
 
 #if defined(__cplusplus)
 } // extern "C"

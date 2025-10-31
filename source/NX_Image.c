@@ -24,280 +24,17 @@
 
 #include <stb_image.h>
 
-/* === Internal Functions === */
+// ============================================================================
+// INTERNAL FUNCTIONS
+// ============================================================================
 
-static NX_PixelFormat GetPixelFormat(int channels, bool isHDR);
-static NX_Image DecodeImage(const void* data, size_t size, int reqChannels);
-static NX_PixelFormat GetBestFormatForColors(const NX_Color* colors, int count);
+static NX_PixelFormat INX_GetPixelFormat(int channels, bool isHDR);
+static NX_Image INX_DecodeImage(const void* data, size_t size, int reqChannels);
+static NX_PixelFormat INX_GetBestFormat(const NX_Color* colors, int count);
 
-/* === Pixel - Public API === */
-
-int NX_GetPixelBytes(NX_PixelFormat format)
-{
-    switch (format) {
-    case NX_PIXEL_FORMAT_R8:        return 1;
-    case NX_PIXEL_FORMAT_RG8:       return 2;
-    case NX_PIXEL_FORMAT_RGB8:      return 3;
-    case NX_PIXEL_FORMAT_RGBA8:     return 4;
-    case NX_PIXEL_FORMAT_R16F:      return 2;
-    case NX_PIXEL_FORMAT_RG16F:     return 4;
-    case NX_PIXEL_FORMAT_RGB16F:    return 6;
-    case NX_PIXEL_FORMAT_RGBA16F:   return 8;
-    case NX_PIXEL_FORMAT_R32F:      return 4;
-    case NX_PIXEL_FORMAT_RG32F:     return 8;
-    case NX_PIXEL_FORMAT_RGB32F:    return 12;
-    case NX_PIXEL_FORMAT_RGBA32F:   return 16;
-    default: break;
-    }
-    return 0;
-}
-
-int NX_GetPixelChannels(NX_PixelFormat format)
-{
-    switch (format) {
-    case NX_PIXEL_FORMAT_R8:
-    case NX_PIXEL_FORMAT_R16F:
-    case NX_PIXEL_FORMAT_R32F:
-        return 1;
-    case NX_PIXEL_FORMAT_RG8:
-    case NX_PIXEL_FORMAT_RG16F:
-    case NX_PIXEL_FORMAT_RG32F:
-        return 2;
-    case NX_PIXEL_FORMAT_RGB8:
-    case NX_PIXEL_FORMAT_RGB16F:
-    case NX_PIXEL_FORMAT_RGB32F:
-        return 3;
-    case NX_PIXEL_FORMAT_RGBA8:
-    case NX_PIXEL_FORMAT_RGBA16F:
-    case NX_PIXEL_FORMAT_RGBA32F:
-        return 4;
-    default:
-        break;
-    }
-    return 0;
-}
-
-int NX_GetPixelChannelBytes(NX_PixelFormat format)
-{
-    switch (format) {
-    case NX_PIXEL_FORMAT_R8:
-    case NX_PIXEL_FORMAT_RG8:
-    case NX_PIXEL_FORMAT_RGB8:
-    case NX_PIXEL_FORMAT_RGBA8:
-        return 1;
-    case NX_PIXEL_FORMAT_R16F:
-    case NX_PIXEL_FORMAT_RG16F:
-    case NX_PIXEL_FORMAT_RGB16F:
-    case NX_PIXEL_FORMAT_RGBA16F:
-        return 2;
-    case NX_PIXEL_FORMAT_R32F:
-    case NX_PIXEL_FORMAT_RG32F:
-    case NX_PIXEL_FORMAT_RGB32F:
-    case NX_PIXEL_FORMAT_RGBA32F:
-        return 4;
-    default:
-        break;
-    }
-    return 0;
-}
-
-void NX_WritePixel(void* pixels, int index, NX_PixelFormat format, NX_Color color)
-{
-    switch (format) {
-    case NX_PIXEL_FORMAT_R8:
-        {
-            uint8_t* p = (uint8_t*)pixels;
-            p[index] = (uint8_t)(NX_Saturate(color.r) * 255.0f);
-        }
-        break;
-    case NX_PIXEL_FORMAT_RG8:
-        {
-            uint8_t* p = (uint8_t*)pixels;
-            p[index * 2 + 0] = (uint8_t)(NX_Saturate(color.r) * 255.0f);
-            p[index * 2 + 1] = (uint8_t)(NX_Saturate(color.g) * 255.0f);
-        }
-        break;
-    case NX_PIXEL_FORMAT_RGB8:
-        {
-            uint8_t* p = (uint8_t*)pixels;
-            p[index * 3 + 0] = (uint8_t)(NX_Saturate(color.r) * 255.0f);
-            p[index * 3 + 1] = (uint8_t)(NX_Saturate(color.g) * 255.0f);
-            p[index * 3 + 2] = (uint8_t)(NX_Saturate(color.b) * 255.0f);
-        }
-        break;
-    case NX_PIXEL_FORMAT_RGBA8:
-        {
-            uint8_t* p = (uint8_t*)pixels;
-            p[index * 4 + 0] = (uint8_t)(NX_Saturate(color.r) * 255.0f);
-            p[index * 4 + 1] = (uint8_t)(NX_Saturate(color.g) * 255.0f);
-            p[index * 4 + 2] = (uint8_t)(NX_Saturate(color.b) * 255.0f);
-            p[index * 4 + 3] = (uint8_t)(NX_Saturate(color.a) * 255.0f);
-        }
-        break;
-    case NX_PIXEL_FORMAT_R16F:
-        {
-            uint16_t* p = (uint16_t*)pixels;
-            p[index] = fp16_ieee_from_fp32_value(NX_CLAMP(color.r, -65504.0f, 65504.0f));
-        }
-        break;
-    case NX_PIXEL_FORMAT_RG16F:
-        {
-            uint16_t* p = (uint16_t*)pixels;
-            p[index * 2 + 0] = fp16_ieee_from_fp32_value(NX_CLAMP(color.r, -65504.0f, 65504.0f));
-            p[index * 2 + 1] = fp16_ieee_from_fp32_value(NX_CLAMP(color.g, -65504.0f, 65504.0f));
-        }
-        break;
-    case NX_PIXEL_FORMAT_RGB16F:
-        {
-            uint16_t* p = (uint16_t*)pixels;
-            p[index * 3 + 0] = fp16_ieee_from_fp32_value(NX_CLAMP(color.r, -65504.0f, 65504.0f));
-            p[index * 3 + 1] = fp16_ieee_from_fp32_value(NX_CLAMP(color.g, -65504.0f, 65504.0f));
-            p[index * 3 + 2] = fp16_ieee_from_fp32_value(NX_CLAMP(color.b, -65504.0f, 65504.0f));
-        }
-        break;
-    case NX_PIXEL_FORMAT_RGBA16F:
-        {
-            uint16_t* p = (uint16_t*)pixels;
-            p[index * 4 + 0] = fp16_ieee_from_fp32_value(NX_CLAMP(color.r, -65504.0f, 65504.0f));
-            p[index * 4 + 1] = fp16_ieee_from_fp32_value(NX_CLAMP(color.g, -65504.0f, 65504.0f));
-            p[index * 4 + 2] = fp16_ieee_from_fp32_value(NX_CLAMP(color.b, -65504.0f, 65504.0f));
-            p[index * 4 + 3] = fp16_ieee_from_fp32_value(NX_CLAMP(color.a, -65504.0f, 65504.0f));
-        }
-        break;
-    case NX_PIXEL_FORMAT_R32F:
-        {
-            float* p = (float*)pixels;
-            p[index] = color.r;
-        }
-        break;
-    case NX_PIXEL_FORMAT_RG32F:
-        {
-            float* p = (float*)pixels;
-            p[index * 2 + 0] = color.r;
-            p[index * 2 + 1] = color.g;
-        }
-        break;
-    case NX_PIXEL_FORMAT_RGB32F:
-        {
-            float* p = (float*)pixels;
-            p[index * 3 + 0] = color.r;
-            p[index * 3 + 1] = color.g;
-            p[index * 3 + 2] = color.b;
-        }
-        break;
-    case NX_PIXEL_FORMAT_RGBA32F:
-        {
-            float* p = (float*)pixels;
-            p[index * 4 + 0] = color.r;
-            p[index * 4 + 1] = color.g;
-            p[index * 4 + 2] = color.b;
-            p[index * 4 + 3] = color.a;
-        }
-        break;
-    }
-}
-
-NX_Color NX_ReadPixel(const void* pixels, int index, NX_PixelFormat format)
-{
-    NX_Color color = NX_BLACK;
-
-    switch (format) {
-    case NX_PIXEL_FORMAT_R8:
-        {
-            const uint8_t* p = (const uint8_t*)pixels;
-            color.r = p[index] / 255.0f;
-        }
-        break;
-    case NX_PIXEL_FORMAT_RG8:
-        {
-            const uint8_t* p = (const uint8_t*)pixels;
-            color.r = p[index * 2 + 0] / 255.0f;
-            color.g = p[index * 2 + 1] / 255.0f;
-        }
-        break;
-    case NX_PIXEL_FORMAT_RGB8:
-        {
-            const uint8_t* p = (const uint8_t*)pixels;
-            color.r = p[index * 3 + 0] / 255.0f;
-            color.g = p[index * 3 + 1] / 255.0f;
-            color.b = p[index * 3 + 2] / 255.0f;
-        }
-        break;
-    case NX_PIXEL_FORMAT_RGBA8:
-        {
-            const uint8_t* p = (const uint8_t*)pixels;
-            color.r = p[index * 4 + 0] / 255.0f;
-            color.g = p[index * 4 + 1] / 255.0f;
-            color.b = p[index * 4 + 2] / 255.0f;
-            color.a = p[index * 4 + 3] / 255.0f;
-        }
-        break;
-    case NX_PIXEL_FORMAT_R16F:
-        {
-            const uint16_t* p = (const uint16_t*)pixels;
-            color.r = fp16_ieee_to_fp32_value(p[index]);
-        }
-        break;
-    case NX_PIXEL_FORMAT_RG16F:
-        {
-            const uint16_t* p = (const uint16_t*)pixels;
-            color.r = fp16_ieee_to_fp32_value(p[index * 2 + 0]);
-            color.g = fp16_ieee_to_fp32_value(p[index * 2 + 1]);
-        }
-        break;
-    case NX_PIXEL_FORMAT_RGB16F:
-        {
-            const uint16_t* p = (const uint16_t*)pixels;
-            color.r = fp16_ieee_to_fp32_value(p[index * 3 + 0]);
-            color.g = fp16_ieee_to_fp32_value(p[index * 3 + 1]);
-            color.b = fp16_ieee_to_fp32_value(p[index * 3 + 2]);
-        }
-        break;
-    case NX_PIXEL_FORMAT_RGBA16F:
-        {
-            const uint16_t* p = (const uint16_t*)pixels;
-            color.r = fp16_ieee_to_fp32_value(p[index * 4 + 0]);
-            color.g = fp16_ieee_to_fp32_value(p[index * 4 + 1]);
-            color.b = fp16_ieee_to_fp32_value(p[index * 4 + 2]);
-            color.a = fp16_ieee_to_fp32_value(p[index * 4 + 3]);
-        }
-        break;
-    case NX_PIXEL_FORMAT_R32F:
-        {
-            const float* p = (const float*)pixels;
-            color.r = p[index];
-        }
-        break;
-    case NX_PIXEL_FORMAT_RG32F:
-        {
-            const float* p = (const float*)pixels;
-            color.r = p[index * 2 + 0];
-            color.g = p[index * 2 + 1];
-        }
-        break;
-    case NX_PIXEL_FORMAT_RGB32F:
-        {
-            const float* p = (const float*)pixels;
-            color.r = p[index * 3 + 0];
-            color.g = p[index * 3 + 1];
-            color.b = p[index * 3 + 2];
-        }
-        break;
-    case NX_PIXEL_FORMAT_RGBA32F:
-        {
-            const float* p = (const float*)pixels;
-            color.r = p[index * 4 + 0];
-            color.g = p[index * 4 + 1];
-            color.b = p[index * 4 + 2];
-            color.a = p[index * 4 + 3];
-        }
-        break;
-    }
-
-    return color;
-}
-
-/* === Image - Public API === */
+// ============================================================================
+// PUBLIC API
+// ============================================================================
 
 NX_Image NX_CreateImage(int w, int h, NX_PixelFormat format)
 {
@@ -365,12 +102,12 @@ NX_Image NX_LoadImageFromMem(const void* data, size_t size)
     int channels;
     stbi_info_from_memory((const unsigned char*)data, size, NULL, NULL, &channels);
 
-    return DecodeImage(data, size, (channels == 1) ? 3 : (channels == 2) ? 4 : channels);
+    return INX_DecodeImage(data, size, (channels == 1) ? 3 : (channels == 2) ? 4 : channels);
 }
 
 NX_Image NX_LoadImageAsDataFromMem(const void* data, size_t size)
 {
-    return DecodeImage(data, size, 0);
+    return INX_DecodeImage(data, size, 0);
 }
 
 NX_Image NX_LoadImage(const char* filePath)
@@ -430,7 +167,7 @@ void NX_DestroyImage(NX_Image* image)
 
 NX_Image NX_GenImageColor(int w, int h, NX_Color color)
 {
-    NX_PixelFormat format = GetBestFormatForColors(&color, 1);
+    NX_PixelFormat format = INX_GetBestFormat(&color, 1);
     NX_Image image = NX_CreateImage(w, h, format);
     if (!image.pixels) {
         return image;
@@ -449,7 +186,7 @@ NX_Image NX_GenImageColor(int w, int h, NX_Color color)
 
 NX_Image NX_GenImageGradientLinear(int w, int h, int direction, NX_Color start, NX_Color end)
 {
-    NX_PixelFormat format = GetBestFormatForColors((NX_Color[]) { start, end }, 2);
+    NX_PixelFormat format = INX_GetBestFormat((NX_Color[]) { start, end }, 2);
     NX_Image image = NX_CreateImage(w, h, format);
     if (!image.pixels) {
         return image;
@@ -535,7 +272,7 @@ NX_Image NX_GenImageGradientLinear(int w, int h, int direction, NX_Color start, 
 
 NX_Image NX_GenImageGradientRadial(int w, int h, float density, NX_Color inner, NX_Color outer)
 {
-    NX_PixelFormat format = GetBestFormatForColors((NX_Color[]) { inner, outer }, 2);
+    NX_PixelFormat format = INX_GetBestFormat((NX_Color[]) { inner, outer }, 2);
     NX_Image image = NX_CreateImage(w, h, format);
     if (!image.pixels) {
         return image;
@@ -575,7 +312,7 @@ NX_Image NX_GenImageGradientRadial(int w, int h, float density, NX_Color inner, 
 
 NX_Image NX_GenImageGradientSquare(int w, int h, float density, NX_Color inner, NX_Color outer)
 {
-    NX_PixelFormat format = GetBestFormatForColors((NX_Color[]) { inner, outer }, 2);
+    NX_PixelFormat format = INX_GetBestFormat((NX_Color[]) { inner, outer }, 2);
     NX_Image image = NX_CreateImage(w, h, format);
     if (!image.pixels) {
         return image;
@@ -613,7 +350,7 @@ NX_Image NX_GenImageGradientSquare(int w, int h, float density, NX_Color inner, 
 
 NX_Image NX_GenImageChecked(int w, int h, int xChecks, int yChecks, NX_Color c0, NX_Color c1)
 {
-    NX_PixelFormat format = GetBestFormatForColors((NX_Color[]) { c0, c1 }, 2);
+    NX_PixelFormat format = INX_GetBestFormat((NX_Color[]) { c0, c1 }, 2);
     NX_Image image = NX_CreateImage(w, h, format);
     if (!image.pixels) {
         return image;
@@ -633,6 +370,41 @@ NX_Image NX_GenImageChecked(int w, int h, int xChecks, int yChecks, NX_Color c0,
     }
 
     return image;
+}
+
+NX_Image NX_CopyImage(const NX_Image* image, NX_PixelFormat format)
+{
+    NX_Image result = { 0 };
+
+    if (image == NULL || image->pixels == NULL || image->format == format) {
+        return result;
+    }
+
+    size_t size = image->w * image->h;
+    size_t bpp = NX_GetPixelBytes(format);
+
+    void* pixels = SDL_malloc(size * bpp);
+    if (pixels == NULL) {
+        NX_LOG(E, "IMAGE: failed to allocate %zu bytes for image conversion", size * bpp);
+        return result;
+    }
+
+    if (image->format == format) {
+        SDL_memcpy(pixels, image->pixels, size * bpp);
+    }
+    else {
+        for (int i = 0; i < size; i++) {
+            NX_Color color = NX_ReadPixel(image->pixels, i, image->format);
+            NX_WritePixel(pixels, i, format, color);
+        }
+    }
+
+    result.pixels = pixels;
+    result.format = format;
+    result.w = image->w;
+    result.h = image->h;
+
+    return result;
 }
 
 NX_Image NX_ComposeImagesRGB(const NX_Image* sources[3], NX_Color defaultColor)
@@ -842,9 +614,280 @@ void NX_BlitImage(
     }
 }
 
-/* === Internal Functions === */
+int NX_GetPixelBytes(NX_PixelFormat format)
+{
+    switch (format) {
+    case NX_PIXEL_FORMAT_R8:        return 1;
+    case NX_PIXEL_FORMAT_RG8:       return 2;
+    case NX_PIXEL_FORMAT_RGB8:      return 3;
+    case NX_PIXEL_FORMAT_RGBA8:     return 4;
+    case NX_PIXEL_FORMAT_R16F:      return 2;
+    case NX_PIXEL_FORMAT_RG16F:     return 4;
+    case NX_PIXEL_FORMAT_RGB16F:    return 6;
+    case NX_PIXEL_FORMAT_RGBA16F:   return 8;
+    case NX_PIXEL_FORMAT_R32F:      return 4;
+    case NX_PIXEL_FORMAT_RG32F:     return 8;
+    case NX_PIXEL_FORMAT_RGB32F:    return 12;
+    case NX_PIXEL_FORMAT_RGBA32F:   return 16;
+    default: break;
+    }
+    return 0;
+}
 
-NX_PixelFormat GetPixelFormat(int channels, bool isHDR)
+int NX_GetPixelChannels(NX_PixelFormat format)
+{
+    switch (format) {
+    case NX_PIXEL_FORMAT_R8:
+    case NX_PIXEL_FORMAT_R16F:
+    case NX_PIXEL_FORMAT_R32F:
+        return 1;
+    case NX_PIXEL_FORMAT_RG8:
+    case NX_PIXEL_FORMAT_RG16F:
+    case NX_PIXEL_FORMAT_RG32F:
+        return 2;
+    case NX_PIXEL_FORMAT_RGB8:
+    case NX_PIXEL_FORMAT_RGB16F:
+    case NX_PIXEL_FORMAT_RGB32F:
+        return 3;
+    case NX_PIXEL_FORMAT_RGBA8:
+    case NX_PIXEL_FORMAT_RGBA16F:
+    case NX_PIXEL_FORMAT_RGBA32F:
+        return 4;
+    default:
+        break;
+    }
+    return 0;
+}
+
+int NX_GetPixelChannelBytes(NX_PixelFormat format)
+{
+    switch (format) {
+    case NX_PIXEL_FORMAT_R8:
+    case NX_PIXEL_FORMAT_RG8:
+    case NX_PIXEL_FORMAT_RGB8:
+    case NX_PIXEL_FORMAT_RGBA8:
+        return 1;
+    case NX_PIXEL_FORMAT_R16F:
+    case NX_PIXEL_FORMAT_RG16F:
+    case NX_PIXEL_FORMAT_RGB16F:
+    case NX_PIXEL_FORMAT_RGBA16F:
+        return 2;
+    case NX_PIXEL_FORMAT_R32F:
+    case NX_PIXEL_FORMAT_RG32F:
+    case NX_PIXEL_FORMAT_RGB32F:
+    case NX_PIXEL_FORMAT_RGBA32F:
+        return 4;
+    default:
+        break;
+    }
+    return 0;
+}
+
+void NX_WritePixel(void* pixels, int index, NX_PixelFormat format, NX_Color color)
+{
+    switch (format) {
+    case NX_PIXEL_FORMAT_R8:
+        {
+            uint8_t* p = (uint8_t*)pixels;
+            p[index] = (uint8_t)(NX_Saturate(color.r) * 255.0f);
+        }
+        break;
+    case NX_PIXEL_FORMAT_RG8:
+        {
+            uint8_t* p = (uint8_t*)pixels;
+            p[index * 2 + 0] = (uint8_t)(NX_Saturate(color.r) * 255.0f);
+            p[index * 2 + 1] = (uint8_t)(NX_Saturate(color.g) * 255.0f);
+        }
+        break;
+    case NX_PIXEL_FORMAT_RGB8:
+        {
+            uint8_t* p = (uint8_t*)pixels;
+            p[index * 3 + 0] = (uint8_t)(NX_Saturate(color.r) * 255.0f);
+            p[index * 3 + 1] = (uint8_t)(NX_Saturate(color.g) * 255.0f);
+            p[index * 3 + 2] = (uint8_t)(NX_Saturate(color.b) * 255.0f);
+        }
+        break;
+    case NX_PIXEL_FORMAT_RGBA8:
+        {
+            uint8_t* p = (uint8_t*)pixels;
+            p[index * 4 + 0] = (uint8_t)(NX_Saturate(color.r) * 255.0f);
+            p[index * 4 + 1] = (uint8_t)(NX_Saturate(color.g) * 255.0f);
+            p[index * 4 + 2] = (uint8_t)(NX_Saturate(color.b) * 255.0f);
+            p[index * 4 + 3] = (uint8_t)(NX_Saturate(color.a) * 255.0f);
+        }
+        break;
+    case NX_PIXEL_FORMAT_R16F:
+        {
+            uint16_t* p = (uint16_t*)pixels;
+            p[index] = fp16_ieee_from_fp32_value(NX_CLAMP(color.r, -65504.0f, 65504.0f));
+        }
+        break;
+    case NX_PIXEL_FORMAT_RG16F:
+        {
+            uint16_t* p = (uint16_t*)pixels;
+            p[index * 2 + 0] = fp16_ieee_from_fp32_value(NX_CLAMP(color.r, -65504.0f, 65504.0f));
+            p[index * 2 + 1] = fp16_ieee_from_fp32_value(NX_CLAMP(color.g, -65504.0f, 65504.0f));
+        }
+        break;
+    case NX_PIXEL_FORMAT_RGB16F:
+        {
+            uint16_t* p = (uint16_t*)pixels;
+            p[index * 3 + 0] = fp16_ieee_from_fp32_value(NX_CLAMP(color.r, -65504.0f, 65504.0f));
+            p[index * 3 + 1] = fp16_ieee_from_fp32_value(NX_CLAMP(color.g, -65504.0f, 65504.0f));
+            p[index * 3 + 2] = fp16_ieee_from_fp32_value(NX_CLAMP(color.b, -65504.0f, 65504.0f));
+        }
+        break;
+    case NX_PIXEL_FORMAT_RGBA16F:
+        {
+            uint16_t* p = (uint16_t*)pixels;
+            p[index * 4 + 0] = fp16_ieee_from_fp32_value(NX_CLAMP(color.r, -65504.0f, 65504.0f));
+            p[index * 4 + 1] = fp16_ieee_from_fp32_value(NX_CLAMP(color.g, -65504.0f, 65504.0f));
+            p[index * 4 + 2] = fp16_ieee_from_fp32_value(NX_CLAMP(color.b, -65504.0f, 65504.0f));
+            p[index * 4 + 3] = fp16_ieee_from_fp32_value(NX_CLAMP(color.a, -65504.0f, 65504.0f));
+        }
+        break;
+    case NX_PIXEL_FORMAT_R32F:
+        {
+            float* p = (float*)pixels;
+            p[index] = color.r;
+        }
+        break;
+    case NX_PIXEL_FORMAT_RG32F:
+        {
+            float* p = (float*)pixels;
+            p[index * 2 + 0] = color.r;
+            p[index * 2 + 1] = color.g;
+        }
+        break;
+    case NX_PIXEL_FORMAT_RGB32F:
+        {
+            float* p = (float*)pixels;
+            p[index * 3 + 0] = color.r;
+            p[index * 3 + 1] = color.g;
+            p[index * 3 + 2] = color.b;
+        }
+        break;
+    case NX_PIXEL_FORMAT_RGBA32F:
+        {
+            float* p = (float*)pixels;
+            p[index * 4 + 0] = color.r;
+            p[index * 4 + 1] = color.g;
+            p[index * 4 + 2] = color.b;
+            p[index * 4 + 3] = color.a;
+        }
+        break;
+    case NX_PIXEL_FORMAT_INVALID:
+        break;
+    }
+}
+
+NX_Color NX_ReadPixel(const void* pixels, int index, NX_PixelFormat format)
+{
+    NX_Color color = NX_BLACK;
+
+    switch (format) {
+    case NX_PIXEL_FORMAT_R8:
+        {
+            const uint8_t* p = (const uint8_t*)pixels;
+            color.r = p[index] / 255.0f;
+        }
+        break;
+    case NX_PIXEL_FORMAT_RG8:
+        {
+            const uint8_t* p = (const uint8_t*)pixels;
+            color.r = p[index * 2 + 0] / 255.0f;
+            color.g = p[index * 2 + 1] / 255.0f;
+        }
+        break;
+    case NX_PIXEL_FORMAT_RGB8:
+        {
+            const uint8_t* p = (const uint8_t*)pixels;
+            color.r = p[index * 3 + 0] / 255.0f;
+            color.g = p[index * 3 + 1] / 255.0f;
+            color.b = p[index * 3 + 2] / 255.0f;
+        }
+        break;
+    case NX_PIXEL_FORMAT_RGBA8:
+        {
+            const uint8_t* p = (const uint8_t*)pixels;
+            color.r = p[index * 4 + 0] / 255.0f;
+            color.g = p[index * 4 + 1] / 255.0f;
+            color.b = p[index * 4 + 2] / 255.0f;
+            color.a = p[index * 4 + 3] / 255.0f;
+        }
+        break;
+    case NX_PIXEL_FORMAT_R16F:
+        {
+            const uint16_t* p = (const uint16_t*)pixels;
+            color.r = fp16_ieee_to_fp32_value(p[index]);
+        }
+        break;
+    case NX_PIXEL_FORMAT_RG16F:
+        {
+            const uint16_t* p = (const uint16_t*)pixels;
+            color.r = fp16_ieee_to_fp32_value(p[index * 2 + 0]);
+            color.g = fp16_ieee_to_fp32_value(p[index * 2 + 1]);
+        }
+        break;
+    case NX_PIXEL_FORMAT_RGB16F:
+        {
+            const uint16_t* p = (const uint16_t*)pixels;
+            color.r = fp16_ieee_to_fp32_value(p[index * 3 + 0]);
+            color.g = fp16_ieee_to_fp32_value(p[index * 3 + 1]);
+            color.b = fp16_ieee_to_fp32_value(p[index * 3 + 2]);
+        }
+        break;
+    case NX_PIXEL_FORMAT_RGBA16F:
+        {
+            const uint16_t* p = (const uint16_t*)pixels;
+            color.r = fp16_ieee_to_fp32_value(p[index * 4 + 0]);
+            color.g = fp16_ieee_to_fp32_value(p[index * 4 + 1]);
+            color.b = fp16_ieee_to_fp32_value(p[index * 4 + 2]);
+            color.a = fp16_ieee_to_fp32_value(p[index * 4 + 3]);
+        }
+        break;
+    case NX_PIXEL_FORMAT_R32F:
+        {
+            const float* p = (const float*)pixels;
+            color.r = p[index];
+        }
+        break;
+    case NX_PIXEL_FORMAT_RG32F:
+        {
+            const float* p = (const float*)pixels;
+            color.r = p[index * 2 + 0];
+            color.g = p[index * 2 + 1];
+        }
+        break;
+    case NX_PIXEL_FORMAT_RGB32F:
+        {
+            const float* p = (const float*)pixels;
+            color.r = p[index * 3 + 0];
+            color.g = p[index * 3 + 1];
+            color.b = p[index * 3 + 2];
+        }
+        break;
+    case NX_PIXEL_FORMAT_RGBA32F:
+        {
+            const float* p = (const float*)pixels;
+            color.r = p[index * 4 + 0];
+            color.g = p[index * 4 + 1];
+            color.b = p[index * 4 + 2];
+            color.a = p[index * 4 + 3];
+        }
+        break;
+    case NX_PIXEL_FORMAT_INVALID:
+        break;
+    }
+
+    return color;
+}
+
+// ============================================================================
+// INTERNAL FUNCTIONS
+// ============================================================================
+
+NX_PixelFormat INX_GetPixelFormat(int channels, bool isHDR)
 {
     if (isHDR) {
         switch (channels) {
@@ -865,7 +908,7 @@ NX_PixelFormat GetPixelFormat(int channels, bool isHDR)
     return 0;  // format invalide
 }
 
-NX_Image DecodeImage(const void* data, size_t size, int reqChannels)
+NX_Image INX_DecodeImage(const void* data, size_t size, int reqChannels)
 {
     NX_Image image = { 0 };
     int width, height, channels;
@@ -893,7 +936,7 @@ NX_Image DecodeImage(const void* data, size_t size, int reqChannels)
     }
 
     int finalChannels = (reqChannels > 0) ? reqChannels : channels;
-    NX_PixelFormat format = GetPixelFormat(finalChannels, isHDR);
+    NX_PixelFormat format = INX_GetPixelFormat(finalChannels, isHDR);
     
     if (format == 0) {
         NX_LOG(E, "IMAGE: Unsupported channel count (%d)", finalChannels);
@@ -909,7 +952,7 @@ NX_Image DecodeImage(const void* data, size_t size, int reqChannels)
     return image;
 }
 
-NX_PixelFormat GetBestFormatForColors(const NX_Color* colors, int count)
+NX_PixelFormat INX_GetBestFormat(const NX_Color* colors, int count)
 {
     bool hasAlpha = false;
     bool outOfRange = false;
