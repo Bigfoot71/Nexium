@@ -6,7 +6,7 @@ int main(void)
     NX_Init("Nexium - Material Shader", 800, 450, NX_FLAG_VSYNC_HINT);
     NX_AddSearchPath(RESOURCES_PATH, false);
 
-    NX_MaterialShader* shader = NX_LoadMaterialShader("shaders/material.vert", "shaders/material.frag");
+    NX_Shader3D* shader = NX_LoadMaterialShader("shaders/material.vert", "shaders/material.frag");
 
     NX_Image im0 = NX_GenImageChecked(64, 64, 8, 8, NX_WHITE, NX_BLANK);
     NX_Texture* tex0 = NX_CreateTextureFromImage(&im0);

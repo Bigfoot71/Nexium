@@ -286,8 +286,8 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/Render/Scene/Scene.cpp"
 
     "${NX_ROOT_PATH}/source/Render/NX_ReflectionProbe.cpp"
-    "${NX_ROOT_PATH}/source/Render/NX_MaterialShader.cpp"
-    "${NX_ROOT_PATH}/source/Render/NX_Shader.cpp"
+    "${NX_ROOT_PATH}/source/Render/NX_Shader3D.cpp"
+    "${NX_ROOT_PATH}/source/Render/NX_Shader2D.cpp"
     "${NX_ROOT_PATH}/source/Render/NX_Cubemap.cpp"
     "${NX_ROOT_PATH}/source/Render/NX_Light.cpp"
 

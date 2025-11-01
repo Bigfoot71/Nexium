@@ -10,7 +10,7 @@
 #define NX_RENDER_OVERLAY_DRAW_CALL_HPP
 
 #include "../../Detail/GPU/Pipeline.hpp"
-#include "../NX_Shader.hpp"
+#include "../NX_Shader2D.hpp"
 
 namespace overlay {
 
@@ -25,15 +25,15 @@ struct DrawCall {
 
     /** Constructors */
     DrawCall() = default;
-    DrawCall(NX_Shader* s, const NX_Texture* t, size_t o);
-    DrawCall(NX_Shader* s, const NX_Font* f, size_t o);
+    DrawCall(NX_Shader2D* s, const NX_Texture* t, size_t o);
+    DrawCall(NX_Shader2D* s, const NX_Font* f, size_t o);
 
     /** Helper functions */
     void draw(const gpu::Pipeline& pipeline) const;
 
     /** Shader related data */
-    NX_Shader::TextureArray shaderTextures;
-    NX_Shader* shader;
+    NX_Shader2D::TextureArray shaderTextures;
+    NX_Shader2D* shader;
     int uRangeIndex;
 
     /** Built-in drawable */
@@ -50,7 +50,7 @@ struct DrawCall {
 
 /* === Public Implementation === */
 
-inline DrawCall::DrawCall(NX_Shader* s, const NX_Texture* t, size_t o)
+inline DrawCall::DrawCall(NX_Shader2D* s, const NX_Texture* t, size_t o)
     : shader(s), texture(t), offset(o), count(0), mode(SHAPE)
 {
     if (s) {
@@ -59,7 +59,7 @@ inline DrawCall::DrawCall(NX_Shader* s, const NX_Texture* t, size_t o)
     }
 }
 
-inline DrawCall::DrawCall(NX_Shader* s, const NX_Font* f, size_t o)
+inline DrawCall::DrawCall(NX_Shader2D* s, const NX_Font* f, size_t o)
     : shader(s), font(f), offset(o), count(0), mode(TEXT)
 { }
 

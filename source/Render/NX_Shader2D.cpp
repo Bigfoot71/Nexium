@@ -1,4 +1,4 @@
-#include "./NX_Shader.hpp"
+#include "./NX_Shader2D.hpp"
 
 #include "../Assets/ShaderDecoder.hpp"
 
@@ -7,7 +7,7 @@
 
 /* === Public Implementation === */
 
-NX_Shader::NX_Shader()
+NX_Shader2D::NX_Shader2D()
 {
     /* --- Compile shaders --- */
 
@@ -28,7 +28,7 @@ NX_Shader::NX_Shader()
     mPrograms[Variant::TEXT_SDF]      = gpu::Program(vertShape, fragTextSDF);
 }
 
-NX_Shader::NX_Shader(const char* vert, const char* frag)
+NX_Shader2D::NX_Shader2D(const char* vert, const char* frag)
 {
     /* --- Constants --- */
 

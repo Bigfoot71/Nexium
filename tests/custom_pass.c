@@ -16,7 +16,7 @@ int main(void)
     NX_AddSearchPath(RESOURCES_PATH, false);
 
     NX_RenderTexture* target = NX_CreateRenderTexture(1920, 1080);
-    NX_Shader* shader = NX_LoadShader(NULL, "shaders/scanline.frag");
+    NX_Shader2D* shader = NX_LoadShader(NULL, "shaders/scanline.frag");
 
     NX_UpdateStaticShaderBuffer(shader, 0, sizeof(UniformScanline), &(UniformScanline) {
         .scanlineDensity = 240.0,

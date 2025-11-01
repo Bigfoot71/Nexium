@@ -1,5 +1,5 @@
-#ifndef NX_RENDER_SHADER_HPP
-#define NX_RENDER_SHADER_HPP
+#ifndef NX_RENDER_SHADER_2D_HPP
+#define NX_RENDER_SHADER_2D_HPP
 
 #include "./Core/ShaderOverride.hpp"
 #include <NX/NX_Render.h>
@@ -7,10 +7,10 @@
 /* === Shader Traits Specialization === */
 
 /**
- * Defines the shader variants of NX_Shader.
+ * Defines the shader variants of NX_Shader2D.
  */
 template <>
-struct render::ShaderTraits<NX_Shader> {
+struct render::ShaderTraits<NX_Shader2D> {
     enum Variant {
         SHAPE_COLOR,
         SHAPE_TEXTURE,
@@ -22,17 +22,17 @@ struct render::ShaderTraits<NX_Shader> {
 
 /* === Declaration === */
 
-class NX_Shader : public render::ShaderOverride<NX_Shader> {
+class NX_Shader2D : public render::ShaderOverride<NX_Shader2D> {
 public:
     /** Type aliases for convenience */
-    using Variant = render::ShaderTraits<NX_Shader>::Variant;
+    using Variant = render::ShaderTraits<NX_Shader2D>::Variant;
 
 public:
     /** Create default shader with built-in shaders */
-    NX_Shader();
+    NX_Shader2D();
     
     /** Create custom shader with user-provided code */
-    NX_Shader(const char* vertexCode, const char* fragmentCode);
+    NX_Shader2D(const char* vertexCode, const char* fragmentCode);
 };
 
 #endif // NX_RENDER_SHADER_HPP

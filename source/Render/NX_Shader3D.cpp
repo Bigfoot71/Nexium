@@ -1,4 +1,4 @@
-#include "./NX_MaterialShader.hpp"
+#include "./NX_Shader3D.hpp"
 
 #include "../Assets/ShaderDecoder.hpp"
 
@@ -10,7 +10,7 @@
 
 /* === Public Implementation === */
 
-NX_MaterialShader::NX_MaterialShader()
+NX_Shader3D::NX_Shader3D()
 {
     /* --- Compile shaders --- */
 
@@ -35,7 +35,7 @@ NX_MaterialShader::NX_MaterialShader()
     mPrograms[Variant::SCENE_SHADOW]    = gpu::Program(vertShadow, fragShadow);
 }
 
-NX_MaterialShader::NX_MaterialShader(const char* vert, const char* frag)
+NX_Shader3D::NX_Shader3D(const char* vert, const char* frag)
 {
     /* --- Constants --- */
 

@@ -14,7 +14,7 @@
 #include "../../Detail/GPU/Translation.hpp"
 #include "../../Detail/GPU/Pipeline.hpp"
 
-#include "../NX_MaterialShader.hpp"
+#include "../NX_Shader3D.hpp"
 #include "../NX_VertexBuffer.hpp"
 #include "../NX_DynamicMesh.hpp"
 #include "../Core/Helper.hpp"
@@ -60,7 +60,7 @@ struct DrawUnique {
     NX_Material material;
     OrientedBoundingBox obb;
     /** Additionnal data */
-    NX_MaterialShader::TextureArray textures;   //< Array containing the textures linked to the material shader at the time of draw (if any)
+    NX_Shader3D::TextureArray textures;   //< Array containing the textures linked to the material shader at the time of draw (if any)
     int dynamicRangeIndex;                      //< Index of the material shader's dynamic uniform buffer range (if any)
     /** Shared/Unique data */
     int sharedDataIndex;                        //< Index to the shared data that this unique draw call data depends on

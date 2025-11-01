@@ -365,8 +365,8 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     const DrawUnique& unique = params.drawCalls.uniqueData()[uniqueIndex];
                     if (unique.mesh.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
 
-                    NX_MaterialShader& shader = mPrograms.materialShader(unique.material.shader);
-                    pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_SHADOW));
+                    NX_Shader3D& shader = mPrograms.materialShader(unique.material.shader);
+                    pipeline.useProgram(shader.program(NX_Shader3D::Variant::SCENE_SHADOW));
                     pipeline.setCullMode(gpu::getCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
 
                     shader.bindTextures(pipeline, unique.textures);

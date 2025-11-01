@@ -151,17 +151,17 @@ void NX_BlitRenderTexture(const NX_RenderTexture* target, int xDst, int yDst, in
 
 /* === Shader - Public API === */
 
-NX_Shader* NX_CreateShader(const char* vertCode, const char* fragCode)
+NX_Shader2D* NX_CreateShader(const char* vertCode, const char* fragCode)
 {
     return gRender->programs.createShader(vertCode, fragCode);
 }
 
-NX_Shader* NX_LoadShader(const char* vertFile, const char* fragFile)
+NX_Shader2D* NX_LoadShader(const char* vertFile, const char* fragFile)
 {
     char* vertCode = vertFile ? NX_LoadFileText(vertFile) : nullptr;
     char* fragCode = fragFile ? NX_LoadFileText(fragFile) : nullptr;
 
-    NX_Shader* shader = gRender->programs.createShader(vertCode, fragCode);
+    NX_Shader2D* shader = gRender->programs.createShader(vertCode, fragCode);
 
     util::free(vertCode);
     util::free(fragCode);
@@ -169,22 +169,22 @@ NX_Shader* NX_LoadShader(const char* vertFile, const char* fragFile)
     return shader;
 }
 
-void NX_DestroyShader(NX_Shader* shader)
+void NX_DestroyShader(NX_Shader2D* shader)
 {
     gRender->programs.destroyShader(shader);
 }
 
-void NX_SetShaderTexture(NX_Shader* shader, int slot, const NX_Texture* texture)
+void NX_SetShaderTexture(NX_Shader2D* shader, int slot, const NX_Texture* texture)
 {
     shader->setTexture(slot, texture ? &texture->gpuTexture() : nullptr);
 }
 
-void NX_UpdateStaticShaderBuffer(NX_Shader* shader, size_t offset, size_t size, const void* data)
+void NX_UpdateStaticShaderBuffer(NX_Shader2D* shader, size_t offset, size_t size, const void* data)
 {
     shader->updateStaticBuffer(offset, size, data);
 }
 
-void NX_UpdateDynamicShaderBuffer(NX_Shader* shader, size_t size, const void* data)
+void NX_UpdateDynamicShaderBuffer(NX_Shader2D* shader, size_t size, const void* data)
 {
     shader->updateDynamicBuffer(size, data);
 }
@@ -220,7 +220,7 @@ void NX_SetFont2D(const NX_Font* font)
     gRender->overlay.setFont(font);
 }
 
-void NX_SetShader2D(NX_Shader* shader)
+void NX_SetShader2D(NX_Shader2D* shader)
 {
     gRender->overlay.setShader(shader);
 }
@@ -1860,17 +1860,17 @@ void NX_DestroyMaterialResources(NX_Material* material)
 
 /* === MaterialShader - Public API === */
 
-NX_MaterialShader* NX_CreateMaterialShader(const char* vertCode, const char* fragCode)
+NX_Shader3D* NX_CreateMaterialShader(const char* vertCode, const char* fragCode)
 {
     return gRender->programs.createMaterialShader(vertCode, fragCode);
 }
 
-NX_MaterialShader* NX_LoadMaterialShader(const char* vertFile, const char* fragFile)
+NX_Shader3D* NX_LoadMaterialShader(const char* vertFile, const char* fragFile)
 {
     char* vertCode = vertFile ? NX_LoadFileText(vertFile) : nullptr;
     char* fragCode = fragFile ? NX_LoadFileText(fragFile) : nullptr;
 
-    NX_MaterialShader* shader = gRender->programs.createMaterialShader(vertCode, fragCode);
+    NX_Shader3D* shader = gRender->programs.createMaterialShader(vertCode, fragCode);
 
     util::free(vertCode);
     util::free(fragCode);
@@ -1878,22 +1878,22 @@ NX_MaterialShader* NX_LoadMaterialShader(const char* vertFile, const char* fragF
     return shader;
 }
 
-void NX_DestroyMaterialShader(NX_MaterialShader* shader)
+void NX_DestroyMaterialShader(NX_Shader3D* shader)
 {
     gRender->programs.destroyMaterialShader(shader);
 }
 
-void NX_SetMaterialShaderTexture(NX_MaterialShader* shader, int slot, const NX_Texture* texture)
+void NX_SetMaterialShaderTexture(NX_Shader3D* shader, int slot, const NX_Texture* texture)
 {
     shader->setTexture(slot, texture ? &texture->gpuTexture() : nullptr);
 }
 
-void NX_UpdateStaticMaterialShaderBuffer(NX_MaterialShader* shader, size_t offset, size_t size, const void* data)
+void NX_UpdateStaticMaterialShaderBuffer(NX_Shader3D* shader, size_t offset, size_t size, const void* data)
 {
     shader->updateStaticBuffer(offset, size, data);
 }
 
-void NX_UpdateDynamicMaterialShaderBuffer(NX_MaterialShader* shader, size_t size, const void* data)
+void NX_UpdateDynamicMaterialShaderBuffer(NX_Shader3D* shader, size_t size, const void* data)
 {
     shader->updateDynamicBuffer(size, data);
 }

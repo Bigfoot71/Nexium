@@ -237,8 +237,8 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         const DrawUnique& unique = mDrawCalls.uniqueData()[uniqueIndex];
         const NX_Material& mat = unique.material;
 
-        NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
-        pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_PREPASS));
+        NX_Shader3D& shader = mPrograms.materialShader(mat.shader);
+        pipeline.useProgram(shader.program(NX_Shader3D::Variant::SCENE_PREPASS));
 
         pipeline.setDepthFunc(gpu::getDepthFunc(mat.depth.test));
         pipeline.setCullMode(gpu::getCullMode(mat.cull));
@@ -295,7 +295,7 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         const DrawUnique& unique = mDrawCalls.uniqueData()[uniqueIndex];
         const NX_Material& mat = unique.material;
 
-        NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
+        NX_Shader3D& shader = mPrograms.materialShader(mat.shader);
         pipeline.useProgram(shader.programFromShadingMode(unique.material.shading));
 
         shader.bindTextures(pipeline, unique.textures);

@@ -94,18 +94,18 @@ void Overlay::flush()
 
     for (const DrawCall& call : mDrawCalls)
     {
-        NX_Shader& shader = mPrograms.shader(call.shader);
+        NX_Shader2D& shader = mPrograms.shader(call.shader);
         shader.bindUniforms(pipeline, call.uRangeIndex);
         shader.bindTextures(pipeline, call.shaderTextures);
 
         switch (call.mode) {
         case DrawCall::SHAPE:
             if (call.texture != nullptr) {
-                pipeline.useProgram(shader.program(NX_Shader::Variant::SHAPE_TEXTURE));
+                pipeline.useProgram(shader.program(NX_Shader2D::Variant::SHAPE_TEXTURE));
                 pipeline.bindTexture(0, *reinterpret_cast<const gpu::Texture*>(call.texture));
             }
             else {
-                pipeline.useProgram(shader.program(NX_Shader::Variant::SHAPE_COLOR));
+                pipeline.useProgram(shader.program(NX_Shader2D::Variant::SHAPE_COLOR));
             }
             break;
         case DrawCall::TEXT:
@@ -114,10 +114,10 @@ void Overlay::flush()
             case NX_FONT_NORMAL:
             case NX_FONT_LIGHT:
             case NX_FONT_MONO:
-                pipeline.useProgram(shader.program(NX_Shader::Variant::TEXT_BITMAP));
+                pipeline.useProgram(shader.program(NX_Shader2D::Variant::TEXT_BITMAP));
                 break;
             case NX_FONT_SDF:
-                pipeline.useProgram(shader.program(NX_Shader::Variant::TEXT_SDF));
+                pipeline.useProgram(shader.program(NX_Shader2D::Variant::TEXT_SDF));
                 break;
             }
             pipeline.bindTexture(0, font->texture->gpu);

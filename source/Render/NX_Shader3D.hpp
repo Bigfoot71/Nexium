@@ -1,5 +1,5 @@
-#ifndef NX_RENDER_MATERIAL_SHADER_HPP
-#define NX_RENDER_MATERIAL_SHADER_HPP
+#ifndef NX_RENDER_SHADER_3D_HPP
+#define NX_RENDER_SHADER_3D_HPP
 
 #include "./Core/ShaderOverride.hpp"
 #include <NX/NX_Render.h>
@@ -7,10 +7,10 @@
 /* === Shader Traits Specialization === */
 
 /**
- * Defines the shader variants of NX_MaterialShader.
+ * Defines the shader variants of NX_Shader3D.
  */
 template <>
-struct render::ShaderTraits<NX_MaterialShader> {
+struct render::ShaderTraits<NX_Shader3D> {
     enum Variant {
         SCENE_LIT,        // Full PBR/Phong lighting
         SCENE_UNLIT,      // No lighting, just albedo
@@ -22,17 +22,17 @@ struct render::ShaderTraits<NX_MaterialShader> {
 
 /* === Declaration === */
 
-class NX_MaterialShader : public render::ShaderOverride<NX_MaterialShader> {
+class NX_Shader3D : public render::ShaderOverride<NX_Shader3D> {
 public:
     /** Type aliases for convenience */
-    using Variant = render::ShaderTraits<NX_MaterialShader>::Variant;
+    using Variant = render::ShaderTraits<NX_Shader3D>::Variant;
 
 public:
     /** Create default material shader with built-in shaders */
-    NX_MaterialShader();
+    NX_Shader3D();
     
     /** Create custom material shader with user-provided code */
-    NX_MaterialShader(const char* vertexCode, const char* fragmentCode);
+    NX_Shader3D(const char* vertexCode, const char* fragmentCode);
 
     /** Get the appropriate shader program for a given shading mode */
     gpu::Program& programFromShadingMode(NX_ShadingMode shading);
@@ -44,13 +44,13 @@ private:
 
 /* === Inline Implementation === */
 
-inline gpu::Program& NX_MaterialShader::programFromShadingMode(NX_ShadingMode shading)
+inline gpu::Program& NX_Shader3D::programFromShadingMode(NX_ShadingMode shading)
 {
     return ShaderOverride::program(variantFromShadingMode(shading));
 }
 
-inline NX_MaterialShader::Variant 
-NX_MaterialShader::variantFromShadingMode(NX_ShadingMode shading)
+inline NX_Shader3D::Variant 
+NX_Shader3D::variantFromShadingMode(NX_ShadingMode shading)
 {
     switch (shading) {
     case NX_SHADING_LIT:
@@ -64,4 +64,4 @@ NX_MaterialShader::variantFromShadingMode(NX_ShadingMode shading)
     return Variant::SCENE_LIT;
 }
 
-#endif // NX_RENDER_MATERIAL_SHADER_HPP
+#endif // NX_RENDER_SHADER_3D_HPP

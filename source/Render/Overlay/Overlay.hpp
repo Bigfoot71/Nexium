@@ -50,7 +50,7 @@ public:
     void setProjection(const NX_Mat4& projection);
     void setTexture(const NX_Texture* texture);
     void setFont(const NX_Font* font);
-    void setShader(NX_Shader* shader);
+    void setShader(NX_Shader2D* shader);
     void setColor(NX_Color color);
 
     /** Transform stack */
@@ -110,7 +110,7 @@ private:
 
     /** Current State */
     NX_Color mCurrentColor = NX_WHITE;
-    NX_Shader* mCurrentShader = nullptr;
+    NX_Shader2D* mCurrentShader = nullptr;
     const NX_Font* mCurrentFont = nullptr;
     const NX_Texture* mCurrentTexture = nullptr;
     const NX_RenderTexture* mCurrentTarget = nullptr;
@@ -163,7 +163,7 @@ inline void Overlay::setFont(const NX_Font* font)
     mCurrentFont = font;
 }
 
-inline void Overlay::setShader(NX_Shader* shader)
+inline void Overlay::setShader(NX_Shader2D* shader)
 {
     mCurrentShader = shader;
 }

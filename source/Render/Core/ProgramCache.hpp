@@ -14,8 +14,8 @@
 #include "../../Detail/Util/ObjectPool.hpp"
 #include "../../Detail/GPU/Program.hpp"
 #include "../../Detail/GPU/Shader.hpp"
-#include "../NX_MaterialShader.hpp"
-#include "../NX_Shader.hpp"
+#include "../NX_Shader3D.hpp"
+#include "../NX_Shader2D.hpp"
 
 namespace render {
 
@@ -26,12 +26,12 @@ public:
     ProgramCache();
 
     /** Material shaders */
-    NX_MaterialShader* createMaterialShader(const char* vert, const char* frag);
-    void destroyMaterialShader(NX_MaterialShader* shader);
+    NX_Shader3D* createMaterialShader(const char* vert, const char* frag);
+    void destroyMaterialShader(NX_Shader3D* shader);
 
     /** Shape shaders */
-    NX_Shader* createShader(const char* vert, const char* frag);
-    void destroyShader(NX_Shader* shader);
+    NX_Shader2D* createShader(const char* vert, const char* frag);
+    void destroyShader(NX_Shader2D* shader);
 
     /** Should be called at the end of 'NX_End3D()' / 'NX_End2D()' */
     void clearDynamicMaterialBuffers();
@@ -44,7 +44,7 @@ public:
     gpu::Program& cubemapSkybox();
 
     /** Scene programs */
-    NX_MaterialShader& materialShader(NX_MaterialShader* shader);
+    NX_Shader3D& materialShader(NX_Shader3D* shader);
     gpu::Program& lightCulling();
     gpu::Program& skybox();
 
@@ -58,7 +58,7 @@ public:
     gpu::Program& ssaoPost();
 
     /** Overlay programs */
-    NX_Shader& shader(NX_Shader* shader);
+    NX_Shader2D& shader(NX_Shader2D* shader);
     gpu::Program& overlay();
 
     /** Generic programs */
@@ -66,8 +66,8 @@ public:
 
 private:
     /** Shader pools */
-    util::ObjectPool<NX_MaterialShader, 32> mMaterialShaders;
-    util::ObjectPool<NX_Shader, 32> mShaders;
+    util::ObjectPool<NX_Shader3D, 32> mMaterialShaders;
+    util::ObjectPool<NX_Shader2D, 32> mShaders;
 
     /** Cubemap generation */
     gpu::Program mCubemapFromEquirectangular;
@@ -76,7 +76,7 @@ private:
     gpu::Program mCubemapSkybox;
 
     /** Scene programs */
-    NX_MaterialShader mMaterialShader{};
+    NX_Shader3D mMaterialShader{};
     gpu::Program mLightCulling{};
     gpu::Program mSkybox{};
 
@@ -90,7 +90,7 @@ private:
     gpu::Program mSsaoPost{};
 
     /** Overlay programs */
-    NX_Shader mShader{};
+    NX_Shader2D mShader{};
     gpu::Program mOverlay{};
 
     /** Generic programs */
@@ -103,46 +103,46 @@ private:
 
 /* === Public Implementation === */
 
-inline NX_MaterialShader* ProgramCache::createMaterialShader(const char* vert, const char* frag)
+inline NX_Shader3D* ProgramCache::createMaterialShader(const char* vert, const char* frag)
 {
     return mMaterialShaders.create(vert, frag);
 }
 
-inline void ProgramCache::destroyMaterialShader(NX_MaterialShader* shader)
+inline void ProgramCache::destroyMaterialShader(NX_Shader3D* shader)
 {
     mMaterialShaders.destroy(shader);
 }
 
-inline NX_Shader* ProgramCache::createShader(const char* vert, const char* frag)
+inline NX_Shader2D* ProgramCache::createShader(const char* vert, const char* frag)
 {
     return mShaders.create(vert, frag);
 }
 
-inline void ProgramCache::destroyShader(NX_Shader* shader)
+inline void ProgramCache::destroyShader(NX_Shader2D* shader)
 {
     mShaders.destroy(shader);
 }
 
 inline void ProgramCache::clearDynamicMaterialBuffers()
 {
-    for (NX_MaterialShader& shader : mMaterialShaders) {
+    for (NX_Shader3D& shader : mMaterialShaders) {
         shader.clearDynamicBuffer();
     }
 }
 
 inline void ProgramCache::clearDynamicBuffers()
 {
-    for (NX_Shader& shader : mShaders) {
+    for (NX_Shader2D& shader : mShaders) {
         shader.clearDynamicBuffer();
     }
 }
 
-inline NX_MaterialShader& ProgramCache::materialShader(NX_MaterialShader* shader)
+inline NX_Shader3D& ProgramCache::materialShader(NX_Shader3D* shader)
 {
     return shader ? *shader : mMaterialShader;
 }
 
-inline NX_Shader& ProgramCache::shader(NX_Shader* shader)
+inline NX_Shader2D& ProgramCache::shader(NX_Shader2D* shader)
 {
     return shader ? *shader : mShader;
 }
