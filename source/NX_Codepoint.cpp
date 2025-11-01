@@ -6,6 +6,9 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
+#include <NX/NX_Codepoint.h>
+#include <NX/NX_Memory.h>
+
 #include <SDL3/SDL_stdinc.h>
 
 /* === Public API === */
@@ -85,25 +88,25 @@ const char* NX_CodepointToUTF8(int codepoint, int* utf8Size)
     int size = 0;
 
     if (codepoint <= 0x7f) {
-        utf8[0] = (char)codepoint;
+        utf8[0] = static_cast<char>(codepoint);
         size = 1;
     }
     else if (codepoint <= 0x7ff) {
-        utf8[0] = (char)(((codepoint >> 6) & 0x1f) | 0xc0);
-        utf8[1] = (char)((codepoint & 0x3f) | 0x80);
+        utf8[0] = static_cast<char>(((codepoint >> 6) & 0x1f) | 0xc0);
+        utf8[1] = static_cast<char>((codepoint & 0x3f) | 0x80);
         size = 2;
     }
     else if (codepoint <= 0xffff) {
-        utf8[0] = (char)(((codepoint >> 12) & 0x0f) | 0xe0);
-        utf8[1] = (char)(((codepoint >> 6) & 0x3f) | 0x80);
-        utf8[2] = (char)((codepoint & 0x3f) | 0x80);
+        utf8[0] = static_cast<char>(((codepoint >> 12) & 0x0f) | 0xe0);
+        utf8[1] = static_cast<char>(((codepoint >> 6) & 0x3f) | 0x80);
+        utf8[2] = static_cast<char>((codepoint & 0x3f) | 0x80);
         size = 3;
     }
     else if (codepoint <= 0x10ffff) {
-        utf8[0] = (char)(((codepoint >> 18) & 0x07) | 0xf0);
-        utf8[1] = (char)(((codepoint >> 12) & 0x3f) | 0x80);
-        utf8[2] = (char)(((codepoint >> 6) & 0x3f) | 0x80);
-        utf8[3] = (char)((codepoint & 0x3f) | 0x80);
+        utf8[0] = static_cast<char>(((codepoint >> 18) & 0x07) | 0xf0);
+        utf8[1] = static_cast<char>(((codepoint >> 12) & 0x3f) | 0x80);
+        utf8[2] = static_cast<char>(((codepoint >> 6) & 0x3f) | 0x80);
+        utf8[3] = static_cast<char>((codepoint & 0x3f) | 0x80);
         size = 4;
     }
 
@@ -128,7 +131,7 @@ int NX_GetCodepointFromUTF8(const char* text, int* codepointSize)
     // NOTE: on decode errors we return as soon as possible
 
     int codepoint = 0x3f;   // Codepoint (defaults to '?')
-    int byte = (uint8_t)(text[0]); // The first UTF8 byte
+    int byte = static_cast<uint8_t>(text[0]); // The first UTF8 byte
     *codepointSize = 1;
 
     if (byte <= 0x7f) {
@@ -238,8 +241,8 @@ char* NX_ConvertCodepointsToUTF8(const int* codepoints, int length)
 {
     // We allocate enough memory to fit all possible codepoints
     // NOTE: 5 bytes for every codepoint should be enough
-    char* text = (char*)SDL_calloc(length * 5, 1);
-    const char* utf8 = NULL;
+    char* text = NX_Calloc<char>(length * 5);
+    const char* utf8 = nullptr;
     int size = 0;
 
     for (int i = 0, bytes = 0; i < length; i++) {
@@ -248,33 +251,32 @@ char* NX_ConvertCodepointsToUTF8(const int* codepoints, int length)
         size += bytes;
     }
 
-    // Resize memory to text length + string NULL terminator
-    void* ptr = SDL_realloc(text, size + 1);
-
-    if (ptr != NULL) text = (char*)ptr;
+    // Resize memory to text length + string null terminator
+    char* ptr = NX_Realloc<char>(text, size + 1);
+    if (ptr != nullptr) text = ptr;
 
     return text;
 }
 
 int* NX_ConvertCodepointsFromUTF8(const char* text, int* count)
 {
-    int text_length = SDL_strlen(text);
+    int textLength = SDL_strlen(text);
 
     int codepointSize = 0;
-    int codepoint_count = 0;
+    int codepointCount = 0;
 
     // Allocate a big enough buffer to store as many codepoints as text bytes
-    int* codepoints = SDL_calloc(text_length, sizeof(int));
+    int* codepoints = NX_Calloc<int>(textLength);
 
-    for (int i = 0; i < text_length; codepoint_count++) {
-        codepoints[codepoint_count] = NX_GetCodepointNext(text + i, &codepointSize);
+    for (int i = 0; i < textLength; codepointCount++) {
+        codepoints[codepointCount] = NX_GetCodepointNext(text + i, &codepointSize);
         i += codepointSize;
     }
 
     // Re-allocate buffer to the actual number of codepoints loaded
-    codepoints = SDL_realloc(codepoints, codepoint_count * sizeof(int));
+    codepoints = NX_Realloc<int>(codepoints, codepointCount);
 
-    *count = codepoint_count;
+    *count = codepointCount;
 
     return codepoints;
 }

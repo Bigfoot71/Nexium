@@ -11,7 +11,7 @@
 #include <NX/NX_Log.h>
 
 #include "./INX_GlobalAssets.hpp"
-#include "./INX_GlobalState.h"
+#include "./INX_GlobalState.hpp"
 
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_stdinc.h>
@@ -369,7 +369,7 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
     return true;
 }
 
-void NX_Quit(void)
+void NX_Quit()
 {
     gRender.reset();
 

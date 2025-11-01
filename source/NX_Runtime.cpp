@@ -12,7 +12,7 @@
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_time.h>
-#include "./INX_GlobalState.h"
+#include "./INX_GlobalState.hpp"
 
 // ============================================================================
 // PUBLIC API
@@ -36,18 +36,18 @@ bool NX_FrameStep(void)
     /* --- Calculate delta time and sleep if enough time remains --- */
 
     Uint64 ticksNow = SDL_GetPerformanceCounter();
-    INX_Frame.currentDeltaTime = (double)(ticksNow - INX_Frame.ticksLast) / INX_Frame.perfFrequency;
+    INX_Frame.currentDeltaTime = static_cast<double>(ticksNow - INX_Frame.ticksLast) / INX_Frame.perfFrequency;
 
     const double sleepSafetyMargin = 0.002;
     if (INX_Frame.currentDeltaTime < INX_Frame.targetDeltaTime - sleepSafetyMargin) {
-        SDL_DelayNS(1e9 * (Uint64)((INX_Frame.targetDeltaTime - INX_Frame.currentDeltaTime - sleepSafetyMargin)));
+        SDL_DelayNS(1e9 * static_cast<Uint64>((INX_Frame.targetDeltaTime - INX_Frame.currentDeltaTime - sleepSafetyMargin)));
     }
 
     /* --- Get accurate delta time after sleep and busy-wait remaining time if needed --- */
 
     do {
         ticksNow = SDL_GetPerformanceCounter();
-        INX_Frame.currentDeltaTime = (double)(ticksNow - INX_Frame.ticksLast) / INX_Frame.perfFrequency;
+        INX_Frame.currentDeltaTime = static_cast<double>(ticksNow - INX_Frame.ticksLast) / INX_Frame.perfFrequency;
     } while (INX_Frame.currentDeltaTime < INX_Frame.targetDeltaTime);
 
     INX_Frame.elapsedTime += INX_Frame.currentDeltaTime;
@@ -55,7 +55,7 @@ bool NX_FrameStep(void)
 
     /* --- FPS smoothing using exponential moving average --- */
 
-    const double smoothingFactor = 0.1;
+    constexpr double smoothingFactor = 0.1;
     double currentFPS = 1.0 / INX_Frame.currentDeltaTime;
     INX_Frame.fpsAverage = INX_Frame.fpsAverage * (1.0 - smoothingFactor) + currentFPS * smoothingFactor;
 
@@ -120,7 +120,7 @@ int64_t NX_GetCurrentTimeNS(void)
 double NX_GetCurrentTime(void)
 {
     int64_t ns = NX_GetCurrentTimeNS();
-    return (double)(ns) / 1e9;
+    return static_cast<double>(ns) / 1e9;
 }
 
 double NX_GetElapsedTime(void)
@@ -140,7 +140,7 @@ int NX_GetFPS(void)
 
 void NX_SetTargetFPS(int fps)
 {
-    INX_Frame.targetDeltaTime = 1.0 / (double)(fps);
+    INX_Frame.targetDeltaTime = 1.0 / static_cast<double>(fps);
 }
 
 bool NX_SetVSync(int mode)

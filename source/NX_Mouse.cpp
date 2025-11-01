@@ -7,7 +7,7 @@
  */
 
 #include <NX/NX_Mouse.h>
-#include "./INX_GlobalState.h"
+#include "./INX_GlobalState.hpp"
 
 #include <SDL3/SDL_mouse.h>
 
@@ -46,7 +46,7 @@ bool NX_IsMouseButtonJustReleased(NX_MouseButton buttons)
     return !current && previous;
 }
 
-NX_Vec2 NX_GetMousePosition(void)
+NX_Vec2 NX_GetMousePosition()
 {
     return INX_Mouse.position;
 }
@@ -57,12 +57,12 @@ void NX_SetMousePosition(NX_Vec2 p)
     INX_Mouse.position = p;
 }
 
-NX_Vec2 NX_GetMouseDelta(void)
+NX_Vec2 NX_GetMouseDelta()
 {
     return INX_Mouse.delta;
 }
 
-NX_Vec2 NX_GetMouseWheel(void)
+NX_Vec2 NX_GetMouseWheel()
 {
     return INX_Mouse.wheel;
 }

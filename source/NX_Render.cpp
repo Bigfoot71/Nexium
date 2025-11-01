@@ -199,7 +199,7 @@ void NX_Begin2D(NX_RenderTexture* target)
     gRender->overlay.clear();
 }
 
-void NX_End2D(void)
+void NX_End2D()
 {
     gRender->overlay.flush();
     gRender->overlay.blit();
@@ -225,12 +225,12 @@ void NX_SetShader2D(NX_Shader* shader)
     gRender->overlay.setShader(shader);
 }
 
-void NX_Push2D(void)
+void NX_Push2D()
 {
     gRender->overlay.push();
 }
 
-void NX_Pop2D(void)
+void NX_Pop2D()
 {
     gRender->overlay.pop();
 }
@@ -1518,7 +1518,7 @@ void NX_Begin3D(const NX_Camera* camera, const NX_Environment* env, const NX_Ren
     );
 }
 
-void NX_End3D(void)
+void NX_End3D()
 {
     gRender->scene.end();
 }
@@ -1579,7 +1579,7 @@ void NX_DrawModelInstanced3D(const NX_Model* model, const NX_InstanceBuffer* ins
 
 /* === Camera - Public API === */
 
-NX_Camera NX_GetDefaultCamera(void)
+NX_Camera NX_GetDefaultCamera()
 {
     return NX_Camera {
         .position = NX_VEC3_ZERO,
@@ -1686,7 +1686,7 @@ NX_Transform NX_GetCameraTransform(const NX_Camera* camera)
 
 /* === Environment - Public API === */
 
-NX_Environment NX_GetDefaultEnvironment(void)
+NX_Environment NX_GetDefaultEnvironment()
 {
     return NX_Environment {
         .background = NX_GRAY,
@@ -1809,7 +1809,7 @@ void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap* cubem
 
 /* === Material - Public API === */
 
-NX_Material NX_GetDefaultMaterial(void)
+NX_Material NX_GetDefaultMaterial()
 {
     return NX_Material {
         .albedo = {

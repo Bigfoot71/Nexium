@@ -1,4 +1,4 @@
-/* NX_Log.c -- API definition for Nexium's log module
+/* NX_Log.cpp -- API definition for Nexium's log module
  *
  * Copyright (c) 2025 Le Juez Victor
  *

@@ -9,7 +9,7 @@
 #ifndef NX_GPU_SHADER_HPP
 #define NX_GPU_SHADER_HPP
 
-#include "../../INX_GlobalState.h"     //< Used to get OpenGL profile used (Core/ES)
+#include "../../INX_GlobalState.hpp"     //< Used to get OpenGL profile used (Core/ES)
 #include <NX/NX_Log.h>
 
 #include <SDL3/SDL_assert.h>

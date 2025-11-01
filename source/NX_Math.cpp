@@ -1,4 +1,4 @@
-/* NX_Math.c -- API definition for Nexium's math module
+/* NX_Math.cpp -- API definition for Nexium's math module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -8,6 +8,7 @@
 
 #include <SDL3/SDL_stdinc.h>
 #include <NX/NX_Math.h>
+#include <cmath>
 
 /* === Quaternion Functions === */
 
@@ -17,12 +18,12 @@ NX_Quat NX_QuatFromEuler(NX_Vec3 v)
     float hy = v.y * 0.5f;
     float hz = v.z * 0.5f;
 
-    float cx = cosf(hx);
-    float sx = sinf(hx);
-    float cy = cosf(hy);
-    float sy = sinf(hy);
-    float cz = cosf(hz);
-    float sz = sinf(hz);
+    float cx = std::cos(hx);
+    float sx = std::sin(hx);
+    float cy = std::cos(hy);
+    float sy = std::sin(hy);
+    float cz = std::cos(hz);
+    float sz = std::sin(hz);
 
     float cycp = cy * cx;
     float sysp = sy * sx;
@@ -41,7 +42,7 @@ NX_Quat NX_QuatFromEuler(NX_Vec3 v)
         return identity;
     }
 
-    float invLen = 1.0f / sqrtf(lenSq);
+    float invLen = 1.0f / std::sqrt(lenSq);
     q.w *= invLen;
     q.x *= invLen;
     q.y *= invLen;
@@ -58,20 +59,20 @@ NX_Vec3 NX_QuatToEuler(NX_Quat q)
 
     float sinp = 2.0f * (q.w * q.x - q.y * q.z);
     float pitch;
-    if (fabsf(sinp) >= 1.0f) {
-        pitch = copysignf(NX_PI * 0.5f, sinp);
+    if (std::abs(sinp) >= 1.0f) {
+        pitch = std::copysign(NX_PI * 0.5f, sinp);
     }
     else {
-        pitch = asinf(sinp);
+        pitch = std::asin(sinp);
     }
 
     float sinYcosP = 2.0f * (q.w * q.y + q.x * q.z);
     float cosYcosP = 1.0f - 2.0f * (qxx + qyy);
-    float yaw = atan2f(sinYcosP, cosYcosP);
+    float yaw = std::atan2(sinYcosP, cosYcosP);
 
     float sinRcosP = 2.0f * (q.w * q.z + q.x * q.y);
     float cosRcosP = 1.0f - 2.0f * (qxx + qzz);
-    float roll = atan2f(sinRcosP, cosRcosP);
+    float roll = std::atan2(sinRcosP, cosRcosP);
 
     return NX_VEC3(pitch, yaw, roll);
 }
@@ -82,7 +83,7 @@ NX_Quat NX_QuatFromMat4(const NX_Mat4* m)
     float trace = m->m00 + m->m11 + m->m22;
 
     if (trace > 0.0f) {
-        float s = sqrtf(trace + 1.0f);
+        float s = std::sqrt(trace + 1.0f);
         float invS = 0.5f / s;
         q.w = s * 0.5f;
         q.x = (m->m21 - m->m12) * invS;
@@ -91,7 +92,7 @@ NX_Quat NX_QuatFromMat4(const NX_Mat4* m)
     }
     else {
         if (m->m00 > m->m11 && m->m00 > m->m22) {
-            float s = sqrtf(1.0f + m->m00 - m->m11 - m->m22);
+            float s = std::sqrt(1.0f + m->m00 - m->m11 - m->m22);
             float invS = 0.5f / s;
             q.w = (m->m21 - m->m12) * invS;
             q.x = s * 0.5f;
@@ -99,7 +100,7 @@ NX_Quat NX_QuatFromMat4(const NX_Mat4* m)
             q.z = (m->m02 + m->m20) * invS;
         }
         else if (m->m11 > m->m22) {
-            float s = sqrtf(1.0f + m->m11 - m->m00 - m->m22);
+            float s = std::sqrt(1.0f + m->m11 - m->m00 - m->m22);
             float invS = 0.5f / s;
             q.w = (m->m02 - m->m20) * invS;
             q.x = (m->m01 + m->m10) * invS;
@@ -107,7 +108,7 @@ NX_Quat NX_QuatFromMat4(const NX_Mat4* m)
             q.z = (m->m12 + m->m21) * invS;
         }
         else {
-            float s = sqrtf(1.0f + m->m22 - m->m00 - m->m11);
+            float s = std::sqrt(1.0f + m->m22 - m->m00 - m->m11);
             float invS = 0.5f / s;
             q.w = (m->m10 - m->m01) * invS;
             q.x = (m->m02 + m->m20) * invS;
@@ -153,8 +154,8 @@ NX_Quat NX_QuatLookTo(NX_Vec3 direction, NX_Vec3 up)
     float fx = direction.x, fy = direction.y, fz = direction.z;
     float flenSq = fx * fx + fy * fy + fz * fz;
 
-    if (flenSq > 1e-12f) {
-        float invFlen = 1.0f / sqrtf(flenSq);
+    if (flenSq > 1e-6f) {
+        float invFlen = 1.0f / std::sqrt(flenSq);
         fx *= invFlen;
         fy *= invFlen;
         fz *= invFlen;
@@ -165,8 +166,8 @@ NX_Quat NX_QuatLookTo(NX_Vec3 direction, NX_Vec3 up)
     float rz = fx * up.y - fy * up.x;
 
     float rlenSq = rx * rx + ry * ry + rz * rz;
-    if (rlenSq > 1e-12f) {
-        float invRlen = 1.0f / sqrtf(rlenSq);
+    if (rlenSq > 1e-6f) {
+        float invRlen = 1.0f / std::sqrt(rlenSq);
         rx *= invRlen;
         ry *= invRlen;
         rz *= invRlen;
@@ -185,7 +186,7 @@ NX_Quat NX_QuatLookTo(NX_Vec3 direction, NX_Vec3 up)
     NX_Quat q;
 
     if (trace > 0.0f) {
-        float s = sqrtf(trace + 1.0f);
+        float s = std::sqrt(trace + 1.0f);
         float invS = 0.5f / s;
         q.w = s * 0.5f;
         q.x = (uz - fy) * invS;
@@ -193,7 +194,7 @@ NX_Quat NX_QuatLookTo(NX_Vec3 direction, NX_Vec3 up)
         q.z = (ry - ux) * invS;
     }
     else if (rx > uy && rx > fz) {
-        float s = sqrtf(1.0f + rx - uy - fz);
+        float s = std::sqrt(1.0f + rx - uy - fz);
         float invS = 0.5f / s;
         q.w = (uz - fy) * invS;
         q.x = s * 0.5f;
@@ -201,7 +202,7 @@ NX_Quat NX_QuatLookTo(NX_Vec3 direction, NX_Vec3 up)
         q.z = (fx + rz) * invS;
     }
     else if (uy > fz) {
-        float s = sqrtf(1.0f + uy - rx - fz);
+        float s = std::sqrt(1.0f + uy - rx - fz);
         float invS = 0.5f / s;
         q.w = (fx - rz) * invS;
         q.x = (ux + ry) * invS;
@@ -209,7 +210,7 @@ NX_Quat NX_QuatLookTo(NX_Vec3 direction, NX_Vec3 up)
         q.z = (fy + uz) * invS;
     }
     else {
-        float s = sqrtf(1.0f + fz - rx - uy);
+        float s = std::sqrt(1.0f + fz - rx - uy);
         float invS = 0.5f / s;
         q.w = (ry - ux) * invS;
         q.x = (fx + rz) * invS;
@@ -246,8 +247,8 @@ NX_Quat NX_QuatLerp(NX_Quat a, NX_Quat b, float t)
     float lenSq = result.x * result.x + result.y * result.y + 
                   result.z * result.z + result.w * result.w;
 
-    if (lenSq > 1e-12f) {
-        float invLen = 1.0f / sqrtf(lenSq);
+    if (lenSq > 1e-6f) {
+        float invLen = 1.0f / std::sqrt(lenSq);
         result.x *= invLen;
         result.y *= invLen;
         result.z *= invLen;
@@ -270,12 +271,12 @@ NX_Quat NX_QuatSLerp(NX_Quat a, NX_Quat b, float t)
         w2 = t * sign;
     }
     else {
-        float th0 = acosf(dot);
+        float th0 = std::acos(dot);
         float th = th0 * t;
-        float inv_sin_th0 = 1.0f / sinf(th0);
+        float inv_sin_th0 = 1.0f / std::sin(th0);
         
-        w1 = sinf(th0 - th) * inv_sin_th0;
-        w2 = sinf(th) * inv_sin_th0 * sign;
+        w1 = std::sin(th0 - th) * inv_sin_th0;
+        w2 = std::sin(th) * inv_sin_th0 * sign;
     }
 
     NX_Quat result;
@@ -287,8 +288,8 @@ NX_Quat NX_QuatSLerp(NX_Quat a, NX_Quat b, float t)
     if (dot > 0.9995f) {
         float lenSq = result.x * result.x + result.y * result.y + 
                       result.z * result.z + result.w * result.w;
-        if (lenSq > 1e-12f) {
-            float invLen = 1.0f / sqrtf(lenSq);
+        if (lenSq > 1e-6f) {
+            float invLen = 1.0f / std::sqrt(lenSq);
             result.x *= invLen;
             result.y *= invLen;
             result.z *= invLen;
@@ -303,13 +304,21 @@ NX_Quat NX_QuatSLerp(NX_Quat a, NX_Quat b, float t)
 
 bool NX_IsMat3Identity(const NX_Mat3* mat)
 {
-    return (SDL_memcmp(mat, &NX_MAT3_IDENTITY, sizeof(NX_Mat3)) == 0);
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            float expected = (i == j) ? 1.0f : 0.0f;
+            if (std::fabs(mat->v[i][j] - expected) > 1e-6f) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 NX_Mat3 NX_Mat3Transform2D(NX_Vec2 translation, float rotation, NX_Vec2 scale)
 {
-    float c = cosf(rotation);
-    float s = sinf(rotation);
+    float c = std::cos(rotation);
+    float s = std::sin(rotation);
 
     NX_Mat3 result;
 
@@ -349,8 +358,8 @@ NX_Mat3 NX_Mat3Translate2D(NX_Vec2 translation)
 
 NX_Mat3 NX_Mat3Rotate2D(float radians)
 {
-    float c = cosf(radians);
-    float s = sinf(radians);
+    float c = std::cos(radians);
+    float s = std::sin(radians);
 
     NX_Mat3 result;
 
@@ -390,8 +399,8 @@ NX_Mat3 NX_Mat3Scale2D(NX_Vec2 scale)
 
 NX_Mat3 NX_Mat3RotateX(float radians)
 {
-    float c = cosf(radians);
-    float s = sinf(radians);
+    float c = std::cos(radians);
+    float s = std::sin(radians);
 
     NX_Mat3 result;
 
@@ -412,8 +421,8 @@ NX_Mat3 NX_Mat3RotateX(float radians)
 
 NX_Mat3 NX_Mat3RotateY(float radians)
 {
-    float c = cosf(radians);
-    float s = sinf(radians);
+    float c = std::cos(radians);
+    float s = std::sin(radians);
 
     NX_Mat3 result;
 
@@ -434,8 +443,8 @@ NX_Mat3 NX_Mat3RotateY(float radians)
 
 NX_Mat3 NX_Mat3RotateZ(float radians)
 {
-    float c = cosf(radians);
-    float s = sinf(radians);
+    float c = std::cos(radians);
+    float s = std::sin(radians);
 
     NX_Mat3 result;
 
@@ -459,18 +468,18 @@ NX_Mat3 NX_Mat3Rotate(NX_Vec3 axis, float radians)
     float x = axis.x, y = axis.y, z = axis.z;
     float lenSq = x * x + y * y + z * z;
 
-    if (fabsf(lenSq - 1.0f) > 1e-6f) {
-        if (lenSq < 1e-12f) {
+    if (std::abs(lenSq - 1.0f) > 1e-6f) {
+        if (lenSq < 1e-6f) {
             return NX_MAT3_IDENTITY;
         }
-        float invLen = 1.0f / sqrtf(lenSq);
+        float invLen = 1.0f / std::sqrt(lenSq);
         x *= invLen;
         y *= invLen;
         z *= invLen;
     }
 
-    float c = cosf(radians);
-    float s = sinf(radians);
+    float c = std::cos(radians);
+    float s = std::sin(radians);
     float t = 1.0f - c;
 
     float tx = t * x, ty = t * y, tz = t * z;
@@ -496,12 +505,12 @@ NX_Mat3 NX_Mat3Rotate(NX_Vec3 axis, float radians)
 
 NX_Mat3 NX_Mat3RotateXYZ(NX_Vec3 radians)
 {
-    float cz = cosf(-radians.z);
-    float sz = sinf(-radians.z);
-    float cy = cosf(-radians.y);
-    float sy = sinf(-radians.y);
-    float cx = cosf(-radians.x);
-    float sx = sinf(-radians.x);
+    float cz = std::cos(-radians.z);
+    float sz = std::sin(-radians.z);
+    float cy = std::cos(-radians.y);
+    float sy = std::sin(-radians.y);
+    float cx = std::cos(-radians.x);
+    float sx = std::sin(-radians.x);
 
     NX_Mat3 result;
 
@@ -540,7 +549,7 @@ NX_Mat3 NX_Mat3Inverse(const NX_Mat3* mat)
 {
     float det = NX_Mat3Determinant(mat);
 
-    if (fabsf(det) < 1e-6f) {
+    if (std::abs(det) < 1e-6f) {
         return NX_MAT3_IDENTITY;
     }
 
@@ -575,7 +584,7 @@ NX_Mat3 NX_Mat3Normal(const NX_Mat4* mat)
 
     float det = m00 * c00 + m01 * c01 + m02 * c02;
 
-    if (fabsf(det) < 1e-6f) {
+    if (std::abs(det) < 1e-6f) {
         return NX_MAT3_IDENTITY;
     }
 
@@ -631,17 +640,17 @@ NX_Mat3 NX_Mat3Mul(const NX_Mat3* NX_RESTRICT left, const NX_Mat3* NX_RESTRICT r
     const float* NX_RESTRICT B = right->a;
     float* NX_RESTRICT R = result.a;
 
-    R[0] = fmaf(A[0], B[0], fmaf(A[1], B[3], A[2] * B[6]));
-    R[1] = fmaf(A[0], B[1], fmaf(A[1], B[4], A[2] * B[7]));
-    R[2] = fmaf(A[0], B[2], fmaf(A[1], B[5], A[2] * B[8]));
+    R[0] = A[0] * B[0] + A[1] * B[3] + A[2] * B[6];
+    R[1] = A[0] * B[1] + A[1] * B[4] + A[2] * B[7];
+    R[2] = A[0] * B[2] + A[1] * B[5] + A[2] * B[8];
 
-    R[3] = fmaf(A[3], B[0], fmaf(A[4], B[3], A[5] * B[6]));
-    R[4] = fmaf(A[3], B[1], fmaf(A[4], B[4], A[5] * B[7]));
-    R[5] = fmaf(A[3], B[2], fmaf(A[4], B[5], A[5] * B[8]));
+    R[3] = A[3] * B[0] + A[4] * B[3] + A[5] * B[6];
+    R[4] = A[3] * B[1] + A[4] * B[4] + A[5] * B[7];
+    R[5] = A[3] * B[2] + A[4] * B[5] + A[5] * B[8];
 
-    R[6] = fmaf(A[6], B[0], fmaf(A[7], B[3], A[8] * B[6]));
-    R[7] = fmaf(A[6], B[1], fmaf(A[7], B[4], A[8] * B[7]));
-    R[8] = fmaf(A[6], B[2], fmaf(A[7], B[5], A[8] * B[8]));
+    R[6] = A[6] * B[0] + A[7] * B[3] + A[8] * B[6];
+    R[7] = A[6] * B[1] + A[7] * B[4] + A[8] * B[7];
+    R[8] = A[6] * B[2] + A[7] * B[5] + A[8] * B[8];
 
     return result;
 }
@@ -650,7 +659,15 @@ NX_Mat3 NX_Mat3Mul(const NX_Mat3* NX_RESTRICT left, const NX_Mat3* NX_RESTRICT r
 
 bool NX_IsMat4Identity(const NX_Mat4* mat)
 {
-    return (SDL_memcmp(mat, &NX_MAT4_IDENTITY, sizeof(NX_Mat4)) == 0);
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            float expected = (i == j) ? 1.0f : 0.0f;
+            if (std::fabs(mat->v[i][j] - expected) > 1e-6f) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 NX_Mat4 NX_Mat4Translate(NX_Vec3 v)
@@ -669,18 +686,18 @@ NX_Mat4 NX_Mat4Rotate(NX_Vec3 axis, float radians)
     float x = axis.x, y = axis.y, z = axis.z;
     float lenSq = x * x + y * y + z * z;
 
-    if (fabsf(lenSq - 1.0f) > 1e-6f) {
-        if (lenSq < 1e-12f) {
+    if (std::abs(lenSq - 1.0f) > 1e-6f) {
+        if (lenSq < 1e-6f) {
             return NX_MAT4_IDENTITY;
         }
-        float invLen = 1.0f / sqrtf(lenSq);
+        float invLen = 1.0f / std::sqrt(lenSq);
         x *= invLen;
         y *= invLen;
         z *= invLen;
     }
 
-    float c = cosf(radians);
-    float s = sinf(radians);
+    float c = std::cos(radians);
+    float s = std::sin(radians);
     float t = 1.0f - c;
 
     float tx = t * x, ty = t * y, tz = t * z;
@@ -716,8 +733,8 @@ NX_Mat4 NX_Mat4RotateX(float radians)
 {
     NX_Mat4 result = NX_MAT4_IDENTITY;
 
-    float c = cosf(radians);
-    float s = sinf(radians);
+    float c = std::cos(radians);
+    float s = std::sin(radians);
 
     result.m11 = c;
     result.m12 = s;
@@ -731,8 +748,8 @@ NX_Mat4 NX_Mat4RotateY(float radians)
 {
     NX_Mat4 result = NX_MAT4_IDENTITY;
 
-    float c = cosf(radians);
-    float s = sinf(radians);
+    float c = std::cos(radians);
+    float s = std::sin(radians);
 
     result.m00 = c;
     result.m02 = -s;
@@ -746,8 +763,8 @@ NX_Mat4 NX_Mat4RotateZ(float radians)
 {
     NX_Mat4 result = NX_MAT4_IDENTITY;
 
-    float c = cosf(radians);
-    float s = sinf(radians);
+    float c = std::cos(radians);
+    float s = std::sin(radians);
 
     result.m00 = c;
     result.m01 = s;
@@ -761,12 +778,12 @@ NX_Mat4 NX_Mat4RotateXYZ(NX_Vec3 radians)
 {
     NX_Mat4 result = NX_MAT4_IDENTITY;
 
-    float cz = cosf(-radians.z);
-    float sz = sinf(-radians.z);
-    float cy = cosf(-radians.y);
-    float sy = sinf(-radians.y);
-    float cx = cosf(-radians.x);
-    float sx = sinf(-radians.x);
+    float cz = std::cos(-radians.z);
+    float sz = std::sin(-radians.z);
+    float cy = std::cos(-radians.y);
+    float sy = std::sin(-radians.y);
+    float cx = std::cos(-radians.x);
+    float sx = std::sin(-radians.x);
 
     result.m00 = cz * cy;
     result.m01 = (cz * sy * sx) - (sz * cx);
@@ -787,12 +804,12 @@ NX_Mat4 NX_Mat4RotateZYX(NX_Vec3 radians)
 {
     NX_Mat4 result = NX_MAT4_IDENTITY;
 
-    float cz = cosf(radians.z);
-    float sz = sinf(radians.z);
-    float cy = cosf(radians.y);
-    float sy = sinf(radians.y);
-    float cx = cosf(radians.x);
-    float sx = sinf(radians.x);
+    float cz = std::cos(radians.z);
+    float sz = std::sin(radians.z);
+    float cy = std::cos(radians.y);
+    float sy = std::sin(radians.y);
+    float cx = std::cos(radians.x);
+    float sx = std::sin(radians.x);
 
     result.m00 = cz * cy;
     result.m10 = cz * sy * sx - cx * sz;
@@ -828,9 +845,9 @@ NX_Transform NX_Mat4Decompose(const NX_Mat4* mat)
     t.translation.y = mat->m31;
     t.translation.z = mat->m32;
 
-    float sx = sqrtf(mat->m00 * mat->m00 + mat->m01 * mat->m01 + mat->m02 * mat->m02);
-    float sy = sqrtf(mat->m10 * mat->m10 + mat->m11 * mat->m11 + mat->m12 * mat->m12);
-    float sz = sqrtf(mat->m20 * mat->m20 + mat->m21 * mat->m21 + mat->m22 * mat->m22);
+    float sx = std::sqrt(mat->m00 * mat->m00 + mat->m01 * mat->m01 + mat->m02 * mat->m02);
+    float sy = std::sqrt(mat->m10 * mat->m10 + mat->m11 * mat->m11 + mat->m12 * mat->m12);
+    float sz = std::sqrt(mat->m20 * mat->m20 + mat->m21 * mat->m21 + mat->m22 * mat->m22);
 
     t.scale.x = sx;
     t.scale.y = sy;
@@ -855,28 +872,28 @@ NX_Transform NX_Mat4Decompose(const NX_Mat4* mat)
     float trace = m00 + m11 + m22;
 
     if (trace > 0.0f) {
-        float s = 0.5f / sqrtf(trace + 1.0f);
+        float s = 0.5f / std::sqrt(trace + 1.0f);
         t.rotation.w = 0.25f / s;
         t.rotation.x = (m21 - m12) * s;
         t.rotation.y = (m02 - m20) * s;
         t.rotation.z = (m10 - m01) * s;
     }
     else if (m00 > m11 && m00 > m22) {
-        float s = 0.5f / sqrtf(1.0f + m00 - m11 - m22);
+        float s = 0.5f / std::sqrt(1.0f + m00 - m11 - m22);
         t.rotation.w = (m21 - m12) * s;
         t.rotation.x = 0.25f / s;
         t.rotation.y = (m01 + m10) * s;
         t.rotation.z = (m02 + m20) * s;
     }
     else if (m11 > m22) {
-        float s = 0.5f / sqrtf(1.0f + m11 - m00 - m22);
+        float s = 0.5f / std::sqrt(1.0f + m11 - m00 - m22);
         t.rotation.w = (m02 - m20) * s;
         t.rotation.x = (m01 + m10) * s;
         t.rotation.y = 0.25f / s;
         t.rotation.z = (m12 + m21) * s;
     }
     else {
-        float s = 0.5f / sqrtf(1.0f + m22 - m00 - m11);
+        float s = 0.5f / std::sqrt(1.0f + m22 - m00 - m11);
         t.rotation.w = (m10 - m01) * s;
         t.rotation.x = (m02 + m20) * s;
         t.rotation.y = (m12 + m21) * s;
@@ -986,8 +1003,8 @@ NX_Mat4 NX_Mat4LookTo(NX_Vec3 eye, NX_Vec3 direction, NX_Vec3 up)
     float fx = -direction.x, fy = -direction.y, fz = -direction.z;
     float flenSq = fx * fx + fy * fy + fz * fz;
 
-    if (flenSq > 1e-12f) {
-        float invFlen = 1.0f / sqrtf(flenSq);
+    if (flenSq > 1e-6f) {
+        float invFlen = 1.0f / std::sqrt(flenSq);
         fx *= invFlen;
         fy *= invFlen;
         fz *= invFlen;
@@ -998,8 +1015,8 @@ NX_Mat4 NX_Mat4LookTo(NX_Vec3 eye, NX_Vec3 direction, NX_Vec3 up)
     float rz = up.x * fy - up.y * fx;
 
     float rlenSq = rx * rx + ry * ry + rz * rz;
-    if (rlenSq > 1e-12f) {
-        float invRlen = 1.0f / sqrtf(rlenSq);
+    if (rlenSq > 1e-6f) {
+        float invRlen = 1.0f / std::sqrt(rlenSq);
         rx *= invRlen;
         ry *= invRlen;
         rz *= invRlen;
@@ -1034,8 +1051,8 @@ NX_Mat4 NX_Mat4LookAt(NX_Vec3 eye, NX_Vec3 target, NX_Vec3 up)
     float fx = -dx, fy = -dy, fz = -dz;
     float flenSq = fx * fx + fy * fy + fz * fz;
 
-    if (flenSq > 1e-12f) {
-        float invFlen = 1.0f / sqrtf(flenSq);
+    if (flenSq > 1e-6f) {
+        float invFlen = 1.0f / std::sqrt(flenSq);
         fx *= invFlen;
         fy *= invFlen;
         fz *= invFlen;
@@ -1046,8 +1063,8 @@ NX_Mat4 NX_Mat4LookAt(NX_Vec3 eye, NX_Vec3 target, NX_Vec3 up)
     float rz = up.x * fy - up.y * fx;
 
     float rlenSq = rx * rx + ry * ry + rz * rz;
-    if (rlenSq > 1e-12f) {
-        float invRlen = 1.0f / sqrtf(rlenSq);
+    if (rlenSq > 1e-6f) {
+        float invRlen = 1.0f / std::sqrt(rlenSq);
         rx *= invRlen;
         ry *= invRlen;
         rz *= invRlen;
@@ -1300,25 +1317,25 @@ NX_Mat4 NX_Mat4Mul(const NX_Mat4* NX_RESTRICT left, const NX_Mat4* NX_RESTRICT r
 
 #else
 
-    R[0]  = fmaf(A[0], B[0],  fmaf(A[1], B[4],  fmaf(A[2], B[8],  A[3] * B[12])));
-    R[1]  = fmaf(A[0], B[1],  fmaf(A[1], B[5],  fmaf(A[2], B[9],  A[3] * B[13])));
-    R[2]  = fmaf(A[0], B[2],  fmaf(A[1], B[6],  fmaf(A[2], B[10], A[3] * B[14])));
-    R[3]  = fmaf(A[0], B[3],  fmaf(A[1], B[7],  fmaf(A[2], B[11], A[3] * B[15])));
-
-    R[4]  = fmaf(A[4], B[0],  fmaf(A[5], B[4],  fmaf(A[6], B[8],  A[7] * B[12])));
-    R[5]  = fmaf(A[4], B[1],  fmaf(A[5], B[5],  fmaf(A[6], B[9],  A[7] * B[13])));
-    R[6]  = fmaf(A[4], B[2],  fmaf(A[5], B[6],  fmaf(A[6], B[10], A[7] * B[14])));
-    R[7]  = fmaf(A[4], B[3],  fmaf(A[5], B[7],  fmaf(A[6], B[11], A[7] * B[15])));
-
-    R[8]  = fmaf(A[8], B[0],  fmaf(A[9], B[4],  fmaf(A[10], B[8],  A[11] * B[12])));
-    R[9]  = fmaf(A[8], B[1],  fmaf(A[9], B[5],  fmaf(A[10], B[9],  A[11] * B[13])));
-    R[10] = fmaf(A[8], B[2],  fmaf(A[9], B[6],  fmaf(A[10], B[10], A[11] * B[14])));
-    R[11] = fmaf(A[8], B[3],  fmaf(A[9], B[7],  fmaf(A[10], B[11], A[11] * B[15])));
-
-    R[12] = fmaf(A[12], B[0], fmaf(A[13], B[4], fmaf(A[14], B[8],  A[15] * B[12])));
-    R[13] = fmaf(A[12], B[1], fmaf(A[13], B[5], fmaf(A[14], B[9],  A[15] * B[13])));
-    R[14] = fmaf(A[12], B[2], fmaf(A[13], B[6], fmaf(A[14], B[10], A[15] * B[14])));
-    R[15] = fmaf(A[12], B[3], fmaf(A[13], B[7], fmaf(A[14], B[11], A[15] * B[15])));
+    R[0]  = A[0] * B[0]  + A[1] * B[4]  + A[2] * B[8]   + A[3] * B[12];
+    R[1]  = A[0] * B[1]  + A[1] * B[5]  + A[2] * B[9]   + A[3] * B[13];
+    R[2]  = A[0] * B[2]  + A[1] * B[6]  + A[2] * B[10]  + A[3] * B[14];
+    R[3]  = A[0] * B[3]  + A[1] * B[7]  + A[2] * B[11]  + A[3] * B[15];
+    
+    R[4]  = A[4] * B[0]  + A[5] * B[4]  + A[6] * B[8]   + A[7] * B[12];
+    R[5]  = A[4] * B[1]  + A[5] * B[5]  + A[6] * B[9]   + A[7] * B[13];
+    R[6]  = A[4] * B[2]  + A[5] * B[6]  + A[6] * B[10]  + A[7] * B[14];
+    R[7]  = A[4] * B[3]  + A[5] * B[7]  + A[6] * B[11]  + A[7] * B[15];
+    
+    R[8]  = A[8] * B[0]  + A[9] * B[4]  + A[10] * B[8]  + A[11] * B[12];
+    R[9]  = A[8] * B[1]  + A[9] * B[5]  + A[10] * B[9]  + A[11] * B[13];
+    R[10] = A[8] * B[2]  + A[9] * B[6]  + A[10] * B[10] + A[11] * B[14];
+    R[11] = A[8] * B[3]  + A[9] * B[7]  + A[10] * B[11] + A[11] * B[15];
+    
+    R[12] = A[12] * B[0] + A[13] * B[4] + A[14] * B[8]  + A[15] * B[12];
+    R[13] = A[12] * B[1] + A[13] * B[5] + A[14] * B[9]  + A[15] * B[13];
+    R[14] = A[12] * B[2] + A[13] * B[6] + A[14] * B[10] + A[15] * B[14];
+    R[15] = A[12] * B[3] + A[13] * B[7] + A[14] * B[11] + A[15] * B[15];
 
 #endif
 
@@ -1484,25 +1501,25 @@ void NX_Mat4MulBatch(NX_Mat4* NX_RESTRICT results,
         const float* NX_RESTRICT B = right[i].a;
         float* NX_RESTRICT R = results[i].a;
 
-        R[0]  = fmaf(A[0], B[0],  fmaf(A[1], B[4],  fmaf(A[2], B[8],  A[3] * B[12])));
-        R[1]  = fmaf(A[0], B[1],  fmaf(A[1], B[5],  fmaf(A[2], B[9],  A[3] * B[13])));
-        R[2]  = fmaf(A[0], B[2],  fmaf(A[1], B[6],  fmaf(A[2], B[10], A[3] * B[14])));
-        R[3]  = fmaf(A[0], B[3],  fmaf(A[1], B[7],  fmaf(A[2], B[11], A[3] * B[15])));
-
-        R[4]  = fmaf(A[4], B[0],  fmaf(A[5], B[4],  fmaf(A[6], B[8],  A[7] * B[12])));
-        R[5]  = fmaf(A[4], B[1],  fmaf(A[5], B[5],  fmaf(A[6], B[9],  A[7] * B[13])));
-        R[6]  = fmaf(A[4], B[2],  fmaf(A[5], B[6],  fmaf(A[6], B[10], A[7] * B[14])));
-        R[7]  = fmaf(A[4], B[3],  fmaf(A[5], B[7],  fmaf(A[6], B[11], A[7] * B[15])));
-
-        R[8]  = fmaf(A[8], B[0],  fmaf(A[9], B[4],  fmaf(A[10], B[8],  A[11] * B[12])));
-        R[9]  = fmaf(A[8], B[1],  fmaf(A[9], B[5],  fmaf(A[10], B[9],  A[11] * B[13])));
-        R[10] = fmaf(A[8], B[2],  fmaf(A[9], B[6],  fmaf(A[10], B[10], A[11] * B[14])));
-        R[11] = fmaf(A[8], B[3],  fmaf(A[9], B[7],  fmaf(A[10], B[11], A[11] * B[15])));
-
-        R[12] = fmaf(A[12], B[0], fmaf(A[13], B[4], fmaf(A[14], B[8],  A[15] * B[12])));
-        R[13] = fmaf(A[12], B[1], fmaf(A[13], B[5], fmaf(A[14], B[9],  A[15] * B[13])));
-        R[14] = fmaf(A[12], B[2], fmaf(A[13], B[6], fmaf(A[14], B[10], A[15] * B[14])));
-        R[15] = fmaf(A[12], B[3], fmaf(A[13], B[7], fmaf(A[14], B[11], A[15] * B[15])));
+        R[0]  = A[0] * B[0]  + A[1] * B[4]  + A[2] * B[8]   + A[3] * B[12];
+        R[1]  = A[0] * B[1]  + A[1] * B[5]  + A[2] * B[9]   + A[3] * B[13];
+        R[2]  = A[0] * B[2]  + A[1] * B[6]  + A[2] * B[10]  + A[3] * B[14];
+        R[3]  = A[0] * B[3]  + A[1] * B[7]  + A[2] * B[11]  + A[3] * B[15];
+        
+        R[4]  = A[4] * B[0]  + A[5] * B[4]  + A[6] * B[8]   + A[7] * B[12];
+        R[5]  = A[4] * B[1]  + A[5] * B[5]  + A[6] * B[9]   + A[7] * B[13];
+        R[6]  = A[4] * B[2]  + A[5] * B[6]  + A[6] * B[10]  + A[7] * B[14];
+        R[7]  = A[4] * B[3]  + A[5] * B[7]  + A[6] * B[11]  + A[7] * B[15];
+        
+        R[8]  = A[8] * B[0]  + A[9] * B[4]  + A[10] * B[8]  + A[11] * B[12];
+        R[9]  = A[8] * B[1]  + A[9] * B[5]  + A[10] * B[9]  + A[11] * B[13];
+        R[10] = A[8] * B[2]  + A[9] * B[6]  + A[10] * B[10] + A[11] * B[14];
+        R[11] = A[8] * B[3]  + A[9] * B[7]  + A[10] * B[11] + A[11] * B[15];
+        
+        R[12] = A[12] * B[0] + A[13] * B[4] + A[14] * B[8]  + A[15] * B[12];
+        R[13] = A[12] * B[1] + A[13] * B[5] + A[14] * B[9]  + A[15] * B[13];
+        R[14] = A[12] * B[2] + A[13] * B[6] + A[14] * B[10] + A[15] * B[14];
+        R[15] = A[12] * B[3] + A[13] * B[7] + A[14] * B[11] + A[15] * B[15];
     }
 
 #endif
@@ -1520,8 +1537,8 @@ NX_Mat4 NX_TransformToMat4(const NX_Transform* transform)
     float qz = q->z, qw = q->w;
 
     float qlen2 = qx * qx + qy * qy + qz * qz + qw * qw;
-    if (fabsf(qlen2 - 1.0f) > 1e-4f) {
-        if (qlen2 < 1e-12f) {
+    if (std::abs(qlen2 - 1.0f) > 1e-4f) {
+        if (qlen2 < 1e-6f) {
             NX_Mat4 m = {
                 s->x, 0.0f, 0.0f, 0.0f,
                 0.0f, s->y, 0.0f, 0.0f,
@@ -1530,7 +1547,7 @@ NX_Mat4 NX_TransformToMat4(const NX_Transform* transform)
             };
             return m;
         }
-        float invLen = 1.0f / sqrtf(qlen2);
+        float invLen = 1.0f / std::sqrt(qlen2);
         qx *= invLen; qy *= invLen; qz *= invLen; qw *= invLen;
     }
 

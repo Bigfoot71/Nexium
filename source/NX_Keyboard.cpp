@@ -7,7 +7,7 @@
  */
 
 #include <NX/NX_Keyboard.h>
-#include "./INX_GlobalState.h"
+#include "./INX_GlobalState.hpp"
 
 #include <SDL3/SDL_keyboard.h>
 
@@ -17,7 +17,7 @@
 
 bool NX_IsKeyPressed(NX_Key key)
 {
-    if ((Uint32)(key) >= SDL_SCANCODE_COUNT) {
+    if (static_cast<Uint32>(key) >= SDL_SCANCODE_COUNT) {
         return false;
     }
 
@@ -26,7 +26,7 @@ bool NX_IsKeyPressed(NX_Key key)
 
 bool NX_IsKeyReleased(NX_Key key)
 {
-    if ((Uint32)(key) >= SDL_SCANCODE_COUNT) {
+    if (static_cast<Uint32>(key) >= SDL_SCANCODE_COUNT) {
         return false;
     }
 
@@ -35,7 +35,7 @@ bool NX_IsKeyReleased(NX_Key key)
 
 bool NX_IsKeyJustPressed(NX_Key key)
 {
-    if ((Uint32)(key) >= SDL_SCANCODE_COUNT) {
+    if (static_cast<Uint32>(key) >= SDL_SCANCODE_COUNT) {
         return false;
     }
 
@@ -47,7 +47,7 @@ bool NX_IsKeyJustPressed(NX_Key key)
 
 bool NX_IsKeyJustReleased(NX_Key key)
 {
-    if ((Uint32)(key) >= SDL_SCANCODE_COUNT) {
+    if (static_cast<Uint32>(key) >= SDL_SCANCODE_COUNT) {
         return false;
     }
 

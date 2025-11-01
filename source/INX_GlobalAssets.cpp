@@ -166,3 +166,14 @@ const NX_Font* INX_GlobalAssets::Get(INX_FontAsset asset)
 
     return font;
 }
+
+void INX_GlobalAssets::Unload()
+{
+    for (NX_Texture* texture : mTextures) {
+        NX_DestroyTexture(texture);
+    }
+
+    for (NX_Font* font : mFonts) {
+        NX_DestroyFont(font);
+    }
+}

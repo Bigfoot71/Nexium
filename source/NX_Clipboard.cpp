@@ -1,4 +1,4 @@
-/* NX_Clipboard.c -- API definition for Nexium's clipboard module
+/* NX_Clipboard.cpp -- API definition for Nexium's clipboard module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -18,12 +18,12 @@ bool NX_SetClipboardText(const char* text)
     return SDL_SetClipboardText(text);
 }
 
-const char* NX_GetClipboardText(void)
+const char* NX_GetClipboardText()
 {
     return SDL_GetClipboardText();
 }
 
-bool NX_HasClipboardText(void)
+bool NX_HasClipboardText()
 {
     return SDL_HasClipboardText();
 }

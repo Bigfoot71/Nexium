@@ -4,7 +4,7 @@
 #include "./Pipeline.hpp"
 #include <NX/NX_Render.h>
 
-#include "../../INX_GlobalState.h"  //< Used to get OpenGL profile (core/es)
+#include "../../INX_GlobalState.hpp"  //< Used to get OpenGL profile (core/es)
 
 #include <SDL3/SDL_video.h>
 #include <glad/gles2.h>

@@ -77,7 +77,7 @@ static GLenum INX_GetWrap(NX_TextureWrap wrap)
 // PUBLIC API
 // ============================================================================
 
-NX_TextureFilter NX_GetDefaultTextureFilter(void)
+NX_TextureFilter NX_GetDefaultTextureFilter()
 {
     return INX_DefaultFilter;
 }
@@ -87,7 +87,7 @@ void NX_SetDefaultTextureFilter(NX_TextureFilter filter)
     INX_DefaultFilter = filter;
 }
 
-float NX_GetDefaultTextureAnisotropy(void)
+float NX_GetDefaultTextureAnisotropy()
 {
     return INX_DefaultAnisotropy;
 }

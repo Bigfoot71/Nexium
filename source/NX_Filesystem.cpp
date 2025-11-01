@@ -1,4 +1,4 @@
-/* NX_Filesystem.c -- API definition for Nexium's filesystem module
+/* NX_Filesystem.cpp -- API definition for Nexium's filesystem module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -7,6 +7,8 @@
  */
 
 #include <NX/NX_Filesystem.h>
+#include <NX/NX_Memory.h>
+
 #include <SDL3/SDL_stdinc.h>
 #include <physfs.h>
 
@@ -24,7 +26,7 @@ bool NX_RemoveSearchPath(const char* path)
     return PHYSFS_unmount(path) != 0;
 }
 
-char** NX_GetSearchPaths(void)
+char** NX_GetSearchPaths()
 {
     return PHYSFS_getSearchPath();
 }
@@ -44,7 +46,7 @@ bool NX_UnmountArchive(const char* archivePath)
     return PHYSFS_unmount(archivePath) != 0;
 }
 
-const char* NX_GetWriteDir(void)
+const char* NX_GetWriteDir()
 {
     return PHYSFS_getWriteDir();
 }
@@ -54,7 +56,7 @@ bool NX_SetWriteDir(const char* path)
     return PHYSFS_setWriteDir(path) != 0;
 }
 
-const char* NX_GetBaseDir(void)
+const char* NX_GetBaseDir()
 {
     return PHYSFS_getBaseDir();
 }
@@ -140,7 +142,7 @@ void* NX_LoadFile(const char* filePath, size_t* size)
         return NULL;
     }
 
-    void* buffer = SDL_malloc(fileSize);
+    void* buffer = NX_Malloc(fileSize);
     if (!buffer) {
         PHYSFS_close(file);
         *size = 0;
@@ -151,7 +153,7 @@ void* NX_LoadFile(const char* filePath, size_t* size)
     PHYSFS_close(file);
 
     if (bytesRead != fileSize) {
-        SDL_free(buffer);
+        NX_Free(buffer);
         *size = 0;
         return NULL;
     }
@@ -177,7 +179,7 @@ char* NX_LoadFileText(const char* filePath)
         return NULL;
     }
 
-    char* buffer = SDL_malloc(fileSize + 1);
+    char* buffer = NX_Malloc<char>(fileSize + 1);
     if (!buffer) {
         PHYSFS_close(file);
         return NULL;
@@ -187,7 +189,7 @@ char* NX_LoadFileText(const char* filePath)
     PHYSFS_close(file);
 
     if (bytesRead != fileSize) {
-        SDL_free(buffer);
+        NX_Free(buffer);
         return NULL;
     }
 

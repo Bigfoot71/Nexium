@@ -1,4 +1,4 @@
-/* NX_Audio.c -- API definition for Nexium's audio module
+/* NX_Audio.cpp -- API definition for Nexium's audio module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -10,7 +10,7 @@
 
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_assert.h>
-#include <math.h>
+#include <cmath>
 #include <al.h>
 
 // ============================================================================
@@ -73,16 +73,16 @@
 // PUBLIC API
 // ============================================================================
 
-float NX_GetAudioVolume(void)
+float NX_GetAudioVolume()
 {
     ALfloat gain = 0;
     alGetListenerf(AL_GAIN, &gain);
-    return powf(gain, 1.0f / 3.0f);
+    return std::pow(gain, 1.0f / 3.0f);
 }
 
 void NX_SetAudioVolume(float volume)
 {
-    volume = fmaxf(volume, 0.0f);
-    float gain = powf(volume, 3.0f);
+    volume = std::max(volume, 0.0f);
+    float gain = std::pow(volume, 3.0f);
     alListenerf(AL_GAIN, gain);
 }

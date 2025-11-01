@@ -9,7 +9,7 @@
 #ifndef NX_GPU_PIPELINE_HPP
 #define NX_GPU_PIPELINE_HPP
 
-#include "../../INX_GlobalState.h"  //< Used to get OpenGL profile used (Core/ES)
+#include "../../INX_GlobalState.hpp"  //< Used to get OpenGL profile used (Core/ES)
 
 #include "./VertexArray.hpp"
 #include "./Framebuffer.hpp"

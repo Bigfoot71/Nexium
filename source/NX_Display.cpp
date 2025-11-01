@@ -1,4 +1,4 @@
-/* NX_Display.c -- API definition for Nexium's display module
+/* NX_Display.cpp -- API definition for Nexium's display module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,19 +6,21 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
+#include <NX/NX_Display.h>
+
+#include "./INX_GlobalState.hpp"
 #include <SDL3/SDL_video.h>
-#include "./INX_GlobalState.h"
 
 // ============================================================================
 // PUBLIC API
 // ============================================================================
 
-float NX_GetDisplayScale(void)
+float NX_GetDisplayScale()
 {
     return SDL_GetWindowDisplayScale(INX_Display.window);
 }
 
-float NX_GetDisplayGetDPI(void)
+float NX_GetDisplayGetDPI()
 {
     float displayScale = SDL_GetWindowDisplayScale(INX_Display.window);
 
@@ -29,26 +31,26 @@ float NX_GetDisplayGetDPI(void)
 #endif
 }
 
-int NX_GetDisplayIndex(void)
+int NX_GetDisplayIndex()
 {
     return SDL_GetDisplayForWindow(INX_Display.window);
 }
 
-NX_IVec2 NX_GetDisplaySize(void)
+NX_IVec2 NX_GetDisplaySize()
 {
     int displayIndex = SDL_GetDisplayForWindow(INX_Display.window);
 
-    SDL_Rect bounds = { 0 };
+    SDL_Rect bounds{};
     SDL_GetDisplayBounds(displayIndex, &bounds);
 
     return NX_IVEC2(bounds.w, bounds.h);
 }
 
-NX_Vec2 NX_GetDisplaySizeF(void)
+NX_Vec2 NX_GetDisplaySizeF()
 {
     int displayIndex = SDL_GetDisplayForWindow(INX_Display.window);
 
-    SDL_Rect bounds;
+    SDL_Rect bounds{};
     SDL_GetDisplayBounds(displayIndex, &bounds);
 
     return NX_VEC2(bounds.w, bounds.h);

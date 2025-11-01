@@ -1,5 +1,5 @@
-#ifndef INX_GLOBAL_STATE_H
-#define INX_GLOBAL_STATE_H
+#ifndef INX_GLOBAL_STATE_HPP
+#define INX_GLOBAL_STATE_HPP
 
 #include <NX/NX_Math.h>
 
@@ -43,4 +43,4 @@ extern struct INX_FrameState {
     double fpsAverage;
 } INX_Frame;
 
-#endif // INX_GLOBAL_STATE_H
+#endif // INX_GLOBAL_STATE_HPP
