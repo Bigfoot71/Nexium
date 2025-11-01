@@ -199,7 +199,7 @@ T* ObjectPool<T, PoolSize>::create(Args&&... args) noexcept
     // Constructs the object with noexcept handling
     T* obj = reinterpret_cast<T*>(slot.mStorage);
     if constexpr (std::is_nothrow_constructible_v<T, Args...>) {
-        new(obj) T(static_cast<Args&&>(args)...);
+        new(obj) T(std::forward<Args>(args)...);
         slot.mOccupied = true;
         ++mTotalCount;
         return obj;
@@ -207,7 +207,7 @@ T* ObjectPool<T, PoolSize>::create(Args&&... args) noexcept
     else {
         // If the constructor can throw an exception, we use try/catch
         try {
-            new(obj) T(static_cast<Args&&>(args)...);
+            new(obj) T(std::forward<Args>(args)...);
             slot.mOccupied = true;
             ++mTotalCount;
             return obj;
