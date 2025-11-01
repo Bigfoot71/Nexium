@@ -8,9 +8,12 @@
 
 #include "./LightManager.hpp"
 
+#include "../../Detail/GPU/Translation.hpp"
 #include "../../Detail/GPU/Pipeline.hpp"
+#include "../../INX_GlobalAssets.hpp"
 #include "./DrawCallManager.hpp"
-#include "../NX_Texture.hpp"
+#include "../../NX_Texture.hpp"
+#include "../NX_Light.hpp"
 
 #include <NX/NX_Runtime.h>
 #include <NX/NX_Display.h>
@@ -23,8 +26,8 @@ namespace scene {
 
 /* === Public Implementation === */
 
-LightManager::LightManager(render::ProgramCache& programs, render::AssetCache& assets, const NX_AppDesc& desc)
-    : mPrograms(programs), mAssets(assets)
+LightManager::LightManager(render::ProgramCache& programs, const NX_AppDesc& desc)
+    : mPrograms(programs)
     , mFrameShadowUniform(GL_UNIFORM_BUFFER, sizeof(FrameShadowUniform), nullptr, GL_DYNAMIC_DRAW)
     , mShadowResolution{desc.render3D.shadowRes > 0 ? desc.render3D.shadowRes : 2048}
 {
@@ -364,12 +367,17 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
                     NX_MaterialShader& shader = mPrograms.materialShader(unique.material.shader);
                     pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_SHADOW));
-                    pipeline.setCullMode(render::getCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
+                    pipeline.setCullMode(gpu::getCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
 
-                    shader.bindTextures(pipeline, unique.textures, mAssets.textureWhite().gpuTexture());
+                    shader.bindTextures(pipeline, unique.textures);
                     shader.bindUniforms(pipeline, unique.dynamicRangeIndex);
 
-                    pipeline.bindTexture(0, mAssets.textureOrWhite(unique.material.albedo.texture));
+                    const NX_Texture* texAlbedo = INX_Assets.Select(
+                        unique.material.albedo.texture,
+                        INX_TextureAsset::WHITE
+                    );
+
+                    pipeline.bindTexture(0,  texAlbedo->gpu);
                     pipeline.setUniformUint1(0, unique.sharedDataIndex);
                     pipeline.setUniformUint1(1, unique.uniqueDataIndex);
 

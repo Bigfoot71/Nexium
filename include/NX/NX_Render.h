@@ -9,7 +9,10 @@
 #ifndef NX_RENDER_H
 #define NX_RENDER_H
 
+#include "./NX_RenderTexture.h"
+#include "./NX_Texture.h"
 #include "./NX_Image.h"
+#include "./NX_Font.h"
 #include "./NX_Math.h"
 #include "./NX_API.h"
 
@@ -88,38 +91,6 @@ typedef enum NX_Projection {
     NX_PROJECTION_PERSPECTIVE,      ///< Standard perspective projection. Objects appear smaller when farther.
     NX_PROJECTION_ORTHOGRAPHIC      ///< Orthographic projection. Objects keep the same size regardless of distance.
 } NX_Projection;
-
-/**
- * @brief Defines the texture filtering method.
- *
- * Determines how textures are sampled when scaled.
- */
-typedef enum NX_TextureFilter {
-    NX_TEXTURE_FILTER_POINT,        ///< Nearest-neighbor filtering. Fastest, pixelated look.
-    NX_TEXTURE_FILTER_BILINEAR,     ///< Linear interpolation between 4 texels. Smooth but slightly blurry.
-    NX_TEXTURE_FILTER_TRILINEAR     ///< Linear interpolation with mipmaps. Smooth and reduces aliasing at distance.
-} NX_TextureFilter;
-
-/**
- * @brief Defines the texture wrapping mode.
- *
- * Determines behavior when texture coordinates exceed [0, 1].
- */
-typedef enum NX_TextureWrap {
-    NX_TEXTURE_WRAP_CLAMP,          ///< Coordinates outside [0,1] are clamped to the edge pixel.
-    NX_TEXTURE_WRAP_REPEAT,         ///< Texture repeats/tiled across the surface.
-    NX_TEXTURE_WRAP_MIRROR          ///< Texture repeats but mirrors on each tile.
-} NX_TextureWrap;
-
-/**
- * @brief Defines the type of font used for rendering.
- */
-typedef enum NX_FontType {
-    NX_FONT_NORMAL,                 ///< Standard vector font, anti-aliased, general-purpose text.
-    NX_FONT_LIGHT,                  ///< Light/thin vector font, finer strokes, good for small UI text.
-    NX_FONT_MONO,                   ///< Monochrome bitmap font, pixel-perfect, very fast to load.
-    NX_FONT_SDF                     ///< Signed Distance Field font, scalable, smooth rendering at arbitrary sizes.
-} NX_FontType;
 
 /**
  * @brief Defines the geometric primitive type.
@@ -283,21 +254,6 @@ typedef enum NX_Tonemap {
 /* === Handlers === */
 
 /**
- * @brief Opaque handle to a GPU texture.
- *
- * Represents a 2D image stored on the GPU.
- * Can be used for material maps or UI elements.
- */
-typedef struct NX_Texture NX_Texture;
-
-/**
- * @brief Opaque handle to a render texture.
- *
- * Represents a render texture containing a depth color target.
- */
-typedef struct NX_RenderTexture NX_RenderTexture;
-
-/**
  * @brief Opaque handle to a GPU vertex buffer.
  *
  * Represents a collection of vertices stored on the GPU.
@@ -341,14 +297,6 @@ typedef struct NX_ReflectionProbe NX_ReflectionProbe;
  * Can be used for directional, spot or omni-directional lights.
  */
 typedef struct NX_Light NX_Light;
-
-/**
- * @brief Opaque handle to a font stored on the GPU.
- *
- * Represents a loaded font for text rendering.
- * Supports bitmap or SDF rendering modes depending on NX_FontType.
- */
-typedef struct NX_Font NX_Font;
 
 /**
  * @brief Opaque handle to a shader.
@@ -645,207 +593,6 @@ typedef struct NX_Model {
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
-/**
- * @defgroup Texture Texture Functions
- * @{
- */
-
-/**
- * @brief Creates a GPU texture from an image.
- * @param image Pointer to the source image.
- * @return Pointer to a newly created NX_Texture, or NULL on failure.
- */
-NXAPI NX_Texture* NX_CreateTexture(const NX_Image* image);
-
-/**
- * @brief Load a texture from a file and decode it for rendering.
- *
- * Automatically converts pixel formats if needed (e.g., L/LA -> RGB/RGBA)
- *
- * @param filePath Path to the texture file
- * @return Pointer to a newly loaded NX_Texture ready for rendering, or NULL on failure
- */
-NXAPI NX_Texture* NX_LoadTexture(const char* filePath);
-
-/**
- * @brief Load raw texture data from a file without decoding or conversion.
- *
- * Preserves the original number of channels and pixel layout as stored in the file.
- * Useful if you want to handle texture decoding manually or keep raw data.
- *
- * @param filePath Path to the texture file
- * @return Pointer to a newly loaded NX_Texture containing raw pixel data, or NULL on failure
- */
-NXAPI NX_Texture* NX_LoadTextureAsData(const char* filePath);
-
-/**
- * @brief Destroys a GPU texture and frees its resources.
- * @param texture Pointer to the NX_Texture to destroy.
- */
-NXAPI void NX_DestroyTexture(NX_Texture* texture);
-
-/**
- * @brief Sets the default texture filter for newly created textures.
- * @param filter Default texture filtering mode.
- * @note The default filter is NX_TEXTURE_FILTER_BILINEAR.
- * @note If NX_TEXTURE_FILTER_TRILINEAR is set, mipmaps will be generated automatically for all new textures.
- */
-NXAPI void NX_SetDefaultTextureFilter(NX_TextureFilter filter);
-
-/**
- * @brief Sets the default anisotropy level for newly created textures.
- * @param anisotropy Default anisotropy level (1.0f by default).
- * @note Anisotropy may have no effect on GLES 3.2 depending on platform support.
- * @note The value is automatically clamped to the maximum supported by the platform.
- */
-NXAPI void NX_SetDefaultTextureAnisotropy(float anisotropy);
-
-/**
- * @brief Sets filtering, wrapping, and anisotropy parameters for a texture.
- * @param texture Pointer to the NX_Texture.
- * @param filter Texture filtering mode.
- * @param wrap Texture wrapping mode.
- * @param anisotropy Anisotropy level.
- * @note Anisotropy may have no effect on GLES 3.2 depending on platform support.
- * @note The value is automatically clamped to the maximum supported by the platform.
- */
-NXAPI void NX_SetTextureParameters(NX_Texture* texture, NX_TextureFilter filter, NX_TextureWrap wrap, float anisotropy);
-
-/**
- * @brief Sets the texture filtering mode.
- * @param texture Pointer to the NX_Texture.
- * @param filter Texture filtering mode.
- */
-NXAPI void NX_SetTextureFilter(NX_Texture* texture, NX_TextureFilter filter);
-
-/**
- * @brief Sets the anisotropy level for a texture.
- * @param texture Pointer to the NX_Texture.
- * @param anisotropy Anisotropy level.
- * @note Anisotropy may have no effect on GLES 3.2 depending on platform support.
- * @note The value is automatically clamped to the maximum supported by the platform.
- */
-NXAPI void NX_SetTextureAnisotropy(NX_Texture* texture, float anisotropy);
-
-/**
- * @brief Sets the texture wrapping mode.
- * @param texture Pointer to the NX_Texture.
- * @param wrap Texture wrapping mode.
- */
-NXAPI void NX_SetTextureWrap(NX_Texture* texture, NX_TextureWrap wrap);
-
-/**
- * @brief Generates mipmaps for a texture.
- * @param texture Pointer to the NX_Texture.
- */
-NXAPI void NX_GenerateMipmap(NX_Texture* texture);
-
-/**
- * @brief Queries the dimensions of a texture.
- * @param texture Pointer to the NX_Texture.
- * @param w Pointer to store the width.
- * @param h Pointer to store the height.
- */
-NXAPI void NX_QueryTexture(NX_Texture* texture, int* w, int* h);
-
-/** @} */ // end of Texture
-
-/**
- * @defgroup Font Font Functions
- * @{
- */
-
-/**
- * @brief Loads a font from a file.
- * @param filePath Path to the font file.
- * @param type Font type (bitmap or SDF).
- * @param baseSize Base size of the font in pixels.
- * @param codepoints Array of Unicode codepoints to load (can be NULL to load default set).
- * @param codepointCount Number of codepoints in the array.
- * @return Pointer to a newly loaded NX_Font.
- */
-NXAPI NX_Font* NX_LoadFont(const char* filePath, NX_FontType type, int baseSize, int* codepoints, int codepointCount);
-
-/**
- * @brief Loads a font from memory.
- * @param fileData Pointer to font file data in memory.
- * @param dataSize Size of the font data in bytes.
- * @param type Font type (bitmap or SDF).
- * @param baseSize Base size of the font in pixels.
- * @param codepoints Array of Unicode codepoints to load (can be NULL to load default set).
- * @param codepointCount Number of codepoints in the array.
- * @return Pointer to a newly loaded NX_Font.
- */
-NXAPI NX_Font* NX_LoadFontFromMem(const void* fileData, size_t dataSize, NX_FontType type, int baseSize, int* codepoints, int codepointCount);
-
-/**
- * @brief Destroys a font and frees its resources.
- * @param font Pointer to the NX_Font to destroy.
- */
-NXAPI void NX_DestroyFont(NX_Font* font);
-
-/**
- * @brief Measures the size of an array of codepoints in the given font.
- * @param font Pointer to the NX_Font to use (can be NULL to use the default font).
- * @param codepoints Array of Unicode codepoints to measure.
- * @param length Number of codepoints in the array.
- * @param fontSize Font size in pixels.
- * @param spacing Additional spacing between characters.
- * @return Width and height required to render the codepoints.
- */
-NXAPI NX_Vec2 NX_MeasureCodepoints(const NX_Font* font, const int* codepoints, int length, float fontSize, NX_Vec2 spacing);
-
-/**
- * @brief Measures the size of a text string in the given font.
- * @param font Pointer to the NX_Font to use (can be NULL to use the default font).
- * @param text Null-terminated string to measure.
- * @param fontSize Font size in pixels.
- * @param spacing Additional spacing between characters.
- * @return Width and height required to render the text.
- */
-NXAPI NX_Vec2 NX_MeasureText(const NX_Font* font, const char* text, float fontSize, NX_Vec2 spacing);
-
-/** @} */ // end of Font
-
-/**
- * @defgroup RenderTexture Render Texture Functions
- * @{
- */
-
-/**
- * @brief Creates an off-screen render texture.
- * @param w Width of the render texture in pixels.
- * @param h Height of the render texture in pixels.
- * @return Pointer to the newly created render texture, or NULL on failure.
- */
-NXAPI NX_RenderTexture* NX_CreateRenderTexture(int w, int h);
-
-/**
- * @brief Destroys a render texture.
- * @param target Pointer to the render texture to destroy.
- */
-NXAPI void NX_DestroyRenderTexture(NX_RenderTexture* target);
-
-/**
- * @brief Retrieves the color texture of a render texture.
- * @param target Pointer to the render texture.
- * @return Pointer to the color texture.
- */
-NXAPI NX_Texture* NX_GetRenderTexture(NX_RenderTexture* target);
-
-/**
- * @brief Blits a render texture to the screen.
- * @param target Pointer to the render texture to draw.
- * @param xDst X coordinate of the destination rectangle (in screen space).
- * @param yDst Y coordinate of the destination rectangle (in screen space).
- * @param wDst Width of the destination rectangle.
- * @param hDst Height of the destination rectangle.
- * @param linear If true, applies linear filtering when scaling; otherwise nearest-neighbor.
- */
-NXAPI void NX_BlitRenderTexture(const NX_RenderTexture* target, int xDst, int yDst, int wDst, int hDst, bool linear);
-
-/** @} */ // end of RenderTexture
 
 /**
  * @defgroup Shader Shader Functions

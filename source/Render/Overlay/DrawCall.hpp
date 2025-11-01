@@ -10,7 +10,6 @@
 #define NX_RENDER_OVERLAY_DRAW_CALL_HPP
 
 #include "../../Detail/GPU/Pipeline.hpp"
-#include "../NX_Texture.hpp"
 #include "../NX_Shader.hpp"
 
 namespace overlay {

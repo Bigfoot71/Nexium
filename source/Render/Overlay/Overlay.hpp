@@ -9,25 +9,20 @@
 #ifndef NX_RENDER_OVERLAY_HPP
 #define NX_RENDER_OVERLAY_HPP
 
-#include "../NX_Font.hpp"
-
 #include <NX/NX_Runtime.h>
 #include <NX/NX_Display.h>
 #include <NX/NX_Window.h>
 #include <NX/NX_Init.h>
 #include <NX/NX_Math.h>
 
+#include "../../INX_GlobalAssets.hpp"
+
 #include "../../Detail/Util/StaticArray.hpp"
 #include "../../Detail/Util/ObjectRing.hpp"
 #include "../../Detail/GPU/VertexArray.hpp"
-#include "../../Detail/GPU/Pipeline.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
 
 #include "../Core/ProgramCache.hpp"
-#include "../Core/AssetCache.hpp"
-
-#include "../NX_RenderTexture.hpp"
-#include "../NX_Texture.hpp"
 #include "./DrawCall.hpp"
 
 namespace overlay {
@@ -39,7 +34,7 @@ public:
     static constexpr int MaxIndices = 6144;
 
 public:
-    Overlay(render::ProgramCache& programs, render::AssetCache& assets, NX_AppDesc& desc);
+    Overlay(render::ProgramCache& programs, NX_AppDesc& desc);
     ~Overlay() = default;
 
     Overlay(const Overlay&) = delete;
@@ -122,7 +117,6 @@ private:
 
 private:
     render::ProgramCache& mPrograms;
-    render::AssetCache& mAssets;
 };
 
 /* === Public Implementation === */
@@ -134,7 +128,7 @@ inline const NX_Color& Overlay::currentColor() const
 
 inline const NX_Font& Overlay::currentFont() const
 {
-    return mCurrentFont ? *mCurrentFont : mAssets.font();
+    return *INX_Assets.Select(mCurrentFont, INX_FontAsset::DEFAULT);
 }
 
 inline uint16_t Overlay::nextVertexIndex() const

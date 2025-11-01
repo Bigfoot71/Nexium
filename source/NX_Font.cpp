@@ -8,23 +8,73 @@
 
 #include "./NX_Font.hpp"
 
+#include "./Detail/Util/FixedArray.hpp"
+#include "./Detail/Util/ObjectPool.hpp"
+#include "./Detail/Util/Memory.hpp"
+
+#include "./INX_GlobalAssets.hpp"
+
+#include <NX/NX_Filesystem.h>
+#include <NX/NX_Codepoint.h>
+#include <NX/NX_Texture.h>
+#include <NX/NX_Memory.h>
 #include <NX/NX_Render.h>
+#include <NX/NX_Font.h>
 #include <NX/NX_Log.h>
 
-/* === FreeType Includes === */
+// ============================================================================
+// FREETYPE INCLUDES
+// ============================================================================
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
-/* === STB Rect Pack Implementation === */
+// ============================================================================
+// STB RECT PACK IMPLEMENTATION
+// ============================================================================
 
 #define STB_RECT_PACK_IMPLEMENTATION
 #include <stb_rect_pack.h>
 
-/* === Public Implementation === */
+// ============================================================================
+// LOCAL MANAGEMENT
+// ============================================================================
 
-NX_Font::NX_Font(const void* fileData, size_t dataSize, NX_FontType type, int baseSize, const int* codepoints, int codepointCount)
+using INX_FontPool = util::ObjectPool<NX_Font, 32>;
+
+static INX_FontPool& INX_GetPool()
+{
+    static INX_FontPool pool{};
+    return pool;
+}
+
+// ============================================================================
+// INTERNAL FUNCTIONS
+// ============================================================================
+
+static int INX_GetGlyphIndex(const NX_Font* font, int codepoint);
+
+static bool INX_GenerateAtlas(NX_Image* atlas, const uint8_t* fileData, int dataSize,
+                              NX_FontType fontType, int baseSize, const int* codepoints,
+                              int codepointCount, int padding, util::FixedArray<INX_Glyph>* outGlyphs);
+
+// ============================================================================
+// PUBLIC API
+// ============================================================================
+
+NX_Font* NX_LoadFont(const char* filePath, NX_FontType type, int baseSize, const int* codepoints, int codepointCount)
+{
+    size_t dataSize = 0;
+    void* fileData = NX_LoadFile(filePath, &dataSize);
+
+    NX_Font* font = NX_LoadFontFromMem(fileData, dataSize, type, baseSize, codepoints, codepointCount);
+    NX_Free(fileData);
+
+    return font;
+}
+
+NX_Font* NX_LoadFontFromMem(const void* fileData, size_t dataSize, NX_FontType type, int baseSize, const int* codepoints, int codepointCount)
 {
 #   define FONT_TTF_DEFAULT_SIZE           32
 #   define FONT_TTF_DEFAULT_NUMCHARS       95
@@ -34,16 +84,13 @@ NX_Font::NX_Font(const void* fileData, size_t dataSize, NX_FontType type, int ba
     /* --- Base configuration --- */
 
     codepointCount = (codepointCount > 0) ? codepointCount : FONT_TTF_DEFAULT_NUMCHARS;
-    mGlyphPadding = FONT_TTF_DEFAULT_CHARS_PADDING;
-    mGlyphCount = codepointCount;
-    mBaseSize = baseSize;
-    mType = type;
 
     /* --- Generation of the atlas image --- */
 
+    util::FixedArray<INX_Glyph> glyphs{};
     NX_Image atlas{};
 
-    bool atlasGenerated = generateFontAtlas(
+    bool atlasGenerated = INX_GenerateAtlas(
         &atlas,
         static_cast<const uint8_t*>(fileData),
         dataSize,
@@ -51,50 +98,98 @@ NX_Font::NX_Font(const void* fileData, size_t dataSize, NX_FontType type, int ba
         baseSize,
         codepoints,
         codepointCount,
-        mGlyphPadding,
-        &mGlyphs
+        FONT_TTF_DEFAULT_CHARS_PADDING,
+        &glyphs
     );
 
     if (!atlasGenerated) {
         NX_LOG(E, "RENDER: Failed to generate font atlas");
-        SDL_free(mGlyphs);
-        return;
+        return nullptr;
     }
 
     /* --- Creating the atlas texture --- */
 
-    GLenum filter = (type == NX_FONT_MONO) ? GL_NEAREST : GL_LINEAR;
-
-    mTexture = gpu::Texture(
-        gpu::TextureConfig
-        {
-            .target = GL_TEXTURE_2D,
-            .internalFormat = GL_R8,
-            .data = atlas.pixels,
-            .width = atlas.w,
-            .height = atlas.h
-        },
-        gpu::TextureParam
-        {
-            .minFilter = filter,
-            .magFilter = filter,
-            .sWrap = GL_CLAMP_TO_EDGE,
-            .tWrap = GL_CLAMP_TO_EDGE,
-            .rWrap = GL_CLAMP_TO_EDGE
-        }
-    );
+    NX_TextureFilter filter = (type == NX_FONT_MONO) ? NX_TEXTURE_FILTER_POINT : NX_TEXTURE_FILTER_BILINEAR;
+    NX_Texture* texture = NX_CreateTextureFromImageEx(&atlas, NX_TEXTURE_WRAP_CLAMP, filter);
     NX_DestroyImage(&atlas);
 
-    if (!mTexture.isValid()) {
-        NX_LOG(E, "RENDER: Failed to upload font atlas");
-        SDL_free(mGlyphs);
-        return;
+    if (texture == nullptr) {
+        NX_LOG(E, "RENDER: Failed to create font atlas texture");
+        return nullptr;
     }
+
+    /* --- Returns object pushed into the pool --- */
+
+    return INX_GetPool().create(NX_Font {
+       .baseSize = baseSize,
+       .glyphPadding = FONT_TTF_DEFAULT_CHARS_PADDING,
+       .texture = texture,
+       .glyphs = std::move(glyphs),
+       .type = type
+    });
 }
 
-NX_Vec2 NX_Font::measureText(const char* text, float fontSize, NX_Vec2 spacing) const
+void NX_DestroyFont(NX_Font* font)
 {
-    float scale = fontSize / mBaseSize;
+    NX_DestroyTexture(font->texture);
+    INX_GetPool().destroy(font);
+}
+
+NX_FontType NX_GetFontType(const NX_Font* font)
+{
+    return font->type;
+}
+
+NX_Vec2 NX_MeasureCodepoints(const NX_Font* font, const int* codepoints, int length, float fontSize, NX_Vec2 spacing)
+{
+    font = INX_Assets.Select(font, INX_FontAsset::DEFAULT);
+
+    float scale = fontSize / font->baseSize;
+
+    float maxWidth = 0.0f;
+    float currentWidth = 0.0f;
+    float textHeight = fontSize;
+
+    int maxCharsInLine = 0;
+    int currentCharsInLine = 0;
+
+    for (int i = 0; i < length; i++)
+    {
+        int letter = codepoints[i];
+
+        if (letter == '\n') {
+            maxWidth = fmaxf(maxWidth, currentWidth);
+            maxCharsInLine = NX_MAX(maxCharsInLine, currentCharsInLine);
+            currentWidth = 0.0f;
+            currentCharsInLine = 0;
+            textHeight += fontSize + spacing.y;
+        }
+        else {
+            int index = INX_GetGlyphIndex(font, letter);
+            float charWith = (font->glyphs[index].xAdvance > 0)
+                ? font->glyphs[index].xAdvance
+                : (font->glyphs[index].wGlyph + font->glyphs[index].xOffset);
+
+            currentWidth += charWith;
+            currentCharsInLine++;
+        }
+    }
+
+    // Treat the last line
+    maxWidth = fmaxf(maxWidth, currentWidth);
+    maxCharsInLine = NX_MAX(maxCharsInLine, currentCharsInLine);
+
+    return NX_Vec2 {
+        .x = maxWidth * scale + (maxCharsInLine > 0 ? (maxCharsInLine - 1) * spacing.x : 0),
+        .y = textHeight
+    };
+}
+
+NX_Vec2 NX_MeasureText(const NX_Font* font, const char* text, float fontSize, NX_Vec2 spacing)
+{
+    font = INX_Assets.Select(font, INX_FontAsset::DEFAULT);
+
+    float scale = fontSize / font->baseSize;
 
     float maxWidth = 0.0f;
     float currentWidth = 0.0f;
@@ -118,12 +213,12 @@ NX_Vec2 NX_Font::measureText(const char* text, float fontSize, NX_Vec2 spacing) 
             textHeight += fontSize + spacing.y;
         }
         else {
-            int index = getGlyphIndex(letter);
-            float char_width = (mGlyphs[index].xAdvance > 0)
-                ? mGlyphs[index].xAdvance
-                : (mGlyphs[index].wGlyph + mGlyphs[index].xOffset);
+            int index = INX_GetGlyphIndex(font, letter);
+            float charWith = (font->glyphs[index].xAdvance > 0)
+                ? font->glyphs[index].xAdvance
+                : (font->glyphs[index].wGlyph + font->glyphs[index].xOffset);
 
-            currentWidth += char_width;
+            currentWidth += charWith;
             currentCharsInLine++;
         }
     }
@@ -138,78 +233,41 @@ NX_Vec2 NX_Font::measureText(const char* text, float fontSize, NX_Vec2 spacing) 
     };
 }
 
-NX_Vec2 NX_Font::measureCodepoints(const int* codepoints, int length, float fontSize, NX_Vec2 spacing) const
-{
-    float scale = fontSize / mBaseSize;
+// ============================================================================
+// INTERNAL FUNCTIONS
+// ============================================================================
 
-    float maxWidth = 0.0f;
-    float currentWidth = 0.0f;
-    float textHeight = fontSize;
-
-    int maxCharsInLine = 0;
-    int currentCharsInLine = 0;
-
-    for (int i = 0; i < length; i++)
-    {
-        int letter = codepoints[i];
-
-        if (letter == '\n') {
-            maxWidth = fmaxf(maxWidth, currentWidth);
-            maxCharsInLine = NX_MAX(maxCharsInLine, currentCharsInLine);
-            currentWidth = 0.0f;
-            currentCharsInLine = 0;
-            textHeight += fontSize + spacing.y;
-        }
-        else {
-            int index = getGlyphIndex(letter);
-            float char_width = (mGlyphs[index].xAdvance > 0)
-                ? mGlyphs[index].xAdvance
-                : (mGlyphs[index].wGlyph + mGlyphs[index].xOffset);
-
-            currentWidth += char_width;
-            currentCharsInLine++;
-        }
-    }
-
-    // Treat the last line
-    maxWidth = fmaxf(maxWidth, currentWidth);
-    maxCharsInLine = NX_MAX(maxCharsInLine, currentCharsInLine);
-
-    return NX_Vec2 {
-        .x = maxWidth * scale + (maxCharsInLine > 0 ? (maxCharsInLine - 1) * spacing.x : 0),
-        .y = textHeight
-    };
-}
-
-/* === Private Implementation === */
-
-int NX_Font::getGlyphIndex(int codepoint) const
+int INX_GetGlyphIndex(const NX_Font* font, int codepoint)
 {
 #   define FALLBACK 63 //< Fallback is '?'
 
     int index = 0, fallbackIndex = 0;
 
-    for (int i = 0; i < mGlyphCount; i++) {
-        if (mGlyphs[i].value == codepoint) {
+    for (int i = 0; i < font->glyphs.size(); i++) {
+        if (font->glyphs[i].value == codepoint) {
             index = i;
             break;
         }
-        else if (mGlyphs[i].value == FALLBACK) {
+        else if (font->glyphs[i].value == FALLBACK) {
             fallbackIndex = i;
         }
     }
 
-    if (!index && mGlyphs[0].value != codepoint) {
+    if (!index && font->glyphs[0].value != codepoint) {
         index = fallbackIndex;
     }
 
     return index;
 }
 
-bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int dataSize,
-                                NX_FontType fontType, int baseSize,
-                                const int* codepoints, int codepointCount,
-                                int padding, Glyph** outGlyphs)
+const INX_Glyph& INX_GetFontGlyph(const NX_Font& font, int codepoint)
+{
+    return font.glyphs[INX_GetGlyphIndex(&font, codepoint)];
+}
+
+bool INX_GenerateAtlas(NX_Image* atlas, const uint8_t* fileData, int dataSize,
+                       NX_FontType fontType, int baseSize, const int* codepoints,
+                       int codepointCount, int padding, util::FixedArray<INX_Glyph>* outGlyphs)
 {
     assert(atlas != NULL && outGlyphs != NULL);
 
@@ -239,8 +297,6 @@ bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int da
         NX_LOG(E, "RENDER: Faild to load font; Invalid font type (%i)", fontType);
         return false;
     }
-
-    *outGlyphs = NULL;
 
     /* --- Font validation and init --- */
 
@@ -273,10 +329,11 @@ bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int da
 
     /* --- Generate default codepoints if needed --- */
 
-    int* defaultCodepoints = NULL;
+    util::UniquePtr<int> defaultCodepoints;
+
     if (!codepoints) {
         codepointCount = (codepointCount > 0) ? codepointCount : 95;
-        defaultCodepoints = static_cast<int*>(SDL_malloc(codepointCount * sizeof(int)));
+        defaultCodepoints = util::makeUnique<int>(codepointCount);
         if (!defaultCodepoints) {
             FT_Done_Face(ftFace);
             FT_Done_FreeType(ftLibrary);
@@ -284,25 +341,22 @@ bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int da
         }
         // Generate ASCII printable characters (32-126)
         for (int i = 0; i < codepointCount; i++) {
-            defaultCodepoints[i] = i + 32;
+            defaultCodepoints.get()[i] = i + 32;
         }
-        codepoints = defaultCodepoints;
+        codepoints = defaultCodepoints.get();
     }
 
     /* --- Allocate working buffers --- */
 
-    stbrp_rect* packRects = static_cast<stbrp_rect*>(SDL_calloc(codepointCount, sizeof(stbrp_rect)));
-    if (!packRects) {
-        SDL_free(defaultCodepoints);
+    util::UniquePtr<stbrp_rect> packRects = util::makeUnique<stbrp_rect>(codepointCount);
+    if (packRects == nullptr) {
         FT_Done_Face(ftFace);
         FT_Done_FreeType(ftLibrary);
         return false;
     }
 
-    Glyph* glyphs = reinterpret_cast<Glyph*>(SDL_calloc(codepointCount, sizeof(Glyph)));
-    if (!glyphs) {
-        SDL_free(packRects);
-        SDL_free(defaultCodepoints);
+    util::FixedArray<INX_Glyph> glyphs(codepointCount, codepointCount);
+    if (glyphs.data() == nullptr) {
         FT_Done_Face(ftFace);
         FT_Done_FreeType(ftLibrary);
         return false;
@@ -314,7 +368,7 @@ bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int da
 
     for (int i = 0; i < codepointCount; i++)
     {
-        Glyph& glyph = glyphs[i];
+        INX_Glyph& glyph = glyphs[i];
         int ch = codepoints[i];
         glyph.value = ch;
 
@@ -351,12 +405,12 @@ bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int da
             if (pixelCount == 0) continue;
 
             // Allocation to keep the bitmap in our glyph cache
-            glyph.pixels = SDL_malloc(pixelCount);
-            if (!glyph.pixels) continue;
+            glyph.pixels = util::makeUnique<uint8_t>(pixelCount);
+            if (glyph.pixels == nullptr) continue;
 
             // Copying the rasterized bitmap to our glyph cache
             if (fontType != NX_FONT_MONO) {
-                SDL_memcpy(glyph.pixels, ftBitmap.buffer, pixelCount);
+                SDL_memcpy(glyph.pixels.get(), ftBitmap.buffer, pixelCount);
             }
             else {
                 const FT_Bitmap &bm = ftBitmap;
@@ -365,7 +419,7 @@ bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int da
                         int byteIndex = y * bm.pitch + (x >> 3);
                         int bitIndex = 7 - (x & 7);
                         bool pixelOn = (bm.buffer[byteIndex] >> bitIndex) & 1;
-                        static_cast<uint8_t*>(glyph.pixels)[y * bm.width + x] = pixelOn ? 255 : 0;
+                        glyph.pixels.get()[y * bm.width + x] = pixelOn ? 255 : 0;
                     }
                 }
             }
@@ -382,10 +436,10 @@ bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int da
             glyph.hGlyph = ftBitmap.rows;
         }
 
-        packRects[i].id = i;
-        packRects[i].w = glyph.wGlyph + 2 * padding;
-        packRects[i].h = glyph.hGlyph + 2 * padding;
-        totalArea += packRects[i].w * packRects[i].h;
+        packRects.get()[i].id = i;
+        packRects.get()[i].w = glyph.wGlyph + 2 * padding;
+        packRects.get()[i].h = glyph.hGlyph + 2 * padding;
+        totalArea += packRects.get()[i].w * packRects.get()[i].h;
     }
 
     /* --- Calculate Atlas Dimensions --- */
@@ -413,14 +467,8 @@ bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int da
 
     /* --- Create Atlas Image --- */
 
-    atlas->pixels = SDL_calloc(atlas->w * atlas->h, 1);
+    atlas->pixels = NX_Calloc(atlas->w * atlas->h, 1);
     if (!atlas->pixels) {
-        for (int i = 0; i < codepointCount; i++) {
-            SDL_free(glyphs[i].pixels);
-        }
-        SDL_free(glyphs);
-        SDL_free(packRects);
-        SDL_free(defaultCodepoints);
         FT_Done_Face(ftFace);
         FT_Done_FreeType(ftLibrary);
         return false;
@@ -429,39 +477,31 @@ bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int da
 
     /* --- Rectangle Packing Setup --- */
 
-    stbrp_context* packContext = static_cast<stbrp_context*>(SDL_malloc(sizeof(*packContext)));
-    stbrp_node* packNodes = static_cast<stbrp_node*>(SDL_malloc(atlas->w * sizeof(*packNodes)));
+    util::UniquePtr<stbrp_context> packContext = util::makeUnique<stbrp_context>();
+    util::UniquePtr<stbrp_node> packNodes = util::makeUnique<stbrp_node>(atlas->w);
 
     if (!packContext || !packNodes) {
-        SDL_free(atlas->pixels);
-        for (int i = 0; i < codepointCount; i++) {
-            SDL_free(glyphs[i].pixels);
-        }
-        SDL_free(glyphs);
-        SDL_free(packRects);
-        SDL_free(packNodes);
-        SDL_free(packContext);
-        SDL_free(defaultCodepoints);
+        NX_Free(atlas->pixels);
         FT_Done_Face(ftFace);
         FT_Done_FreeType(ftLibrary);
         SDL_memset(atlas, 0, sizeof(*atlas));
         return false;
     }
 
-    stbrp_init_target(packContext, atlas->w, atlas->h, packNodes, atlas->w);
-    stbrp_pack_rects(packContext, packRects, codepointCount);
+    stbrp_init_target(packContext.get(), atlas->w, atlas->h, packNodes.get(), atlas->w);
+    stbrp_pack_rects(packContext.get(), packRects.get(), codepointCount);
 
-    /* --- Copy Stored Glyph Pixels to Atlas --- */
+    /* --- Copy Stored INX_Glyph Pixels to Atlas --- */
 
     for (int i = 0; i < codepointCount; i++)
     {
-        if (!packRects[i].was_packed) {
+        if (!packRects.get()[i].was_packed) {
             continue;
         }
 
-        Glyph* glyph = &glyphs[i];
-        glyph->xAtlas = packRects[i].x + padding;
-        glyph->yAtlas = packRects[i].y + padding;
+        INX_Glyph* glyph = &glyphs[i];
+        glyph->xAtlas = packRects.get()[i].x + padding;
+        glyph->yAtlas = packRects.get()[i].y + padding;
 
         // Skip spaces and null pixels
         if (!glyph->pixels || glyph->value == 32) {
@@ -470,7 +510,7 @@ bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int da
 
         // Copy glyph to atlas (line by line)
         uint8_t* atlasData = static_cast<uint8_t*>(atlas->pixels);
-        uint8_t* glyphData = static_cast<uint8_t*>(glyph->pixels);
+        uint8_t* glyphData = glyph->pixels.get();
         uint8_t* atlasLine = atlasData + glyph->yAtlas * atlas->w + glyph->xAtlas;
         for (int y = 0; y < glyph->hGlyph; y++) {
             SDL_memcpy(atlasLine, glyphData, glyph->wGlyph);
@@ -480,14 +520,10 @@ bool NX_Font::generateFontAtlas(NX_Image* atlas, const uint8_t* fileData, int da
 
     /* --- Keeps the generated glyph array --- */
 
-    *outGlyphs = glyphs;
+    *outGlyphs = std::move(glyphs);
 
     /* --- Cleanup --- */
 
-    SDL_free(packRects);
-    SDL_free(packNodes);
-    SDL_free(packContext);
-    SDL_free(defaultCodepoints);
     FT_Done_Face(ftFace);
     FT_Done_FreeType(ftLibrary);
 

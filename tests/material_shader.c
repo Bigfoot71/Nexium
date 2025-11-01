@@ -9,11 +9,11 @@ int main(void)
     NX_MaterialShader* shader = NX_LoadMaterialShader("shaders/material.vert", "shaders/material.frag");
 
     NX_Image im0 = NX_GenImageChecked(64, 64, 8, 8, NX_WHITE, NX_BLANK);
-    NX_Texture* tex0 = NX_CreateTexture(&im0);
+    NX_Texture* tex0 = NX_CreateTextureFromImage(&im0);
     NX_DestroyImage(&im0);
 
     NX_Image im1 = NX_GenImageGradientSquare(64, 64, 0.8f, NX_WHITE, NX_BLANK);
-    NX_Texture* tex1 = NX_CreateTexture(&im1);
+    NX_Texture* tex1 = NX_CreateTextureFromImage(&im1);
     NX_DestroyImage(&im1);
 
     NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_ONE, NX_IVEC3_ONE);

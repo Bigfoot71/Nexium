@@ -18,9 +18,7 @@
 #include "../../Detail/GPU/Texture.hpp"
 
 #include "../Core/ProgramCache.hpp"
-#include "../Core/AssetCache.hpp"
 
-#include "../NX_RenderTexture.hpp"
 #include "./DrawCallManager.hpp"
 #include "./LightManager.hpp"
 #include "./Environment.hpp"
@@ -32,7 +30,7 @@ namespace scene {
 
 class Scene {
 public:
-    Scene(render::ProgramCache& programs, render::AssetCache& assets, NX_AppDesc& desc);
+    Scene(render::ProgramCache& programs, NX_AppDesc& desc);
 
     /** Begin/End 3D mode functions */
     void begin(const NX_Camera& camera, const NX_Environment& env, const NX_RenderTexture* target);
@@ -76,7 +74,6 @@ private:
 private:
     /** Shared assets */
     render::ProgramCache& mPrograms;
-    render::AssetCache& mAssets;
 
     /** Scene data */
     Environment mEnvironment{};

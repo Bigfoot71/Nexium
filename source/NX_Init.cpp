@@ -10,6 +10,7 @@
 #include <NX/NX_Rand.h>
 #include <NX/NX_Log.h>
 
+#include "./INX_GlobalAssets.hpp"
 #include "./INX_GlobalState.h"
 
 #include <SDL3/SDL_filesystem.h>
@@ -371,6 +372,8 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
 void NX_Quit(void)
 {
     gRender.reset();
+
+    INX_Assets.Unload();
 
     alcDestroyContext(INX_Audio.alContext);
     INX_Audio.alContext = nullptr;

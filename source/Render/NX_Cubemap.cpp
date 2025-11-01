@@ -9,6 +9,7 @@
 #include "./NX_Cubemap.hpp"
 
 #include "../Detail/Util/DynamicArray.hpp"
+#include "../Detail/GPU/Translation.hpp"
 #include "./Core/Helper.hpp"
 
 /* === Public Implementation === */
@@ -49,8 +50,8 @@ void NX_Cubemap::loadEquirectangular(const NX_Image& image, gpu::Program& progra
 {
     /* --- Determines the internal source and destination formats --- */
 
-    GLenum srcInternalFormat = render::getInternalFormat(image.format, false);
-    GLenum dstInternalFormat = render::getInternalFormat(image.format, true);
+    GLenum srcInternalFormat = gpu::getInternalFormat(image.format, false);
+    GLenum dstInternalFormat = gpu::getInternalFormat(image.format, true);
 
     /* --- Allocate cubemap texture --- */
 
@@ -124,7 +125,7 @@ void NX_Cubemap::loadLineHorizontal(const NX_Image& image)
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = render::getInternalFormat(image.format, false),
+            .internalFormat = gpu::getInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
             .height = cubeFaceSize
@@ -178,7 +179,7 @@ void NX_Cubemap::loadLineVertical(const NX_Image& image)
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = render::getInternalFormat(image.format, false),
+            .internalFormat = gpu::getInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
             .height = cubeFaceSize
@@ -226,7 +227,7 @@ void NX_Cubemap::loadCrossThreeByFour(const NX_Image& image)
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = render::getInternalFormat(image.format, false),
+            .internalFormat = gpu::getInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
             .height = cubeFaceSize
@@ -298,7 +299,7 @@ void NX_Cubemap::loadCrossFourByThree(const NX_Image& image)
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = render::getInternalFormat(image.format, false),
+            .internalFormat = gpu::getInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
             .height = cubeFaceSize

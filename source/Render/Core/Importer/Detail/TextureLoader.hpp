@@ -2,9 +2,9 @@
 #define NX_RENDER_DETAIL_TEXTURE_LOADER_HPP
 
 #include "../../../../Detail/Util/DynamicArray.hpp"
-#include "../../PoolTexture.hpp"
 #include "../SceneImporter.hpp"
 #include "NX/NX_Macros.h"
+#include "NX/NX_Texture.h"
 
 #include <NX/NX_Render.h>
 #include <NX/NX_Image.h>
@@ -18,6 +18,7 @@
 #include <condition_variable>
 #include <thread>
 #include <queue>
+#include <array>
 
 namespace render {
 
@@ -34,7 +35,7 @@ public:
     };
 
 public:
-    TextureLoader(const SceneImporter& importer, PoolTexture& poolTexture);
+    TextureLoader(const SceneImporter& importer);
     NX_Texture* get(int materialIndex, Map map);
 
 private:
@@ -66,13 +67,12 @@ private:
 private:
     util::DynamicArray<MaterialTextures> mTextures;
     const SceneImporter& mImporter;
-    PoolTexture& mPoolTexture;
 };
 
 /* === Public Implementation === */
 
-inline TextureLoader::TextureLoader(const SceneImporter& importer, PoolTexture& poolTexture)
-    : mImporter(importer), mPoolTexture(poolTexture)
+inline TextureLoader::TextureLoader(const SceneImporter& importer)
+    : mImporter(importer)
 {
     // REVIEW: This is a quick implementation, but it's at least faster than before.
     //         Note that one of the current big issues is that if two materials use
@@ -145,7 +145,10 @@ inline TextureLoader::TextureLoader(const SceneImporter& importer, PoolTexture& 
         auto& img = images[i][j];
 
         if (img.image.pixels) {
-            mTextures[i][j] = mPoolTexture.createTexture(img.image, getWrapMode(img.wrap[0]));
+            mTextures[i][j] = NX_CreateTextureFromImageEx(
+                &img.image, getWrapMode(img.wrap[0]),
+                NX_GetDefaultTextureFilter()
+            );
             if (img.owned) {
                 NX_DestroyImage(&img.image);
                 img.image.pixels = nullptr;

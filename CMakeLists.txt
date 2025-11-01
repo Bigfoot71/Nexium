@@ -279,7 +279,6 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/Detail/Helper.cpp"
 
     "${NX_ROOT_PATH}/source/Render/Core/ProgramCache.cpp"
-    "${NX_ROOT_PATH}/source/Render/Core/AssetCache.cpp"
 
     "${NX_ROOT_PATH}/source/Render/Overlay/Overlay.cpp"
 
@@ -291,18 +290,21 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/Render/NX_Shader.cpp"
     "${NX_ROOT_PATH}/source/Render/NX_Cubemap.cpp"
     "${NX_ROOT_PATH}/source/Render/NX_Light.cpp"
-    "${NX_ROOT_PATH}/source/Render/NX_Font.cpp"
 
+    "${NX_ROOT_PATH}/source/INX_GlobalAssets.cpp"
+    "${NX_ROOT_PATH}/source/NX_RenderTexture.cpp"
     "${NX_ROOT_PATH}/source/NX_AudioStream.cpp"
     "${NX_ROOT_PATH}/source/NX_AudioClip.cpp"
     "${NX_ROOT_PATH}/source/NX_DataCodec.cpp"
     "${NX_ROOT_PATH}/source/NX_Filesystem.c"
     "${NX_ROOT_PATH}/source/NX_Codepoint.c"
     "${NX_ROOT_PATH}/source/NX_Clipboard.c"
+    "${NX_ROOT_PATH}/source/NX_Texture.cpp"
     "${NX_ROOT_PATH}/source/NX_Keyboard.c"
     "${NX_ROOT_PATH}/source/NX_Render.cpp"
     "${NX_ROOT_PATH}/source/NX_Display.c"
     "${NX_ROOT_PATH}/source/NX_Runtime.c"
+    "${NX_ROOT_PATH}/source/NX_Font.cpp"
     "${NX_ROOT_PATH}/source/NX_Init.cpp"
     "${NX_ROOT_PATH}/source/NX_Rand.cpp"
     "${NX_ROOT_PATH}/source/NX_Memory.c"

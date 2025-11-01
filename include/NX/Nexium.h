@@ -24,6 +24,7 @@
 #include "./NX_Init.h"
 #include "./NX_Math.h"
 #include "./NX_Rand.h"
+#include "./NX_Font.h"
 #include "./NX_Audio.h"
 #include "./NX_Image.h"
 #include "./NX_Mouse.h"
@@ -31,6 +32,7 @@
 #include "./NX_Render.h"
 #include "./NX_Macros.h"
 #include "./NX_Window.h"
+#include "./NX_Texture.h"
 #include "./NX_Runtime.h"
 #include "./NX_Display.h"
 #include "./NX_Keyboard.h"
@@ -41,5 +43,6 @@
 #include "./NX_AudioClip.h"
 #include "./NX_Filesystem.h"
 #include "./NX_AudioStream.h"
+#include "./NX_RenderTexture.h"
 
 #endif // NEXIUM_H

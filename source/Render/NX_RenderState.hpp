@@ -13,13 +13,9 @@
 #include <NX/NX_Init.h>
 
 #include "./Core/ProgramCache.hpp"
-#include "./Core/AssetCache.hpp"
-
-#include "./Core/PoolTexture.hpp"
 #include "./Core/PoolCubemap.hpp"
 #include "./Core/PoolModel.hpp"
 #include "./Core/PoolMesh.hpp"
-#include "./Core/PoolFont.hpp"
 
 #include "./Overlay/Overlay.hpp"
 #include "./Scene/Scene.hpp"
@@ -36,12 +32,9 @@ extern std::unique_ptr<class NX_RenderState> gRender;
 class NX_RenderState {
 public:
     /** Resource Managers */
-    render::AssetCache assets;
     render::ProgramCache programs;
-    render::PoolTexture textures;
     render::PoolCubemap cubemaps;
     render::PoolMesh meshes;
-    render::PoolFont fonts;
     render::PoolModel models;
 
     /** Renderers */
@@ -57,15 +50,12 @@ public:
 /* === Public Implementation === */
 
 inline NX_RenderState::NX_RenderState(NX_AppDesc& desc)
-    : assets() //< Shared assets must be loaded first
-    , programs()
-    , textures()
+    : programs()
     , cubemaps(programs)
     , meshes()
-    , fonts()
-    , models(textures, meshes)
-    , overlay(programs, assets, desc)
-    , scene(programs, assets, desc)
+    , models(meshes)
+    , overlay(programs, desc)
+    , scene(programs, desc)
 { }
 
 #endif // NX_RENDER_STATE_HP

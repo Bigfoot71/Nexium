@@ -14,17 +14,19 @@
 #include <NX/NX_Render.h>
 
 #include "../../Detail/BuildInfo.hpp"
+#include "../../NX_RenderTexture.hpp"
+#include "../../NX_Texture.hpp"
+
 #include "../NX_ReflectionProbe.hpp"
 #include "../NX_Cubemap.hpp"
-#include "../NX_Texture.hpp"
 
 namespace scene {
 
 /* === Public Implementation === */
 
-Scene::Scene(render::ProgramCache& programs, render::AssetCache& assets, NX_AppDesc& desc)
-    : mPrograms(programs), mAssets(assets)
-    , mDrawCalls(1024), mLights(programs, assets, desc), mFrustum()
+Scene::Scene(render::ProgramCache& programs, NX_AppDesc& desc)
+    : mPrograms(programs)
+    , mDrawCalls(1024), mLights(programs, desc), mFrustum()
     , mFrameUniform(GL_UNIFORM_BUFFER, sizeof(FrameUniform), nullptr, GL_DYNAMIC_DRAW)
 {
     /* --- Tweak description --- */
@@ -109,7 +111,7 @@ void Scene::begin(const NX_Camera& camera, const NX_Environment& env, const NX_R
     /* --- Get target (where we blit) info --- */
 
     mTargetInfo.target = target;
-    mTargetInfo.resolution = (target) ? target->framebuffer().dimensions() : NX_GetWindowSize();
+    mTargetInfo.resolution = (target) ? NX_GetRenderTextureSize(target) : NX_GetWindowSize();
     mTargetInfo.aspect = static_cast<float>(mTargetInfo.resolution.x) / mTargetInfo.resolution.y;
 
     /* --- Update managers --- */
@@ -238,13 +240,18 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
         pipeline.useProgram(shader.program(NX_MaterialShader::Variant::SCENE_PREPASS));
 
-        pipeline.setDepthFunc(render::getDepthFunc(mat.depth.test));
-        pipeline.setCullMode(render::getCullMode(mat.cull));
+        pipeline.setDepthFunc(gpu::getDepthFunc(mat.depth.test));
+        pipeline.setCullMode(gpu::getCullMode(mat.cull));
 
-        shader.bindTextures(pipeline, unique.textures, mAssets.textureWhite().gpuTexture());
+        shader.bindTextures(pipeline, unique.textures);
         shader.bindUniforms(pipeline, unique.dynamicRangeIndex);
 
-        pipeline.bindTexture(0, mAssets.textureOrWhite(mat.albedo.texture));
+        const NX_Texture* texAlbedo = INX_Assets.Select(
+            unique.material.albedo.texture,
+            INX_TextureAsset::WHITE
+        );
+
+        pipeline.bindTexture(0, texAlbedo->gpu);
 
         pipeline.setUniformUint1(0, unique.sharedDataIndex);
         pipeline.setUniformUint1(1, unique.uniqueDataIndex);
@@ -266,7 +273,7 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
     pipeline.bindStorage(5, mLights.tilesBuffer());
     pipeline.bindStorage(6, mLights.indexBuffer());
 
-    pipeline.bindTexture(4, mAssets.textureBrdfLut());
+    pipeline.bindTexture(4, INX_Assets.Get(INX_TextureAsset::BRDF_LUT)->gpu);
     pipeline.bindTexture(7, mLights.shadowMap(NX_LIGHT_DIR));
     pipeline.bindTexture(8, mLights.shadowMap(NX_LIGHT_SPOT));
     pipeline.bindTexture(9, mLights.shadowMap(NX_LIGHT_OMNI));
@@ -291,17 +298,17 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         NX_MaterialShader& shader = mPrograms.materialShader(mat.shader);
         pipeline.useProgram(shader.programFromShadingMode(unique.material.shading));
 
-        shader.bindTextures(pipeline, unique.textures, mAssets.textureWhite().gpuTexture());
+        shader.bindTextures(pipeline, unique.textures);
         shader.bindUniforms(pipeline, unique.dynamicRangeIndex);
 
-        pipeline.setDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : render::getDepthFunc(mat.depth.test));
-        pipeline.setBlendMode(render::getBlendMode(mat.blend));
-        pipeline.setCullMode(render::getCullMode(mat.cull));
+        pipeline.setDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : gpu::getDepthFunc(mat.depth.test));
+        pipeline.setBlendMode(gpu::getBlendMode(mat.blend));
+        pipeline.setCullMode(gpu::getCullMode(mat.cull));
 
-        pipeline.bindTexture(0, mAssets.textureOrWhite(mat.albedo.texture));
-        pipeline.bindTexture(1, mAssets.textureOrWhite(mat.emission.texture));
-        pipeline.bindTexture(2, mAssets.textureOrWhite(mat.orm.texture));
-        pipeline.bindTexture(3, mAssets.textureOrNormal(mat.normal.texture));
+        pipeline.bindTexture(0, INX_Assets.Select(mat.albedo.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.bindTexture(1, INX_Assets.Select(mat.emission.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.bindTexture(2, INX_Assets.Select(mat.orm.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.bindTexture(3, INX_Assets.Select(mat.normal.texture, INX_TextureAsset::NORMAL)->gpu);
 
         pipeline.setUniformUint1(0, unique.sharedDataIndex);
         pipeline.setUniformUint1(1, unique.uniqueDataIndex);
@@ -337,8 +344,8 @@ const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
 
         pipeline.bindTexture(0, mTargetSceneDepth);
         pipeline.bindTexture(1, mTargetSceneNormal);
-        pipeline.bindTexture(2, mAssets.textureSsaoKernel());
-        pipeline.bindTexture(3, mAssets.textureSsaoNoise());
+        pipeline.bindTexture(2, INX_Assets.Get(INX_TextureAsset::SSAO_KERNEL)->gpu);
+        pipeline.bindTexture(3, INX_Assets.Get(INX_TextureAsset::SSAO_NOISE)->gpu);
 
         pipeline.draw(GL_TRIANGLES, 3);
     }
@@ -446,7 +453,7 @@ void Scene::postFinal(const gpu::Texture& source)
     gpu::Pipeline pipeline;
 
     if (mTargetInfo.target != nullptr) {
-        pipeline.bindFramebuffer(mTargetInfo.target->framebuffer());
+        pipeline.bindFramebuffer(mTargetInfo.target->gpu);
     }
     pipeline.setViewport(mTargetInfo.resolution);
 

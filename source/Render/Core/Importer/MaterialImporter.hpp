@@ -6,7 +6,6 @@
 #include "./Detail/TextureLoader.hpp"
 #include "./SceneImporter.hpp"
 #include "./AssimpHelper.hpp"
-#include "../PoolTexture.hpp"
 
 #include <assimp/GltfMaterial.h>
 #include <assimp/material.h>
@@ -19,7 +18,7 @@ namespace render {
 class MaterialImporter {
 public:
     /** Constructors */
-    MaterialImporter(const SceneImporter& importer, PoolTexture& poolTexture);
+    MaterialImporter(const SceneImporter& importer);
 
     /** Loads the materials and stores them in the specified model */
     bool loadMaterials(NX_Model* model);
@@ -35,8 +34,8 @@ private:
 
 /* === Public Implementation === */
 
-inline MaterialImporter::MaterialImporter(const SceneImporter& importer, PoolTexture& poolTexture)
-    : mImporter(importer), mTextureLoader(importer, poolTexture)
+inline MaterialImporter::MaterialImporter(const SceneImporter& importer)
+    : mImporter(importer), mTextureLoader(importer)
 {
     SDL_assert(importer.isValid());
 }
@@ -44,7 +43,7 @@ inline MaterialImporter::MaterialImporter(const SceneImporter& importer, PoolTex
 inline bool MaterialImporter::loadMaterials(NX_Model* model)
 {
     model->materialCount = mImporter.materialCount();
-    model->materials = static_cast<NX_Material*>(SDL_malloc(model->materialCount * sizeof(NX_Material)));
+    model->materials = NX_Malloc<NX_Material>(model->materialCount);
     if (model->materials == nullptr) {
         NX_LOG(E, "RENDER: Unable to allocate memory for materials; The model will be invalid");
         return false;

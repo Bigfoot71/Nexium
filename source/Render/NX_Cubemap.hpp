@@ -12,6 +12,7 @@
 #include <NX/NX_Render.h>
 #include <NX/NX_Image.h>
 
+#include "../Detail/GPU/Translation.hpp"
 #include "../Detail/GPU/Framebuffer.hpp"
 #include "../Detail/GPU/Pipeline.hpp"
 #include "../Detail/GPU/Texture.hpp"
@@ -52,7 +53,7 @@ inline NX_Cubemap::NX_Cubemap(int size, NX_PixelFormat format)
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = render::getInternalFormat(format, true),
+            .internalFormat = gpu::getInternalFormat(format, true),
             .data = nullptr,
             .width = size,
             .height = size

@@ -17,7 +17,6 @@
 #include "./Importer/SceneImporter.hpp"
 #include "./Importer/MeshImporter.hpp"
 #include "./Importer/BoneImporter.hpp"
-#include "./PoolTexture.hpp"
 #include "./PoolMesh.hpp"
 
 #include <assimp/postprocess.h>
@@ -31,7 +30,7 @@ namespace render {
 
 class PoolModel {
 public:
-    PoolModel(PoolTexture& poolTexture, PoolMesh& poolMesh);
+    PoolModel(PoolMesh& poolMesh);
 
     NX_Model* loadModel(const void* fileData, size_t fileSize, const char* hint);
     void destroyModel(NX_Model* model);
@@ -42,15 +41,13 @@ public:
 private:
     util::ObjectPool<NX_ModelAnimation, 256> mPoolAnimation;
     util::ObjectPool<NX_Model, 128> mPoolModel;
-    PoolTexture& mPoolTexture;
     PoolMesh& mPoolMesh;
 };
 
 /* === Public Implementation === */
 
-inline PoolModel::PoolModel(PoolTexture& poolTexture, PoolMesh& poolMesh)
-    : mPoolTexture(poolTexture)
-    , mPoolMesh(poolMesh)
+inline PoolModel::PoolModel(PoolMesh& poolMesh)
+    : mPoolMesh(poolMesh)
 { }
 
 inline NX_Model* PoolModel::loadModel(const void* fileData, size_t fileSize, const char* hint)
@@ -71,7 +68,7 @@ inline NX_Model* PoolModel::loadModel(const void* fileData, size_t fileSize, con
         return nullptr;
     }
 
-    if (!MaterialImporter(importer, mPoolTexture).loadMaterials(model)) {
+    if (!MaterialImporter(importer).loadMaterials(model)) {
         destroyModel(model);
         return nullptr;
     }
@@ -96,17 +93,17 @@ inline void PoolModel::destroyModel(NX_Model* model)
 
     for (int i = 0; i < model->materialCount; i++) {
         NX_Material& mat = model->materials[i];
-        mPoolTexture.destroyTexture(mat.albedo.texture);
-        mPoolTexture.destroyTexture(mat.normal.texture);
-        mPoolTexture.destroyTexture(mat.emission.texture);
-        mPoolTexture.destroyTexture(mat.orm.texture);
+        NX_DestroyTexture(mat.albedo.texture);
+        NX_DestroyTexture(mat.normal.texture);
+        NX_DestroyTexture(mat.emission.texture);
+        NX_DestroyTexture(mat.orm.texture);
     }
 
-    SDL_free(model->meshes);
-    SDL_free(model->meshMaterials);
-    SDL_free(model->materials);
-    SDL_free(model->bones);
-    SDL_free(model->boneOffsets);
+    NX_Free(model->meshes);
+    NX_Free(model->meshMaterials);
+    NX_Free(model->materials);
+    NX_Free(model->bones);
+    NX_Free(model->boneOffsets);
 
     mPoolModel.destroy(model);
 }
@@ -130,7 +127,7 @@ inline void PoolModel::destroyAnimations(NX_ModelAnimation** animations, int cou
         for (int i = 0; i < count; i++) {
             mPoolAnimation.destroy(animations[i]);
         }
-        SDL_free(animations);
+        NX_Free(animations);
     }
 }
 

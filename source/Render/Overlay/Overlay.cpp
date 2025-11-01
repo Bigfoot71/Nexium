@@ -7,12 +7,12 @@
  */
 
 #include "./Overlay.hpp"
+#include "../../NX_Font.hpp"
 
 namespace overlay {
 
-Overlay::Overlay(render::ProgramCache& programs, render::AssetCache& assets, NX_AppDesc& desc)
+Overlay::Overlay(render::ProgramCache& programs, NX_AppDesc& desc)
     : mPrograms(programs)
-    , mAssets(assets)
 {
     /* --- Tweak description --- */
 
@@ -96,21 +96,21 @@ void Overlay::flush()
     {
         NX_Shader& shader = mPrograms.shader(call.shader);
         shader.bindUniforms(pipeline, call.uRangeIndex);
-        shader.bindTextures(pipeline, call.shaderTextures, mAssets.textureWhite().gpuTexture());
+        shader.bindTextures(pipeline, call.shaderTextures);
 
         switch (call.mode) {
         case DrawCall::SHAPE:
             if (call.texture != nullptr) {
                 pipeline.useProgram(shader.program(NX_Shader::Variant::SHAPE_TEXTURE));
-                pipeline.bindTexture(0, call.texture->gpuTexture());
+                pipeline.bindTexture(0, *reinterpret_cast<const gpu::Texture*>(call.texture));
             }
             else {
                 pipeline.useProgram(shader.program(NX_Shader::Variant::SHAPE_COLOR));
             }
             break;
         case DrawCall::TEXT:
-            const NX_Font& font = call.font ? *call.font : mAssets.font();
-            switch (font.type()) {
+            const NX_Font* font = INX_Assets.Select(call.font, INX_FontAsset::DEFAULT);
+            switch (NX_GetFontType(font)) {
             case NX_FONT_NORMAL:
             case NX_FONT_LIGHT:
             case NX_FONT_MONO:
@@ -120,7 +120,7 @@ void Overlay::flush()
                 pipeline.useProgram(shader.program(NX_Shader::Variant::TEXT_SDF));
                 break;
             }
-            pipeline.bindTexture(0, font.gpuTexture());
+            pipeline.bindTexture(0, font->texture->gpu);
             break;
         }
 
@@ -149,8 +149,8 @@ void Overlay::blit()
     gpu::Pipeline pipeline;
 
     if (mCurrentTarget != nullptr) {
-        pipeline.bindFramebuffer(mCurrentTarget->framebuffer());
-        pipeline.setViewport(mCurrentTarget->framebuffer());
+        pipeline.bindFramebuffer(*reinterpret_cast<const gpu::Framebuffer*>(mCurrentTarget));
+        pipeline.setViewport(*reinterpret_cast<const gpu::Framebuffer*>(mCurrentTarget));
     }
     else {
         pipeline.setViewport(NX_GetWindowSize());

@@ -1,6 +1,9 @@
 #ifndef NX_RENDER_SHADER_OVERRIDE_HPP
 #define NX_RENDER_SHADER_OVERRIDE_HPP
 
+#include "../../INX_GlobalAssets.hpp"
+#include "../../NX_Texture.hpp"
+
 #include "../../Detail/Util/DynamicArray.hpp"
 #include "../../Detail/Util/String.hpp"
 
@@ -77,7 +80,7 @@ public:
     void bindUniforms(const gpu::Pipeline& pipeline, int dynamicRangeIndex);
     
     /** Bind all textures to their respective sampler units */
-    void bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures, const gpu::Texture& defaultTexture);
+    void bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures);
 
     /** Reset dynamic buffer state (must be called at the end of each frame) */
     void clearDynamicBuffer();
@@ -248,11 +251,11 @@ void ShaderOverride<Derived>::bindUniforms(const gpu::Pipeline& pipeline, int dy
 }
 
 template <typename Derived>
-void ShaderOverride<Derived>::bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures, const gpu::Texture& defaultTexture)
+void ShaderOverride<Derived>::bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures)
 {
     for (int i = 0; i < SAMPLER_COUNT; i++) {
         if (mTextures[i].exists) {
-            const gpu::Texture& tex = textures[i] ? *textures[i] : defaultTexture;
+            const gpu::Texture& tex = textures[i] ? *textures[i] : INX_Assets.Get(INX_TextureAsset::WHITE)->gpu;
             pipeline.bindTexture(SamplerBinding[i], tex);
         }
     }

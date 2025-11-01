@@ -16,14 +16,12 @@
 #include "../../Detail/Util/ObjectRing.hpp"
 #include "../../Detail/GPU/Texture.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
+#include "../NX_Light.hpp"
 
 #include "../Core/ProgramCache.hpp"
-#include "../Core/AssetCache.hpp"
-
 #include "./DrawCallManager.hpp"
 #include "./ViewFrustum.hpp"
 #include "./Environment.hpp"
-#include "../NX_Light.hpp"
 
 namespace scene {
 
@@ -38,7 +36,7 @@ public:
     };
 
 public:
-    LightManager(render::ProgramCache& programs, render::AssetCache& assets, const NX_AppDesc& desc);
+    LightManager(render::ProgramCache& programs, const NX_AppDesc& desc);
 
     /** Light life-cycle management */
     NX_Light* create(NX_LightType type);
@@ -103,7 +101,6 @@ private:
 
     /** Shared assets */
     render::ProgramCache& mPrograms;
-    render::AssetCache& mAssets;
 
     /** Shadow framebuffers and targets (one per light type) */
     std::array<gpu::Framebuffer, NX_LIGHT_TYPE_COUNT> mFramebufferShadow{};     ///< Contains framebuffers per light type

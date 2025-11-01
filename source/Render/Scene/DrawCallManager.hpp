@@ -11,6 +11,7 @@
 
 #include "../../Detail/Util/BucketArray.hpp"
 #include "../../Detail/GPU/StagingBuffer.hpp"
+#include "../../Detail/GPU/Translation.hpp"
 #include "../../Detail/GPU/Pipeline.hpp"
 
 #include "../NX_MaterialShader.hpp"
@@ -452,7 +453,7 @@ inline void DrawCallManager::draw(const gpu::Pipeline& pipeline, const UniqueDat
 
     /* --- Draws the mesh according to its parameters --- */
 
-    GLenum primitive = render::getPrimitiveType(primitiveType);
+    GLenum primitive = gpu::getPrimitiveType(primitiveType);
     bool useInstancing = (shared.instances && shared.instanceCount > 0);
     bool hasEBO = buffer->ebo().isValid();
 
