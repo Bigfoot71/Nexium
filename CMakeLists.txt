@@ -292,6 +292,7 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/Render/NX_Light.cpp"
 
     "${NX_ROOT_PATH}/source/INX_GlobalAssets.cpp"
+    "${NX_ROOT_PATH}/source/INX_GlobalState.cpp"
     "${NX_ROOT_PATH}/source/INX_PoolAssets.cpp"
 
     "${NX_ROOT_PATH}/source/NX_RenderTexture.cpp"
