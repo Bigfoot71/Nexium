@@ -9,7 +9,7 @@
 #ifndef NX_UTIL_OBJECT_POOL_HPP
 #define NX_UTIL_OBJECT_POOL_HPP
 
-#include <NX/NX_Memory.h>
+#include "Memory.hpp"
 #include <type_traits>
 #include <cstddef>
 #include <utility>
@@ -46,12 +46,12 @@ public:
 
     /** Constructors/Destructors */
     ObjectPool() noexcept;
-    ~ObjectPool() noexcept;
+    ~ObjectPool() noexcept = default;
 
     /** Move operator (only) */
     ObjectPool(const ObjectPool&) = delete;
     ObjectPool& operator=(const ObjectPool&) = delete;
-    ObjectPool(ObjectPool&& other) noexcept;
+    ObjectPool(ObjectPool&& other) noexcept = default;
     ObjectPool& operator=(ObjectPool&& other) noexcept;
 
     /** Object management */
@@ -82,7 +82,7 @@ private:
         Slot mSlots[PoolSize];
         std::size_t mFirstFree = 0; // Index of the first free slot
         std::size_t mFreeCount = PoolSize;
-        Pool* mNext = nullptr;
+        UniquePtr<Pool> mNext = nullptr;
     };
 
     struct PoolLocation {
@@ -91,7 +91,7 @@ private:
         bool found = false;
     };
 
-    Pool* mFirstPool = nullptr;
+    UniquePtr<Pool> mFirstPool = nullptr;
     Pool* mLastPool = nullptr;
     std::size_t mTotalCount = 0;
     std::size_t mPoolCount = 0;
@@ -155,41 +155,11 @@ template<typename T, std::size_t PoolSize>
 ObjectPool<T, PoolSize>::ObjectPool() noexcept = default;
 
 template<typename T, std::size_t PoolSize>
-ObjectPool<T, PoolSize>::~ObjectPool() noexcept
-{
-    clear();
-    Pool* current = mFirstPool;
-    while (current) {
-        Pool* next = current->mNext;
-        current->~Pool();
-        NX_Free(current);
-        current = next;
-    }
-}
-
-template<typename T, std::size_t PoolSize>
-ObjectPool<T, PoolSize>::ObjectPool(ObjectPool&& other) noexcept
-    : mFirstPool(std::exchange(other.mFirstPool, nullptr))
-    , mLastPool(std::exchange(other.mLastPool, nullptr))
-    , mTotalCount(std::exchange(other.mTotalCount, 0))
-    , mPoolCount(std::exchange(other.mPoolCount, 0))
-{ }
-
-template<typename T, std::size_t PoolSize>
 ObjectPool<T, PoolSize>& ObjectPool<T, PoolSize>::operator=(ObjectPool&& other) noexcept
 {
     if (this != &other) {
         clear();
-
-        Pool* current = mFirstPool;
-        while (current) {
-            Pool* next = current->mNext;
-            current->~Pool();
-            NX_Free(current);
-            current = next;
-        }
-
-        mFirstPool = std::exchange(other.mFirstPool, nullptr);
+        mFirstPool = std::move(other.mFirstPool);
         mLastPool = std::exchange(other.mLastPool, nullptr);
         mTotalCount = std::exchange(other.mTotalCount, 0);
         mPoolCount = std::exchange(other.mPoolCount, 0);
@@ -203,7 +173,7 @@ T* ObjectPool<T, PoolSize>::create(Args&&... args) noexcept
 {
     // Find a pool with space
     Pool* targetPool = nullptr;
-    for (Pool* pool = mFirstPool; pool; pool = pool->mNext) {
+    for (Pool* pool = mFirstPool.get(); pool; pool = pool->mNext.get()) {
         if (pool->mFreeCount > 0) {
             targetPool = pool;
             break;
@@ -276,7 +246,7 @@ bool ObjectPool<T, PoolSize>::destroy(T* ptr) noexcept
 template<typename T, std::size_t PoolSize>
 void ObjectPool<T, PoolSize>::clear() noexcept
 {
-    for (Pool* pool = mFirstPool; pool; pool = pool->mNext) {
+    for (Pool* pool = mFirstPool.get(); pool; pool = pool->mNext.get()) {
         for (std::size_t i = 0; i < PoolSize; ++i) {
             if (pool->mSlots[i].mOccupied) {
                 T* obj = reinterpret_cast<T*>(pool->mSlots[i].mStorage);
@@ -312,7 +282,7 @@ bool ObjectPool<T, PoolSize>::empty() const noexcept
 template<typename T, std::size_t PoolSize>
 typename ObjectPool<T, PoolSize>::Iterator ObjectPool<T, PoolSize>::begin() noexcept
 {
-    return Iterator(mFirstPool, 0);
+    return Iterator(mFirstPool.get(), 0);
 }
 
 template<typename T, std::size_t PoolSize>
@@ -324,13 +294,13 @@ typename ObjectPool<T, PoolSize>::Iterator ObjectPool<T, PoolSize>::end() noexce
 template<typename T, std::size_t PoolSize>
 typename ObjectPool<T, PoolSize>::ReverseIterator ObjectPool<T, PoolSize>::rbegin() noexcept
 {
-    return ReverseIterator(mLastPool, mFirstPool);
+    return ReverseIterator(mLastPool, mFirstPool.get());
 }
 
 template<typename T, std::size_t PoolSize>
 typename ObjectPool<T, PoolSize>::ReverseIterator ObjectPool<T, PoolSize>::rend() noexcept
 {
-    return ReverseIterator(nullptr, mFirstPool);
+    return ReverseIterator(nullptr, mFirstPool.get());
 }
 
 /* === Private Implementation === */
@@ -338,12 +308,12 @@ typename ObjectPool<T, PoolSize>::ReverseIterator ObjectPool<T, PoolSize>::rend(
 template<typename T, std::size_t PoolSize>
 typename ObjectPool<T, PoolSize>::Pool* ObjectPool<T, PoolSize>::allocateNewPool() noexcept
 {
-    Pool* newPool = NX_Malloc<Pool>();
+    UniquePtr<Pool> newPool = makeUnique<Pool>();
     if (!newPool) {
         return nullptr; // Allocation failure
     }
 
-    new(newPool) Pool();
+    new(newPool.get()) Pool();
 
     // Initializes the linked list of free slots
     for (std::size_t i = 0; i < PoolSize - 1; ++i) {
@@ -351,22 +321,24 @@ typename ObjectPool<T, PoolSize>::Pool* ObjectPool<T, PoolSize>::allocateNewPool
     }
     newPool->mSlots[PoolSize - 1].mNextFree = PoolSize; // Mark the end
 
+    Pool* rawPtr = newPool.get();
+
     if (!mFirstPool) {
-        mFirstPool = newPool;
+        mFirstPool = std::move(newPool);
+        mLastPool = mFirstPool.get();
+    } else {
+        mLastPool->mNext = std::move(newPool);
+        mLastPool = rawPtr;
     }
-    if (mLastPool) {
-        mLastPool->mNext = newPool;
-    }
-    mLastPool = newPool;
     ++mPoolCount;
 
-    return newPool;
+    return rawPtr;
 }
 
 template<typename T, std::size_t PoolSize>
 typename ObjectPool<T, PoolSize>::PoolLocation ObjectPool<T, PoolSize>::findObjectLocation(T* ptr) const noexcept
 {
-    for (Pool* pool = mFirstPool; pool; pool = pool->mNext) {
+    for (Pool* pool = mFirstPool.get(); pool; pool = pool->mNext.get()) {
         char* poolStart = reinterpret_cast<char*>(pool->mSlots);
         char* poolEnd = poolStart + sizeof(pool->mSlots);
         char* objPtr = reinterpret_cast<char*>(ptr);
@@ -421,7 +393,7 @@ void ObjectPool<T, PoolSize>::Iterator::findNext() noexcept
             }
             ++mCurrentIndex;
         }
-        mCurrentPool = mCurrentPool->mNext;
+        mCurrentPool = mCurrentPool->mNext.get();
         mCurrentIndex = 0;
     }
 }
@@ -492,7 +464,7 @@ void ObjectPool<T, PoolSize>::ReverseIterator::findPrevious() noexcept
 
         // Find the previous pool
         typename ObjectPool<T, PoolSize>::Pool* prevPool = nullptr;
-        for (auto* p = mFirstPool; p && p->mNext != mCurrentPool; p = p->mNext) {
+        for (Pool* p = mFirstPool; p && p->mNext.get() != mCurrentPool; p = p->mNext.get()) {
             prevPool = p;
         }
         mCurrentPool = prevPool;
