@@ -32,11 +32,12 @@ struct INX_Glyph {
 };
 
 struct NX_Font {
-    int baseSize;                       //< Base font size (default character height in pixels)
-    int glyphPadding;                   //< Padding around glyphs in the texture atlas
-    NX_Texture* texture;                //< Texture atlas containing all glyph images
-    util::FixedArray<INX_Glyph> glyphs; //< Array of glyph information structures
-    NX_FontType type;                   //< Font rendering type used during text rendering
+    int baseSize{};                       //< Base font size (default character height in pixels)
+    int glyphPadding{};                   //< Padding around glyphs in the texture atlas
+    NX_Texture* texture{};                //< Texture atlas containing all glyph images
+    util::FixedArray<INX_Glyph> glyphs{}; //< Array of glyph information structures
+    NX_FontType type{};                   //< Font rendering type used during text rendering
+    ~NX_Font();
 };
 
 // ============================================================================

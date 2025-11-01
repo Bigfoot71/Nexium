@@ -9,10 +9,10 @@
 #include "./NX_Font.hpp"
 
 #include "./Detail/Util/FixedArray.hpp"
-#include "./Detail/Util/ObjectPool.hpp"
 #include "./Detail/Util/Memory.hpp"
 
 #include "./INX_GlobalAssets.hpp"
+#include "./INX_PoolAssets.hpp"
 
 #include <NX/NX_Filesystem.h>
 #include <NX/NX_Codepoint.h>
@@ -38,15 +38,12 @@
 #include <stb_rect_pack.h>
 
 // ============================================================================
-// LOCAL MANAGEMENT
+// OPAQUE DEFINITIONS
 // ============================================================================
 
-using INX_FontPool = util::ObjectPool<NX_Font, 32>;
-
-static INX_FontPool& INX_GetPool()
+NX_Font::~NX_Font()
 {
-    static INX_FontPool pool{};
-    return pool;
+    NX_DestroyTexture(texture);
 }
 
 // ============================================================================
@@ -120,19 +117,20 @@ NX_Font* NX_LoadFontFromData(const void* fileData, size_t dataSize, NX_FontType 
 
     /* --- Returns object pushed into the pool --- */
 
-    return INX_GetPool().create(NX_Font {
-       .baseSize = baseSize,
-       .glyphPadding = FONT_TTF_DEFAULT_CHARS_PADDING,
-       .texture = texture,
-       .glyphs = std::move(glyphs),
-       .type = type
-    });
+    NX_Font* font = INX_Pool.Create<NX_Font>();
+
+    font->baseSize = baseSize;
+    font->glyphPadding = FONT_TTF_DEFAULT_CHARS_PADDING;
+    font->texture = texture;
+    font->glyphs = std::move(glyphs);
+    font->type = type;
+
+    return font;
 }
 
 void NX_DestroyFont(NX_Font* font)
 {
-    NX_DestroyTexture(font->texture);
-    INX_GetPool().destroy(font);
+    INX_Pool.Destroy(font);
 }
 
 NX_FontType NX_GetFontType(const NX_Font* font)
@@ -158,7 +156,7 @@ NX_Vec2 NX_MeasureCodepoints(const NX_Font* font, const int* codepoints, int len
         int letter = codepoints[i];
 
         if (letter == '\n') {
-            maxWidth = fmaxf(maxWidth, currentWidth);
+            maxWidth = std::max(maxWidth, currentWidth);
             maxCharsInLine = NX_MAX(maxCharsInLine, currentCharsInLine);
             currentWidth = 0.0f;
             currentCharsInLine = 0;
@@ -176,7 +174,7 @@ NX_Vec2 NX_MeasureCodepoints(const NX_Font* font, const int* codepoints, int len
     }
 
     // Treat the last line
-    maxWidth = fmaxf(maxWidth, currentWidth);
+    maxWidth = std::max(maxWidth, currentWidth);
     maxCharsInLine = NX_MAX(maxCharsInLine, currentCharsInLine);
 
     return NX_Vec2 {
@@ -206,7 +204,7 @@ NX_Vec2 NX_MeasureText(const NX_Font* font, const char* text, float fontSize, NX
         i += codepoint_byte_count;
 
         if (letter == '\n') {
-            maxWidth = fmaxf(maxWidth, currentWidth);
+            maxWidth = std::max(maxWidth, currentWidth);
             maxCharsInLine = NX_MAX(maxCharsInLine, currentCharsInLine);
             currentWidth = 0.0f;
             currentCharsInLine = 0;
@@ -224,7 +222,7 @@ NX_Vec2 NX_MeasureText(const NX_Font* font, const char* text, float fontSize, NX
     }
 
     // Treat the last line
-    maxWidth = fmaxf(maxWidth, currentWidth);
+    maxWidth = std::max(maxWidth, currentWidth);
     maxCharsInLine = NX_MAX(maxCharsInLine, currentCharsInLine);
 
     return NX_Vec2 {

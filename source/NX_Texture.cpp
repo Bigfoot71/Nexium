@@ -7,13 +7,11 @@
  */
 
 #include "./NX_Texture.hpp"
-#include <NX/NX_Texture.h>
 #include <NX/NX_Log.h>
 
-#include "./Detail/Util/ObjectPool.hpp"
 #include "./Detail/GPU/Translation.hpp"
 #include "./Detail/GPU/Texture.hpp"
-#include "NX/NX_Image.h"
+#include "./INX_PoolAssets.hpp"
 
 // ============================================================================
 // LOCAL MANAGEMENT
@@ -23,13 +21,9 @@ static NX_TextureFilter INX_DefaultFilter = NX_TEXTURE_FILTER_BILINEAR;
 static NX_TextureWrap INX_DefaultWrap = NX_TEXTURE_WRAP_CLAMP;
 static float INX_DefaultAnisotropy = 1.0f;
 
-using INX_TexturePool = util::ObjectPool<NX_Texture, 1024>;
-
-static INX_TexturePool& INX_GetPool()
-{
-    static INX_TexturePool pool{};
-    return pool;
-}
+// ============================================================================
+// INTERNAL FUNCTIONS
+// ============================================================================
 
 static std::pair<GLenum, GLenum> INX_GetFilter(NX_TextureFilter filter, bool mipmap)
 {
@@ -102,7 +96,7 @@ NX_Texture* NX_CreateTexture(int w, int h, const void* data, NX_PixelFormat form
     return NX_CreateTextureEx(w, h, data, format, INX_DefaultWrap, INX_DefaultFilter);
 }
 
-NXAPI NX_Texture* NX_CreateTextureEx(int w, int h, const void* data, NX_PixelFormat format, NX_TextureWrap wrap, NX_TextureFilter filter)
+NX_Texture* NX_CreateTextureEx(int w, int h, const void* data, NX_PixelFormat format, NX_TextureWrap wrap, NX_TextureFilter filter)
 {
     if (w <= 0 && h <= 0) {
         NX_LOG(E, "RENDER: Failed to create texture; Dimensions are invalid");
@@ -136,7 +130,7 @@ NXAPI NX_Texture* NX_CreateTextureEx(int w, int h, const void* data, NX_PixelFor
         }
     );
 
-    return INX_GetPool().create(std::move(texture));
+    return INX_Pool.Create<NX_Texture>(std::move(texture));
 }
 
 NX_Texture* NX_CreateTextureFromImage(const NX_Image* image)
@@ -177,7 +171,7 @@ NX_Texture* NX_CreateTextureFromImageEx(const NX_Image* image, NX_TextureWrap wr
         }
     );
 
-    return INX_GetPool().create(std::move(texture));
+    return INX_Pool.Create<NX_Texture>(std::move(texture));
 }
 
 NX_Texture* NX_LoadTexture(const char* filePath)
@@ -201,7 +195,7 @@ NX_Texture* NX_LoadTextureAsData(const char* filePath)
 
 void NX_DestroyTexture(NX_Texture* texture)
 {
-    INX_GetPool().destroy(texture);
+    INX_Pool.Destroy(texture);
 }
 
 NX_IVec2 NX_GetTextureSize(const NX_Texture* texture)

@@ -7,24 +7,19 @@
  */
 
 #include "./NX_RenderTexture.hpp"
-#include "./NX_Texture.hpp"
 
-#include "./Detail/Util/ObjectPool.hpp"
 #include "./Detail/GPU/Framebuffer.hpp"
 #include "./Detail/GPU/Pipeline.hpp"
 #include "./Detail/GPU/Texture.hpp"
-#include "NX/NX_RenderTexture.h"
+#include "./INX_PoolAssets.hpp"
 
 // ============================================================================
-// LOCAL MANAGEMENT
+// OPAQUE DEFINITION
 // ============================================================================
 
-using INX_RenderTexturePool = util::ObjectPool<NX_RenderTexture, 1024>;
-
-static INX_RenderTexturePool& INX_GetPool()
+NX_RenderTexture::~NX_RenderTexture()
 {
-    static INX_RenderTexturePool pool{};
-    return pool;
+    NX_DestroyTexture(color);
 }
 
 // ============================================================================
@@ -33,7 +28,7 @@ static INX_RenderTexturePool& INX_GetPool()
 
 NX_RenderTexture* NX_CreateRenderTexture(int w, int h)
 {
-    NX_RenderTexture* target = INX_GetPool().create();
+    NX_RenderTexture* target = INX_Pool.Create<NX_RenderTexture>();
 
     target->color = NX_CreateTexture(w, h, nullptr, NX_PIXEL_FORMAT_RGBA8);
 
@@ -69,8 +64,7 @@ NX_RenderTexture* NX_CreateRenderTexture(int w, int h)
 
 void NX_DestroyRenderTexture(NX_RenderTexture* target)
 {
-    NX_DestroyTexture(target->color);
-    INX_GetPool().destroy(target);
+    INX_Pool.Destroy(target);
 }
 
 NX_IVec2 NX_GetRenderTextureSize(const NX_RenderTexture* target)

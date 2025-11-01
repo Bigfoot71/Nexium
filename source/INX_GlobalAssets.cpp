@@ -171,9 +171,11 @@ void INX_GlobalAssets::Unload()
 {
     for (NX_Texture* texture : mTextures) {
         NX_DestroyTexture(texture);
+        texture = nullptr;
     }
 
     for (NX_Font* font : mFonts) {
         NX_DestroyFont(font);
+        font = nullptr;
     }
 }

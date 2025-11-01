@@ -12,6 +12,7 @@
 
 #include "./INX_GlobalAssets.hpp"
 #include "./INX_GlobalState.hpp"
+#include "./INX_PoolAssets.hpp"
 
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_stdinc.h>
@@ -374,6 +375,7 @@ void NX_Quit()
     gRender.reset();
 
     INX_Assets.Unload();
+    INX_Pool.Unload();
 
     alcDestroyContext(INX_Audio.alContext);
     INX_Audio.alContext = nullptr;

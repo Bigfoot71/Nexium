@@ -10,16 +10,12 @@
 #include <NX/NX_Filesystem.h>
 
 #include "Detail/Util/DynamicArray.hpp"
-#include "./Detail/Util/ObjectPool.hpp"
 #include "./Detail/Util/Memory.hpp"
 #include "./INX_AudioFormat.hpp"
+#include "./NX_AudioStream.hpp"
+#include "./INX_PoolAssets.hpp"
 
 #include <SDL3/SDL_assert.h>
-#include <stb_vorbis.h>
-#include <dr_flac.h>
-#include <dr_wav.h>
-#include <dr_mp3.h>
-#include <al.h>
 
 #include <condition_variable>
 #include <algorithm>
@@ -27,38 +23,6 @@
 #include <atomic>
 #include <mutex>
 #include <array>
-
-// ============================================================================
-// OPAQUE DEFINITION
-// ============================================================================
-
-struct NX_AudioStream {
-    static constexpr size_t BufferCount = 3;
-    static constexpr size_t BufferSize = 256 * 32 * 2 * 2; // frames * blocks * channels * bytes
-
-    // OpenAL resources
-    std::array<ALuint, BufferCount> buffers{};
-    ALuint source{};
-    ALenum format{};
-
-    // Audio data and decoder
-    util::UniquePtr<uint8_t> audioData{};
-    INX_AudioFormat audioFormat{};
-    
-    union Decoder {
-        drwav* wav;
-        drflac* flac;
-        drmp3* mp3;
-        stb_vorbis* ogg;
-    } decoder{};
-
-    // State flags
-    bool shouldLoop{};
-    bool isPaused{};
-    bool isPlaying{};
-
-    ~NX_AudioStream();
-};
 
 // ============================================================================
 // DECODER HELPERS
@@ -176,6 +140,10 @@ static void INX_SeekToStart(const NX_AudioStream& stream)
     default: break;
     }
 }
+
+// ============================================================================
+// OPAQUE DEFINITION
+// ============================================================================
 
 NX_AudioStream::~NX_AudioStream()
 {
@@ -401,12 +369,6 @@ static INX_StreamPlayer& INX_GetStreamPlayer()
     return player;
 }
 
-static util::ObjectPool<NX_AudioStream, 128>& INX_GetStreamPool()
-{
-    static util::ObjectPool<NX_AudioStream, 128> pool;
-    return pool;
-}
-
 // ============================================================================
 // PUBLIC API
 // ============================================================================
@@ -474,7 +436,7 @@ NX_AudioStream* NX_LoadAudioStream(const char* filePath)
 
     /* --- Create the stream --- */
 
-    NX_AudioStream* stream = INX_GetStreamPool().create();
+    NX_AudioStream* stream = INX_Pool.Create<NX_AudioStream>();
     
     stream->buffers = buffers;
     stream->source = source;
@@ -490,7 +452,7 @@ NX_AudioStream* NX_LoadAudioStream(const char* filePath)
 
 void NX_DestroyAudioStream(NX_AudioStream* stream)
 {
-    INX_GetStreamPool().destroy(stream);
+    INX_Pool.Destroy(stream);
 }
 
 void NX_PlayAudioStream(NX_AudioStream* stream)

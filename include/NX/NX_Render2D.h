@@ -18,6 +18,10 @@
 // FUNCTIONS DECLARATIONS
 // ============================================================================
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 /**
  * @brief Begins 2D rendering.
  *
@@ -377,5 +381,9 @@ NXAPI void NX_DrawCodepoints2D(const int* codepoints, int length, NX_Vec2 positi
  * @param spacing Additional spacing between characters.
  */
 NXAPI void NX_DrawText2D(const char* text, NX_Vec2 position, float fontSize, NX_Vec2 spacing);
+
+#if defined(__cplusplus)
+} // extern "C"
+#endif
 
 #endif // NX_RENDER_2D_H

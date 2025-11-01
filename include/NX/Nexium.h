@@ -35,6 +35,7 @@
 #include "./NX_Texture.h"
 #include "./NX_Runtime.h"
 #include "./NX_Display.h"
+#include "./NX_Render2D.h"
 #include "./NX_Keyboard.h"
 #include "./NX_Platform.h"
 #include "./NX_BitUtils.h"

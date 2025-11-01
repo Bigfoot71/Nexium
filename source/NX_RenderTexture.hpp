@@ -19,6 +19,7 @@ struct NX_RenderTexture {
     gpu::Framebuffer gpu;
     gpu::Texture depth;
     NX_Texture* color;
+    ~NX_RenderTexture();
 };
 
 #endif // NX_RENDER_TEXTURE_HPP

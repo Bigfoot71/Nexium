@@ -6,13 +6,15 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
+#include "./NX_AudioClip.hpp"
+
 #include <NX/NX_Filesystem.h>
 #include <NX/NX_AudioClip.h>
 #include <NX/NX_Log.h>
 
 #include "./Detail/Util/FixedArray.hpp"
-#include "./Detail/Util/ObjectPool.hpp"
 #include "./INX_AudioFormat.hpp"
+#include "./INX_PoolAssets.hpp"
 
 #include <stb_vorbis.h>
 #include <dr_flac.h>
@@ -23,12 +25,6 @@
 // ============================================================================
 // OPAQUE DEFINITION
 // ============================================================================
-
-struct NX_AudioClip {
-    util::FixedArray<ALuint> sources{};
-    ALuint buffer{};
-    ~NX_AudioClip();
-};
 
 NX_AudioClip::~NX_AudioClip()
 {
@@ -219,18 +215,6 @@ void INX_DestroyAudioClip_RawData(INX_AudioClip_RawData& rawData)
 }
 
 // ============================================================================
-// LOCAL STATE
-// ============================================================================
-
-using INX_PoolAudioClip = util::ObjectPool<NX_AudioClip, 128>;
-
-static INX_PoolAudioClip& INX_GetPoolAudioClip()
-{
-    static INX_PoolAudioClip pool{};
-    return pool;
-}
-
-// ============================================================================
 // PUBLIC API
 // ============================================================================
 
@@ -334,12 +318,12 @@ NX_AudioClip* NX_LoadAudioClip(const char* filePath, int channelCount)
 
     /* --- Push clip to the object pull and return pointer */
 
-    return INX_GetPoolAudioClip().create(std::move(sources), buffer);
+    return INX_Pool.Create<NX_AudioClip>(std::move(sources), buffer);
 }
 
 void NX_DestroyAudioClip(NX_AudioClip* clip)
 {
-    INX_GetPoolAudioClip().destroy(clip);
+    INX_Pool.Destroy(clip);
 }
 
 int NX_PlayAudioClip(NX_AudioClip* clip, int channel)
