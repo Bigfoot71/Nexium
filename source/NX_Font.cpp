@@ -68,13 +68,13 @@ NX_Font* NX_LoadFont(const char* filePath, NX_FontType type, int baseSize, const
     size_t dataSize = 0;
     void* fileData = NX_LoadFile(filePath, &dataSize);
 
-    NX_Font* font = NX_LoadFontFromMem(fileData, dataSize, type, baseSize, codepoints, codepointCount);
+    NX_Font* font = NX_LoadFontFromData(fileData, dataSize, type, baseSize, codepoints, codepointCount);
     NX_Free(fileData);
 
     return font;
 }
 
-NX_Font* NX_LoadFontFromMem(const void* fileData, size_t dataSize, NX_FontType type, int baseSize, const int* codepoints, int codepointCount)
+NX_Font* NX_LoadFontFromData(const void* fileData, size_t dataSize, NX_FontType type, int baseSize, const int* codepoints, int codepointCount)
 {
 #   define FONT_TTF_DEFAULT_SIZE           32
 #   define FONT_TTF_DEFAULT_NUMCHARS       95

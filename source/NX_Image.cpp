@@ -152,7 +152,7 @@ NX_Image NX_CreateImage(int w, int h, NX_PixelFormat format)
     return image;
 }
 
-NX_Image NX_CreateImageFromMem(const void* pixels, int w, int h, NX_PixelFormat srcFormat, NX_PixelFormat dstFormat)
+NX_Image NX_CreateImageFromData(const void* pixels, int w, int h, NX_PixelFormat srcFormat, NX_PixelFormat dstFormat)
 {
     NX_Image image{};
 
@@ -187,7 +187,7 @@ NX_Image NX_CreateImageFromMem(const void* pixels, int w, int h, NX_PixelFormat 
     return image;
 }
 
-NX_Image NX_LoadImageFromMem(const void* data, size_t size)
+NX_Image NX_LoadImageFromData(const void* data, size_t size)
 {
     int channels;
     stbi_info_from_memory((const unsigned char*)data, size, NULL, NULL, &channels);
@@ -195,7 +195,7 @@ NX_Image NX_LoadImageFromMem(const void* data, size_t size)
     return INX_DecodeImage(data, size, (channels == 1) ? 3 : (channels == 2) ? 4 : channels);
 }
 
-NX_Image NX_LoadImageAsDataFromMem(const void* data, size_t size)
+NX_Image NX_LoadImageRawFromData(const void* data, size_t size)
 {
     return INX_DecodeImage(data, size, 0);
 }
@@ -215,7 +215,7 @@ NX_Image NX_LoadImage(const char* filePath)
         return image;
     }
     
-    image = NX_LoadImageFromMem(fileData, fileSize);
+    image = NX_LoadImageFromData(fileData, fileSize);
     if (image.pixels == NULL) {
         NX_LOG(E, "IMAGE: Failed to load image: %s", filePath);
     }
@@ -223,7 +223,7 @@ NX_Image NX_LoadImage(const char* filePath)
     return image;
 }
 
-NX_Image NX_LoadImageAsData(const char* filePath)
+NX_Image NX_LoadImageRaw(const char* filePath)
 {
     NX_Image image{};
     if (!filePath) {
@@ -238,7 +238,7 @@ NX_Image NX_LoadImageAsData(const char* filePath)
         return image;
     }
     
-    image = NX_LoadImageAsDataFromMem(fileData, fileSize);
+    image = NX_LoadImageRawFromData(fileData, fileSize);
     if (image.pixels == NULL) {
         NX_LOG(E, "IMAGE: Failed to load image: %s", filePath);
     }

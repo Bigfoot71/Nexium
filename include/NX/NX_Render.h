@@ -1322,7 +1322,7 @@ NXAPI NX_Cubemap* NX_CreateCubemap(int size, NX_PixelFormat format);
  *           [-Y]
  *           [-Z]
  */
-NXAPI NX_Cubemap* NX_LoadCubemapFromMem(const NX_Image* image);
+NXAPI NX_Cubemap* NX_LoadCubemapFromData(const NX_Image* image);
 
 /**
  * @brief Loads a cubemap from a file.
@@ -1871,7 +1871,7 @@ NXAPI NX_Model* NX_LoadModel(const char* filePath);
  * @param hint Hint on the model format (can be NULL).
  * @return Pointer to a newly loaded NX_Model containing meshes and materials.
  */
-NXAPI NX_Model* NX_LoadModelFromMemory(const void* data, size_t size, const char* hint);
+NXAPI NX_Model* NX_LoadModelFromDataory(const void* data, size_t size, const char* hint);
 
 /**
  * @brief Destroys a 3D model and frees its resources.
@@ -1914,7 +1914,7 @@ NXAPI NX_ModelAnimation** NX_LoadModelAnimations(const char* filePath, int* anim
  * @return Pointer to an array of NX_ModelAnimation, or NULL on failure.
  * @note Free the returned array using NX_DestroyModelAnimations().
  */
-NXAPI NX_ModelAnimation** NX_LoadModelAnimationsFromMemory(const void* data, unsigned int size, const char* hint, int* animCount, int targetFrameRate);
+NXAPI NX_ModelAnimation** NX_LoadModelAnimationsFromDataory(const void* data, unsigned int size, const char* hint, int* animCount, int targetFrameRate);
 
 /**
  * @brief Frees memory allocated for model animations.

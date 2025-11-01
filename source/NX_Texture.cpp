@@ -193,7 +193,7 @@ NX_Texture* NX_LoadTexture(const char* filePath)
 
 NX_Texture* NX_LoadTextureAsData(const char* filePath)
 {
-    NX_Image image = NX_LoadImageAsData(filePath);
+    NX_Image image = NX_LoadImageRaw(filePath);
     NX_Texture* texture = NX_CreateTextureFromImage(&image);
     NX_DestroyImage(&image);
     return texture;

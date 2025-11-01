@@ -190,10 +190,10 @@ inline bool TextureLoader::loadImage(Image* image, const aiMaterial* material, a
 
         if (aiTex->mHeight == 0) {
             if (asData) {
-                image->image = NX_LoadImageAsDataFromMem(aiTex->pcData, aiTex->mWidth);
+                image->image = NX_LoadImageRawFromData(aiTex->pcData, aiTex->mWidth);
             }
             else {
-                image->image = NX_LoadImageFromMem(aiTex->pcData, aiTex->mWidth);
+                image->image = NX_LoadImageFromData(aiTex->pcData, aiTex->mWidth);
             }
             image->owned = true;
         }
@@ -209,7 +209,7 @@ inline bool TextureLoader::loadImage(Image* image, const aiMaterial* material, a
     }
     else {
         if (asData) {
-            image->image = NX_LoadImageAsData(path.data);
+            image->image = NX_LoadImageRaw(path.data);
         }
         else {
             image->image = NX_LoadImage(path.data);

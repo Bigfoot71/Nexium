@@ -55,7 +55,7 @@ NXAPI NX_Font* NX_LoadFont(const char* filePath, NX_FontType type, int baseSize,
  * @param codepointCount Number of codepoints in the array.
  * @return Pointer to a newly loaded NX_Font.
  */
-NXAPI NX_Font* NX_LoadFontFromMem(const void* fileData, size_t dataSize, NX_FontType type, int baseSize, const int* codepoints, int codepointCount);
+NXAPI NX_Font* NX_LoadFontFromData(const void* fileData, size_t dataSize, NX_FontType type, int baseSize, const int* codepoints, int codepointCount);
 
 /**
  * @brief Destroys a font and frees its resources.

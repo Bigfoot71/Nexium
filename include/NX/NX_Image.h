@@ -75,7 +75,7 @@ NXAPI NX_Image NX_CreateImage(int w, int h, NX_PixelFormat format);
  * @param dstFormat Destination pixel format
  * @return New image with converted pixel data
  */
-NXAPI NX_Image NX_CreateImageFromMem(const void* pixels, int w, int h, NX_PixelFormat srcFormat, NX_PixelFormat dstFormat);
+NXAPI NX_Image NX_CreateImageFromData(const void* pixels, int w, int h, NX_PixelFormat srcFormat, NX_PixelFormat dstFormat);
 
 /**
  * @brief Load and decode an image from file
@@ -97,7 +97,7 @@ NXAPI NX_Image NX_LoadImage(const char* filePath);
  * @param filePath Path to the image file
  * @return Image containing raw pixel data as-is, or empty image on failure
  */
-NXAPI NX_Image NX_LoadImageAsData(const char* filePath);
+NXAPI NX_Image NX_LoadImageRaw(const char* filePath);
 
 /**
  * @brief Decode an image from memory buffer
@@ -109,7 +109,7 @@ NXAPI NX_Image NX_LoadImageAsData(const char* filePath);
  * @param size Size of the encoded data in bytes
  * @return Decoded image, ready for use in rendering, or empty image on failure
  */
-NXAPI NX_Image NX_LoadImageFromMem(const void* data, size_t size);
+NXAPI NX_Image NX_LoadImageFromData(const void* data, size_t size);
 
 /**
  * @brief Load raw image data from memory buffer without any channel conversion
@@ -121,7 +121,7 @@ NXAPI NX_Image NX_LoadImageFromMem(const void* data, size_t size);
  * @param size Size of the encoded data in bytes
  * @return Image containing raw pixel data as-is, or empty image on failure
  */
-NXAPI NX_Image NX_LoadImageAsDataFromMem(const void* data, size_t size);
+NXAPI NX_Image NX_LoadImageRawFromData(const void* data, size_t size);
 
 /**
  * @brief Destroy an image and free its resources

@@ -121,7 +121,7 @@ static NX_Font* INX_LoadFontDefault(void)
         0x203A,0x20AC,0x20B1,0x20B7,0x2117,0x2122,0xFFFF,
     };
 
-    return NX_LoadFontFromMem(
+    return NX_LoadFontFromData(
         FONT_TTF, FONT_TTF_SIZE, NX_FONT_MONO, 16,
         codepoints, SDL_arraysize(codepoints)
     );

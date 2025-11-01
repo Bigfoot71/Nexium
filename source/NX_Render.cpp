@@ -1751,7 +1751,7 @@ NX_Cubemap* NX_CreateCubemap(int size, NX_PixelFormat format)
     return gRender->cubemaps.createCubemap(size, format);
 }
 
-NX_Cubemap* NX_LoadCubemapFromMem(const NX_Image* image)
+NX_Cubemap* NX_LoadCubemapFromData(const NX_Image* image)
 {
     return gRender->cubemaps.createCubemap(*image);
 }
@@ -1761,7 +1761,7 @@ NX_Cubemap* NX_LoadCubemap(const char* filePath)
     NX_Image image = NX_LoadImage(filePath);
     if (image.pixels == nullptr) return nullptr;
 
-    NX_Cubemap* cubemap = NX_LoadCubemapFromMem(&image);
+    NX_Cubemap* cubemap = NX_LoadCubemapFromData(&image);
     NX_DestroyImage(&image);
 
     return cubemap;
@@ -2885,7 +2885,7 @@ NX_Model* NX_LoadModel(const char* filePath)
     return model;
 }
 
-NX_Model* NX_LoadModelFromMemory(const void* data, size_t size, const char* hint)
+NX_Model* NX_LoadModelFromDataory(const void* data, size_t size, const char* hint)
 {
     return gRender->models.loadModel(data, size, hint);
 }
@@ -2939,7 +2939,7 @@ NX_ModelAnimation** NX_LoadModelAnimations(const char* filePath, int* animCount,
     return animations;
 }
 
-NX_ModelAnimation** NX_LoadModelAnimationsFromMemory(const void* data, unsigned int size, const char* hint, int* animCount, int targetFrameRate)
+NX_ModelAnimation** NX_LoadModelAnimationsFromDataory(const void* data, unsigned int size, const char* hint, int* animCount, int targetFrameRate)
 {
     return gRender->models.loadAnimations(data, size, hint, animCount, targetFrameRate);
 }
