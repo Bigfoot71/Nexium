@@ -12,14 +12,11 @@
 #include <NX/NX_Render.h>
 #include <NX/NX_Init.h>
 
-#include "./Core/ProgramCache.hpp"
-#include "./Core/PoolCubemap.hpp"
 #include "./Core/PoolModel.hpp"
 #include "./Core/PoolMesh.hpp"
 
 #include "./Scene/Scene.hpp"
 
-#include <memory>
 #include <cfloat>
 
 /* === Global State === */
@@ -31,8 +28,6 @@ extern util::UniquePtr<class NX_RenderState> gRender;
 class NX_RenderState {
 public:
     /** Resource Managers */
-    render::ProgramCache programs;
-    render::PoolCubemap cubemaps;
     render::PoolMesh meshes;
     render::PoolModel models;
 
@@ -48,11 +43,9 @@ public:
 /* === Public Implementation === */
 
 inline NX_RenderState::NX_RenderState(NX_AppDesc& desc)
-    : programs()
-    , cubemaps(programs)
-    , meshes()
+    : meshes()
     , models(meshes)
-    , scene(programs, desc)
+    , scene(desc)
 { }
 
 #endif // NX_RENDER_STATE_HP

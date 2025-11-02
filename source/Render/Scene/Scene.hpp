@@ -17,7 +17,7 @@
 #include "../../Detail/GPU/MipBuffer.hpp"
 #include "../../Detail/GPU/Texture.hpp"
 
-#include "../Core/ProgramCache.hpp"
+#include "../../INX_GPUProgramCache.hpp"
 
 #include "./DrawCallManager.hpp"
 #include "./LightManager.hpp"
@@ -30,7 +30,7 @@ namespace scene {
 
 class Scene {
 public:
-    Scene(render::ProgramCache& programs, NX_AppDesc& desc);
+    Scene(NX_AppDesc& desc);
 
     /** Begin/End 3D mode functions */
     void begin(const NX_Camera& camera, const NX_Environment& env, const NX_RenderTexture* target);
@@ -72,9 +72,6 @@ private:
     };
 
 private:
-    /** Shared assets */
-    render::ProgramCache& mPrograms;
-
     /** Scene data */
     Environment mEnvironment{};
     ViewFrustum mFrustum{};

@@ -263,69 +263,6 @@ NX_Environment NX_GetDefaultEnvironment()
     };
 }
 
-/* === Skybox - Public API === */
-
-NX_Cubemap* NX_CreateCubemap(int size, NX_PixelFormat format)
-{
-    return gRender->cubemaps.createCubemap(size, format);
-}
-
-NX_Cubemap* NX_LoadCubemapFromData(const NX_Image* image)
-{
-    return gRender->cubemaps.createCubemap(*image);
-}
-
-NX_Cubemap* NX_LoadCubemap(const char* filePath)
-{
-    NX_Image image = NX_LoadImage(filePath);
-    if (image.pixels == nullptr) return nullptr;
-
-    NX_Cubemap* cubemap = NX_LoadCubemapFromData(&image);
-    NX_DestroyImage(&image);
-
-    return cubemap;
-}
-
-void NX_DestroyCubemap(NX_Cubemap* cubemap)
-{
-    gRender->cubemaps.destroyCubemap(cubemap);
-}
-
-void NX_GenerateSkybox(NX_Cubemap* cubemap, const NX_Skybox* skybox)
-{
-    gRender->cubemaps.generateSkybox(cubemap, *skybox);
-}
-
-/* === ReflectionProbe - Public API === */
-
-NX_ReflectionProbe* NX_CreateReflectionProbe(NX_Cubemap* cubemap)
-{
-    return gRender->cubemaps.createReflectionProbe(*cubemap);
-}
-
-NX_ReflectionProbe* NX_LoadReflectionProbe(const char* filePath)
-{
-    NX_Cubemap* cubemap = NX_LoadCubemap(filePath);
-    if (cubemap == nullptr) return nullptr;
-
-    NX_ReflectionProbe* probe = NX_CreateReflectionProbe(cubemap);
-    NX_DestroyCubemap(cubemap);
-
-    return probe;
-}
-
-void NX_DestroyReflectionProbe(NX_ReflectionProbe* probe)
-{
-    gRender->cubemaps.destroyReflectionProbe(probe);
-}
-
-void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap* cubemap)
-{
-    if (probe != nullptr && cubemap != nullptr) {
-        gRender->cubemaps.updateReflectionProbe(probe, *cubemap);
-    }
-}
-
 /* === Material - Public API === */
 
 NX_Material NX_GetDefaultMaterial()

@@ -18,17 +18,16 @@
 #include "../../INX_PoolAssets.hpp"
 #include "../../NX_Texture.hpp"
 
-#include "../NX_ReflectionProbe.hpp"
-#include "../NX_Cubemap.hpp"
+#include "../../NX_ReflectionProbe.hpp"
+#include "../../NX_Cubemap.hpp"
 #include "NX/NX_Shader3D.h"
 
 namespace scene {
 
 /* === Public Implementation === */
 
-Scene::Scene(render::ProgramCache& programs, NX_AppDesc& desc)
-    : mPrograms(programs)
-    , mDrawCalls(1024), mLights(programs, desc), mFrustum()
+Scene::Scene(NX_AppDesc& desc)
+    : mDrawCalls(1024), mLights(desc), mFrustum()
     , mFrameUniform(GL_UNIFORM_BUFFER, sizeof(FrameUniform), nullptr, GL_DYNAMIC_DRAW)
 {
     /* --- Tweak description --- */
@@ -212,9 +211,9 @@ void Scene::renderBackground(const gpu::Pipeline& pipeline)
     pipeline.bindUniform(2, mEnvironment.buffer());
 
     pipeline.setDepthMode(gpu::DepthMode::Disabled);
-    pipeline.useProgram(mPrograms.skybox());
+    pipeline.useProgram(INX_Programs.GetSkybox());
 
-    pipeline.bindTexture(0, mEnvironment.skyCubemap()->texture());
+    pipeline.bindTexture(0, mEnvironment.skyCubemap()->gpu);
     pipeline.draw(GL_TRIANGLES, 36);
 
     mFramebufferScene.enableDrawBuffers();
@@ -245,8 +244,8 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
         pipeline.useProgram(shader->GetProgram(NX_Shader3D::Variant::SCENE_PREPASS));
 
-        pipeline.setDepthFunc(gpu::getDepthFunc(mat.depth.test));
-        pipeline.setCullMode(gpu::getCullMode(mat.cull));
+        pipeline.setDepthFunc(INX_GPU_GetDepthFunc(mat.depth.test));
+        pipeline.setCullMode(INX_GPU_GetCullMode(mat.cull));
 
         shader->BindTextures(pipeline, unique.textures);
         shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
@@ -288,8 +287,8 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
     pipeline.bindUniform(2, mEnvironment.buffer());
 
     if (mEnvironment.skyProbe() != nullptr) {
-        pipeline.bindTexture(5, mEnvironment.skyProbe()->irradiance());
-        pipeline.bindTexture(6, mEnvironment.skyProbe()->prefilter());
+        pipeline.bindTexture(5, mEnvironment.skyProbe()->irradiance.gpu);
+        pipeline.bindTexture(6, mEnvironment.skyProbe()->prefilter.gpu);
     }
 
     // Ensures SSBOs are ready (especially clusters)
@@ -306,9 +305,9 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         shader->BindTextures(pipeline, unique.textures);
         shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
 
-        pipeline.setDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : gpu::getDepthFunc(mat.depth.test));
-        pipeline.setBlendMode(gpu::getBlendMode(mat.blend));
-        pipeline.setCullMode(gpu::getCullMode(mat.cull));
+        pipeline.setDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : INX_GPU_GetDepthFunc(mat.depth.test));
+        pipeline.setBlendMode(INX_GPU_GetBlendMode(mat.blend));
+        pipeline.setCullMode(INX_GPU_GetCullMode(mat.cull));
 
         pipeline.bindTexture(0, INX_Assets.Select(mat.albedo.texture, INX_TextureAsset::WHITE)->gpu);
         pipeline.bindTexture(1, INX_Assets.Select(mat.emission.texture, INX_TextureAsset::WHITE)->gpu);
@@ -345,7 +344,7 @@ const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
     pipeline.bindFramebuffer(mSwapAuxiliary.target());
     {
         pipeline.setViewport(mSwapAuxiliary.target());
-        pipeline.useProgram(mPrograms.ssaoPass());
+        pipeline.useProgram(INX_Programs.GetSsaoPass());
 
         pipeline.bindTexture(0, mTargetSceneDepth);
         pipeline.bindTexture(1, mTargetSceneNormal);
@@ -358,7 +357,7 @@ const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
 
     /* --- Blur ambient occlusion --- */
 
-    pipeline.useProgram(mPrograms.ssaoBilateralBlur());
+    pipeline.useProgram(INX_Programs.GetSsaoBilateralBlur());
 
     pipeline.bindTexture(1, mTargetSceneDepth);
 
@@ -383,7 +382,7 @@ const gpu::Texture& Scene::postSSAO(const gpu::Texture& source)
     pipeline.bindFramebuffer(mSwapPostProcess.target());
     {
         pipeline.setViewport(mSwapPostProcess.target());
-        pipeline.useProgram(mPrograms.ssaoPost());
+        pipeline.useProgram(INX_Programs.GetSsaoPost());
 
         pipeline.bindTexture(0, source);
         pipeline.bindTexture(1, mSwapAuxiliary.source());
@@ -405,7 +404,7 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
 
     /* --- Downsampling of the source --- */
 
-    pipeline.useProgram(mPrograms.downsampling());
+    pipeline.useProgram(INX_Programs.GetDownsampling());
 
     mMipChain.downsample(pipeline, 0, [&](int targetLevel, int sourceLevel) {
         const gpu::Texture& texSource = (targetLevel == 0) ? source : mMipChain.texture();
@@ -417,7 +416,7 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
 
     /* --- Apply bloom level factors --- */
 
-    pipeline.useProgram(mPrograms.screenQuad());
+    pipeline.useProgram(INX_Programs.GetScreenQuad());
     pipeline.setBlendMode(gpu::BlendMode::Multiply);
 
     mMipChain.iterate(pipeline, [&](int targetLevel) {
@@ -427,7 +426,7 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
 
     /* --- Upsampling of the source --- */
 
-    pipeline.useProgram(mPrograms.upsampling());
+    pipeline.useProgram(INX_Programs.GetUpsampling());
     pipeline.setBlendMode(gpu::BlendMode::Additive);
 
     mMipChain.upsample(pipeline, [&](int targetLevel, int sourceLevel) {
@@ -441,7 +440,7 @@ const gpu::Texture& Scene::postBloom(const gpu::Texture& source)
     pipeline.bindFramebuffer(mSwapPostProcess.target());
     pipeline.setViewport(mSwapPostProcess.target());
 
-    pipeline.useProgram(mPrograms.bloomPost(mEnvironment.bloomMode()));
+    pipeline.useProgram(INX_Programs.GetBloomPost(mEnvironment.bloomMode()));
 
     pipeline.bindTexture(0, source);
     pipeline.bindTexture(1, mMipChain.texture());
@@ -462,7 +461,7 @@ void Scene::postFinal(const gpu::Texture& source)
     }
     pipeline.setViewport(mTargetInfo.resolution);
 
-    pipeline.useProgram(mPrograms.output(mEnvironment.tonemapMode()));
+    pipeline.useProgram(INX_Programs.GetOutput(mEnvironment.tonemapMode()));
     pipeline.bindUniform(0, mEnvironment.buffer());
     pipeline.bindTexture(0, source);
 

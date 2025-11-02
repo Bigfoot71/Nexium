@@ -1,4 +1,4 @@
-/* NX_Cubemap.cpp -- Implementation of the API for cubemaps
+/* NX_Cubemap.cpp -- API definitions for Nexium's cubemap module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -8,54 +8,25 @@
 
 #include "./NX_Cubemap.hpp"
 
-#include "../Detail/Util/DynamicArray.hpp"
-#include "../Detail/GPU/Translation.hpp"
-#include "./Core/Helper.hpp"
+#include "./INX_GPUProgramCache.hpp"
+#include "./INX_RenderUtils.hpp"
+#include "./INX_PoolAssets.hpp"
+#include "./INX_GPUBridge.hpp"
 
-/* === Public Implementation === */
+// ============================================================================
+// INTERNAL FUNCTIONS
+// ============================================================================
 
-void NX_Cubemap::generateSkybox(const NX_Skybox& skybox, gpu::Program& programSkyboxGen)
-{
-    if (!mFramebuffer.isValid()) {
-        mFramebuffer = gpu::Framebuffer({&mTexture}, nullptr);
-    }
-
-    gpu::Pipeline pipeline;
-
-    pipeline.bindFramebuffer(mFramebuffer);
-    pipeline.setViewport(mFramebuffer);
-
-    pipeline.useProgram(programSkyboxGen);
-
-    pipeline.setUniformFloat3(1, NX_Vec3Normalize(-skybox.sunDirection));
-    pipeline.setUniformFloat3(2, skybox.skyColorTop);
-    pipeline.setUniformFloat3(3, skybox.skyColorHorizon);
-    pipeline.setUniformFloat3(4, skybox.sunColor);
-    pipeline.setUniformFloat3(5, skybox.groundColor);
-    pipeline.setUniformFloat1(6, skybox.sunSize);
-    pipeline.setUniformFloat1(7, skybox.haze);
-    pipeline.setUniformFloat1(8, skybox.energy);
-    pipeline.setUniformInt1(9, mTexture.isHDR());
-
-    for (int i = 0; i < 6; i++) {
-        mFramebuffer.setColorAttachmentTarget(0, 0, i);
-        pipeline.setUniformMat4(0, render::getCubeView(i) * render::getCubeProj());
-        pipeline.draw(GL_TRIANGLES, 36);
-    }
-}
-
-/* === Private Implementation === */
-
-void NX_Cubemap::loadEquirectangular(const NX_Image& image, gpu::Program& programEquirectangular)
+static gpu::Texture INX_LoadEquirectangular(const NX_Image& image)
 {
     /* --- Determines the internal source and destination formats --- */
 
-    GLenum srcInternalFormat = gpu::getInternalFormat(image.format, false);
-    GLenum dstInternalFormat = gpu::getInternalFormat(image.format, true);
+    GLenum srcInternalFormat = INX_GPU_GetInternalFormat(image.format, false);
+    GLenum dstInternalFormat = INX_GPU_GetInternalFormat(image.format, true);
 
     /* --- Allocate cubemap texture --- */
 
-    mTexture = gpu::Texture(
+    gpu::Texture texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
@@ -96,7 +67,7 @@ void NX_Cubemap::loadEquirectangular(const NX_Image& image, gpu::Program& progra
 
     /* --- Convert panorama to cubemap --- */
 
-    gpu::Framebuffer fb({&mTexture});
+    gpu::Framebuffer fb({&texture});
 
     gpu::Pipeline pipeline;
 
@@ -104,16 +75,18 @@ void NX_Cubemap::loadEquirectangular(const NX_Image& image, gpu::Program& progra
     pipeline.setViewport(fb);
 
     pipeline.bindTexture(0, panorama);
-    pipeline.useProgram(programEquirectangular);
+    pipeline.useProgram(INX_Programs.GetCubemapFromEquirectangular());
 
     for (int i = 0; i < 6; i++) {
         fb.setColorAttachmentTarget(0, 0, i);
         pipeline.setUniformInt1(0, i);
         pipeline.draw(GL_TRIANGLES, 3);
     }
+
+    return texture;
 }
 
-void NX_Cubemap::loadLineHorizontal(const NX_Image& image)
+static gpu::Texture INX_LoadLineHorizontal(const NX_Image& image)
 {
     /* --- Calculate cube face size --- */
 
@@ -121,11 +94,11 @@ void NX_Cubemap::loadLineHorizontal(const NX_Image& image)
 
     /* --- Allocate cubemap texture --- */
 
-    mTexture = gpu::Texture(
+    gpu::Texture texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = gpu::getInternalFormat(image.format, false),
+            .internalFormat = INX_GPU_GetInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
             .height = cubeFaceSize
@@ -163,11 +136,13 @@ void NX_Cubemap::loadLineHorizontal(const NX_Image& image)
             SDL_memcpy(dstRow, srcRow, cubeFaceSize * bytesPerPixel);
         }
         region.cubeFace = gpu::CubeFace(int(gpu::CubeFace::PositiveX) + i);
-        mTexture.upload(faceBuffer.data(), region);
+        texture.upload(faceBuffer.data(), region);
     }
+
+    return texture;
 }
 
-void NX_Cubemap::loadLineVertical(const NX_Image& image)
+static gpu::Texture INX_LoadLineVertical(const NX_Image& image)
 {
     /* --- Calculate cube face size --- */
 
@@ -175,11 +150,11 @@ void NX_Cubemap::loadLineVertical(const NX_Image& image)
 
     /* --- Allocate cubemap texture --- */
 
-    mTexture = gpu::Texture(
+    gpu::Texture texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = gpu::getInternalFormat(image.format, false),
+            .internalFormat = INX_GPU_GetInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
             .height = cubeFaceSize
@@ -211,11 +186,13 @@ void NX_Cubemap::loadLineVertical(const NX_Image& image)
 
     for (int i = 0; i < 6; i++) {
         region.cubeFace = gpu::CubeFace(int(gpu::CubeFace::PositiveX) + i);
-        mTexture.upload(pixels + (i * cubeFaceSize * image.w * bytesPerPixel), region);
+        texture.upload(pixels + (i * cubeFaceSize * image.w * bytesPerPixel), region);
     }
+
+    return texture;
 }
 
-void NX_Cubemap::loadCrossThreeByFour(const NX_Image& image)
+static gpu::Texture INX_LoadCrossThreeByFour(const NX_Image& image)
 {
     /* --- Calculate cube face size --- */
 
@@ -223,11 +200,11 @@ void NX_Cubemap::loadCrossThreeByFour(const NX_Image& image)
 
     /* --- Allocate cubemap texture --- */
 
-    mTexture = gpu::Texture(
+    gpu::Texture texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = gpu::getInternalFormat(image.format, false),
+            .internalFormat = INX_GPU_GetInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
             .height = cubeFaceSize
@@ -273,9 +250,9 @@ void NX_Cubemap::loadCrossThreeByFour(const NX_Image& image)
             for (int y = 0; y < cubeFaceSize; y++) {
                 const uint8_t* srcRow = pixels + ((pos.y * cubeFaceSize + y) * image.w + pos.x * cubeFaceSize) * bytesPerPixel;
                 uint8_t* dstRow = faceBuffer.data() + y * cubeFaceSize * bytesPerPixel;
-                memcpy(dstRow, srcRow, cubeFaceSize * bytesPerPixel);
+                SDL_memcpy(dstRow, srcRow, cubeFaceSize * bytesPerPixel);
             }
-            mTexture.upload(faceBuffer.data(), gpu::UploadRegion{
+            texture.upload(faceBuffer.data(), gpu::UploadRegion{
                 .x = 0, .y = 0, .z = 0,
                 .width = cubeFaceSize,
                 .height = cubeFaceSize,
@@ -285,9 +262,11 @@ void NX_Cubemap::loadCrossThreeByFour(const NX_Image& image)
             });
         }
     }
+
+    return texture;
 }
 
-void NX_Cubemap::loadCrossFourByThree(const NX_Image& image)
+static gpu::Texture INX_LoadCrossFourByThree(const NX_Image& image)
 {
     /* --- Calculate cube face size --- */
 
@@ -295,11 +274,11 @@ void NX_Cubemap::loadCrossFourByThree(const NX_Image& image)
 
     /* --- Allocate cubemap texture --- */
 
-    mTexture = gpu::Texture(
+    gpu::Texture texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = gpu::getInternalFormat(image.format, false),
+            .internalFormat = INX_GPU_GetInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
             .height = cubeFaceSize
@@ -346,7 +325,7 @@ void NX_Cubemap::loadCrossFourByThree(const NX_Image& image)
                 uint8_t* dstRow = faceBuffer.data() + y * cubeFaceSize * bytesPerPixel;
                 memcpy(dstRow, srcRow, cubeFaceSize * bytesPerPixel);
             }
-            mTexture.upload(faceBuffer.data(), gpu::UploadRegion{
+            texture.upload(faceBuffer.data(), gpu::UploadRegion{
                 .x = 0, .y = 0, .z = 0,
                 .width = cubeFaceSize,
                 .height = cubeFaceSize,
@@ -356,4 +335,127 @@ void NX_Cubemap::loadCrossFourByThree(const NX_Image& image)
             });
         }
     }
+
+    return texture;
+}
+
+// ============================================================================
+// PUBLIC API
+// ============================================================================
+
+NX_Cubemap* NX_CreateCubemap(int size, NX_PixelFormat format)
+{
+    NX_Cubemap* cubemap = INX_Pool.Create<NX_Cubemap>();
+
+    cubemap->gpu = gpu::Texture(
+        gpu::TextureConfig
+        {
+            .target = GL_TEXTURE_CUBE_MAP,
+            .internalFormat = INX_GPU_GetInternalFormat(format, true),
+            .data = nullptr,
+            .width = size,
+            .height = size,
+            .depth = 0,
+            .mipmap = true
+        },
+        gpu::TextureParam
+        {
+            .minFilter = GL_LINEAR_MIPMAP_LINEAR,
+            .magFilter = GL_LINEAR,
+            .sWrap = GL_CLAMP_TO_EDGE,
+            .tWrap = GL_CLAMP_TO_EDGE,
+            .rWrap = GL_CLAMP_TO_EDGE,
+            .anisotropy = 1.0f
+        }
+    );
+
+    return cubemap;
+}
+
+NX_Cubemap* NX_LoadCubemapFromData(const NX_Image* image)
+{
+    NX_Cubemap* cubemap = INX_Pool.Create<NX_Cubemap>();
+
+    /* --- Layout detection and cubemap loading --- */
+
+    if (image->w > image->h) {
+        if (image->w == 2 * image->h) {
+            cubemap->gpu = INX_LoadEquirectangular(*image);
+        }
+        else if (image->w / 6 == image->h) {
+            cubemap->gpu = INX_LoadLineHorizontal(*image);
+        }
+        else if (image->w / 4 == image->h / 3) {
+            cubemap->gpu = INX_LoadCrossFourByThree(*image);
+        }
+    }
+    else if (image->h > image->w) {
+        if (image->h / 6 == image->w) {
+            cubemap->gpu = INX_LoadLineVertical(*image);
+        }
+        else if (image->w / 3 == image->h / 4) {
+            cubemap->gpu = INX_LoadCrossThreeByFour(*image);
+        }
+    }
+
+    if (!cubemap->gpu.isValid()) {
+        NX_LOG(E, "RENDER: Unable to determine skybox cubemap layout");
+        INX_Pool.Destroy(cubemap);
+        return nullptr;
+    }
+
+    /* --- Generate mipmaps and setup parameters --- */
+
+    cubemap->gpu.generateMipmap(); //< Needed for prefilter
+    cubemap->gpu.setFilter(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+
+    return cubemap;
+}
+
+NX_Cubemap* NX_LoadCubemap(const char* filePath)
+{
+    NX_Image image = NX_LoadImage(filePath);
+    if (image.pixels == nullptr) return nullptr;
+
+    NX_Cubemap* cubemap = NX_LoadCubemapFromData(&image);
+    NX_DestroyImage(&image);
+
+    return cubemap;
+}
+
+void NX_DestroyCubemap(NX_Cubemap* cubemap)
+{
+    INX_Pool.Destroy(cubemap);
+}
+
+void NX_GenerateSkybox(NX_Cubemap* cubemap, const NX_Skybox* skybox)
+{
+    if (!cubemap->framebuffer.isValid()) {
+        cubemap->framebuffer = gpu::Framebuffer({&cubemap->gpu}, nullptr);
+    }
+
+    gpu::Pipeline pipeline;
+
+    pipeline.bindFramebuffer(cubemap->framebuffer);
+    pipeline.setViewport(cubemap->framebuffer);
+
+    pipeline.useProgram(INX_Programs.GetCubemapSkybox());
+
+    pipeline.setUniformFloat3(1, NX_Vec3Normalize(-skybox->sunDirection));
+    pipeline.setUniformFloat3(2, skybox->skyColorTop);
+    pipeline.setUniformFloat3(3, skybox->skyColorHorizon);
+    pipeline.setUniformFloat3(4, skybox->sunColor);
+    pipeline.setUniformFloat3(5, skybox->groundColor);
+    pipeline.setUniformFloat1(6, skybox->sunSize);
+    pipeline.setUniformFloat1(7, skybox->haze);
+    pipeline.setUniformFloat1(8, skybox->energy);
+    pipeline.setUniformInt1(9, cubemap->gpu.isHDR());
+
+    for (int i = 0; i < 6; i++) {
+        cubemap->framebuffer.setColorAttachmentTarget(0, 0, i);
+        pipeline.setUniformMat4(0, INX_GetCubeView(i) * INX_GetCubeProj());
+        pipeline.draw(GL_TRIANGLES, 36);
+    }
+
+    cubemap->gpu.generateMipmap();
 }

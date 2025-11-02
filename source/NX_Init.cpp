@@ -10,6 +10,7 @@
 #include <NX/NX_Rand.h>
 #include <NX/NX_Log.h>
 
+#include "./INX_GPUProgramCache.hpp"
 #include "./INX_GlobalAssets.hpp"
 #include "./INX_GlobalState.hpp"
 #include "./INX_PoolAssets.hpp"
@@ -375,8 +376,11 @@ void NX_Quit()
 {
     gRender.reset();
 
-    INX_Assets.Unload();
-    INX_Pool.Unload();
+    INX_Programs.UnloadAll();
+    INX_Assets.UnloadAll();
+    INX_Pool.UnloadAll();
+
+    INX_Render2DState_Quit();
 
     alcDestroyContext(INX_Audio.alContext);
     INX_Audio.alContext = nullptr;

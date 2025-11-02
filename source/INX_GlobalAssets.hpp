@@ -54,7 +54,7 @@ public:
     const NX_Font* Select(const NX_Font* font, INX_FontAsset asset);
 
     /** Unload */
-    void Unload();
+    void UnloadAll();
 
 private:
     std::array<NX_Shader3D*, int(INX_Shader3DAsset::COUNT)> mShaders3D;

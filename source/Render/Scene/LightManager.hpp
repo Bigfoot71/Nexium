@@ -18,7 +18,6 @@
 #include "../../Detail/GPU/Buffer.hpp"
 #include "../NX_Light.hpp"
 
-#include "../Core/ProgramCache.hpp"
 #include "./DrawCallManager.hpp"
 #include "./ViewFrustum.hpp"
 #include "./Environment.hpp"
@@ -36,7 +35,7 @@ public:
     };
 
 public:
-    LightManager(render::ProgramCache& programs, const NX_AppDesc& desc);
+    LightManager(const NX_AppDesc& desc);
 
     /** Light life-cycle management */
     NX_Light* create(NX_LightType type);
@@ -98,9 +97,6 @@ private:
 private:
     /** Object Pools */
     util::ObjectPool<NX_Light, 32> mLights{};
-
-    /** Shared assets */
-    render::ProgramCache& mPrograms;
 
     /** Shadow framebuffers and targets (one per light type) */
     std::array<gpu::Framebuffer, NX_LIGHT_TYPE_COUNT> mFramebufferShadow{};     ///< Contains framebuffers per light type

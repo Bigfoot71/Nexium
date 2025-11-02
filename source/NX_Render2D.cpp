@@ -6,14 +6,13 @@
 #include <NX/NX_Window.h>
 #include <NX/NX_Init.h>
 
+#include "./INX_GPUProgramCache.hpp"
 #include "./INX_GlobalAssets.hpp"
-#include "./INX_AssetDecoder.hpp"
 #include "./INX_PoolAssets.hpp"
 #include "./NX_Shader2D.hpp"
 #include "./NX_Texture.hpp"
 
 #include "./Detail/Util/StaticArray.hpp"
-#include "./Detail/Util/ObjectRing.hpp"
 #include "./Detail/Util/Memory.hpp"
 
 #include "./Detail/GPU/VertexArray.hpp"
@@ -101,9 +100,6 @@ struct INX_Render2DState {
     /** Framebuffer */
     gpu::Framebuffer framebuffer{};
     gpu::Texture targetColor{};
-
-    /** Programs */
-    gpu::Program programOverlay{};
 
     /** Current State */
     NX_Color currentColor{NX_WHITE};
@@ -222,25 +218,6 @@ bool INX_Render2DState_Init(NX_AppDesc* desc)
     if (desc->render2D.sampleCount > 1) {
         INX_Render2D->framebuffer.setSampleCount(desc->render2D.sampleCount);
     }
-
-    /* --- Create programs --- */
-
-    INX_Render2D->programOverlay = gpu::Program(
-        gpu::Shader(
-            GL_VERTEX_SHADER,
-            INX_ShaderDecoder(
-                SCREEN_VERT,
-                SCREEN_VERT_SIZE
-            )
-        ),
-        gpu::Shader(
-            GL_FRAGMENT_SHADER,
-            INX_ShaderDecoder(
-                OVERLAY_FRAG,
-                OVERLAY_FRAG_SIZE
-            )
-        )
-    );
 
     return true;
 }
@@ -421,7 +398,8 @@ static void INX_Render2D_Blit()
     }
 
     pipeline.bindTexture(0, INX_Render2D->targetColor);
-    pipeline.useProgram(INX_Render2D->programOverlay);
+    pipeline.useProgram(INX_Programs.GetOverlay());
+
     pipeline.setBlendMode(gpu::BlendMode::Premultiplied);
     pipeline.draw(GL_TRIANGLES, 3);
 }

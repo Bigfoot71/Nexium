@@ -8,10 +8,9 @@
 
 #include "./NX_Light.hpp"
 
+#include "../INX_RenderUtils.hpp"
 #include <NX/NX_Runtime.h>
 #include <NX/NX_Macros.h>
-
-#include "./Core/Helper.hpp"
 
 /* === Public Implementation === */
 
@@ -155,8 +154,8 @@ void NX_Light::updateOmniViewProj()
     for (int i = 0; i < mShadowData.viewProj.size(); i++)
     {
         mShadowData.viewProj[i] =
-            render::getCubeView(i, light.position) *
-            render::getCubeProj(nearPlane, nearPlane + light.range);
+            INX_GetCubeView(i, light.position) *
+            INX_GetCubeProj(nearPlane, nearPlane + light.range);
 
         mShadowData.frustum[i].update(mShadowData.viewProj[i]);
     }

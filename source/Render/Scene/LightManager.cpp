@@ -8,8 +8,8 @@
 
 #include "./LightManager.hpp"
 
-#include "../../Detail/GPU/Translation.hpp"
 #include "../../Detail/GPU/Pipeline.hpp"
+#include "../../INX_GPUProgramCache.hpp"
 #include "../../INX_GlobalAssets.hpp"
 #include "./DrawCallManager.hpp"
 #include "../../NX_Texture.hpp"
@@ -26,9 +26,8 @@ namespace scene {
 
 /* === Public Implementation === */
 
-LightManager::LightManager(render::ProgramCache& programs, const NX_AppDesc& desc)
-    : mPrograms(programs)
-    , mFrameShadowUniform(GL_UNIFORM_BUFFER, sizeof(FrameShadowUniform), nullptr, GL_DYNAMIC_DRAW)
+LightManager::LightManager(const NX_AppDesc& desc)
+    : mFrameShadowUniform(GL_UNIFORM_BUFFER, sizeof(FrameShadowUniform), nullptr, GL_DYNAMIC_DRAW)
     , mShadowResolution{desc.render3D.shadowRes > 0 ? desc.render3D.shadowRes : 2048}
 {
     /* --- Calculation of the number of clusters according to the target size --- */
@@ -276,7 +275,7 @@ void LightManager::computeClusters(const ProcessParams& params)
     /* --- Obtaining the lights affecting each tile --- */
 
     gpu::Pipeline pipeline;
-    pipeline.useProgram(mPrograms.lightCulling());
+    pipeline.useProgram(INX_Programs.GetLightCulling());
 
     pipeline.bindUniform(0, params.viewFrustum.buffer());
     pipeline.bindStorage(0, mStorageLights);
@@ -367,7 +366,7 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
 
                     const NX_Shader3D* shader = INX_Assets.Select(unique.material.shader, INX_Shader3DAsset::DEFAULT);
                     pipeline.useProgram(shader->GetProgram(NX_Shader3D::Variant::SCENE_SHADOW));
-                    pipeline.setCullMode(gpu::getCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
+                    pipeline.setCullMode(INX_GPU_GetCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
 
                     shader->BindTextures(pipeline, unique.textures);
                     shader->BindUniforms(pipeline, unique.dynamicRangeIndex);

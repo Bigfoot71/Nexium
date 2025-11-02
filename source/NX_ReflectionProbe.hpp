@@ -1,4 +1,4 @@
-/* NX_RenderTexture.hpp -- API definitions for Nexium's render texture module
+/* NX_ReflectionProbe.hpp -- API definitions for Nexium's reflection probe module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,24 +6,30 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef NX_RENDER_TEXTURE_HPP
-#define NX_RENDER_TEXTURE_HPP
+#ifndef NX_REFLECTION_PROBE_HPP
+#define NX_REFLECTION_PROBE_HPP
 
-#include <NX/NX_RenderTexture.h>
+#include <NX/NX_ReflectionProbe.h>
 
 #include "./Detail/GPU/Framebuffer.hpp"
 #include "./Detail/GPU/Texture.hpp"
-#include "./NX_Texture.hpp"
 
 // ============================================================================
 // OPAQUE DEFINITION
 // ============================================================================
 
-struct NX_RenderTexture {
-    gpu::Framebuffer gpu;
-    gpu::Texture depth;
-    NX_Texture* color;
-    ~NX_RenderTexture();
+struct NX_ReflectionProbe {
+
+    struct {
+        gpu::Texture gpu;
+        gpu::Framebuffer framebuffer;
+    } irradiance;
+
+    struct {
+        gpu::Texture gpu;
+        gpu::Framebuffer framebuffer;
+    } prefilter;
+
 };
 
-#endif // NX_RENDER_TEXTURE_HPP
+#endif // NX_REFLECTION_PROBE_HPP

@@ -11,14 +11,14 @@
 
 #include "../../Detail/Util/BucketArray.hpp"
 #include "../../Detail/GPU/StagingBuffer.hpp"
-#include "../../Detail/GPU/Translation.hpp"
 #include "../../Detail/GPU/Pipeline.hpp"
 
+#include "../../INX_RenderUtils.hpp"
+#include "../../INX_GPUBridge.hpp"
 #include "../NX_VertexBuffer.hpp"
 #include "../NX_DynamicMesh.hpp"
 #include "../../NX_Shader3D.hpp"
 
-#include "../Core/Helper.hpp"
 #include "./Environment.hpp"
 #include "./ViewFrustum.hpp"
 #include "./VariantMesh.hpp"
@@ -454,7 +454,7 @@ inline void DrawCallManager::draw(const gpu::Pipeline& pipeline, const UniqueDat
 
     /* --- Draws the mesh according to its parameters --- */
 
-    GLenum primitive = gpu::getPrimitiveType(primitiveType);
+    GLenum primitive = INX_GPU_GetPrimitiveType(primitiveType);
     bool useInstancing = (shared.instances && shared.instanceCount > 0);
     bool hasEBO = buffer->ebo().isValid();
 

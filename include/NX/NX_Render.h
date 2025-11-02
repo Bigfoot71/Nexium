@@ -9,11 +9,12 @@
 #ifndef NX_RENDER_H
 #define NX_RENDER_H
 
+#include "./NX_ReflectionProbe.h"
 #include "./NX_RenderTexture.h"
 #include "./NX_Shader3D.h"
+#include "./NX_Cubemap.h"
 #include "./NX_Texture.h"
 #include "./NX_Vertex.h"
-#include "./NX_Image.h"
 #include "./NX_Math.h"
 #include "./NX_API.h"
 
@@ -263,22 +264,6 @@ typedef struct NX_InstanceBuffer NX_InstanceBuffer;
 typedef struct NX_DynamicMesh NX_DynamicMesh;
 
 /**
- * @brief Opaque handle to a cubemap texture.
- *
- * Cubemaps are used for skyboxes or for generating reflection probes.
- * Stores 6 textures corresponding to the faces of a cube.
- */
-typedef struct NX_Cubemap NX_Cubemap;
-
-/**
- * @brief Opaque handle to a reflection probe.
- *
- * Represents precomputed environment reflections.
- * Can be used to add realistic reflections on materials.
- */
-typedef struct NX_ReflectionProbe NX_ReflectionProbe;
-
-/**
  * @brief Opaque handle to a light source.
  *
  * Represents a light in the scene.
@@ -298,24 +283,6 @@ typedef struct NX_BoundingBox {
     NX_Vec3 min;        ///< Minimum corner of the bounding box.
     NX_Vec3 max;        ///< Maximum corner of the bounding box.
 } NX_BoundingBox;
-
-/**
- * @brief Describes parameters for procedural skybox generation.
- *
- * This structure defines the appearance of a procedural skybox,
- * including sun orientation, sky gradients, ground color, and
- * atmospheric effects such as haze.
- */
-typedef struct NX_Skybox {
-    NX_Vec3 sunDirection;     ///< Direction of the sun (world space).
-    NX_Color skyColorTop;     ///< Sky color at the zenith (top).
-    NX_Color skyColorHorizon; ///< Sky color at the horizon.
-    NX_Color sunColor;        ///< Color of the sun disk and light.
-    NX_Color groundColor;     ///< Ground or floor color.
-    float sunSize;            ///< Apparent angular size of the sun (in radians).
-    float haze;               ///< Strength of atmospheric haze/scattering (0 = none).
-    float energy;             ///< Intensity/brightness multiplier for the sky lighting.
-} NX_Skybox;
 
 /**
  * @brief Represents a 3D scene environment.
@@ -758,105 +725,6 @@ NXAPI NX_Transform NX_GetCameraTransform(const NX_Camera* camera);
 NXAPI NX_Environment NX_GetDefaultEnvironment(void);
 
 /** @} */ // end of Environment
-
-/**
- * @defgroup Cubemap Cubemap Functions
- * @{
- */
-
-/**
- * @brief Creates an empty cubemap.
- *
- * Allocates a cubemap texture ready to be filled,
- * either by procedural skybox or rendering a scene.
- *
- * @param size Edge size (in pixels) of each face.
- * @param format Pixel format for the cubemap faces.
- * @return Pointer to a newly created NX_Cubemap.
- * @note On OpenGL ES, requested 32-bit formats may be downgraded to 16-bit depending on hardware support.
- */
-NXAPI NX_Cubemap* NX_CreateCubemap(int size, NX_PixelFormat format);
-
-/**
- * @brief Load a cubemap from an image.
- * @param image Pointer to the source NX_Image.
- * @return Pointer to a newly created NX_Cubemap.
- * @note Cubemaps are used for skyboxes or to generate reflection probes.
- * @note Supported image layouts (auto-detected):
- *   - Equirectangular (panorama)
- *   - Horizontal line (faces packed in OpenGL order)
- *   - Vertical line (faces packed in OpenGL order)
- *   - 4x3 cross:
- *           [+Y]
- *       [-X][+Z][+X][-Z]
- *           [-Y]
- *   - 3x4 cross:
- *           [+Y]
- *       [-X][+Z][+X]
- *           [-Y]
- *           [-Z]
- */
-NXAPI NX_Cubemap* NX_LoadCubemapFromData(const NX_Image* image);
-
-/**
- * @brief Loads a cubemap from a file.
- * @param filePath Path to the image file.
- * @return Pointer to a newly loaded NX_Cubemap.
- * @note Cubemaps are used for skyboxes or to generate reflection probes.
- * @note Supported image layouts (auto-detected, same as NX_CreateCubemap).
- */
-NXAPI NX_Cubemap* NX_LoadCubemap(const char* filePath);
-
-/**
- * @brief Destroys a cubemap and frees its resources.
- * @param cubemap Pointer to the NX_Cubemap to destroy.
- */
-NXAPI void NX_DestroyCubemap(NX_Cubemap* cubemap);
-
-/**
- * @brief Generates a procedural skybox into a cubemap.
- * @param cubemap Destination cubemap to render into.
- * @param skybox Pointer to a skybox description (NX_Skybox).
- */
-NXAPI void NX_GenerateSkybox(NX_Cubemap* cubemap, const NX_Skybox* skybox);
-
-/** @} */ // end of Cubemap
-
-/**
- * @defgroup ReflectionProbe Reflection Probe Functions
- * @{
- */
-
-/**
- * @brief Creates a reflection probe from a cubemap.
- * @param cubemap Pointer to the cubemap (cannot be NULL).
- * @return Pointer to a newly created NX_ReflectionProbe.
- * @note Reflection probes capture the environment for specular and diffuse image-based lighting.
- */
-NXAPI NX_ReflectionProbe* NX_CreateReflectionProbe(NX_Cubemap* cubemap);
-
-/**
- * @brief Loads a reflection probe from a cubemap file.
- * @param filePath Path to the cubemap image file.
- * @return Pointer to a newly loaded NX_ReflectionProbe.
- * @note The cubemap is used to generate specular and diffuse reflections.
- */
-NXAPI NX_ReflectionProbe* NX_LoadReflectionProbe(const char* filePath);
-
-/**
- * @brief Destroys a reflection probe and frees its resources.
- * @param probe Pointer to the NX_ReflectionProbe to destroy.
- */
-NXAPI void NX_DestroyReflectionProbe(NX_ReflectionProbe* probe);
-
-/**
- * @brief Updates an existing reflection probe from a new cubemap.
- * @param probe Pointer to the reflection probe to update.
- * @param cubemap Pointer to the new cubemap used for updating (cannot be NULL).
- */
-NXAPI void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap* cubemap);
-
-/** @} */ // end of ReflectionProbe
 
 /**
  * @defgroup Material Material Functions

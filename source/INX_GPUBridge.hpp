@@ -1,20 +1,17 @@
-#ifndef NX_GPU_TRANSLATION_HPP
-#define NX_GPU_TRANSLATION_HPP
+#ifndef INX_GPU_BRIDGE_HPP
+#define INX_GPU_BRIDGE_HPP
 
-#include "./Pipeline.hpp"
+#include "./Detail/GPU/Pipeline.hpp"
 #include <NX/NX_Render.h>
 
-#include "../../INX_GlobalState.hpp"  //< Used to get OpenGL profile (core/es)
-
+#include "./INX_GlobalState.hpp"  //< Used to get OpenGL profile (core/es)
 #include <SDL3/SDL_video.h>
 #include <glad/gles2.h>
 
 // TODO: This header is temporary; the GPU abstraction needs to be reviewed,
 //       and translation functions should be omitted.
 
-namespace gpu {
-
-inline GLenum getInternalFormat(NX_PixelFormat format, bool framebuffer)
+inline GLenum INX_GPU_GetInternalFormat(NX_PixelFormat format, bool framebuffer)
 {
     GLenum internalFormat = GL_RGBA8;
 
@@ -56,7 +53,7 @@ inline GLenum getInternalFormat(NX_PixelFormat format, bool framebuffer)
     return internalFormat;
 }
 
-inline NX_PixelFormat getPixelFormat(GLenum internalFormat)
+inline NX_PixelFormat INX_GPU_GetPixelFormat(GLenum internalFormat)
 {
     switch (internalFormat) {
     case GL_R8: return NX_PIXEL_FORMAT_R8;
@@ -77,7 +74,7 @@ inline NX_PixelFormat getPixelFormat(GLenum internalFormat)
     return NX_PIXEL_FORMAT_INVALID;
 }
 
-inline GLenum getPrimitiveType(NX_PrimitiveType type)
+inline GLenum INX_GPU_GetPrimitiveType(NX_PrimitiveType type)
 {
     switch (type) {
     case NX_PRIMITIVE_POINTS:
@@ -101,7 +98,7 @@ inline GLenum getPrimitiveType(NX_PrimitiveType type)
     return GL_TRIANGLES;
 }
 
-inline gpu::CullMode getCullMode(NX_CullMode mode)
+inline gpu::CullMode INX_GPU_GetCullMode(NX_CullMode mode)
 {
     switch (mode) {
     case NX_CULL_BACK:
@@ -119,7 +116,7 @@ inline gpu::CullMode getCullMode(NX_CullMode mode)
     return gpu::CullMode::Back;
 }
 
-inline gpu::CullMode getCullMode(NX_ShadowFaceMode shadow, NX_CullMode mode)
+inline gpu::CullMode INX_GPU_GetCullMode(NX_ShadowFaceMode shadow, NX_CullMode mode)
 {
     switch (shadow) {
     case NX_SHADOW_FACE_AUTO:
@@ -147,7 +144,7 @@ inline gpu::CullMode getCullMode(NX_ShadowFaceMode shadow, NX_CullMode mode)
     return gpu::CullMode::Back;
 }
 
-inline gpu::BlendMode getBlendMode(NX_BlendMode mode)
+inline gpu::BlendMode INX_GPU_GetBlendMode(NX_BlendMode mode)
 {
     switch (mode) {
     case NX_BLEND_OPAQUE:
@@ -168,7 +165,7 @@ inline gpu::BlendMode getBlendMode(NX_BlendMode mode)
     return gpu::BlendMode::Disabled;
 }
 
-inline gpu::DepthFunc getDepthFunc(NX_DepthTest func)
+inline gpu::DepthFunc INX_GPU_GetDepthFunc(NX_DepthTest func)
 {
     switch (func) {
     case NX_DEPTH_TEST_LESS:
@@ -186,6 +183,4 @@ inline gpu::DepthFunc getDepthFunc(NX_DepthTest func)
     return gpu::DepthFunc::Less;
 }
 
-} // namespace gpu
-
-#endif // NX_GPU_TRANSLATION_HPP
+#endif // INX_GPU_BRIDGE_HPP

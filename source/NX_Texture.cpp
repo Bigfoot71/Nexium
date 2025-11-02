@@ -9,9 +9,9 @@
 #include "./NX_Texture.hpp"
 #include <NX/NX_Log.h>
 
-#include "./Detail/GPU/Translation.hpp"
 #include "./Detail/GPU/Texture.hpp"
 #include "./INX_PoolAssets.hpp"
+#include "./INX_GPUBridge.hpp"
 
 // ============================================================================
 // LOCAL MANAGEMENT
@@ -112,7 +112,7 @@ NX_Texture* NX_CreateTextureEx(int w, int h, const void* data, NX_PixelFormat fo
         {
             .target = GL_TEXTURE_2D,
             // NOTE: NX_CreateTexture is used to create NX_RenderTexture
-            .internalFormat = gpu::getInternalFormat(format, true),
+            .internalFormat = INX_GPU_GetInternalFormat(format, true),
             .data = data,
             .width = w,
             .height = h,
@@ -153,7 +153,7 @@ NX_Texture* NX_CreateTextureFromImageEx(const NX_Image* image, NX_TextureWrap wr
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_2D,
-            .internalFormat = gpu::getInternalFormat(image->format, false),
+            .internalFormat = INX_GPU_GetInternalFormat(image->format, false),
             .data = image->pixels,
             .width = image->w,
             .height = image->h,
@@ -239,7 +239,7 @@ void NX_UploadTexture(NX_Texture* texture, const NX_Image* image)
 {
     NX_Image source = *image;
 
-    NX_PixelFormat texFormat = gpu::getPixelFormat(texture->gpu.internalFormat());
+    NX_PixelFormat texFormat = INX_GPU_GetPixelFormat(texture->gpu.internalFormat());
 
     if (texFormat != image->format) {
         source = NX_CopyImage(image, texFormat);

@@ -12,6 +12,10 @@
 #include <NX/NX_Texture.h>
 #include "./Detail/GPU/Texture.hpp"
 
+// ============================================================================
+// OPAQUE DEFINITION
+// ============================================================================
+
 struct NX_Texture {
     gpu::Texture gpu;
 };

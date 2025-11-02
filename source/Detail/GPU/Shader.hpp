@@ -26,6 +26,7 @@ namespace gpu {
 
 class Shader {
 public:
+    Shader() = default;
     explicit Shader(GLenum stage, const char* source, std::initializer_list<const char*> defines = {}) noexcept;
     ~Shader() noexcept;
 
@@ -41,7 +42,7 @@ public:
 
 private:
     GLuint mID{0};
-    GLenum mStage;
+    GLenum mStage{};
 
 private:
     static const char* stageToString(GLenum stage) noexcept;
