@@ -129,8 +129,8 @@ NX_Shader3D* NX_LoadShader3D(const char* vertFile, const char* fragFile)
 
     NX_Shader3D* shader = INX_Pool.Create<NX_Shader3D>(vertCode, fragCode);
 
-    SDL_free(vertCode);
-    SDL_free(fragCode);
+    NX_Free(vertCode);
+    NX_Free(fragCode);
 
     return shader;
 }

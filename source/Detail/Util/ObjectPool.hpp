@@ -308,7 +308,7 @@ typename ObjectPool<T, PoolSize>::ReverseIterator ObjectPool<T, PoolSize>::rend(
 template<typename T, std::size_t PoolSize>
 typename ObjectPool<T, PoolSize>::Pool* ObjectPool<T, PoolSize>::allocateNewPool() noexcept
 {
-    UniquePtr<Pool> newPool = makeUnique<Pool>();
+    UniquePtr<Pool> newPool = MakeUnique<Pool>();
     if (!newPool) {
         return nullptr; // Allocation failure
     }

@@ -25,16 +25,27 @@ struct Deleter {
 };
 
 /**
- * @brief Alias for std::unique_ptr using util::Deleter.
+ * @brief std::unique_ptr with util::Deleter.
  */
 template <typename T>
 using UniquePtr = std::unique_ptr<T, Deleter<T>>;
 
 /**
- * @brief Allocates memory and returns a util::UniquePtr.
+ * @brief Allocates and constructs a single object.
+ */
+template <typename T, typename... Args>
+inline UniquePtr<T> MakeUnique(Args&&... args)
+{
+    T* ptr = NX_Malloc<T>(1);
+    new (ptr) T(std::forward<Args>(args)...);
+    return UniquePtr<T>(ptr);
+}
+
+/**
+ * @brief Allocates and constructs an array of objects.
  */
 template <typename T>
-inline UniquePtr<T> makeUnique(size_t count = 1)
+inline UniquePtr<T> MakeUniqueArray(size_t count = 1)
 {
     T* ptr = NX_Malloc<T>(count);
     for (size_t i = 0; i < count; ++i) {
@@ -44,16 +55,27 @@ inline UniquePtr<T> makeUnique(size_t count = 1)
 }
 
 /**
- * @brief Alias for std::shared_ptr.
+ * @brief std::shared_ptr with util::Deleter.
  */
 template <typename T>
 using SharedPtr = std::shared_ptr<T>;
 
 /**
- * @brief Allocates memory and returns a util::SharedPtr using util::Deleter.
+ * @brief Allocates and constructs a single object, returning a SharedPtr.
+ */
+template <typename T, typename... Args>
+inline SharedPtr<T> MakeShared(Args&&... args)
+{
+    T* ptr = NX_Malloc<T>(1);
+    new (ptr) T(std::forward<Args>(args)...);
+    return SharedPtr<T>(ptr, Deleter<T>{});
+}
+
+/**
+ * @brief Allocates and constructs an array of objects, returning a SharedPtr.
  */
 template <typename T>
-inline SharedPtr<T> makeShared(size_t count = 1)
+inline SharedPtr<T> MakeSharedArray(size_t count = 1)
 {
     T* ptr = NX_Malloc<T>(count);
     for (size_t i = 0; i < count; ++i) {

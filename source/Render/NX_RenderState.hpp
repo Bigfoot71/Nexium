@@ -24,7 +24,7 @@
 
 /* === Global State === */
 
-extern std::unique_ptr<class NX_RenderState> gRender;
+extern util::UniquePtr<class NX_RenderState> gRender;
 
 /* === Declaration === */
 

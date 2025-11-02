@@ -36,7 +36,7 @@
 // GLOBAL STATES (NOTE: Will be withdrawn eventually)
 // ============================================================================
 
-std::unique_ptr<NX_RenderState> gRender;
+util::UniquePtr<NX_RenderState> gRender;
 
 // ============================================================================
 // PHYSFS COMPATIBILITY
@@ -346,7 +346,7 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
     }
 
     try {
-        gRender = std::make_unique<NX_RenderState>(*desc);
+        gRender = util::MakeUnique<NX_RenderState>(*desc);
     }
     catch (const std::exception& e) {
         NX_LOG(E, e.what());

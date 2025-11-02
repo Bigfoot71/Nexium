@@ -331,7 +331,7 @@ bool INX_GenerateAtlas(NX_Image* atlas, const uint8_t* fileData, int dataSize,
 
     if (!codepoints) {
         codepointCount = (codepointCount > 0) ? codepointCount : 95;
-        defaultCodepoints = util::makeUnique<int>(codepointCount);
+        defaultCodepoints = util::MakeUniqueArray<int>(codepointCount);
         if (!defaultCodepoints) {
             FT_Done_Face(ftFace);
             FT_Done_FreeType(ftLibrary);
@@ -346,7 +346,7 @@ bool INX_GenerateAtlas(NX_Image* atlas, const uint8_t* fileData, int dataSize,
 
     /* --- Allocate working buffers --- */
 
-    util::UniquePtr<stbrp_rect> packRects = util::makeUnique<stbrp_rect>(codepointCount);
+    util::UniquePtr<stbrp_rect> packRects = util::MakeUniqueArray<stbrp_rect>(codepointCount);
     if (packRects == nullptr) {
         FT_Done_Face(ftFace);
         FT_Done_FreeType(ftLibrary);
@@ -403,7 +403,7 @@ bool INX_GenerateAtlas(NX_Image* atlas, const uint8_t* fileData, int dataSize,
             if (pixelCount == 0) continue;
 
             // Allocation to keep the bitmap in our glyph cache
-            glyph.pixels = util::makeUnique<uint8_t>(pixelCount);
+            glyph.pixels = util::MakeUniqueArray<uint8_t>(pixelCount);
             if (glyph.pixels == nullptr) continue;
 
             // Copying the rasterized bitmap to our glyph cache
@@ -475,8 +475,8 @@ bool INX_GenerateAtlas(NX_Image* atlas, const uint8_t* fileData, int dataSize,
 
     /* --- Rectangle Packing Setup --- */
 
-    util::UniquePtr<stbrp_context> packContext = util::makeUnique<stbrp_context>();
-    util::UniquePtr<stbrp_node> packNodes = util::makeUnique<stbrp_node>(atlas->w);
+    util::UniquePtr<stbrp_context> packContext = util::MakeUnique<stbrp_context>();
+    util::UniquePtr<stbrp_node> packNodes = util::MakeUniqueArray<stbrp_node>(atlas->w);
 
     if (!packContext || !packNodes) {
         NX_Free(atlas->pixels);

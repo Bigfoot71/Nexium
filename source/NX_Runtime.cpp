@@ -135,7 +135,7 @@ double NX_GetDeltaTime(void)
 
 int NX_GetFPS(void)
 {
-    return (int)round(INX_Frame.fpsAverage);
+    return static_cast<int>(INX_Frame.fpsAverage + 0.5f);
 }
 
 void NX_SetTargetFPS(int fps)

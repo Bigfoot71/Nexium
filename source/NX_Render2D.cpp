@@ -121,7 +121,7 @@ static util::UniquePtr<INX_Render2DState> INX_Render2D{};
 
 bool INX_Render2DState_Init(NX_AppDesc* desc)
 {
-    INX_Render2D = util::makeUnique<INX_Render2DState>();
+    INX_Render2D = util::MakeUnique<INX_Render2DState>();
     if (INX_Render2D == nullptr) {
         return false;
     }
@@ -1778,10 +1778,10 @@ void NX_DrawText2D(const char* text, NX_Vec2 position, float fontSize, NX_Vec2 s
 {
     const NX_Font* font = INX_Assets.Select(INX_Render2D->currentFont, INX_FontAsset::DEFAULT);
     float scale = fontSize / font->baseSize;
-    int size = (int)strlen(text);
+    size_t size = SDL_strlen(text);
     NX_Vec2 offset = NX_VEC2_ZERO;
 
-    for (int i = 0; i < size;)
+    for (size_t i = 0; i < size;)
     {
         int codepointByteCount = 0;
         int codepoint = NX_GetCodepointNext(&text[i], &codepointByteCount);

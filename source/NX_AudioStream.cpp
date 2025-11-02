@@ -194,7 +194,7 @@ INX_StreamPlayer::INX_StreamPlayer()
 {
     bufferAvailable.fill(true);
     for (auto& buffer : decodeBuffers) {
-        buffer = util::makeUnique<uint8_t>(DecodeBufferSize);
+        buffer = util::MakeUniqueArray<uint8_t>(DecodeBufferSize);
     }
 
     streamThread = std::thread([this]() { threadFunc(); });

@@ -796,8 +796,8 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
     topRadius = std::max(0.0f, topRadius);
     bottomRadius = std::max(0.0f, bottomRadius);
     height = std::max(0.1f, height);
-    slices = (int)std::max(3, slices);
-    rings = (int)std::max(1, rings);
+    slices = std::max(3, slices);
+    rings = std::max(1, rings);
 
     if (topRadius == 0.0f && bottomRadius == 0.0f) {
         bottomRadius = 1.0f;
