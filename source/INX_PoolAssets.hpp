@@ -11,6 +11,7 @@
 
 #include "./Detail/Util/ObjectPool.hpp"
 #include "./NX_ReflectionProbe.hpp"
+#include "./NX_InstanceBuffer.hpp"
 #include "./NX_RenderTexture.hpp"
 #include "./NX_AudioStream.hpp"
 #include "./NX_AudioClip.hpp"
@@ -32,6 +33,7 @@ public:
 
     /** Render */
     using ReflectionProbes  = util::ObjectPool<NX_ReflectionProbe, 32>;
+    using InstanceBuffers   = util::ObjectPool<NX_InstanceBuffer, 32>;
     using RenderTextures    = util::ObjectPool<NX_RenderTexture, 16>;
     using Textures          = util::ObjectPool<NX_Texture, 1024>;
     using Cubemaps          = util::ObjectPool<NX_Cubemap, 32>;
@@ -40,10 +42,6 @@ public:
     /** Shaders */
     using Shaders3D         = util::ObjectPool<NX_Shader3D, 32>;
     using Shaders2D         = util::ObjectPool<NX_Shader2D, 32>;
-
-public:
-    /** Singleton */
-    static INX_PoolAssets& Instance();
 
 public:
     template<typename T>
@@ -67,6 +65,7 @@ private:
 
     /** Render */
     ReflectionProbes mReflectionProbes;
+    InstanceBuffers  mInstanceBuffers;
     RenderTextures   mRenderTextures;
     Textures         mTextures;
     Cubemaps         mCubemaps;
@@ -84,6 +83,7 @@ inline auto& INX_PoolAssets::Get()
     if constexpr (std::is_same_v<T, NX_AudioStream>)          return mAudioStreams;
     else if constexpr (std::is_same_v<T, NX_AudioClip>)       return mAudioClips;
     else if constexpr (std::is_same_v<T, NX_ReflectionProbe>) return mReflectionProbes;
+    else if constexpr (std::is_same_v<T, NX_InstanceBuffer>)  return mInstanceBuffers;
     else if constexpr (std::is_same_v<T, NX_RenderTexture>)   return mRenderTextures;
     else if constexpr (std::is_same_v<T, NX_Texture>)         return mTextures;
     else if constexpr (std::is_same_v<T, NX_Cubemap>)         return mCubemaps;
@@ -121,6 +121,7 @@ inline void INX_PoolAssets::UnloadAll()
 
     mFonts.clear();
     mReflectionProbes.clear();
+    mInstanceBuffers.clear();
     mRenderTextures.clear();
     mCubemaps.clear();
     mTextures.clear();

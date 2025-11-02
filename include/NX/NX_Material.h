@@ -182,7 +182,7 @@ extern "C" {
 NXAPI NX_Material NX_GetDefaultMaterial(void);
 
 /**
- * @brief Sets the default material used by the engine.
+ * @brief Sets the default material used by Nexium.
  *
  * Overrides the material returned by NX_GetDefaultMaterial().
  * Pass NULL to restore the default NX_BASE_MATERIAL.

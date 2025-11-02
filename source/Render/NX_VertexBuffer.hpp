@@ -11,7 +11,7 @@
 
 #include <NX/NX_Render.h>
 
-#include "./NX_InstanceBuffer.hpp"
+#include "../NX_InstanceBuffer.hpp"
 
 #include "../Detail/GPU/VertexArray.hpp"
 #include "../Detail/GPU/Buffer.hpp"
@@ -249,11 +249,11 @@ inline NX_VertexBuffer::NX_VertexBuffer(const NX_Vertex3D* vertices, int vCount,
 inline void NX_VertexBuffer::bindInstances(const NX_InstanceBuffer& instances)
 {
     mVAO.bindVertexBuffers({
-        { 1, instances.getBuffer(NX_INSTANCE_POSITION) },
-        { 2, instances.getBuffer(NX_INSTANCE_ROTATION) },
-        { 3, instances.getBuffer(NX_INSTANCE_SCALE) },
-        { 4, instances.getBuffer(NX_INSTANCE_COLOR) },
-        { 5, instances.getBuffer(NX_INSTANCE_CUSTOM) }
+        { 1, instances.GetBuffer(NX_INSTANCE_POSITION) },
+        { 2, instances.GetBuffer(NX_INSTANCE_ROTATION) },
+        { 3, instances.GetBuffer(NX_INSTANCE_SCALE) },
+        { 4, instances.GetBuffer(NX_INSTANCE_COLOR) },
+        { 5, instances.GetBuffer(NX_INSTANCE_CUSTOM) }
     });
 }
 

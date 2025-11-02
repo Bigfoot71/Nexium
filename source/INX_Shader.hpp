@@ -301,10 +301,10 @@ util::String INX_Shader<Derived>::ProcessUserCode(const char* userCode)
 
     for (int i = 0; i < SamplerName.size(); i++)
     {
-        SDL_strlcpy(samplerStr, helper::concatCString("uniform sampler2D ", SamplerName[i]), sizeof(samplerStr));
+        SDL_strlcpy(samplerStr, helper::ConcatCStr("uniform sampler2D ", SamplerName[i]), sizeof(samplerStr));
 
         if (size_t pos = code.find(samplerStr); pos != util::String::npos) {
-            const char* bindingStr = helper::formatCString("layout(binding=%i)%s", SamplerBinding[i], samplerStr);
+            const char* bindingStr = helper::FormatCStr("layout(binding=%i)%s", SamplerBinding[i], samplerStr);
             code.replace(pos, SDL_strlen(samplerStr), bindingStr);
             mSamplerExists[i] = true;
         }

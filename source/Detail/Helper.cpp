@@ -14,7 +14,7 @@ char gBuffer[256];
 
 namespace helper {
 
-const char* concatCString(const char* a, const char* b)
+const char* ConcatCStr(const char* a, const char* b)
 {
     gBuffer[0] = '\0';
     if (a) SDL_strlcat(gBuffer, a, sizeof(gBuffer));
@@ -22,7 +22,7 @@ const char* concatCString(const char* a, const char* b)
     return gBuffer;
 }
 
-const char* formatCString(const char* fmt, ...)
+const char* FormatCStr(const char* fmt, ...)
 {
     gBuffer[0] = '\0';
     if (fmt) {

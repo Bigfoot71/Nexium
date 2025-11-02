@@ -194,7 +194,27 @@ typedef struct NX_Environment {
 // FUNCTIONS DECLARATIONS
 // ============================================================================
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+/**
+ * @brief Returns the current default environment.
+ *
+ * If no environment was set, returns NX_BASE_MATERIAL by default.
+ */
 NXAPI NX_Environment NX_GetDefaultEnvironment(void);
+
+/**
+ * @brief Sets the default environment used by Nexium.
+ *
+ * Overrides the environment returned by NX_GetDefaultMaterial().
+ * Pass NULL to restore the default NX_BASE_MATERIAL.
+ */
 NXAPI void NX_SetDefaultEnvironment(const NX_Environment* env);
+
+#if defined(__cplusplus)
+} // extern "C"
+#endif
 
 #endif // NX_ENVIRONMENT_H

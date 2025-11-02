@@ -29,7 +29,7 @@ namespace helper {
  * @note Uses constexpr iteration if evaluated at compile-time.
  *       Uses compiler intrinsics for fast runtime evaluation.
  */
-constexpr int bitScanForward(uint32_t bitfield)
+constexpr int BitScanForward(uint32_t bitfield)
 {
     if (std::is_constant_evaluated()) {
         for (int i = 0; i < 32; ++i) {
@@ -52,7 +52,7 @@ constexpr int bitScanForward(uint32_t bitfield)
  * @note Uses constexpr iteration if evaluated at compile-time.
  *       Uses compiler intrinsics for fast runtime evaluation.
  */
-constexpr int bitScanReverse(uint32_t bitfield)
+constexpr int BitScanReverse(uint32_t bitfield)
 {
     if (std::is_constant_evaluated()) {
         for (int i = 31; i >= 0; --i) {
@@ -74,10 +74,10 @@ constexpr int bitScanReverse(uint32_t bitfield)
  * @param func The callable to invoke for each set bit index.
  */
 template <typename Func>
-inline void forEachBit(uint32_t bitfield, Func&& func)
+inline void ForEachBit(uint32_t bitfield, Func&& func)
 {
     while (bitfield != 0) {
-        int index = helper::bitScanForward(bitfield);
+        int index = helper::BitScanForward(bitfield);
         func(index);
         bitfield &= ~(1u << index);
     }
@@ -91,7 +91,7 @@ inline void forEachBit(uint32_t bitfield, Func&& func)
  * 
  * @note The returned pointer points inside the original string.
  */
-inline const char* getFileExt(const char* filePath)
+inline const char* GetFileExt(const char* filePath)
 {
     const char* dot = SDL_strrchr(filePath, '.');
     if (!dot || dot == filePath) return nullptr;
@@ -107,7 +107,7 @@ inline const char* getFileExt(const char* filePath)
  * 
  * @note The result is stored in a static buffer and must be used immediately.
  */
-const char* concatCString(const char* a, const char* b);
+const char* ConcatCStr(const char* a, const char* b);
 
 /**
  * @brief Format a string using a printf-style format string and variadic arguments.
@@ -118,7 +118,7 @@ const char* concatCString(const char* a, const char* b);
  * 
  * @note The result is stored in a static buffer and must be consumed immediately.
  */
-const char* formatCString(const char* fmt, ...);
+const char* FormatCStr(const char* fmt, ...);
 
 } // namespace helper
 

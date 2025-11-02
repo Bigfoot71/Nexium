@@ -47,5 +47,6 @@
 #include "./NX_Filesystem.h"
 #include "./NX_AudioStream.h"
 #include "./NX_RenderTexture.h"
+#include "./NX_InstanceBuffer.h"
 
 #endif // NEXIUM_H

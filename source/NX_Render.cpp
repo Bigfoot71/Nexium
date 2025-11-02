@@ -20,8 +20,8 @@
 #include "./NX_Texture.hpp"
 #include "./NX_Font.hpp"
 
-#include "./Render/NX_InstanceBuffer.hpp"
 #include "./Render/NX_RenderState.hpp"
+#include "./NX_InstanceBuffer.hpp"
 #include "./INX_GlobalAssets.hpp"
 #include "./Detail/Helper.hpp"
 
@@ -1013,49 +1013,6 @@ void NX_SetDynamicMeshLayerMask(NX_DynamicMesh* dynMesh, NX_Layer mask)
     dynMesh->layerMask = mask;
 }
 
-/* === InstanceBuffer - Public API === */
-
-NX_InstanceBuffer* NX_CreateInstanceBuffer(NX_InstanceData bitfield, size_t count)
-{
-    return gRender->meshes.createInstanceBuffer(bitfield, count);
-}
-
-void NX_DestroyInstanceBuffer(NX_InstanceBuffer* buffer)
-{
-    gRender->meshes.destroyInstanceBuffer(buffer);
-}
-
-void NX_RaeallocInstanceBuffer(NX_InstanceBuffer* buffer, size_t count, bool keepData)
-{
-    buffer->realloc(count, keepData);
-}
-
-void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type, size_t offset, size_t count, const void* data)
-{
-    buffer->update(type, offset, count, data);
-}
-
-void* NX_MapInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type)
-{
-    return buffer->map(type);
-}
-
-void* NX_MapInstanceBufferRange(NX_InstanceBuffer* buffer, NX_InstanceData type, size_t offset, size_t count)
-{
-    return buffer->mapRange(type, offset, count);
-}
-
-void NX_UnmapInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type)
-{
-    buffer->unmap(type);
-}
-
-void NX_QueryInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData* bitfield, size_t* count)
-{
-    if (bitfield) *bitfield = buffer->instanceFlags();
-    if (count) *count = buffer->allocatedCount();
-}
-
 /* === Model - Public API === */
 
 NX_Model* NX_LoadModel(const char* filePath)
@@ -1067,7 +1024,7 @@ NX_Model* NX_LoadModel(const char* filePath)
         return nullptr;
     }
 
-    NX_Model* model = gRender->models.loadModel(fileData, fileSize, helper::getFileExt(filePath));
+    NX_Model* model = gRender->models.loadModel(fileData, fileSize, helper::GetFileExt(filePath));
     NX_Free(fileData);
 
     return model;
@@ -1122,7 +1079,7 @@ NX_ModelAnimation** NX_LoadModelAnimations(const char* filePath, int* animCount,
 {
     size_t fileSize = 0;
     void* fileData = NX_LoadFile(filePath, &fileSize);
-    NX_ModelAnimation** animations = gRender->models.loadAnimations(fileData, fileSize, helper::getFileExt(filePath), animCount, targetFrameRate);
+    NX_ModelAnimation** animations = gRender->models.loadAnimations(fileData, fileSize, helper::GetFileExt(filePath), animCount, targetFrameRate);
     NX_Free(fileData);
     return animations;
 }
