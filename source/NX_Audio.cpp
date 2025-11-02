@@ -12,9 +12,11 @@
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_assert.h>
 #include <SDL3/SDL_error.h>
-#include <cmath>
 #include <alc.h>
 #include <al.h>
+
+#include <algorithm>
+#include <cmath>
 
 // ============================================================================
 // DRWAV IMPLEMENTATION

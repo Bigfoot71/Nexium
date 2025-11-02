@@ -12,9 +12,12 @@
 #include <NX/NX_Log.h>
 
 #include <SDL3/SDL_stdinc.h>
-#include <initializer_list>
-#include <cstdint>
 #include <fp16.h>
+
+#include <initializer_list>
+#include <algorithm>
+#include <cstdint>
+#include <cmath>
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_NO_STDIO
@@ -98,7 +101,7 @@ static NX_Image INX_DecodeImage(const void* data, size_t size, int reqChannels)
 static NX_PixelFormat INX_GetBestFormat(std::initializer_list<NX_Color> colors, int count)
 {
     auto fitsInHalf = [](float f) -> bool {
-        return std::fabs(f) <= 65504.0f;
+        return std::abs(f) <= 65504.0f;
     };
 
     bool hasAlpha = false;
