@@ -304,6 +304,7 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/NX_Cubemap.cpp"
     "${NX_ROOT_PATH}/source/NX_Texture.cpp"
     "${NX_ROOT_PATH}/source/NX_Runtime.cpp"
+    "${NX_ROOT_PATH}/source/NX_Camera.cpp"
     "${NX_ROOT_PATH}/source/NX_Memory.cpp"
     "${NX_ROOT_PATH}/source/NX_Window.cpp"
     "${NX_ROOT_PATH}/source/NX_Memory.cpp"

@@ -32,6 +32,7 @@
 #include "./NX_Render.h"
 #include "./NX_Macros.h"
 #include "./NX_Window.h"
+#include "./NX_Camera.h"
 #include "./NX_Texture.h"
 #include "./NX_Runtime.h"
 #include "./NX_Display.h"
