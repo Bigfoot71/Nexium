@@ -11,6 +11,7 @@
 
 #include "./NX_ReflectionProbe.h"
 #include "./NX_RenderTexture.h"
+#include "./NX_Material.h"
 #include "./NX_Shader3D.h"
 #include "./NX_Cubemap.h"
 #include "./NX_Texture.h"
@@ -93,59 +94,6 @@ typedef enum NX_Projection {
     NX_PROJECTION_PERSPECTIVE,      ///< Standard perspective projection. Objects appear smaller when farther.
     NX_PROJECTION_ORTHOGRAPHIC      ///< Orthographic projection. Objects keep the same size regardless of distance.
 } NX_Projection;
-
-/**
- * @brief Defines billboard modes for 3D objects.
- *
- * This enumeration defines how a 3D object aligns itself relative to the camera.
- * It provides options to disable billboarding or to enable specific modes of alignment.
- */
-typedef enum NX_BillboardMode {
-    NX_BILLBOARD_DISABLED,      ///< Billboarding is disabled; the object retains its original orientation.
-    NX_BILLBOARD_FRONT,         ///< Full billboarding; the object fully faces the camera, rotating on all axes.
-    NX_BILLBOARD_Y_AXIS         /**< Y-axis constrained billboarding; the object rotates only around the Y-axis,
-                                     keeping its "up" orientation fixed. This is suitable for upright objects like characters or signs. */
-} NX_BillboardMode;
-
-/**
- * @brief Defines the available shading modes for rendering.
- */
-typedef enum NX_ShadingMode {
-    NX_SHADING_LIT,             ///< Standard lighting and shading applied.
-    NX_SHADING_UNLIT,           ///< No lighting, renders with flat color.
-} NX_ShadingMode;
-
-/**
- * @brief Defines blending modes for rendering.
- */
-typedef enum NX_BlendMode {
-    NX_BLEND_OPAQUE,            ///< Standard opaque rendering. Ignores alpha channel.
-    NX_BLEND_ALPHA,             ///< Standard alpha blending. Supports transparency.
-    NX_BLEND_ADD,               ///< Additive blending. Colors are added to the framebuffer.
-    NX_BLEND_MUL                ///< Multiplicative blending. Colors are multiplied with the framebuffer.
-} NX_BlendMode;
-
-/**
- * @brief Defines face culling modes.
- *
- * Determines which faces of a mesh are rendered.
- */
-typedef enum NX_CullMode {
-    NX_CULL_BACK,               ///< Cull back faces only. Default for solid objects.
-    NX_CULL_FRONT,              ///< Cull front faces only.
-    NX_CULL_NONE                ///< Disable face culling. Render all faces.
-} NX_CullMode;
-
-/**
- * @brief Defines depth testing modes.
- *
- * Determines whether a fragment is drawn based on its depth value.
- */
-typedef enum NX_DepthTest {
-    NX_DEPTH_TEST_LESS,         ///< Pass if fragment is closer. Default.
-    NX_DEPTH_TEST_GREATER,      ///< Pass if fragment is farther.
-    NX_DEPTH_TEST_ALWAYS        ///< Always pass, ignore depth.
-} NX_DepthTest;
 
 /**
  * @brief Defines shadow casting behavior for meshes.
@@ -386,58 +334,6 @@ typedef struct NX_Mesh {
     NX_Layer layerMask;                 ///< Bitfield indicating the rendering layer(s) of this mesh.
 
 } NX_Mesh;
-
-/**
- * @brief Represents a material for a mesh.
- *
- * Contains textures, colors, physical properties, and rendering settings.
- * Supports albedo, emission, ORM (Occlusion-Roughness-Metallic), and normal mapping.
- */
-typedef struct NX_Material {
-
-    struct {
-        NX_Texture* texture;        ///< Albedo texture (diffuse color). Default: NULL (white texture)
-        NX_Color color;             ///< Albedo color multiplier. Default: White
-    } albedo;
-
-    struct {
-        NX_Texture* texture;        ///< Emission texture (self-illumination). Default: NULL (white texture)
-        NX_Color color;             ///< Emission color multiplier. Default: White
-        float energy;               ///< Strength of the emission. Default: 0.0f
-    } emission;
-
-    struct {
-        NX_Texture* texture;        ///< ORM texture (Occlusion-Roughness-Metallic). Default: NULL (white texture)
-        float aoLightAffect;        ///< How ambient occlusion affects lighting. Default: 0.0f
-        float occlusion;            ///< Occlusion factor. Default: 1.0f
-        float roughness;            ///< Surface roughness. Default: 1.0f
-        float metalness;            ///< Surface metallic factor. Default: 0.0f
-    } orm;
-
-    struct {
-        NX_Texture* texture;        ///< Normal map texture. Default: NULL (front facing)
-        float scale;                ///< Normal map intensity. Default: 1.0f
-    } normal;
-
-    struct {
-        NX_DepthTest test;          ///< Controls whether a fragment is visible compared to others. Default: NX_DEPTH_TEST_LESS
-        float offset;               ///< Additive depth offset in clip space; + = farther, - = closer. Default: 0.0f
-        float scale;                ///< Multiplicative depth scale in clip space; <1 = closer, >1 = farther. Default: 1.0f
-        bool prePass;               ///< Enable depth pre-pass to reduce overdraw or support alpha cutoff; may be costly with heavy vertex shaders. Default: false
-    } depth;
-
-    float alphaCutOff;              ///< Fragments with alpha below this value are discarded (only with depth pre-pass). Default: 1e-6f.
-    NX_Vec2 texOffset;              ///< Texture coordinate offset. Default: vec2(0,0)
-    NX_Vec2 texScale;               ///< Texture coordinate scaling. Default: vec2(1,1)
-
-    NX_BillboardMode billboard;     ///< Billboard mode applied to the object
-    NX_ShadingMode shading;         ///< Describes the shading mode, lit or not
-    NX_BlendMode blend;             ///< Blending mode for rendering. Default: Opaque
-    NX_CullMode cull;               ///< Face culling mode. Default: Back face
-
-    NX_Shader3D* shader;            ///< Pointer to an optional material shader. Default: NULL
-
-} NX_Material;
 
 /**
  * @brief Stores bone information for skeletal animation.
@@ -725,58 +621,6 @@ NXAPI NX_Transform NX_GetCameraTransform(const NX_Camera* camera);
 NXAPI NX_Environment NX_GetDefaultEnvironment(void);
 
 /** @} */ // end of Environment
-
-/**
- * @defgroup Material Material Functions
- * @{
- */
-
-/**
- * @brief Returns the default material.
- * @return NX_Material initialized with default values.
- *
- * Default material parameters:
- * - Albedo:
- *   - texture: nullptr
- *   - color: NX_WHITE
- * - Emission:
- *   - texture: nullptr
- *   - color: NX_WHITE
- *   - energy: 0.0
- * - ORM (Ambient Occlusion / Roughness / Metalness):
- *   - texture: nullptr
- *   - aoLightAffect: 0.0
- *   - occlusion: 1.0
- *   - roughness: 1.0
- *   - metalness: 0.0
- * - Normal map:
- *   - texture: nullptr
- *   - scale: 1.0
- * - Depth:
- *   - test: NX_DEPTH_TEST_LESS
- *   - offset: 0.0
- *   - scale: 1.0
- *   - prePass: false
- * - alphaCutOff: 1e-6 (disables discard by default)
- * - texOffset: (0, 0)
- * - texScale: (1, 1)
- * - billboard mode : NX_BILLBOARD_DISABLED
- * - shading mode : NX_SHADING_LIT
- * - blend mode: NX_BLEND_OPAQUE
- * - cull mode: NX_CULL_BACK
- * - shader: NULL
- */
-NXAPI NX_Material NX_GetDefaultMaterial(void);
-
-/**
- * @brief Destroys all resources allocated within a material (e.g., textures, shaders).
- * @param material Pointer to the NX_Material to clean up.
- * @note Only call this if you are certain the resources are no longer needed.
- * @note Do not call this if the resources are shared between multiple materials.
- */
-NXAPI void NX_DestroyMaterialResources(NX_Material* material);
-
-/** @} */ // end of Material
 
 /**
  * @defgroup Mesh Mesh Functions

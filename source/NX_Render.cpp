@@ -15,7 +15,6 @@
 #include <NX/NX_Font.h>
 #include <NX/NX_Math.h>
 #include <NX/NX_Log.h>
-#include <cstdint>
 
 #include "./NX_RenderTexture.hpp"
 #include "./NX_Texture.hpp"
@@ -261,57 +260,6 @@ NX_Environment NX_GetDefaultEnvironment()
             .white = 1.0f
         }
     };
-}
-
-/* === Material - Public API === */
-
-NX_Material NX_GetDefaultMaterial()
-{
-    return NX_Material {
-        .albedo = {
-            .texture = nullptr,
-            .color = NX_WHITE,
-        },
-        .emission = {
-            .texture = nullptr,
-            .color = NX_WHITE,
-            .energy = 0.0f
-        },
-        .orm {
-            .texture = nullptr,
-            .aoLightAffect = 0.0f,
-            .occlusion = 1.0f,
-            .roughness = 1.0f,
-            .metalness = 0.0f,
-        },
-        .normal = {
-            .texture = nullptr,
-            .scale = 1.0f,
-        },
-        .depth = {
-            .test = NX_DEPTH_TEST_LESS,
-            .offset = 0.0f,
-            .scale = 1.0f,
-            .prePass = false
-        },
-        .alphaCutOff = 1e-6f,
-        .texOffset = NX_VEC2_ZERO,
-        .texScale = NX_VEC2_ONE,
-        .billboard = NX_BILLBOARD_DISABLED,
-        .shading = NX_SHADING_LIT,
-        .blend = NX_BLEND_OPAQUE,
-        .cull = NX_CULL_BACK,
-        .shader = nullptr
-    };
-}
-
-void NX_DestroyMaterialResources(NX_Material* material)
-{
-    NX_DestroyTexture(material->albedo.texture);
-    NX_DestroyTexture(material->emission.texture);
-    NX_DestroyTexture(material->orm.texture);
-    NX_DestroyTexture(material->normal.texture);
-    NX_DestroyShader3D(material->shader);
 }
 
 /* === Mesh - Public API === */

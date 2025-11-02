@@ -295,6 +295,7 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/NX_DataCodec.cpp"
     "${NX_ROOT_PATH}/source/NX_Codepoint.cpp"
     "${NX_ROOT_PATH}/source/NX_Clipboard.cpp"
+    "${NX_ROOT_PATH}/source/NX_Material.cpp"
     "${NX_ROOT_PATH}/source/NX_Shader3D.cpp"
     "${NX_ROOT_PATH}/source/NX_Shader2D.cpp"
     "${NX_ROOT_PATH}/source/NX_Render2D.cpp"
