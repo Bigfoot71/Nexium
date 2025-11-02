@@ -7,7 +7,7 @@
  */
 
 #include <NX/NX_Init.h>
-#include <NX/NX_Rand.h>
+#include <NX/NX_Random.h>
 #include <NX/NX_Log.h>
 
 #include "./INX_GPUProgramCache.hpp"

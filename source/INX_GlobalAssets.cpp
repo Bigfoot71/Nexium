@@ -13,7 +13,7 @@
 #include <NX/NX_Texture.h>
 #include <NX/NX_Render.h>
 #include <NX/NX_Image.h>
-#include <NX/NX_Rand.h>
+#include <NX/NX_Random.h>
 
 #include <SDL3/SDL_stdinc.h>
 #include <fp16.h>

@@ -1,4 +1,4 @@
-/* NX_Rand.h -- API declaration for Nexium's rand module
+/* NX_Random.h -- API declaration for Nexium's random module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef NX_RAND_H
-#define NX_RAND_H
+#ifndef NX_RANDOM_H
+#define NX_RANDOM_H
 
 #include "./NX_API.h"
 
@@ -15,7 +15,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
-/* === Structures === */
+// ============================================================================
+// TYPES DEFINITIONS
+// ============================================================================
 
 /**
  * @brief PCG32 pseudo-random number generator state
@@ -36,7 +38,9 @@ typedef struct NX_RandGen {
     uint64_t inc;       ///< Increment (must be odd)
 } NX_RandGen;
 
-/* === API Functions === */
+// ============================================================================
+// FUNCTIONS DECLARATIONS
+// ============================================================================
 
 #if defined(__cplusplus)
 extern "C" {
@@ -153,4 +157,4 @@ NXAPI void NX_RandShuffle(NX_RandGen* generator, void* array, size_t element_siz
 } // extern "C"
 #endif
 
-#endif // NX_RAND_H
+#endif // NX_RANDOM_H

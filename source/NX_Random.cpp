@@ -1,4 +1,4 @@
-/* NX_Rand.cpp -- API definition for Nexium's rand module
+/* NX_Random.cpp -- API definition for Nexium's random module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -9,7 +9,7 @@
 #include "./Detail/Util/DynamicArray.hpp"
 #include "./Detail/Util/ObjectPool.hpp"
 
-#include <NX/NX_Rand.h>
+#include <NX/NX_Random.h>
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_time.h>
 #include <cstdint>
