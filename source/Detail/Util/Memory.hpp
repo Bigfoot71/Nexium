@@ -36,7 +36,11 @@ using UniquePtr = std::unique_ptr<T, Deleter<T>>;
 template <typename T>
 inline UniquePtr<T> makeUnique(size_t count = 1)
 {
-    return UniquePtr<T>(NX_Malloc<T>(count));
+    T* ptr = NX_Malloc<T>(count);
+    for (size_t i = 0; i < count; ++i) {
+        new (ptr + i) T();
+    }
+    return UniquePtr<T>(ptr);
 }
 
 /**
@@ -52,6 +56,9 @@ template <typename T>
 inline SharedPtr<T> makeShared(size_t count = 1)
 {
     T* ptr = NX_Malloc<T>(count);
+    for (size_t i = 0; i < count; ++i) {
+        new (ptr + i) T();
+    }
     return SharedPtr<T>(ptr, Deleter<T>{});
 }
 

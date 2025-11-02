@@ -16,7 +16,7 @@
 #include "./NX_Texture.hpp"
 
 // ============================================================================
-// OPAQUE DEFINITIONS
+// OPAQUE DEFINITION
 // ============================================================================
 
 struct INX_Glyph {
@@ -44,6 +44,6 @@ struct NX_Font {
 // INTERNAL FUNCTIONS
 // ============================================================================
 
-const INX_Glyph& INX_GetFontGlyph(const NX_Font& font, int codepoint);
+const INX_Glyph& INX_GetFontGlyph(const NX_Font* font, int codepoint);
 
 #endif // NX_FONT_HPP

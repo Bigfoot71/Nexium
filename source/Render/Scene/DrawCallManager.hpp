@@ -14,9 +14,10 @@
 #include "../../Detail/GPU/Translation.hpp"
 #include "../../Detail/GPU/Pipeline.hpp"
 
-#include "../NX_Shader3D.hpp"
 #include "../NX_VertexBuffer.hpp"
 #include "../NX_DynamicMesh.hpp"
+#include "../../NX_Shader3D.hpp"
+
 #include "../Core/Helper.hpp"
 #include "./Environment.hpp"
 #include "./ViewFrustum.hpp"
@@ -60,11 +61,11 @@ struct DrawUnique {
     NX_Material material;
     OrientedBoundingBox obb;
     /** Additionnal data */
-    NX_Shader3D::TextureArray textures;   //< Array containing the textures linked to the material shader at the time of draw (if any)
-    int dynamicRangeIndex;                      //< Index of the material shader's dynamic uniform buffer range (if any)
+    NX_Shader3D::TextureArray textures;     //< Array containing the textures linked to the material shader at the time of draw (if any)
+    int dynamicRangeIndex;                  //< Index of the material shader's dynamic uniform buffer range (if any)
     /** Shared/Unique data */
-    int sharedDataIndex;                        //< Index to the shared data that this unique draw call data depends on
-    int uniqueDataIndex;                        //< Is actually the index of DrawUnique itself, useful when iterating through sorted categories
+    int sharedDataIndex;                    //< Index to the shared data that this unique draw call data depends on
+    int uniqueDataIndex;                    //< Is actually the index of DrawUnique itself, useful when iterating through sorted categories
     /** Object type */
     DrawType type;
 };
@@ -203,8 +204,8 @@ inline void DrawCallManager::push(const VariantMesh& mesh, const NX_InstanceBuff
     };
 
     if (material.shader != nullptr) {
-        material.shader->getTextures(uniqueData.textures);
-        uniqueData.dynamicRangeIndex = material.shader->dynamicRangeIndex();
+        uniqueData.textures = material.shader->GetTextures();
+        uniqueData.dynamicRangeIndex = material.shader->GetDynamicRangeIndex();
     }
 
     mUniqueData.push_back(uniqueData);
@@ -249,8 +250,8 @@ inline void DrawCallManager::push(const NX_Model& model, const NX_InstanceBuffer
         };
 
         if (uniqueData.material.shader != nullptr) {
-            uniqueData.material.shader->getTextures(uniqueData.textures);
-            uniqueData.dynamicRangeIndex = uniqueData.material.shader->dynamicRangeIndex();
+            uniqueData.textures = uniqueData.material.shader->GetTextures();
+            uniqueData.dynamicRangeIndex = uniqueData.material.shader->GetDynamicRangeIndex();
         }
 
         mUniqueData.push_back(uniqueData);

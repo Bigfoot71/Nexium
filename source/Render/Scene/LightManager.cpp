@@ -365,12 +365,12 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
                     const DrawUnique& unique = params.drawCalls.uniqueData()[uniqueIndex];
                     if (unique.mesh.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
 
-                    NX_Shader3D& shader = mPrograms.materialShader(unique.material.shader);
-                    pipeline.useProgram(shader.program(NX_Shader3D::Variant::SCENE_SHADOW));
+                    const NX_Shader3D* shader = INX_Assets.Select(unique.material.shader, INX_Shader3DAsset::DEFAULT);
+                    pipeline.useProgram(shader->GetProgram(NX_Shader3D::Variant::SCENE_SHADOW));
                     pipeline.setCullMode(gpu::getCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
 
-                    shader.bindTextures(pipeline, unique.textures);
-                    shader.bindUniforms(pipeline, unique.dynamicRangeIndex);
+                    shader->BindTextures(pipeline, unique.textures);
+                    shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
 
                     const NX_Texture* texAlbedo = INX_Assets.Select(
                         unique.material.albedo.texture,

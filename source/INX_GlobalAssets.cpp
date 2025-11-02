@@ -1,5 +1,7 @@
 #include "./INX_GlobalAssets.hpp"
 
+#include <NX/NX_Shader3D.h>
+#include <NX/NX_Shader2D.h>
 #include <NX/NX_Texture.h>
 #include <NX/NX_Render.h>
 #include <NX/NX_Image.h>
@@ -132,6 +134,36 @@ static NX_Font* INX_LoadFontDefault(void)
 // ============================================================================
 
 INX_GlobalAssets INX_Assets;
+
+const NX_Shader3D* INX_GlobalAssets::Get(INX_Shader3DAsset asset)
+{
+    constexpr auto loaders = std::to_array<>({
+        []() { return NX_CreateShader3D(nullptr, nullptr); }
+    });
+
+    auto& shader = mShaders3D[int(asset)];
+
+    if (shader == nullptr) {
+        shader = loaders[int(asset)]();
+    }
+
+    return shader;
+}
+
+const NX_Shader2D* INX_GlobalAssets::Get(INX_Shader2DAsset asset)
+{
+    constexpr auto loaders = std::to_array<>({
+        []() { return NX_CreateShader2D(nullptr, nullptr); }
+    });
+
+    auto& shader = mShaders2D[int(asset)];
+
+    if (shader == nullptr) {
+        shader = loaders[int(asset)]();
+    }
+
+    return shader;
+}
 
 const NX_Texture* INX_GlobalAssets::Get(INX_TextureAsset asset)
 {

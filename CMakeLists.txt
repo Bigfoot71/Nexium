@@ -280,14 +280,10 @@ set(NX_SOURCES
 
     "${NX_ROOT_PATH}/source/Render/Core/ProgramCache.cpp"
 
-    "${NX_ROOT_PATH}/source/Render/Overlay/Overlay.cpp"
-
     "${NX_ROOT_PATH}/source/Render/Scene/LightManager.cpp"
     "${NX_ROOT_PATH}/source/Render/Scene/Scene.cpp"
 
     "${NX_ROOT_PATH}/source/Render/NX_ReflectionProbe.cpp"
-    "${NX_ROOT_PATH}/source/Render/NX_Shader3D.cpp"
-    "${NX_ROOT_PATH}/source/Render/NX_Shader2D.cpp"
     "${NX_ROOT_PATH}/source/Render/NX_Cubemap.cpp"
     "${NX_ROOT_PATH}/source/Render/NX_Light.cpp"
 
@@ -302,6 +298,9 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/NX_DataCodec.cpp"
     "${NX_ROOT_PATH}/source/NX_Codepoint.cpp"
     "${NX_ROOT_PATH}/source/NX_Clipboard.cpp"
+    "${NX_ROOT_PATH}/source/NX_Shader3D.cpp"
+    "${NX_ROOT_PATH}/source/NX_Shader2D.cpp"
+    "${NX_ROOT_PATH}/source/NX_Render2D.cpp"
     "${NX_ROOT_PATH}/source/NX_Keyboard.cpp"
     "${NX_ROOT_PATH}/source/NX_Display.cpp"
     "${NX_ROOT_PATH}/source/NX_Texture.cpp"

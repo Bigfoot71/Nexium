@@ -17,7 +17,6 @@
 #include "./Core/PoolModel.hpp"
 #include "./Core/PoolMesh.hpp"
 
-#include "./Overlay/Overlay.hpp"
 #include "./Scene/Scene.hpp"
 
 #include <memory>
@@ -38,7 +37,6 @@ public:
     render::PoolModel models;
 
     /** Renderers */
-    overlay::Overlay overlay;
     scene::Scene scene;
 
 public:
@@ -54,7 +52,6 @@ inline NX_RenderState::NX_RenderState(NX_AppDesc& desc)
     , cubemaps(programs)
     , meshes()
     , models(meshes)
-    , overlay(programs, desc)
     , scene(programs, desc)
 { }
 

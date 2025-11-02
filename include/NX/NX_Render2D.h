@@ -2,8 +2,9 @@
 #define NX_RENDER_2D_H
 
 #include "./NX_RenderTexture.h"
+#include "./NX_Shader2D.h"
 #include "./NX_Texture.h"
-#include "./NX_Render.h"
+#include "./NX_Vertex.h"
 #include "./NX_Font.h"
 #include "./NX_Math.h"
 #include "./NX_API.h"

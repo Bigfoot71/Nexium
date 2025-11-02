@@ -38,7 +38,7 @@
 #include <stb_rect_pack.h>
 
 // ============================================================================
-// OPAQUE DEFINITIONS
+// OPAQUE DEFINITION
 // ============================================================================
 
 NX_Font::~NX_Font()
@@ -258,9 +258,9 @@ int INX_GetGlyphIndex(const NX_Font* font, int codepoint)
     return index;
 }
 
-const INX_Glyph& INX_GetFontGlyph(const NX_Font& font, int codepoint)
+const INX_Glyph& INX_GetFontGlyph(const NX_Font* font, int codepoint)
 {
-    return font.glyphs[INX_GetGlyphIndex(&font, codepoint)];
+    return font->glyphs[INX_GetGlyphIndex(font, codepoint)];
 }
 
 bool INX_GenerateAtlas(NX_Image* atlas, const uint8_t* fileData, int dataSize,

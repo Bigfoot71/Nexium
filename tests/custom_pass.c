@@ -15,10 +15,10 @@ int main(void)
     NX_Init("Nexium - Custom Pass", 800, 450, NX_FLAG_VSYNC_HINT);
     NX_AddSearchPath(RESOURCES_PATH, false);
 
-    NX_RenderTexture* target = NX_CreateRenderTexture(1920, 1080);
-    NX_Shader2D* shader = NX_LoadShader(NULL, "shaders/scanline.frag");
+    NX_RenderTexture* target = NX_CreateRenderTexture(800, 450);
+    NX_Shader2D* shader = NX_LoadShader2D(NULL, "shaders/scanline.frag");
 
-    NX_UpdateStaticShaderBuffer(shader, 0, sizeof(UniformScanline), &(UniformScanline) {
+    NX_UpdateStaticShader2DBuffer(shader, 0, sizeof(UniformScanline), &(UniformScanline) {
         .scanlineDensity = 240.0,
         .scanlineIntensity = 0.08,
         .flickerSpeed = 1.5,

@@ -1,6 +1,9 @@
 #include "./NX_Shader3D.hpp"
 
-#include "../Assets/ShaderDecoder.hpp"
+#include <NX/NX_Filesystem.h>
+
+#include "./INX_AssetDecoder.hpp"
+#include "./INX_PoolAssets.hpp"
 
 #include <shaders/scene.vert.h>
 #include <shaders/scene_lit.frag.h>
@@ -8,17 +11,19 @@
 #include <shaders/scene_prepass.frag.h>
 #include <shaders/scene_shadow.frag.h>
 
-/* === Public Implementation === */
+// ============================================================================
+// OPAQUE DEFINITION
+// ============================================================================
 
 NX_Shader3D::NX_Shader3D()
 {
     /* --- Compile shaders --- */
 
-    assets::ShaderDecoder vertSceneCode(SCENE_VERT, SCENE_VERT_SIZE);
-    assets::ShaderDecoder fragLitCode(SCENE_LIT_FRAG, SCENE_LIT_FRAG_SIZE);
-    assets::ShaderDecoder fragUnlitCode(SCENE_UNLIT_FRAG, SCENE_UNLIT_FRAG_SIZE);
-    assets::ShaderDecoder fragPrepassCode(SCENE_PREPASS_FRAG, SCENE_PREPASS_FRAG_SIZE);
-    assets::ShaderDecoder fragShadowCode(SCENE_SHADOW_FRAG, SCENE_SHADOW_FRAG_SIZE);
+    INX_ShaderDecoder vertSceneCode(SCENE_VERT, SCENE_VERT_SIZE);
+    INX_ShaderDecoder fragLitCode(SCENE_LIT_FRAG, SCENE_LIT_FRAG_SIZE);
+    INX_ShaderDecoder fragUnlitCode(SCENE_UNLIT_FRAG, SCENE_UNLIT_FRAG_SIZE);
+    INX_ShaderDecoder fragPrepassCode(SCENE_PREPASS_FRAG, SCENE_PREPASS_FRAG_SIZE);
+    INX_ShaderDecoder fragShadowCode(SCENE_SHADOW_FRAG, SCENE_SHADOW_FRAG_SIZE);
 
     gpu::Shader vertScene(GL_VERTEX_SHADER, vertSceneCode);
     gpu::Shader vertShadow(GL_VERTEX_SHADER, vertSceneCode, {"SHADOW"});
@@ -44,15 +49,22 @@ NX_Shader3D::NX_Shader3D(const char* vert, const char* frag)
 
     /* --- Prepare base sources --- */
 
-    util::String vertSceneCode = assets::ShaderDecoder(SCENE_VERT, SCENE_VERT_SIZE).code();
-    util::String fragLitCode   = assets::ShaderDecoder(SCENE_LIT_FRAG, SCENE_LIT_FRAG_SIZE).code();
-    util::String fragUnlitCode = assets::ShaderDecoder(SCENE_UNLIT_FRAG, SCENE_UNLIT_FRAG_SIZE).code();
+    util::String vertSceneCode = INX_ShaderDecoder(SCENE_VERT, SCENE_VERT_SIZE).code();
+    util::String fragLitCode   = INX_ShaderDecoder(SCENE_LIT_FRAG, SCENE_LIT_FRAG_SIZE).code();
+    util::String fragUnlitCode = INX_ShaderDecoder(SCENE_UNLIT_FRAG, SCENE_UNLIT_FRAG_SIZE).code();
 
-    /* --- Insert user code --- */
+    /* --- Process and insert the user code --- */
 
-    insertUserCode(vertSceneCode, vertMarker, vert);
-    insertUserCode(fragLitCode,   fragMarker, frag);
-    insertUserCode(fragUnlitCode, fragMarker, frag);
+    if (vert != nullptr) {
+        util::String vertUser = ProcessUserCode(vert);
+        InsertUserCode(vertSceneCode, vertMarker, vertUser.data());
+    }
+
+    if (frag != nullptr) {
+        util::String fragUser = ProcessUserCode(frag);
+        InsertUserCode(fragLitCode,   fragMarker, fragUser.data());
+        InsertUserCode(fragUnlitCode, fragMarker, fragUser.data());
+    }
 
     /* --- Compile shaders --- */
 
@@ -60,8 +72,8 @@ NX_Shader3D::NX_Shader3D(const char* vert, const char* frag)
     gpu::Shader vertShadow(GL_VERTEX_SHADER, vertSceneCode.data(), {"SHADOW"});
     gpu::Shader fragLit(GL_FRAGMENT_SHADER, fragLitCode.data());
     gpu::Shader fragUnlit(GL_FRAGMENT_SHADER, fragUnlitCode.data());
-    gpu::Shader fragPrepass(GL_FRAGMENT_SHADER, assets::ShaderDecoder(SCENE_PREPASS_FRAG, SCENE_PREPASS_FRAG_SIZE));
-    gpu::Shader fragShadow(GL_FRAGMENT_SHADER, assets::ShaderDecoder(SCENE_SHADOW_FRAG, SCENE_SHADOW_FRAG_SIZE));
+    gpu::Shader fragPrepass(GL_FRAGMENT_SHADER, INX_ShaderDecoder(SCENE_PREPASS_FRAG, SCENE_PREPASS_FRAG_SIZE));
+    gpu::Shader fragShadow(GL_FRAGMENT_SHADER, INX_ShaderDecoder(SCENE_SHADOW_FRAG, SCENE_SHADOW_FRAG_SIZE));
 
     /* --- Link all programs --- */
 
@@ -99,18 +111,46 @@ NX_Shader3D::NX_Shader3D(const char* vert, const char* frag)
             NX_LOG(E, "RENDER: Dynamic uniform buffer range info reservation failed (requested: 8 entries)");
         }
     }
+}
 
-    /* --- Setup texture samplers --- */
+// ============================================================================
+// PUBLIC API
+// ============================================================================
 
-    gpu::Pipeline([this](const gpu::Pipeline& pipeline) {
-        for (int i = 0; i < VariantCount; ++i) {
-            pipeline.useProgram(mPrograms[i]);
-            for (int j = 0; j < SAMPLER_COUNT; ++j) {
-                int loc = mPrograms[i].getUniformLocation(SamplerName[j]);
-                if (loc < 0) continue;
-                pipeline.setUniformInt1(loc, SamplerBinding[j]);
-                mTextures[j].exists = true;
-            }
-        }
-    });
+NX_Shader3D* NX_CreateShader3D(const char* vertCode, const char* fragCode)
+{
+    return INX_Pool.Create<NX_Shader3D>(vertCode, fragCode);
+}
+
+NX_Shader3D* NX_LoadShader3D(const char* vertFile, const char* fragFile)
+{
+    char* vertCode = vertFile ? NX_LoadFileText(vertFile) : nullptr;
+    char* fragCode = fragFile ? NX_LoadFileText(fragFile) : nullptr;
+
+    NX_Shader3D* shader = INX_Pool.Create<NX_Shader3D>(vertCode, fragCode);
+
+    SDL_free(vertCode);
+    SDL_free(fragCode);
+
+    return shader;
+}
+
+void NX_DestroyShader3D(NX_Shader3D* shader)
+{
+    INX_Pool.Destroy(shader);
+}
+
+void NX_SetShader3DTexture(NX_Shader3D* shader, int slot, const NX_Texture* texture)
+{
+    shader->SetTexture(slot, texture);
+}
+
+void NX_UpdateStaticShader3DBuffer(NX_Shader3D* shader, size_t offset, size_t size, const void* data)
+{
+    shader->UpdateStaticBuffer(offset, size, data);
+}
+
+void NX_UpdateDynamicShader3DBuffer(NX_Shader3D* shader, size_t size, const void* data)
+{
+    shader->UpdateDynamicBuffer(size, data);
 }

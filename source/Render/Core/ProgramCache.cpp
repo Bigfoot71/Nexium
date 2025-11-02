@@ -8,7 +8,7 @@
 
 #include "./ProgramCache.hpp"
 
-#include "../../Assets/ShaderDecoder.hpp"
+#include "../../INX_AssetDecoder.hpp"
 
 #include <shaders/screen.vert.h>
 #include <shaders/cube.vert.h>
@@ -38,8 +38,8 @@ namespace render {
 /* === Public Implementation === */
 
 ProgramCache::ProgramCache()
-    : mVertexShaderScreen(GL_VERTEX_SHADER, assets::ShaderDecoder(SCREEN_VERT, SCREEN_VERT_SIZE))
-    , mVertexShaderCube(GL_VERTEX_SHADER, assets::ShaderDecoder(CUBE_VERT, CUBE_VERT_SIZE))
+    : mVertexShaderScreen(GL_VERTEX_SHADER, INX_ShaderDecoder(SCREEN_VERT, SCREEN_VERT_SIZE))
+    , mVertexShaderCube(GL_VERTEX_SHADER, INX_ShaderDecoder(CUBE_VERT, CUBE_VERT_SIZE))
 { }
 
 gpu::Program& ProgramCache::cubemapFromEquirectangular()
@@ -52,7 +52,7 @@ gpu::Program& ProgramCache::cubemapFromEquirectangular()
         mVertexShaderScreen,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 CUBEMAP_FROM_EQUIRECTANGULAR_FRAG,
                 CUBEMAP_FROM_EQUIRECTANGULAR_FRAG_SIZE
             )
@@ -72,7 +72,7 @@ gpu::Program& ProgramCache::cubemapIrradiance()
         mVertexShaderCube,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 CUBEMAP_IRRADIANCE_FRAG,
                 CUBEMAP_IRRADIANCE_FRAG_SIZE
             )
@@ -92,7 +92,7 @@ gpu::Program& ProgramCache::cubemapPrefilter()
         mVertexShaderCube,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 CUBEMAP_PREFILTER_FRAG,
                 CUBEMAP_PREFILTER_FRAG_SIZE
             )
@@ -112,7 +112,7 @@ gpu::Program& ProgramCache::cubemapSkybox()
         mVertexShaderCube,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 CUBEMAP_SKYBOX_FRAG,
                 CUBEMAP_SKYBOX_FRAG_SIZE
             )
@@ -131,7 +131,7 @@ gpu::Program& ProgramCache::lightCulling()
     mLightCulling = gpu::Program(
         gpu::Shader(
             GL_COMPUTE_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 LIGHT_CULLING_COMP,
                 LIGHT_CULLING_COMP_SIZE
             )
@@ -150,14 +150,14 @@ gpu::Program& ProgramCache::skybox()
     mSkybox = gpu::Program(
         gpu::Shader(
             GL_VERTEX_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 SKYBOX_VERT,
                 SKYBOX_VERT_SIZE
             )
         ),
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 SKYBOX_FRAG,
                 SKYBOX_FRAG_SIZE
             )
@@ -197,7 +197,7 @@ gpu::Program& ProgramCache::output(NX_Tonemap tonemap)
 
     gpu::Shader frag(
         GL_FRAGMENT_SHADER,
-        assets::ShaderDecoder(
+        INX_ShaderDecoder(
             OUTPUT_FRAG,
             OUTPUT_FRAG_SIZE
         ),
@@ -219,7 +219,7 @@ gpu::Program& ProgramCache::ssaoBilateralBlur()
         mVertexShaderScreen,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 SSAO_BILATERAL_BLUR_FRAG,
                 SSAO_BILATERAL_BLUR_FRAG_SIZE
             )
@@ -239,7 +239,7 @@ gpu::Program& ProgramCache::downsampling()
         mVertexShaderScreen,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 DOWNSAMPLING_FRAG,
                 DOWNSAMPLING_FRAG_SIZE
             )
@@ -259,7 +259,7 @@ gpu::Program& ProgramCache::upsampling()
         mVertexShaderScreen,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 UPSAMPLING_FRAG,
                 UPSAMPLING_FRAG_SIZE
             )
@@ -297,7 +297,7 @@ gpu::Program& ProgramCache::bloomPost(NX_Bloom mode)
         mVertexShaderScreen,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 BLOOM_POST_FRAG,
                 BLOOM_POST_FRAG_SIZE
             ),
@@ -318,7 +318,7 @@ gpu::Program& ProgramCache::ssaoPass()
         mVertexShaderScreen,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 SSAO_PASS_FRAG,
                 SSAO_PASS_FRAG_SIZE
             )
@@ -338,7 +338,7 @@ gpu::Program& ProgramCache::ssaoPost()
         mVertexShaderScreen,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 SSAO_POST_FRAG,
                 SSAO_POST_FRAG_SIZE
             )
@@ -346,26 +346,6 @@ gpu::Program& ProgramCache::ssaoPost()
     );
 
     return mSsaoPost;
-}
-
-gpu::Program& ProgramCache::overlay()
-{
-    if (mOverlay.isValid()) {
-        return mOverlay;
-    }
-
-    mOverlay = gpu::Program(
-        mVertexShaderScreen,
-        gpu::Shader(
-            GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
-                OVERLAY_FRAG,
-                OVERLAY_FRAG_SIZE
-            )
-        )
-    );
-
-    return mOverlay;
 }
 
 gpu::Program& ProgramCache::screenQuad()
@@ -378,7 +358,7 @@ gpu::Program& ProgramCache::screenQuad()
         mVertexShaderScreen,
         gpu::Shader(
             GL_FRAGMENT_SHADER,
-            assets::ShaderDecoder(
+            INX_ShaderDecoder(
                 SCREEN_QUAD_FRAG,
                 SCREEN_QUAD_FRAG_SIZE
             )

@@ -14,6 +14,8 @@
 #include "./INX_GlobalState.hpp"
 #include "./INX_PoolAssets.hpp"
 
+#include "./NX_Render2D.hpp"
+
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_error.h>
@@ -26,6 +28,7 @@
 #include <alc.h>
 
 #include "./Render/NX_RenderState.hpp"
+#include "NX/NX_Display.h"
 
 #include <memory>
 
@@ -53,7 +56,7 @@ static void* INX_PhysFS_realloc(void* ptr, PHYSFS_uint64 size)
 // LOCAL FUNCTIONS
 // ============================================================================
 
-static bool INX_InitSDL(const NX_AppDesc& desc)
+static bool INX_SDL_Init(const NX_AppDesc& desc)
 {
     SDL_SetLogPriorityPrefix(SDL_LOG_PRIORITY_TRACE,    "[T] ");
     SDL_SetLogPriorityPrefix(SDL_LOG_PRIORITY_VERBOSE,  "[V] ");
@@ -86,7 +89,7 @@ static bool INX_InitSDL(const NX_AppDesc& desc)
     return true;
 }
 
-static bool INX_InitPhysFS()
+static bool INX_PhysFS_Init()
 {
     static constexpr PHYSFS_Allocator Allocator = {
         .Init = nullptr,
@@ -134,7 +137,7 @@ static SDL_WindowFlags INX_GetWindowFlags(NX_Flags flags)
     return windowFlags;
 }
 
-static bool INX_InitDisplayState(const char* title, int w, int h, const NX_AppDesc& desc)
+static bool INX_DisplayState_Init(const char* title, int w, int h, const NX_AppDesc& desc)
 {
     SDL_memset(&INX_Display, 0, sizeof(INX_Display));
 
@@ -245,7 +248,7 @@ static bool INX_InitDisplayState(const char* title, int w, int h, const NX_AppDe
     return true;
 }
 
-static bool INX_InitAudioState()
+static bool INX_AudioState_Init()
 {
     SDL_memset(&INX_Audio, 0, sizeof(INX_Audio));
 
@@ -267,21 +270,21 @@ static bool INX_InitAudioState()
     return true;
 }
 
-static bool INX_InitKeyboardState()
+static bool INX_KeyboardState_Init()
 {
     SDL_memset(&INX_Keyboard, 0, sizeof(INX_Keyboard));
 
     return true;
 }
 
-static bool INX_InitMouseState()
+static bool INX_MouseState_Init()
 {
     SDL_memset(&INX_Mouse, 0, sizeof(INX_Mouse));
 
     return true;
 }
 
-static bool INX_InitFrameState(const NX_AppDesc& desc)
+static bool INX_FrameState_Init(const NX_AppDesc& desc)
 {
     SDL_memset(&INX_Frame, 0, sizeof(INX_Frame));
 
@@ -320,21 +323,25 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
 
     /* --- Init dependencies --- */
 
-    if (!INX_InitSDL(*desc)) {
+    if (!INX_SDL_Init(*desc)) {
         return false;
     }
 
-    if (!INX_InitPhysFS()) {
+    if (!INX_PhysFS_Init()) {
         return false;
     }
 
     /* --- Init each modules --- */
 
-    if (!INX_InitDisplayState(title, w, h, *desc)) {
+    if (!INX_DisplayState_Init(title, w, h, *desc)) {
         return false;
     }
 
-    if (!INX_InitAudioState()) {
+    if (!INX_Render2DState_Init(desc)) {
+        return false;
+    }
+
+    if (!INX_AudioState_Init()) {
         return false;
     }
 
@@ -347,15 +354,15 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
         return false;
     }
 
-    if (!INX_InitKeyboardState()) {
+    if (!INX_KeyboardState_Init()) {
         return false;
     }
 
-    if (!INX_InitMouseState()) {
+    if (!INX_MouseState_Init()) {
         return false;
     }
 
-    if (!INX_InitFrameState(*desc)) {
+    if (!INX_FrameState_Init(*desc)) {
         return false;
     }
 

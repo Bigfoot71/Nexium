@@ -15,7 +15,7 @@ int main(void)
     NX_Init("Nexium - Instanced Material Shader", 800, 450, NX_FLAG_VSYNC_HINT);
     NX_AddSearchPath(RESOURCES_PATH, false);
 
-    NX_Shader3D* shader = NX_LoadMaterialShader(
+    NX_Shader3D* shader = NX_LoadShader3D(
         "shaders/instanced_material.vert",
         "shaders/instanced_material.frag"
     );

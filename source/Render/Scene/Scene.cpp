@@ -15,10 +15,12 @@
 
 #include "../../Detail/BuildInfo.hpp"
 #include "../../NX_RenderTexture.hpp"
+#include "../../INX_PoolAssets.hpp"
 #include "../../NX_Texture.hpp"
 
 #include "../NX_ReflectionProbe.hpp"
 #include "../NX_Cubemap.hpp"
+#include "NX/NX_Shader3D.h"
 
 namespace scene {
 
@@ -178,7 +180,10 @@ void Scene::end()
 
     /* --- Clear dynamic uniform buffers --- */
 
-    mPrograms.clearDynamicMaterialBuffers();
+    // REVIEW: We can collect the used programs rather than iterating over all programs
+    INX_Pool.ForEach<NX_Shader3D>([](NX_Shader3D& shader) {
+        shader.ClearDynamicBuffer();
+    });
 
     /* --- Reset state --- */
 
@@ -237,14 +242,14 @@ void Scene::renderPrePass(const gpu::Pipeline& pipeline)
         const DrawUnique& unique = mDrawCalls.uniqueData()[uniqueIndex];
         const NX_Material& mat = unique.material;
 
-        NX_Shader3D& shader = mPrograms.materialShader(mat.shader);
-        pipeline.useProgram(shader.program(NX_Shader3D::Variant::SCENE_PREPASS));
+        const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
+        pipeline.useProgram(shader->GetProgram(NX_Shader3D::Variant::SCENE_PREPASS));
 
         pipeline.setDepthFunc(gpu::getDepthFunc(mat.depth.test));
         pipeline.setCullMode(gpu::getCullMode(mat.cull));
 
-        shader.bindTextures(pipeline, unique.textures);
-        shader.bindUniforms(pipeline, unique.dynamicRangeIndex);
+        shader->BindTextures(pipeline, unique.textures);
+        shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
 
         const NX_Texture* texAlbedo = INX_Assets.Select(
             unique.material.albedo.texture,
@@ -295,11 +300,11 @@ void Scene::renderScene(const gpu::Pipeline& pipeline)
         const DrawUnique& unique = mDrawCalls.uniqueData()[uniqueIndex];
         const NX_Material& mat = unique.material;
 
-        NX_Shader3D& shader = mPrograms.materialShader(mat.shader);
-        pipeline.useProgram(shader.programFromShadingMode(unique.material.shading));
+        const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
+        pipeline.useProgram(shader->GetProgramFromShadingMode(unique.material.shading));
 
-        shader.bindTextures(pipeline, unique.textures);
-        shader.bindUniforms(pipeline, unique.dynamicRangeIndex);
+        shader->BindTextures(pipeline, unique.textures);
+        shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
 
         pipeline.setDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : gpu::getDepthFunc(mat.depth.test));
         pipeline.setBlendMode(gpu::getBlendMode(mat.blend));

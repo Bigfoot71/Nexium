@@ -6,7 +6,7 @@ int main(void)
     NX_Init("Nexium - Material Shader", 800, 450, NX_FLAG_VSYNC_HINT);
     NX_AddSearchPath(RESOURCES_PATH, false);
 
-    NX_Shader3D* shader = NX_LoadMaterialShader("shaders/material.vert", "shaders/material.frag");
+    NX_Shader3D* shader = NX_LoadShader3D("shaders/material.vert", "shaders/material.frag");
 
     NX_Image im0 = NX_GenImageChecked(64, 64, 8, 8, NX_WHITE, NX_BLANK);
     NX_Texture* tex0 = NX_CreateTextureFromImage(&im0);
@@ -28,7 +28,7 @@ int main(void)
 
     while (NX_FrameStep())
     {
-        NX_UpdateStaticMaterialShaderBuffer(shader, 0, sizeof(NX_Vec4), &NX_VEC4(
+        NX_UpdateStaticShader3DBuffer(shader, 0, sizeof(NX_Vec4), &NX_VEC4(
             1.5f + sinf(4.0f * NX_GetElapsedTime()) * 0.5f, 0.0f, 0.0f, 0.0f
         ));
 
@@ -39,15 +39,15 @@ int main(void)
             NX_Transform T = NX_TRANSFORM_IDENTITY;
 
             NX_Color c0 = NX_ColorFromHSV(90.0 * NX_GetElapsedTime(), 1, 1, 1);
-            NX_UpdateDynamicMaterialShaderBuffer(shader, sizeof(NX_Color), &c0);
-            NX_SetMaterialShaderTexture(shader, 0, tex0);
+            NX_UpdateDynamicShader3DBuffer(shader, sizeof(NX_Color), &c0);
+            NX_SetShader3DTexture(shader, 0, tex0);
 
             T.translation.x = -1.5f;
             NX_DrawMesh3D(cube, &material, &T);
 
             NX_Color c1 = NX_ColorFromHSV(90.0 * NX_GetElapsedTime() + 90.0f, 1, 1, 1);
-            NX_UpdateDynamicMaterialShaderBuffer(shader, sizeof(NX_Color), &c1);
-            NX_SetMaterialShaderTexture(shader, 0, tex1);
+            NX_UpdateDynamicShader3DBuffer(shader, sizeof(NX_Color), &c1);
+            NX_SetShader3DTexture(shader, 0, tex1);
 
             T.translation.x = +1.5f;
             NX_DrawMesh3D(cube, &material, &T);

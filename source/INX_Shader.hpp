@@ -1,20 +1,21 @@
-#ifndef NX_RENDER_SHADER_OVERRIDE_HPP
-#define NX_RENDER_SHADER_OVERRIDE_HPP
+#ifndef INX_SHADER_HPP
+#define INX_SHADER_HPP
 
-#include "../../INX_GlobalAssets.hpp"
-#include "../../NX_Texture.hpp"
+#include "./INX_GlobalAssets.hpp"
+#include "./NX_Texture.hpp"
 
-#include "../../Detail/Util/DynamicArray.hpp"
-#include "../../Detail/Util/String.hpp"
+#include "./Detail/Util/DynamicArray.hpp"
+#include "./Detail/Util/String.hpp"
 
-#include "../../Detail/GPU/Pipeline.hpp"
-#include "../../Detail/GPU/Program.hpp"
-#include "../../Detail/GPU/Texture.hpp"
-#include "../../Detail/GPU/Buffer.hpp"
+#include "./Detail/GPU/Pipeline.hpp"
+#include "./Detail/GPU/Program.hpp"
+#include "./Detail/GPU/Texture.hpp"
+#include "./Detail/GPU/Buffer.hpp"
+#include "Detail/Helper.hpp"
+#include "NX/NX_Texture.h"
+#include "SDL3/SDL_stdinc.h"
 
 #include <array>
-
-namespace render {
 
 /**
  * Traits structure to define shader variants for a specific shader class.
@@ -22,12 +23,12 @@ namespace render {
  * 
  * Example:
  *   template<>
- *   struct ShaderTraits<CustomShader> {
+ *   struct INX_ShaderTraits<CustomShader> {
  *       enum Variant { VARIANT_A, VARIANT_B, VARIANT_COUNT };
  *   };
  */
 template <typename T>
-struct ShaderTraits;
+struct INX_ShaderTraits;
 
 /**
  * Base class for custom shader implementations using CRTP pattern.
@@ -36,14 +37,14 @@ struct ShaderTraits;
  * - Texture binding (up to 4 samplers)
  * - Static and dynamic uniform buffer management
  * 
- * Derived classes must specialize ShaderTraits<Derived> with a Variant enum.
+ * Derived classes must specialize INX_ShaderTraits<Derived> with a Variant enum.
  */
 template <typename Derived>
-class ShaderOverride {
+class INX_Shader {
 public:
     /** Shader variant enum from the derived class */
-    using Variant = typename ShaderTraits<Derived>::Variant;
-    static constexpr size_t VariantCount = static_cast<size_t>(ShaderTraits<Derived>::Variant::VARIANT_COUNT);
+    using Variant = typename INX_ShaderTraits<Derived>::Variant;
+    static constexpr size_t VariantCount = static_cast<size_t>(INX_ShaderTraits<Derived>::Variant::VARIANT_COUNT);
 
     /** Texture sampler slots (0-3) */
     enum Sampler { 
@@ -61,58 +62,61 @@ public:
         UNIFORM_COUNT 
     };
 
-    using TextureArray = std::array<const gpu::Texture*, SAMPLER_COUNT>;
+    using TextureArray = std::array<const NX_Texture*, SAMPLER_COUNT>;
 
 public:
     /** Get all currently bound textures */
-    void getTextures(TextureArray& textures);
+    const TextureArray& GetTextures();
     
     /** Bind a texture to a specific sampler slot */
-    void setTexture(int slot, const gpu::Texture* texture);
+    void SetTexture(int slot, const NX_Texture* texture);
 
     /** Upload data to the static uniform buffer */
-    void updateStaticBuffer(size_t offset, size_t size, const void* data);
+    void UpdateStaticBuffer(size_t offset, size_t size, const void* data);
     
     /** Upload data to the dynamic uniform buffer (creates a new range) */
-    void updateDynamicBuffer(size_t size, const void* data);
+    void UpdateDynamicBuffer(size_t size, const void* data);
 
     /** Bind uniform buffers for the current draw call */
-    void bindUniforms(const gpu::Pipeline& pipeline, int dynamicRangeIndex);
+    void BindUniforms(const gpu::Pipeline& pipeline, int dynamicRangeIndex) const;
     
     /** Bind all textures to their respective sampler units */
-    void bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures);
+    void BindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures) const;
 
     /** Reset dynamic buffer state (must be called at the end of each frame) */
-    void clearDynamicBuffer();
+    void ClearDynamicBuffer();
 
     /** Get the shader program for a specific variant */
-    gpu::Program& program(Variant variant);
+    const gpu::Program& GetProgram(Variant variant) const;
     
     /** Get the current dynamic buffer range index */
-    int dynamicRangeIndex() const;
+    int GetDynamicRangeIndex() const;
 
 protected:
-    /** Helper to inject user code into shader source at a marker position */
-    void insertUserCode(util::String& source, const char* marker, const char* userCode);
+    /** Collecting samplers and inserting binding locations */
+    util::String ProcessUserCode(const char* userCode);
+
+    /** Replaces the indicated marker with the user code */
+    void InsertUserCode(util::String& source, const char* marker, const char* userCode);
 
 protected:
     /** Built-in GLSL sampler uniform names */
-    static constexpr const char* SamplerName[SAMPLER_COUNT] = {
+    static constexpr std::array<const char*, SAMPLER_COUNT> SamplerName = {
         "Texture0", "Texture1", "Texture2", "Texture3",
     };
 
     /** Built-in GLSL uniform block names */
-    static constexpr const char* UniformName[UNIFORM_COUNT] = {
+    static constexpr std::array<const char*, UNIFORM_COUNT> UniformName = {
         "StaticBuffer", "DynamicBuffer"
     };
 
     /** Texture unit binding points (31-28) */
-    static constexpr int SamplerBinding[SAMPLER_COUNT] = {
+    static constexpr std::array<int, SAMPLER_COUNT> SamplerBinding = {
         31, 30, 29, 28,
     };
 
     /** Uniform buffer binding points (15-14) */
-    static constexpr int UniformBinding[UNIFORM_COUNT] = {
+    static constexpr std::array<int, UNIFORM_COUNT> UniformBinding = {
         15, 14
     };
 
@@ -125,14 +129,10 @@ protected:
         gpu::Buffer buffer{};
     };
 
-    struct SamplerSlot {
-        const gpu::Texture* texture{};
-        bool exists{};  // Whether this sampler is declared in the shader
-    };
-
 protected:
     std::array<gpu::Program, VariantCount> mPrograms{};
-    std::array<SamplerSlot, SAMPLER_COUNT> mTextures{};
+    std::array<bool, SAMPLER_COUNT> mSamplerExists{};
+    TextureArray mBindedTextures{};
     DynamicBuffer mDynamicBuffer{};
     gpu::Buffer mStaticBuffer{};
 };
@@ -140,31 +140,29 @@ protected:
 /* === Public Implementation === */
 
 template <typename Derived>
-void ShaderOverride<Derived>::getTextures(TextureArray& textures)
+const INX_Shader<Derived>::TextureArray& INX_Shader<Derived>::GetTextures()
 {
-    for (int i = 0; i < SAMPLER_COUNT; i++) {
-        textures[i] = mTextures[i].texture;
-    }
+    return mBindedTextures;
 }
 
 template <typename Derived>
-void ShaderOverride<Derived>::setTexture(int slot, const gpu::Texture* texture)
+void INX_Shader<Derived>::SetTexture(int slot, const NX_Texture* texture)
 {
     if (slot < 0 || slot >= SAMPLER_COUNT) {
         NX_LOG(E, "RENDER: Texture slot %d is out of range [0, %d)", slot, SAMPLER_COUNT);
         return;
     }
 
-    if (!mTextures[slot].exists) {
+    if (!mSamplerExists[slot]) {
         NX_LOG(E, "RENDER: Texture slot %d is not defined in this shader", slot);
         return;
     }
 
-    mTextures[slot].texture = texture;
+    mBindedTextures[slot] = texture;
 }
 
 template <typename Derived>
-void ShaderOverride<Derived>::updateStaticBuffer(size_t offset, size_t size, const void* data)
+void INX_Shader<Derived>::UpdateStaticBuffer(size_t offset, size_t size, const void* data)
 {
     if (!mStaticBuffer.isValid()) {
         NX_LOG(E, "RENDER: No static uniform buffer allocated for this shader");
@@ -183,7 +181,7 @@ void ShaderOverride<Derived>::updateStaticBuffer(size_t offset, size_t size, con
 }
 
 template <typename Derived>
-void ShaderOverride<Derived>::updateDynamicBuffer(size_t size, const void* data)
+void INX_Shader<Derived>::UpdateDynamicBuffer(size_t size, const void* data)
 {
     if (!mDynamicBuffer.buffer.isValid()) {
         NX_LOG(W, "RENDER: No dynamic uniform buffer allocated for this shader");
@@ -230,7 +228,7 @@ void ShaderOverride<Derived>::updateDynamicBuffer(size_t size, const void* data)
 }
 
 template <typename Derived>
-void ShaderOverride<Derived>::bindUniforms(const gpu::Pipeline& pipeline, int dynamicRangeIndex)
+void INX_Shader<Derived>::BindUniforms(const gpu::Pipeline& pipeline, int dynamicRangeIndex) const
 {
     if (mStaticBuffer.isValid()) {
         pipeline.bindUniform(
@@ -251,31 +249,31 @@ void ShaderOverride<Derived>::bindUniforms(const gpu::Pipeline& pipeline, int dy
 }
 
 template <typename Derived>
-void ShaderOverride<Derived>::bindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures)
+void INX_Shader<Derived>::BindTextures(const gpu::Pipeline& pipeline, const TextureArray& textures) const
 {
     for (int i = 0; i < SAMPLER_COUNT; i++) {
-        if (mTextures[i].exists) {
-            const gpu::Texture& tex = textures[i] ? *textures[i] : INX_Assets.Get(INX_TextureAsset::WHITE)->gpu;
+        if (mSamplerExists[i]) {
+            const gpu::Texture& tex = INX_Assets.Select(textures[i], INX_TextureAsset::WHITE)->gpu;
             pipeline.bindTexture(SamplerBinding[i], tex);
         }
     }
 }
 
 template <typename Derived>
-void ShaderOverride<Derived>::clearDynamicBuffer()
+void INX_Shader<Derived>::ClearDynamicBuffer()
 {
     mDynamicBuffer.currentOffset = 0;
     mDynamicBuffer.ranges.clear();
 }
 
 template <typename Derived>
-gpu::Program& ShaderOverride<Derived>::program(Variant variant)
+const gpu::Program& INX_Shader<Derived>::GetProgram(Variant variant) const
 {
     return mPrograms[static_cast<size_t>(variant)];
 }
 
 template <typename Derived>
-int ShaderOverride<Derived>::dynamicRangeIndex() const
+int INX_Shader<Derived>::GetDynamicRangeIndex() const
 {
     return mDynamicBuffer.currentRangeIndex;
 }
@@ -283,15 +281,36 @@ int ShaderOverride<Derived>::dynamicRangeIndex() const
 /* === Protected Implementation === */
 
 template <typename Derived>
-void ShaderOverride<Derived>::insertUserCode(util::String& source, const char* marker, const char* userCode)
+util::String INX_Shader<Derived>::ProcessUserCode(const char* userCode)
 {
-    if (userCode == nullptr) return;
-    
-    if (size_t pos = source.find(marker); pos != std::string::npos) {
+    /* --- Copy the user code to a String --- */
+
+    util::String code = userCode;
+
+    /* --- Collect the samplers and insert the binding slot --- */
+
+    char samplerStr[128]{};
+
+    for (int i = 0; i < SamplerName.size(); i++)
+    {
+        SDL_strlcpy(samplerStr, helper::concatCString("uniform sampler2D ", SamplerName[i]), sizeof(samplerStr));
+
+        if (size_t pos = code.find(samplerStr); pos != util::String::npos) {
+            const char* bindingStr = helper::formatCString("layout(binding=%i)%s", SamplerBinding[i], samplerStr);
+            code.replace(pos, SDL_strlen(samplerStr), bindingStr);
+            mSamplerExists[i] = true;
+        }
+    }
+
+    return code;
+}
+
+template <typename Derived>
+void INX_Shader<Derived>::InsertUserCode(util::String& source, const char* marker, const char* userCode)
+{
+    if (size_t pos = source.find(marker); pos != util::String::npos) {
         source.replace(pos, SDL_strlen(marker), userCode);
     }
 }
 
-} // namespace render
-
-#endif // NX_RENDER_SHADER_OVERRIDE_HPP
+#endif // INX_SHADER_HPP

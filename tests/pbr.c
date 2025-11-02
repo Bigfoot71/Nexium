@@ -22,7 +22,6 @@ int main(void)
 
     NX_Light* light = NX_CreateLight(NX_LIGHT_DIR);
     NX_SetLightDirection(light, NX_VEC3(-1, -1, -1));
-    NX_SetShadowActive(light, true);
     NX_SetLightActive(light, true);
 
     NX_Camera camera = NX_GetDefaultCamera();

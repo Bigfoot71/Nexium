@@ -10,9 +10,10 @@
 #define NX_RENDER_H
 
 #include "./NX_RenderTexture.h"
+#include "./NX_Shader3D.h"
 #include "./NX_Texture.h"
+#include "./NX_Vertex.h"
 #include "./NX_Image.h"
-#include "./NX_Font.h"
 #include "./NX_Math.h"
 #include "./NX_API.h"
 
@@ -91,19 +92,6 @@ typedef enum NX_Projection {
     NX_PROJECTION_PERSPECTIVE,      ///< Standard perspective projection. Objects appear smaller when farther.
     NX_PROJECTION_ORTHOGRAPHIC      ///< Orthographic projection. Objects keep the same size regardless of distance.
 } NX_Projection;
-
-/**
- * @brief Defines the geometric primitive type.
- */
-typedef enum NX_PrimitiveType {
-    NX_PRIMITIVE_POINTS,            ///< Each vertex represents a single point.
-    NX_PRIMITIVE_LINES,             ///< Each pair of vertices forms an independent line segment.
-    NX_PRIMITIVE_LINE_STRIP,        ///< Connected series of line segments sharing vertices.
-    NX_PRIMITIVE_LINE_LOOP,         ///< Closed loop of connected line segments.
-    NX_PRIMITIVE_TRIANGLES,         ///< Each set of three vertices forms an independent triangle.
-    NX_PRIMITIVE_TRIANGLE_STRIP,    ///< Connected strip of triangles sharing vertices.
-    NX_PRIMITIVE_TRIANGLE_FAN       ///< Fan of triangles sharing the first vertex.
-} NX_PrimitiveType;
 
 /**
  * @brief Defines billboard modes for 3D objects.
@@ -298,52 +286,7 @@ typedef struct NX_ReflectionProbe NX_ReflectionProbe;
  */
 typedef struct NX_Light NX_Light;
 
-/**
- * @brief Opaque handle to a 2D shader.
- *
- * Represents a customizable shader for 2D rendering.
- * Provides overrideable vertex/fragment entry points.
- */
-typedef struct NX_Shader2D NX_Shader2D;
-
-/**
- * @brief Opaque handle to a 3D shader.
- *
- * Represents a customizable shader used by a material.
- * Provides overrideable vertex/fragment entry points.
- */
-typedef struct NX_Shader3D NX_Shader3D;
-
 /* === Structures === */
-
-/**
- * @brief Represents a 2D vertex used for rendering.
- *
- * Contains position, texture coordinates, and color.
- * Suitable for 2D meshes, sprites, and UI elements.
- */
-typedef struct NX_Vertex2D {
-    NX_Vec2 position;   ///< Vertex position in 2D space.
-    NX_Vec2 texcoord;   ///< Texture coordinates for this vertex.
-    NX_Color color;     ///< Vertex color (used for tinting).
-} NX_Vertex2D;
-
-/**
- * @brief Represents a 3D vertex used for rendering.
- *
- * Contains position, texture coordinates, normals, tangents, color,
- * bone IDs, and weights for skeletal animation.
- * Suitable for meshes, models, and skinned characters.
- */
-typedef struct NX_Vertex3D {
-    NX_Vec3 position;   ///< Vertex position in 3D space.
-    NX_Vec2 texcoord;   ///< Texture coordinates for this vertex.
-    NX_Vec3 normal;     ///< Normal vector for lighting calculations.
-    NX_Vec4 tangent;    ///< Tangent vector for normal mapping.
-    NX_Color color;     ///< Vertex color (used for tinting).
-    NX_IVec4 boneIds;   ///< IDs of bones affecting this vertex (for skeletal animation).
-    NX_Vec4 weights;    ///< Weights of each bone affecting this vertex.
-} NX_Vertex3D;
 
 /**
  * @brief Represents an axis-aligned bounding box (AABB).
@@ -525,7 +468,7 @@ typedef struct NX_Material {
     NX_BlendMode blend;             ///< Blending mode for rendering. Default: Opaque
     NX_CullMode cull;               ///< Face culling mode. Default: Back face
 
-    NX_Shader3D* shader;      ///< Pointer to an optional material shader. Default: NULL
+    NX_Shader3D* shader;            ///< Pointer to an optional material shader. Default: NULL
 
 } NX_Material;
 
@@ -593,108 +536,6 @@ typedef struct NX_Model {
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
-/**
- * @defgroup Shader Shader Functions
- * @{
- */
-
-/**
- * @brief Creates a custom 2D shader from GLSL source code.
- *
- * 2D shaders allow you to override the default 2D rendering pipeline by providing
- * custom vertex and/or fragment stages. At least one stage must be provided.
- *
- * Vertex stage (`void vertex()`) is called after vertex attributes (position, UV, color)
- * are prepared, allowing you to transform vertices, adjust colors, or apply per-vertex
- * effects such as waves or distortions.
- *
- * Fragment stage (`void fragment()`) is called after all per-vertex data has been
- * interpolated, allowing you to modify final pixel color, sample textures differently,
- * or apply custom shading effects.
- *
- * You have access to built-in global variables such as transformation matrices,
- * UV coordinates, vertex color, and TIME.
- *
- * See the shader documentation for more details. (coming soon)
- *
- * @param vertCode Source code of the vertex shader stage (can be NULL if not used).
- * @param fragCode Source code of the fragment shader stage (can be NULL if not used).
- * @return Pointer to the created NX_Shader2D, or NULL on failure.
- */
-NXAPI NX_Shader2D* NX_CreateShader(const char* vertCode, const char* fragCode);
-
-/**
- * @brief Loads a custom 2D shader from GLSL source files.
- *
- * Same behavior as NX_CreateShader, but loads the shader code from files.
- *
- * @param vertFile Path to the vertex shader file (can be NULL if not used).
- * @param fragFile Path to the fragment shader file (can be NULL if not used).
- * @return Pointer to the created NX_Shader2D, or NULL on failure.
- */
-NXAPI NX_Shader2D* NX_LoadShader(const char* vertFile, const char* fragFile);
-
-/**
- * @brief Destroys a 2D shader and releases associated GPU resources.
- *
- * @param shader Pointer to the NX_Shader2D to destroy.
- */
-NXAPI void NX_DestroyShader(NX_Shader2D* shader);
-
-/**
- * @brief Assigns a texture to a 2D shader sampler.
- *
- * This function sets a texture for a specific sampler slot in a 2D shader.
- * The shader must declare the sampler with one of the predefined names:
- * "Texture0", "Texture1", "Texture2", or "Texture3", all of type `sampler2D`.
- *
- * If `texture` is `NULL`, a default white texture will be used instead.
- *
- * @param shader Pointer to the NX_Shader2D to modify.
- * @param slot Index of the sampler to assign (0 to 3). The slot must correspond
- *             to a sampler declared in the shader with the matching name.
- * @param texture Pointer to the NX_Texture to bind, or `NULL` to use a white texture.
- *
- * @note Up to 4 texture samplers are supported per shader. It is the user's
- *       responsibility to ensure the shader defines the corresponding sampler names.
- */
-NXAPI void NX_SetShaderTexture(NX_Shader2D* shader, int slot, const NX_Texture* texture);
-
-/**
- * @brief Updates the static uniform buffer of a 2D shader.
- *
- * Static buffers are defined in the shader as an uniform block named `StaticBuffer`.
- * They are constant across all draw calls using this shader. If multiple updates are
- * made during a frame, only the last update takes effect.
- *
- * @note Static buffers can be updated partially or completely.
- * @note The uniform block must use `std140` layout and respect 16-byte alignment and padding rules.
- *
- * @param shader Pointer to the NX_Shader2D.
- * @param offset Offset in bytes into the StaticBuffer to update.
- * @param size Size in bytes of the data to upload.
- * @param data Pointer to the data to upload.
- */
-NXAPI void NX_UpdateStaticShaderBuffer(NX_Shader2D* shader, size_t offset, size_t size, const void* data);
-
-/**
- * @brief Updates the dynamic uniform buffer of a 2D shader for the next draw call.
- *
- * Dynamic buffers are defined in the shader as an uniform block named `DynamicBuffer`.
- * They are cleared at the end of each frame and can be set independently for each draw call.
- * This allows you to have different dynamic data per draw call.
- *
- * @note Dynamic buffers must be fully uploaded in a single call.
- * @note The uniform block must use `std140` layout and respect 16-byte alignment and padding rules.
- *
- * @param shader Pointer to the NX_Shader2D.
- * @param size Size in bytes of the data to upload.
- * @param data Pointer to the data to upload.
- */
-NXAPI void NX_UpdateDynamicShaderBuffer(NX_Shader2D* shader, size_t size, const void* data);
-
-/** @} */ // end of Shader
 
 /**
  * @defgroup Draw3D 3D Drawing Functions
@@ -1066,107 +907,6 @@ NXAPI NX_Material NX_GetDefaultMaterial(void);
  * @note Do not call this if the resources are shared between multiple materials.
  */
 NXAPI void NX_DestroyMaterialResources(NX_Material* material);
-
-/** @} */ // end of Material
-
-/**
- * @defgroup Material Material Functions
- * @{
- */
-
-/**
- * @brief Creates a custom material shader from GLSL source code.
- *
- * Material shaders allow you to override the default rendering pipeline by providing
- * custom vertex and/or fragment stages. At least one stage must be provided.
- *
- * Vertex stage (`void vertex()`) is called after material parameters and model/normal
- * matrices are calculated but before the final vertex transformation. You can adjust
- * positions in local space, colors, normals, etc.
- *
- * Fragment stage (`void fragment()`) is called after default albedo, ORM, and normal
- * maps are computed, allowing you to override or tweak these values before lighting.
- *
- * You also have access to built-in global variables such as matrices, vertex attributes,
- * and TIME.
- *
- * See the shader documentation for more details. (comming soon).
- *
- * @param vertCode Source code of the vertex shader stage (can be NULL if not used).
- * @param fragCode Source code of the fragment shader stage (can be NULL if not used).
- * @return Pointer to the created NX_Shader3D, or NULL on failure.
- */
-NXAPI NX_Shader3D* NX_CreateMaterialShader(const char* vertCode, const char* fragCode);
-
-/**
- * @brief Loads a custom material shader from GLSL source files.
- *
- * Same behavior as NX_CreateMaterialShader, but loads the shader code from files.
- *
- * @param vertFile Path to the vertex shader file (can be NULL if not used).
- * @param fragFile Path to the fragment shader file (can be NULL if not used).
- * @return Pointer to the created NX_Shader3D, or NULL on failure.
- */
-NXAPI NX_Shader3D* NX_LoadMaterialShader(const char* vertFile, const char* fragFile);
-
-/**
- * @brief Destroys a material shader and releases associated GPU resources.
- * 
- * @param shader Pointer to the NX_Shader3D to destroy.
- */
-NXAPI void NX_DestroyMaterialShader(NX_Shader3D* shader);
-
-/**
- * @brief Assign a texture to a material shader sampler.
- *
- * This function sets a texture for a specific sampler slot in a material shader.
- * The shader must declare the sampler with one of the predefined names:
- * "Texture0", "Texture1", "Texture2", or "Texture3", all of type `sampler2D`.
- *
- * If `texture` is `NULL`, a default white texture will be used instead.
- *
- * @param shader Pointer to the NX_Shader3D to modify.
- * @param slot Index of the sampler to assign (0 to 3). The slot must correspond
- *             to a sampler declared in the shader with the matching name.
- * @param texture Pointer to the NX_Texture to bind, or `NULL` to use a white texture.
- *
- * @note Up to 4 texture samplers are supported per shader. It is the user's
- *       responsibility to ensure the shader defines the corresponding sampler names.
- */
-NXAPI void NX_SetMaterialShaderTexture(NX_Shader3D* shader, int slot, const NX_Texture* texture);
-
-/**
- * @brief Updates the static uniform buffer of a material shader.
- *
- * Static buffers are defined in the shader as an uniform block named `StaticBuffer`.
- * They are constant across all draw calls using this shader. If multiple updates are
- * made during a frame, only the last update takes effect.
- *
- * @note Static buffers can be updated partially or completely.
- * @note The uniform block must use `std140` layout and respect 16-byte alignment and padding rules.
- *
- * @param shader Pointer to the NX_Shader3D.
- * @param offset Offset in bytes into the StaticBuffer to update.
- * @param size Size in bytes of the data to upload.
- * @param data Pointer to the data to upload.
- */
-NXAPI void NX_UpdateStaticMaterialShaderBuffer(NX_Shader3D* shader, size_t offset, size_t size, const void* data);
-
-/**
- * @brief Updates the dynamic uniform buffer of a material shader for the next draw call.
- *
- * Dynamic buffers are defined in the shader as an uniform block named `DynamicBuffer`.
- * They are cleared at the end of each frame and can be set independently for each draw call.
- * This allows you to have different dynamic data per draw call.
- *
- * @note Dynamic buffers must be fully uploaded in a single call.
- * @note The uniform block must use `std140` layout and respect 16-byte alignment and padding rules.
- *
- * @param shader Pointer to the NX_Shader3D.
- * @param size Size in bytes of the data to upload.
- * @param data Pointer to the data to upload.
- */
-NXAPI void NX_UpdateDynamicMaterialShaderBuffer(NX_Shader3D* shader, size_t size, const void* data);
 
 /** @} */ // end of Material
 
