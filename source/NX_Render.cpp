@@ -95,66 +95,6 @@ void NX_DrawModelInstanced3D(const NX_Model* model, const NX_InstanceBuffer* ins
     );
 }
 
-/* === Environment - Public API === */
-
-NX_Environment NX_GetDefaultEnvironment()
-{
-    return NX_Environment {
-        .background = NX_GRAY,
-        .ambient = NX_DARK_GRAY,
-        .sky = {
-            .cubemap = nullptr,
-            .probe = nullptr,
-            .rotation = NX_QUAT_IDENTITY,
-            .intensity = 1.0f,
-            .specular = 1.0f,
-            .diffuse = 1.0f
-        },
-        .fog = {
-            .mode = NX_FOG_DISABLED,
-            .density = 0.01f,
-            .start = 5.0f,
-            .end = 50.0f,
-            .skyAffect = 0.5f,
-            .color = NX_GRAY
-        },
-        .ssao = {
-            .intensity = 1.0f,
-            .radius = 0.5f,
-            .power = 1.0f,
-            .bias = 0.025f,
-            .enabled = false
-        },
-        .bloom {
-            .mode = NX_BLOOM_DISABLED,
-            .threshold = 0.0f,
-            .softThreshold = 0.5f,
-            .filterRadius = 0,
-            .strength = 0.05f,
-            .levels = {
-                0.0f,
-                0.0f,
-                0.0f,
-                1.0f,
-                0.0f,
-                1.0f,
-                0.0f,
-                0.0f
-            }
-        },
-        .adjustment = {
-            .brightness = 1.0f,
-            .contrast = 1.0f,
-            .saturation = 1.0f
-        },
-        .tonemap = {
-            .mode = NX_TONEMAP_LINEAR,
-            .exposure = 1.0f,
-            .white = 1.0f
-        }
-    };
-}
-
 /* === Mesh - Public API === */
 
 NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int vertexCount, const uint32_t* indices, int indexCount)

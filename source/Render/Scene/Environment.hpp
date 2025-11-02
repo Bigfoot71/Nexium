@@ -1,6 +1,7 @@
 #ifndef NX_SCENE_ENVIRONMENT_HPP
 #define NX_SCENE_ENVIRONMENT_HPP
 
+#include <NX/NX_Environment.h>
 #include <NX/NX_Render.h>
 #include <NX/NX_Macros.h>
 

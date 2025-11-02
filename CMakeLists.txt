@@ -289,6 +289,7 @@ set(NX_SOURCES
 
     "${NX_ROOT_PATH}/source/NX_ReflectionProbe.cpp"
     "${NX_ROOT_PATH}/source/NX_RenderTexture.cpp"
+    "${NX_ROOT_PATH}/source/NX_Environment.cpp"
     "${NX_ROOT_PATH}/source/NX_AudioStream.cpp"
     "${NX_ROOT_PATH}/source/NX_Filesystem.cpp"
     "${NX_ROOT_PATH}/source/NX_AudioClip.cpp"
