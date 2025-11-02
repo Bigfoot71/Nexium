@@ -1,8 +1,16 @@
+/* NX_AudioStream.hpp -- API definition for Nexium's audio stream module
+ *
+ * Copyright (c) 2025 Le Juez Victor
+ *
+ * This software is provided 'as-is', without any express or implied warranty.
+ * For conditions of distribution and use, see accompanying LICENSE file.
+ */
+
 #ifndef NX_AUDIO_STREAM_HPP
 #define NX_AUDIO_STREAM_HPP
 
 #include "./Detail/Util/Memory.hpp"
-#include "./INX_AudioFormat.hpp"
+#include "./INX_AudioUtils.hpp"
 
 #include <stb_vorbis.h>
 #include <dr_flac.h>

@@ -1,4 +1,4 @@
-/* INX_AudioFormat.hpp -- Contains some helper functions
+/* INX_AudioUtils.hpp -- Internal implementation details cotaining audio helpers
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef INX_AUDIO_FORMAT_HPP
-#define INX_AUDIO_FORMAT_HPP
+#ifndef INX_AUDIO_UTILS_HPP
+#define INX_AUDIO_UTILS_HPP
 
 #include <NX/NX_Log.h>
 
@@ -99,4 +99,4 @@ inline INX_AudioFormat INX_GetAudioFormat(const uint8_t* data, size_t size)
     return INX_AudioFormat::Unknown;
 }
 
-#endif // INX_AUDIO_FORMAT_HPP
+#endif // INX_AUDIO_UTILS_HPP

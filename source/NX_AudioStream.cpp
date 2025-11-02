@@ -11,7 +11,7 @@
 
 #include "Detail/Util/DynamicArray.hpp"
 #include "./Detail/Util/Memory.hpp"
-#include "./INX_AudioFormat.hpp"
+#include "./INX_AudioUtils.hpp"
 #include "./NX_AudioStream.hpp"
 #include "./INX_PoolAssets.hpp"
 

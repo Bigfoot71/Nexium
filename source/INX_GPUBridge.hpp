@@ -1,3 +1,11 @@
+/* INX_GPUBridge.hpp -- Contains bridge functions between the public API and GPU abstraction
+ *
+ * Copyright (c) 2025 Le Juez Victor
+ *
+ * This software is provided 'as-is', without any express or implied warranty.
+ * For conditions of distribution and use, see accompanying LICENSE file.
+ */
+
 #ifndef INX_GPU_BRIDGE_HPP
 #define INX_GPU_BRIDGE_HPP
 

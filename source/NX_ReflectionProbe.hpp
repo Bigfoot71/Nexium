@@ -1,4 +1,4 @@
-/* NX_ReflectionProbe.hpp -- API definitions for Nexium's reflection probe module
+/* NX_ReflectionProbe.hpp -- API definition for Nexium's reflection probe module
  *
  * Copyright (c) 2025 Le Juez Victor
  *

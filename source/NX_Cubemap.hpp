@@ -1,4 +1,4 @@
-/* NX_Cubemap.hpp -- API definitions for Nexium's cubemap module
+/* NX_Cubemap.hpp -- API definition for Nexium's cubemap module
  *
  * Copyright (c) 2025 Le Juez Victor
  *

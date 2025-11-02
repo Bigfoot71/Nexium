@@ -1,4 +1,4 @@
-/* ProgramCache.hpp -- Manage internal GPU program storage and on-demand loading
+/* INX_GPUProgramCache.hpp -- Manage internal GPU program storage and on-demand loading
  *
  * Copyright (c) 2025 Le Juez Victor
  *

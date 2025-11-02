@@ -1,4 +1,4 @@
-/* NX_RenderTexture.hpp -- API definitions for Nexium's render texture module
+/* NX_RenderTexture.hpp -- API definition for Nexium's render texture module
  *
  * Copyright (c) 2025 Le Juez Victor
  *

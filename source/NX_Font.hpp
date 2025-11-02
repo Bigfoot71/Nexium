@@ -1,4 +1,4 @@
-/* NX_Font.hpp -- API definitions for Nexium's font module
+/* NX_Font.hpp -- API definition for Nexium's font module
  *
  * Copyright (c) 2025 Le Juez Victor
  *

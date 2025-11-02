@@ -13,7 +13,7 @@
 #include <NX/NX_Log.h>
 
 #include "./Detail/Util/FixedArray.hpp"
-#include "./INX_AudioFormat.hpp"
+#include "./INX_AudioUtils.hpp"
 #include "./INX_PoolAssets.hpp"
 
 #include <stb_vorbis.h>

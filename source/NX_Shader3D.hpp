@@ -1,3 +1,11 @@
+/* NX_Shader3D.hpp -- API definition for Nexium's 3D shader module
+ *
+ * Copyright (c) 2025 Le Juez Victor
+ *
+ * This software is provided 'as-is', without any express or implied warranty.
+ * For conditions of distribution and use, see accompanying LICENSE file.
+ */
+
 #ifndef NX_RENDER_SHADER_3D_HPP
 #define NX_RENDER_SHADER_3D_HPP
 

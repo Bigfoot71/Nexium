@@ -1,3 +1,11 @@
+/* INX_AssetDecoder.hpp -- Internal implementation details containing utils for decoding embedded assets
+ *
+ * Copyright (c) 2025 Le Juez Victor
+ *
+ * This software is provided 'as-is', without any express or implied warranty.
+ * For conditions of distribution and use, see accompanying LICENSE file.
+ */
+
 #ifndef NX_ASSETS_SHADER_DECODER_HPP
 #define NX_ASSETS_SHADER_DECODER_HPP
 

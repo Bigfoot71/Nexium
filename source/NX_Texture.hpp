@@ -1,4 +1,4 @@
-/* NX_Texture.hpp -- API definitions for Nexium's texture module
+/* NX_Texture.hpp -- API definition for Nexium's texture module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
