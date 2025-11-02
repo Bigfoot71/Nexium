@@ -16,6 +16,7 @@
 #include "./INX_PoolAssets.hpp"
 
 #include "./NX_Render2D.hpp"
+#include "./NX_Audio.hpp"
 
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_stdinc.h>
@@ -29,7 +30,6 @@
 #include <alc.h>
 
 #include "./Render/NX_RenderState.hpp"
-#include "NX/NX_Display.h"
 
 #include <memory>
 
@@ -249,28 +249,6 @@ static bool INX_DisplayState_Init(const char* title, int w, int h, const NX_AppD
     return true;
 }
 
-static bool INX_AudioState_Init()
-{
-    SDL_memset(&INX_Audio, 0, sizeof(INX_Audio));
-
-    INX_Audio.alDevice = alcOpenDevice(nullptr);
-    if (INX_Audio.alDevice == nullptr) {
-        NX_LogF("AUDIO: Failed to create OpenAL device; ", SDL_GetError());
-    }
-
-    INX_Audio.alContext = alcCreateContext(INX_Audio.alDevice, nullptr);
-    if (INX_Audio.alContext == nullptr) {
-        alcCloseDevice(INX_Audio.alDevice);
-        NX_LogF("AUDIO: Failed to create OpenAL context; ", SDL_GetError());
-    }
-
-    if (!alcMakeContextCurrent(INX_Audio.alContext)) {
-        return false;
-    }
-
-    return true;
-}
-
 static bool INX_KeyboardState_Init()
 {
     SDL_memset(&INX_Keyboard, 0, sizeof(INX_Keyboard));
@@ -342,7 +320,7 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
         return false;
     }
 
-    if (!INX_AudioState_Init()) {
+    if (!INX_AudioState_Init(desc)) {
         return false;
     }
 
@@ -381,12 +359,7 @@ void NX_Quit()
     INX_Pool.UnloadAll();
 
     INX_Render2DState_Quit();
-
-    alcDestroyContext(INX_Audio.alContext);
-    INX_Audio.alContext = nullptr;
-
-    alcCloseDevice(INX_Audio.alDevice);
-    INX_Audio.alDevice = nullptr;
+    INX_AudioState_Quit();
 
     SDL_GL_DestroyContext(INX_Display.glContext);
     INX_Display.glContext = nullptr;

@@ -6,11 +6,14 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#include <NX/NX_Audio.h>
+#include "./NX_Audio.hpp"
+#include <NX/NX_Log.h>
 
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_assert.h>
+#include <SDL3/SDL_error.h>
 #include <cmath>
+#include <alc.h>
 #include <al.h>
 
 // ============================================================================
@@ -68,6 +71,48 @@
 #define STB_VORBIS_FREE(p)      SDL_free(p)
 
 #include <stb_vorbis.c>
+
+// ============================================================================
+// LOCAL STATE
+// ============================================================================
+
+static struct INX_AudioState {
+    ALCcontext* alContext{};
+    ALCdevice* alDevice{};
+} INX_Audio{};
+
+// ============================================================================
+// INTERNAL FUNCTIONS
+// ============================================================================
+
+bool INX_AudioState_Init(NX_AppDesc* desc)
+{
+    INX_Audio.alDevice = alcOpenDevice(nullptr);
+    if (INX_Audio.alDevice == nullptr) {
+        NX_LogF("AUDIO: Failed to create OpenAL device; ", SDL_GetError());
+    }
+
+    INX_Audio.alContext = alcCreateContext(INX_Audio.alDevice, nullptr);
+    if (INX_Audio.alContext == nullptr) {
+        alcCloseDevice(INX_Audio.alDevice);
+        NX_LogF("AUDIO: Failed to create OpenAL context; ", SDL_GetError());
+    }
+
+    if (!alcMakeContextCurrent(INX_Audio.alContext)) {
+        return false;
+    }
+
+    return true;
+}
+
+void INX_AudioState_Quit()
+{
+    alcDestroyContext(INX_Audio.alContext);
+    INX_Audio.alContext = nullptr;
+
+    alcCloseDevice(INX_Audio.alDevice);
+    INX_Audio.alDevice = nullptr;
+}
 
 // ============================================================================
 // PUBLIC API
