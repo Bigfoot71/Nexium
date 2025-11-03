@@ -276,7 +276,6 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/Detail/GPU/Framebuffer.cpp"
     "${NX_ROOT_PATH}/source/Detail/GPU/Texture.cpp"
     "${NX_ROOT_PATH}/source/Detail/GPU/Buffer.cpp"
-    "${NX_ROOT_PATH}/source/Detail/Helper.cpp"
 
     "${NX_ROOT_PATH}/source/Render/Scene/LightManager.cpp"
     "${NX_ROOT_PATH}/source/Render/Scene/Scene.cpp"
@@ -285,6 +284,7 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/INX_GlobalAssets.cpp"
     "${NX_ROOT_PATH}/source/INX_GlobalState.cpp"
     "${NX_ROOT_PATH}/source/INX_GlobalPool.cpp"
+    "${NX_ROOT_PATH}/source/INX_Utils.cpp"
 
     "${NX_ROOT_PATH}/source/NX_ReflectionProbe.cpp"
     "${NX_ROOT_PATH}/source/NX_InstanceBuffer.cpp"

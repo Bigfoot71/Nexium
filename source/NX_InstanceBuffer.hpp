@@ -13,7 +13,7 @@
 #include <NX/NX_Math.h>
 
 #include "./Detail/GPU/Buffer.hpp"
-#include "./Detail/Helper.hpp"
+#include "./INX_Utils.hpp"
 #include <array>
 
 // ============================================================================
@@ -48,7 +48,7 @@ struct NX_InstanceBuffer {
 
 inline const gpu::Buffer* NX_InstanceBuffer::GetBuffer(NX_InstanceData type) const
 {
-    const gpu::Buffer& buffer = this->buffers[helper::BitScanForward(type)];
+    const gpu::Buffer& buffer = this->buffers[INX_BitScanForward(type)];
     return buffer.isValid() ? &buffer : nullptr;
 }
 

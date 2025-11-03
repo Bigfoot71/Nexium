@@ -23,7 +23,6 @@
 #include "./Render/NX_RenderState.hpp"
 #include "./NX_InstanceBuffer.hpp"
 #include "./INX_GlobalAssets.hpp"
-#include "./Detail/Helper.hpp"
 
 /* === Draw3D - Public API === */
 

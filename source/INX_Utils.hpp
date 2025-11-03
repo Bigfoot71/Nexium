@@ -1,4 +1,4 @@
-/* Helper.hpp -- Contains a collection of various helpers
+/* INX_Utils.hpp -- Contains a collection of various helpers
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef NX_DETAIL_HELPER_HPP
-#define NX_DETAIL_HELPER_HPP
+#ifndef INX_UTILS_HPP
+#define INX_UTILS_HPP
 
 #include <SDL3/SDL_stdinc.h>
 #include <NX/NX_BitUtils.h>
@@ -18,8 +18,6 @@
 #include <intrin.h>
 #endif
 
-namespace helper {
-
 /**
  * @brief Find the index of the first set bit (least significant 1) in a 32-bit bitfield.
  * 
@@ -29,7 +27,7 @@ namespace helper {
  * @note Uses constexpr iteration if evaluated at compile-time.
  *       Uses compiler intrinsics for fast runtime evaluation.
  */
-constexpr int BitScanForward(uint32_t bitfield)
+constexpr int INX_BitScanForward(uint32_t bitfield)
 {
     if (std::is_constant_evaluated()) {
         for (int i = 0; i < 32; ++i) {
@@ -52,7 +50,7 @@ constexpr int BitScanForward(uint32_t bitfield)
  * @note Uses constexpr iteration if evaluated at compile-time.
  *       Uses compiler intrinsics for fast runtime evaluation.
  */
-constexpr int BitScanReverse(uint32_t bitfield)
+constexpr int INX_BitScanReverse(uint32_t bitfield)
 {
     if (std::is_constant_evaluated()) {
         for (int i = 31; i >= 0; --i) {
@@ -74,10 +72,10 @@ constexpr int BitScanReverse(uint32_t bitfield)
  * @param func The callable to invoke for each set bit index.
  */
 template <typename Func>
-inline void ForEachBit(uint32_t bitfield, Func&& func)
+inline void INX_ForEachBit(uint32_t bitfield, Func&& func)
 {
     while (bitfield != 0) {
-        int index = helper::BitScanForward(bitfield);
+        int index = INX_BitScanForward(bitfield);
         func(index);
         bitfield &= ~(1u << index);
     }
@@ -91,7 +89,7 @@ inline void ForEachBit(uint32_t bitfield, Func&& func)
  * 
  * @note The returned pointer points inside the original string.
  */
-inline const char* GetFileExt(const char* filePath)
+inline const char* INX_GetFileExt(const char* filePath)
 {
     const char* dot = SDL_strrchr(filePath, '.');
     if (!dot || dot == filePath) return nullptr;
@@ -107,7 +105,7 @@ inline const char* GetFileExt(const char* filePath)
  * 
  * @note The result is stored in a static buffer and must be used immediately.
  */
-const char* ConcatCStr(const char* a, const char* b);
+const char* INX_ConcatCString(const char* a, const char* b);
 
 /**
  * @brief Format a string using a printf-style format string and variadic arguments.
@@ -118,8 +116,6 @@ const char* ConcatCStr(const char* a, const char* b);
  * 
  * @note The result is stored in a static buffer and must be consumed immediately.
  */
-const char* FormatCStr(const char* fmt, ...);
+const char* INX_FormatCString(const char* fmt, ...);
 
-} // namespace helper
-
-#endif // NX_DETAIL_HELPER_HPP
+#endif // INX_UTILS_HPP

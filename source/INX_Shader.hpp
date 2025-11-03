@@ -19,9 +19,7 @@
 #include "./Detail/GPU/Program.hpp"
 #include "./Detail/GPU/Texture.hpp"
 #include "./Detail/GPU/Buffer.hpp"
-#include "Detail/Helper.hpp"
-#include "NX/NX_Texture.h"
-#include "SDL3/SDL_stdinc.h"
+#include "./INX_Utils.hpp"
 
 #include <array>
 
@@ -301,10 +299,10 @@ util::String INX_Shader<Derived>::ProcessUserCode(const char* userCode)
 
     for (int i = 0; i < SamplerName.size(); i++)
     {
-        SDL_strlcpy(samplerStr, helper::ConcatCStr("uniform sampler2D ", SamplerName[i]), sizeof(samplerStr));
+        SDL_strlcpy(samplerStr, INX_ConcatCString("uniform sampler2D ", SamplerName[i]), sizeof(samplerStr));
 
         if (size_t pos = code.find(samplerStr); pos != util::String::npos) {
-            const char* bindingStr = helper::FormatCStr("layout(binding=%i)%s", SamplerBinding[i], samplerStr);
+            const char* bindingStr = INX_FormatCString("layout(binding=%i)%s", SamplerBinding[i], samplerStr);
             code.replace(pos, SDL_strlen(samplerStr), bindingStr);
             mSamplerExists[i] = true;
         }

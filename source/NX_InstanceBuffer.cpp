@@ -8,6 +8,7 @@
 
 #include "./NX_InstanceBuffer.hpp"
 #include "./INX_GlobalPool.hpp"
+#include "./INX_Utils.hpp"
 
 // ============================================================================
 // PUBLIC API
@@ -20,7 +21,7 @@ NX_InstanceBuffer* NX_CreateInstanceBuffer(NX_InstanceData bitfield, size_t coun
     buffer->bufferFlags = bitfield;
     buffer->allocatedCount = count;
 
-    helper::ForEachBit(bitfield, [buffer, count](int index) {
+    INX_ForEachBit(bitfield, [buffer, count](int index) {
         size_t size = count * NX_InstanceBuffer::TypeSizes[index];
         buffer->buffers[index] = gpu::Buffer(GL_ARRAY_BUFFER, size, nullptr, GL_DYNAMIC_DRAW);
     });
@@ -47,7 +48,7 @@ void NX_RaeallocInstanceBuffer(NX_InstanceBuffer* buffer, size_t count, bool kee
 
 void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type, size_t offset, size_t count, const void* data)
 {
-    type = helper::BitScanForward(type);
+    type = INX_BitScanForward(type);
     gpu::Buffer& gpu = buffer->buffers[type];
 
     offset *= NX_InstanceBuffer::TypeSizes[type];
@@ -69,7 +70,7 @@ void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type, si
 
 void* NX_MapInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type)
 {
-    type = helper::BitScanForward(type);
+    type = INX_BitScanForward(type);
     gpu::Buffer& gpu = buffer->buffers[type];
 
     if (!gpu.isValid()) {
@@ -82,7 +83,7 @@ void* NX_MapInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type)
 
 void* NX_MapInstanceBufferRange(NX_InstanceBuffer* buffer, NX_InstanceData type, size_t offset, size_t count)
 {
-    type = helper::BitScanForward(type);
+    type = INX_BitScanForward(type);
     gpu::Buffer& gpu = buffer->buffers[type];
 
     offset *= NX_InstanceBuffer::TypeSizes[type];
@@ -104,7 +105,7 @@ void* NX_MapInstanceBufferRange(NX_InstanceBuffer* buffer, NX_InstanceData type,
 
 void NX_UnmapInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type)
 {
-    buffer->buffers[helper::BitScanForward(type)].unmap();
+    buffer->buffers[INX_BitScanForward(type)].unmap();
 }
 
 void NX_QueryInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData* bitfield, size_t* count)

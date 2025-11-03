@@ -13,7 +13,7 @@
 #include "./Importer/SceneImporter.hpp"
 #include "./Importer/MeshImporter.hpp"
 #include "./Importer/BoneImporter.hpp"
-#include "./Detail/Helper.hpp"
+#include "./INX_Utils.hpp"
 
 #include "./INX_GlobalPool.hpp"
 #include <NX/NX_Filesystem.h>
@@ -34,7 +34,7 @@ NX_Model* NX_LoadModel(const char* filePath)
         return nullptr;
     }
 
-    NX_Model* model = NX_LoadModelFromData(fileData, fileSize, helper::GetFileExt(filePath));
+    NX_Model* model = NX_LoadModelFromData(fileData, fileSize, INX_GetFileExt(filePath));
     NX_Free(fileData);
 
     return model;
@@ -135,7 +135,7 @@ NX_Animation** NX_LoadAnimations(const char* filePath, int* animCount, int targe
     void* fileData = NX_LoadFile(filePath, &fileSize);
 
     NX_Animation** animations = NX_LoadAnimationFromData(
-        fileData, fileSize, helper::GetFileExt(filePath),
+        fileData, fileSize, INX_GetFileExt(filePath),
         animCount, targetFrameRate
     );
 
