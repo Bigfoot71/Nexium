@@ -1,4 +1,4 @@
-/* NX_Light.hpp -- Implementation of the API for lights
+/* NX_Light.hpp -- API definition for Nexium's light module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
