@@ -9,9 +9,9 @@
 #ifndef NX_GPU_FRAMEBUFFER_HPP
 #define NX_GPU_FRAMEBUFFER_HPP
 
+#include "../../INX_BuildInfo.hpp"
 #include "../Util/FixedArray.hpp"
 #include "./TextureView.hpp"
-#include "../../INX_BuildInfo.hpp"
 #include "./Texture.hpp"
 
 #include <NX/NX_Log.h>

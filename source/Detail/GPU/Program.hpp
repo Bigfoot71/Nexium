@@ -12,8 +12,8 @@
 #include <NX/NX_Math.h>
 #include <NX/NX_Log.h>
 
-#include "../Util/FixedArray.hpp"
 #include "../../INX_BuildInfo.hpp"
+#include "../Util/FixedArray.hpp"
 #include "./Shader.hpp"
 
 #include <SDL3/SDL_assert.h>
