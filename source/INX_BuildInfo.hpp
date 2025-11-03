@@ -1,4 +1,4 @@
-/* BuildInfo.hpp -- Contains build information
+/* INX_BuildInfo.hpp -- Contains build information
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,12 +6,10 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef NX_DETAIL_BUILD_INFO_HPP
-#define NX_DETAIL_BUILD_INFO_HPP
+#ifndef INX_BUILD_INFO_HPP
+#define INX_BUILD_INFO_HPP
 
-namespace detail {
-
-struct BuildInfo {
+struct INX_BuildInfo {
 #ifdef NDEBUG
 static constexpr bool release = true;
 static constexpr bool debug = false;
@@ -21,6 +19,4 @@ static constexpr bool debug = true;
 #endif
 };
 
-} // namespace detail
-
-#endif // NX_DETAIL_BUILD_INFO_HPP
+#endif // INX_BUILD_INFO_HPP

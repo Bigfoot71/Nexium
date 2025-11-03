@@ -11,7 +11,7 @@
 
 #include "../Util/FixedArray.hpp"
 #include "./TextureView.hpp"
-#include "../BuildInfo.hpp"
+#include "../../INX_BuildInfo.hpp"
 #include "./Texture.hpp"
 
 #include <NX/NX_Log.h>
@@ -154,7 +154,7 @@ inline Framebuffer::Framebuffer(std::initializer_list<const Texture*> colorAttac
 
     /* --- Validate texture attachments (debug only) --- */
 
-    if constexpr (detail::BuildInfo::debug) {
+    if constexpr (INX_BuildInfo::debug) {
         NX_IVec2 expectedDims{};
         bool first = true;
         for (const Texture* tex : colorAttachments)  {

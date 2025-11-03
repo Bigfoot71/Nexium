@@ -13,7 +13,7 @@
 #include <NX/NX_Log.h>
 
 #include "../Util/FixedArray.hpp"
-#include "../BuildInfo.hpp"
+#include "../../INX_BuildInfo.hpp"
 #include "./Shader.hpp"
 
 #include <SDL3/SDL_assert.h>
@@ -411,7 +411,7 @@ inline bool Program::initProgram(const Shaders&... shaders) noexcept
         return false;
     }
 
-    if constexpr (detail::BuildInfo::debug) {
+    if constexpr (INX_BuildInfo::debug) {
         SDL_assert(validateShaderStages(shaders...));
     }
 

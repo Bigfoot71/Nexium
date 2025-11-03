@@ -138,7 +138,7 @@ void MipBuffer::downsample(const gpu::Pipeline& pipeline, int firstLevel, Func&&
     }
 
     // Reset mipmap sampling levels for debugging with RenderDoc
-    if constexpr (detail::BuildInfo::debug) {
+    if constexpr (INX_BuildInfo::debug) {
         mTexture.setMipLevelRange(0, mTexture.numLevels() - 1);
     }
 }
@@ -168,7 +168,7 @@ void MipBuffer::upsample(const gpu::Pipeline& pipeline, Func&& f) noexcept
     }
 
     // Reset mipmap sampling levels for debugging with RenderDoc
-    if constexpr (detail::BuildInfo::debug) {
+    if constexpr (INX_BuildInfo::debug) {
         mTexture.setMipLevelRange(0, mTexture.numLevels() - 1);
     }
 }

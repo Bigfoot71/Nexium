@@ -13,7 +13,6 @@
 #include <NX/NX_Window.h>
 #include <NX/NX_Render.h>
 
-#include "../../Detail/BuildInfo.hpp"
 #include "../../NX_RenderTexture.hpp"
 #include "../../INX_GlobalPool.hpp"
 #include "../../NX_Texture.hpp"
