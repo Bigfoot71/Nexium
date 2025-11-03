@@ -1,28 +1,29 @@
-#ifndef NX_RENDER_ANIMATION_IMPORTER_HPP
-#define NX_RENDER_ANIMATION_IMPORTER_HPP
+#ifndef NX_IMPORT_ANIMATION_IMPORTER_HPP
+#define NX_IMPORT_ANIMATION_IMPORTER_HPP
 
 #include <NX/NX_Render.h>
 
-#include "../../../Detail/Util/ObjectPool.hpp"
+#include "../INX_GlobalPool.hpp"
 #include "./SceneImporter.hpp"
 #include "./AssimpHelper.hpp"
+#include "NX/NX_Model.h"
 #include <SDL3/SDL_assert.h>
 
-namespace render {
+namespace import {
 
 /* === Declaration === */
 
 class AnimationImporter {
 public:
     /** Constructors */
-    AnimationImporter(const SceneImporter& importer, util::ObjectPool<NX_ModelAnimation, 256>& poolAnimation);
+    AnimationImporter(const SceneImporter& importer);
 
     /** Loads all animations contained in the imported scene */
-    NX_ModelAnimation** loadAnimations(int* animCount, int targetFrameRate);
+    NX_Animation** loadAnimations(int* animCount, int targetFrameRate);
 
 private:
     /** Load an animation */
-    bool loadAnimation(NX_ModelAnimation* animation, const aiAnimation* aiAnim, int targetFrameRate);
+    bool loadAnimation(NX_Animation* animation, const aiAnimation* aiAnim, int targetFrameRate);
 
     /** Calculate a pose recursively */
     void getPoseRecursive(
@@ -37,18 +38,17 @@ private:
 
 private:
     const SceneImporter& mImporter;
-    util::ObjectPool<NX_ModelAnimation, 256>& mPoolAnimation;
 };
 
 /* === Public Implementation === */
 
-inline AnimationImporter::AnimationImporter(const SceneImporter& importer, util::ObjectPool<NX_ModelAnimation, 256>& poolAnimation)
-    : mImporter(importer), mPoolAnimation(poolAnimation)
+inline AnimationImporter::AnimationImporter(const SceneImporter& importer)
+    : mImporter(importer)
 {
     SDL_assert(importer.isValid());
 }
 
-inline NX_ModelAnimation** AnimationImporter::loadAnimations(int* animCount, int targetFrameRate)
+inline NX_Animation** AnimationImporter::loadAnimations(int* animCount, int targetFrameRate)
 {
     *animCount = 0;
 
@@ -57,8 +57,8 @@ inline NX_ModelAnimation** AnimationImporter::loadAnimations(int* animCount, int
         return nullptr;
     }
 
-    NX_ModelAnimation** animations = static_cast<NX_ModelAnimation**>(SDL_calloc(
-        mImporter.animationCount(), sizeof(NX_ModelAnimation*)
+    NX_Animation** animations = static_cast<NX_Animation**>(SDL_calloc(
+        mImporter.animationCount(), sizeof(NX_Animation*)
     ));
 
     if (animations == nullptr) {
@@ -68,7 +68,7 @@ inline NX_ModelAnimation** AnimationImporter::loadAnimations(int* animCount, int
 
     size_t successCount = 0;
     for (uint32_t i = 0; i < mImporter.animationCount(); i++) {
-        animations[successCount] = mPoolAnimation.create();
+        animations[successCount] = INX_Pool.Create<NX_Animation>();
         const aiAnimation* aiAnim = mImporter.animation(i);
         if (loadAnimation(animations[successCount], aiAnim, targetFrameRate)) {
             successCount++;
@@ -86,7 +86,7 @@ inline NX_ModelAnimation** AnimationImporter::loadAnimations(int* animCount, int
 
     if (successCount < mImporter.animationCount()) {
         NX_LOG(W, "RENDER: Only %d out of %d animations were successfully loaded", successCount, mImporter.animationCount());
-        NX_ModelAnimation** resizedAnims = static_cast<NX_ModelAnimation**>(SDL_realloc(animations, successCount * sizeof(NX_ModelAnimation*)));
+        NX_Animation** resizedAnims = static_cast<NX_Animation**>(SDL_realloc(animations, successCount * sizeof(NX_Animation*)));
         if (resizedAnims) animations = resizedAnims;
     }
 
@@ -97,7 +97,7 @@ inline NX_ModelAnimation** AnimationImporter::loadAnimations(int* animCount, int
 
 /* === Private Implementation === */
 
-inline bool AnimationImporter::loadAnimation(NX_ModelAnimation* animation, const aiAnimation* aiAnim, int targetFrameRate)
+inline bool AnimationImporter::loadAnimation(NX_Animation* animation, const aiAnimation* aiAnim, int targetFrameRate)
 {
     /* --- Initialize animation name --- */
 
@@ -241,7 +241,7 @@ inline void AnimationImporter::getPoseRecursive(
     else {
         // No animation for this node, use its default bind transform
         transform = NX_Mat4Decompose(&matrix);
-        matrix = assimp_cast<NX_Mat4>(node->mTransformation);
+        matrix = AssimpCast<NX_Mat4>(node->mTransformation);
     }
 
     /* --- Convert local transform to global by multiplying with parent's global matrix --- */
@@ -298,7 +298,7 @@ inline NX_Vec3 AnimationImporter::interpolateKeyFrames(const aiVectorKey* keys, 
     /* --- Case where there is only one key --- */
 
     if (numKeys == 1) {
-        return assimp_cast<NX_Vec3>(keys[0].mValue);
+        return AssimpCast<NX_Vec3>(keys[0].mValue);
     }
 
     /* --- Find surrounding keys --- */
@@ -314,7 +314,7 @@ inline NX_Vec3 AnimationImporter::interpolateKeyFrames(const aiVectorKey* keys, 
     /* --- Clamp to last key --- */
 
     if (index >= numKeys - 1) {
-        return assimp_cast<NX_Vec3>(keys[numKeys - 1].mValue);
+        return AssimpCast<NX_Vec3>(keys[numKeys - 1].mValue);
     }
 
     /* --- Interpolate using Assimp::Interpolator --- */
@@ -325,7 +325,7 @@ inline NX_Vec3 AnimationImporter::interpolateKeyFrames(const aiVectorKey* keys, 
     aiVector3D result;
     Assimp::Interpolator<aiVectorKey>()(result, keys[index], keys[index + 1], factor);
 
-    return assimp_cast<NX_Vec3>(result);
+    return AssimpCast<NX_Vec3>(result);
 }
 
 inline NX_Quat AnimationImporter::interpolateKeyFrames(const aiQuatKey* keys, uint32_t numKeys, float time)
@@ -333,7 +333,7 @@ inline NX_Quat AnimationImporter::interpolateKeyFrames(const aiQuatKey* keys, ui
     /* --- Case where there is only one key --- */
 
     if (numKeys == 1) {
-        return assimp_cast<NX_Quat>(keys[0].mValue);
+        return AssimpCast<NX_Quat>(keys[0].mValue);
     }
 
     /* --- Find surrounding keys --- */
@@ -349,7 +349,7 @@ inline NX_Quat AnimationImporter::interpolateKeyFrames(const aiQuatKey* keys, ui
     /* --- Clamp to last key --- */
 
     if (index >= numKeys - 1) {
-        return assimp_cast<NX_Quat>(keys[numKeys - 1].mValue);
+        return AssimpCast<NX_Quat>(keys[numKeys - 1].mValue);
     }
 
     /* --- Interpolate using Assimp::Interpolator --- */
@@ -360,9 +360,9 @@ inline NX_Quat AnimationImporter::interpolateKeyFrames(const aiQuatKey* keys, ui
     aiQuaternion result;
     Assimp::Interpolator<aiQuatKey>()(result, keys[index], keys[index + 1], factor);
 
-    return assimp_cast<NX_Quat>(result);
+    return AssimpCast<NX_Quat>(result);
 }
 
-} // namespace render
+} // namespace import
 
-#endif // NX_RENDER_ANIMATION_IMPORTER_HPP
+#endif // NX_IMPORT_ANIMATION_IMPORTER_HPP

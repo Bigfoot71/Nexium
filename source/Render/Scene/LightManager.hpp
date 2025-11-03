@@ -16,7 +16,8 @@
 #include "../../Detail/Util/ObjectRing.hpp"
 #include "../../Detail/GPU/Texture.hpp"
 #include "../../Detail/GPU/Buffer.hpp"
-#include "../NX_Light.hpp"
+#include "../../INX_GlobalPool.hpp"
+#include "../../NX_Light.hpp"
 
 #include "./DrawCallManager.hpp"
 #include "./ViewFrustum.hpp"
@@ -95,9 +96,6 @@ private:
     };
 
 private:
-    /** Object Pools */
-    util::ObjectPool<NX_Light, 32> mLights{};
-
     /** Shadow framebuffers and targets (one per light type) */
     std::array<gpu::Framebuffer, NX_LIGHT_TYPE_COUNT> mFramebufferShadow{};     ///< Contains framebuffers per light type
     std::array<gpu::Texture, NX_LIGHT_TYPE_COUNT> mTargetShadow{};              ///< Contains textures arrays per light type (cubemap for omni-lights)
@@ -130,12 +128,12 @@ private:
 
 inline NX_Light* LightManager::create(NX_LightType type)
 {
-    return mLights.create(type);
+    return INX_Pool.Create<NX_Light>(type);
 }
 
 inline void LightManager::destroy(NX_Light* light)
 {
-    mLights.destroy(light);
+    INX_Pool.Destroy(light);
 }
 
 inline void LightManager::process(const ProcessParams& params)

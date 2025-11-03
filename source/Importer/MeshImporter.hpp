@@ -1,24 +1,24 @@
-#ifndef NX_RENDER_MESH_IMPORTER_HPP
-#define NX_RENDER_MESH_IMPORTER_HPP
+#ifndef NX_IMPORT_MESH_IMPORTER_HPP
+#define NX_IMPORT_MESH_IMPORTER_HPP
 
 #include <NX/NX_Render.h>
 
 #include "./SceneImporter.hpp"
 #include "./AssimpHelper.hpp"
-#include "../PoolMesh.hpp"
+#include "NX/NX_Mesh.h"
 
 #include <SDL3/SDL_assert.h>
 #include <assimp/mesh.h>
 #include <float.h>
 
-namespace render {
+namespace import {
 
 /* === Declaration === */
 
 class MeshImporter {
 public:
     /** Constructors */
-    MeshImporter(const SceneImporter& importer, PoolMesh& poolMesh);
+    MeshImporter(const SceneImporter& importer);
 
     /** Loads the meshes and stores them in the specified model */
     bool loadMeshes(NX_Model* model);
@@ -33,14 +33,12 @@ private:
 
 private:
     const SceneImporter& mImporter;
-    PoolMesh& mPoolMesh;
 };
 
 /* === Public Implementation === */
 
-inline MeshImporter::MeshImporter(const SceneImporter& importer, PoolMesh& poolMesh)
+inline MeshImporter::MeshImporter(const SceneImporter& importer)
     : mImporter(importer)
-    , mPoolMesh(poolMesh)
 {
     SDL_assert(importer.isValid());
 }
@@ -64,7 +62,7 @@ inline bool MeshImporter::loadMeshes(NX_Model* model)
 
     if (!loadRecursive(model, mImporter.rootNode(), NX_MAT4_IDENTITY)) {
         for (int i = 0; i < model->meshCount; i++) {
-            mPoolMesh.destroyMesh(model->meshes[i]);
+            NX_DestroyMesh(model->meshes[i]);
         }
         SDL_free(model->meshMaterials);
         SDL_free(model->meshes);
@@ -86,7 +84,7 @@ inline bool MeshImporter::loadMeshes(NX_Model* model)
 
 inline bool MeshImporter::loadRecursive(NX_Model* model, const aiNode* node, const NX_Mat4& parentTransform)
 {
-    NX_Mat4 localTransform = assimp_cast<NX_Mat4>(node->mTransformation);
+    NX_Mat4 localTransform = AssimpCast<NX_Mat4>(node->mTransformation);
     NX_Mat4 globalTransform = NX_Mat4Mul(&localTransform, &parentTransform);
 
     for (uint32_t i = 0; i < node->mNumMeshes; i++)
@@ -174,7 +172,7 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
 
         /* --- Position --- */
 
-        NX_Vec3 lPosition = assimp_cast<NX_Vec3>(mesh->mVertices[i]);
+        NX_Vec3 lPosition = AssimpCast<NX_Vec3>(mesh->mVertices[i]);
         NX_Vec3 gPosition = lPosition * transform;
 
         // NOTE: Meshes with bones keep vertices in local space and will rely on bind pose if needed
@@ -195,7 +193,7 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
         /* --- Texture coordinates --- */
 
         if (mesh->mTextureCoords[0] && mesh->mNumUVComponents[0] >= 2) {
-            vertex.texcoord = assimp_cast<NX_Vec2>(mesh->mTextureCoords[0][i]);
+            vertex.texcoord = AssimpCast<NX_Vec2>(mesh->mTextureCoords[0][i]);
         }
         else {
             vertex.texcoord = NX_VEC2(0.0f, 0.0f);
@@ -204,7 +202,7 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
         /* --- Normals --- */
 
         if (mesh->mNormals) {
-            vertex.normal = assimp_cast<NX_Vec3>(mesh->mNormals[i]);
+            vertex.normal = AssimpCast<NX_Vec3>(mesh->mNormals[i]);
             if constexpr (!HasBones) vertex.normal *= matNormal;
         }
         else {
@@ -215,8 +213,8 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
 
         if (mesh->mNormals && mesh->mTangents && mesh->mBitangents) {
             const NX_Vec3& normal = vertex.normal;
-            NX_Vec3 tangent = assimp_cast<NX_Vec3>(mesh->mTangents[i]);
-            NX_Vec3 bitangent = assimp_cast<NX_Vec3>(mesh->mBitangents[i]);
+            NX_Vec3 tangent = AssimpCast<NX_Vec3>(mesh->mTangents[i]);
+            NX_Vec3 bitangent = AssimpCast<NX_Vec3>(mesh->mBitangents[i]);
             if constexpr (!HasBones) tangent *= matNormal, bitangent *= matNormal;
             NX_Vec3 reconstructedBitangent = NX_Vec3Cross(normal, tangent);
             float handedness = NX_Vec3Dot(reconstructedBitangent, bitangent);
@@ -366,13 +364,7 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
 
     /* --- Create the mesh in the pool and return it --- */
 
-    NX_Mesh* modelMesh = mPoolMesh.createMesh(
-        NX_PRIMITIVE_TRIANGLES,
-        vertices, vertexCount,
-        indices, indexCount,
-        aabb, true
-    );
-
+    NX_Mesh* modelMesh = NX_CreateMeshFrom(NX_PRIMITIVE_TRIANGLES, vertices, vertexCount, indices, indexCount, &aabb);
     if (mesh == nullptr) {
         SDL_free(vertices);
         SDL_free(indices);
@@ -382,6 +374,6 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
     return modelMesh;
 }
 
-} // namespace render
+} // namespace import
 
-#endif // NX_RENDER_MESH_IMPORTER_HPP
+#endif // NX_IMPORT_MESH_IMPORTER_HPP

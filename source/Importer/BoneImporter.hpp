@@ -1,5 +1,5 @@
-#ifndef NX_RENDER_BONE_IMPORTER_HPP
-#define NX_RENDER_BONE_IMPORTER_HPP
+#ifndef NX_IMPORT_BONE_IMPORTER_HPP
+#define NX_IMPORT_BONE_IMPORTER_HPP
 
 #include <NX/NX_Render.h>
 
@@ -10,7 +10,7 @@
 #include <assimp/mesh.h>
 #include <float.h>
 
-namespace render {
+namespace import {
 
 /* === Declaration === */
 
@@ -89,16 +89,16 @@ inline bool BoneImporter::processBones(NX_Model* model)
                 SDL_strlcpy(model->bones[uniqueBoneCount].name, bone->mName.data, sizeof(model->bones[uniqueBoneCount].name));
                 model->bones[uniqueBoneCount].parent = -1;
 
-                model->boneOffsets[uniqueBoneCount] = assimp_cast<NX_Mat4>(bone->mOffsetMatrix);
+                model->boneOffsets[uniqueBoneCount] = AssimpCast<NX_Mat4>(bone->mOffsetMatrix);
 
                 const aiNode* boneNode = findNodeByName(mImporter.rootNode(), bone->mName.data);
                 if (boneNode) {
                     aiMatrix4x4 globalTransform = getGlobalNodeTransform(boneNode, mImporter.rootNode());
-                    model->boneBindPose[uniqueBoneCount] = assimp_cast<NX_Mat4>(globalTransform);
+                    model->boneBindPose[uniqueBoneCount] = AssimpCast<NX_Mat4>(globalTransform);
                 }
                 else {
                     aiMatrix4x4 bindPoseMatrix = bone->mOffsetMatrix;
-                    model->boneBindPose[uniqueBoneCount] = assimp_cast<NX_Mat4>(bindPoseMatrix.Inverse());
+                    model->boneBindPose[uniqueBoneCount] = AssimpCast<NX_Mat4>(bindPoseMatrix.Inverse());
                 }
 
                 uniqueBoneCount++;
@@ -175,6 +175,6 @@ inline void BoneImporter::buildHierarchyRecursive(const aiNode* node, NX_BoneInf
     }
 }
 
-} // namespace render
+} // namespace import
 
-#endif // NX_RENDER_BONE_IMPORTER_HPP
+#endif // NX_IMPORT_BONE_IMPORTER_HPP

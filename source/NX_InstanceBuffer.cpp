@@ -7,7 +7,7 @@
  */
 
 #include "./NX_InstanceBuffer.hpp"
-#include "./INX_PoolAssets.hpp"
+#include "./INX_GlobalPool.hpp"
 
 // ============================================================================
 // PUBLIC API

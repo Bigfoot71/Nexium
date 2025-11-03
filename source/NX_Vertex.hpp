@@ -1,56 +1,46 @@
-/* NX_VertexBuffer.hpp -- Implementation of the API for vertex buffers
- *
- * Copyright (c) 2025 Le Juez Victor
- *
- * This software is provided 'as-is', without any express or implied warranty.
- * For conditions of distribution and use, see accompanying LICENSE file.
- */
+#ifndef NX_VERTEX_HPP
+#define NX_VERTEX_HPP
 
-#ifndef NX_VERTEX_BUFFER_3D_HPP
-#define NX_VERTEX_BUFFER_3D_HPP
+#include <NX/NX_Vertex.h>
 
-#include <NX/NX_Render.h>
+#include "./Detail/GPU/VertexArray.hpp"
+#include "./Detail/GPU/Buffer.hpp"
+#include "./NX_InstanceBuffer.hpp"
 
-#include "../NX_InstanceBuffer.hpp"
+// ============================================================================
+// VERTEX BUFFER 3D
+// ============================================================================
 
-#include "../Detail/GPU/VertexArray.hpp"
-#include "../Detail/GPU/Buffer.hpp"
+struct NX_VertexBuffer3D {
+    /** Constructors */
+    NX_VertexBuffer3D(const NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount);
 
-/* === Declaration === */
+    /** Delete copy */
+    NX_VertexBuffer3D(const NX_VertexBuffer3D&) = delete;
+    NX_VertexBuffer3D& operator=(const NX_VertexBuffer3D&) = delete;
 
-class NX_VertexBuffer {
-public:
-    NX_VertexBuffer(const NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount);
+    /** Move only */
+    NX_VertexBuffer3D(NX_VertexBuffer3D&& other) noexcept;
+    NX_VertexBuffer3D& operator=(NX_VertexBuffer3D&& other) noexcept;
 
-    void bindInstances(const NX_InstanceBuffer& instances);
-    void unbindInstances();
+    /** Instance buffers */
+    void BindInstances(const NX_InstanceBuffer& instances);
+    void UnbindInstances();
 
-    const gpu::VertexArray& vao() const;
-    const gpu::Buffer& vbo() const;
-    const gpu::Buffer& ebo() const;
-
-    gpu::VertexArray& vao();
-    gpu::Buffer& vbo();
-    gpu::Buffer& ebo();
-
-private:
-    gpu::VertexArray mVAO{};
-    gpu::Buffer mVBO{};
-    gpu::Buffer mEBO{};
+    /** Members */
+    gpu::VertexArray vao{};
+    gpu::Buffer vbo{};
+    gpu::Buffer ebo{};
 };
 
-/* === Public Impelmentation === */
-
-inline NX_VertexBuffer::NX_VertexBuffer(const NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount)
+inline NX_VertexBuffer3D::NX_VertexBuffer3D(const NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount)
 {
     /* --- Create main buffers --- */
 
-    mVBO = gpu::Buffer(GL_ARRAY_BUFFER, sizeof(NX_Vertex3D) * vCount, vertices, GL_STATIC_DRAW);
+    vbo = gpu::Buffer(GL_ARRAY_BUFFER, sizeof(NX_Vertex3D) * vCount, vertices, GL_STATIC_DRAW);
 
-    gpu::Buffer* ebo = nullptr;
     if (indices != nullptr) {
-        mEBO = gpu::Buffer(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * iCount, indices, GL_STATIC_DRAW);
-        ebo = &mEBO;
+        ebo = gpu::Buffer(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * iCount, indices, GL_STATIC_DRAW);
     }
 
     /* --- Define main attributes --- */
@@ -192,11 +182,11 @@ inline NX_VertexBuffer::NX_VertexBuffer(const NX_Vertex3D* vertices, int vCount,
 
     /* --- Create vertex array --- */
 
-    mVAO = gpu::VertexArray(ebo,
+    vao = gpu::VertexArray(&ebo,
         {
             gpu::VertexBufferDesc
             {
-                .buffer = &mVBO,
+                .buffer = &vbo,
                 .attributes = {
                     aPosition,
                     aTexCoord,
@@ -246,9 +236,25 @@ inline NX_VertexBuffer::NX_VertexBuffer(const NX_Vertex3D* vertices, int vCount,
     );
 }
 
-inline void NX_VertexBuffer::bindInstances(const NX_InstanceBuffer& instances)
+inline NX_VertexBuffer3D::NX_VertexBuffer3D(NX_VertexBuffer3D&& other) noexcept
+    : vao(std::move(other.vao))
+    , vbo(std::move(other.vbo))
+    , ebo(std::move(other.ebo))
+{ }
+
+inline NX_VertexBuffer3D& NX_VertexBuffer3D::operator=(NX_VertexBuffer3D&& other) noexcept
 {
-    mVAO.bindVertexBuffers({
+    if (this != &other) {
+        vao = std::move(other.vao);
+        vbo = std::move(other.vbo);
+        ebo = std::move(other.ebo);
+    }
+    return *this;
+}
+
+inline void NX_VertexBuffer3D::BindInstances(const NX_InstanceBuffer& instances)
+{
+    vao.bindVertexBuffers({
         { 1, instances.GetBuffer(NX_INSTANCE_POSITION) },
         { 2, instances.GetBuffer(NX_INSTANCE_ROTATION) },
         { 3, instances.GetBuffer(NX_INSTANCE_SCALE) },
@@ -257,41 +263,11 @@ inline void NX_VertexBuffer::bindInstances(const NX_InstanceBuffer& instances)
     });
 }
 
-inline void NX_VertexBuffer::unbindInstances()
+inline void NX_VertexBuffer3D::UnbindInstances()
 {
-    mVAO.unbindVertexBuffers({
+    vao.unbindVertexBuffers({
         1, 2, 3, 4, 5
     });
 }
 
-inline const gpu::VertexArray& NX_VertexBuffer::vao() const
-{
-    return mVAO;
-}
-
-inline const gpu::Buffer& NX_VertexBuffer::vbo() const
-{
-    return mVBO;
-}
-
-inline const gpu::Buffer& NX_VertexBuffer::ebo() const
-{
-    return mEBO;
-}
-
-inline gpu::VertexArray& NX_VertexBuffer::vao()
-{
-    return mVAO;
-}
-
-inline gpu::Buffer& NX_VertexBuffer::vbo()
-{
-    return mVBO;
-}
-
-inline gpu::Buffer& NX_VertexBuffer::ebo()
-{
-    return mEBO;
-}
-
-#endif // NX_VERTEX_BUFFER_3D_HPP
+#endif // NX_VERTEX_HPP

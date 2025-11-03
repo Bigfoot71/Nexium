@@ -1,9 +1,9 @@
-#ifndef NX_RENDER_MATERIAL_IMPORTER_HPP
-#define NX_RENDER_MATERIAL_IMPORTER_HPP
+#ifndef NX_IMPORT_MATERIAL_IMPORTER_HPP
+#define NX_IMPORT_MATERIAL_IMPORTER_HPP
 
 #include <NX/NX_Render.h>
 
-#include "./Detail/TextureLoader.hpp"
+#include "./TextureLoader.hpp"
 #include "./SceneImporter.hpp"
 #include "./AssimpHelper.hpp"
 
@@ -11,7 +11,7 @@
 #include <assimp/material.h>
 #include <SDL3/SDL_assert.h>
 
-namespace render {
+namespace import {
 
 /* === Declaration === */
 
@@ -72,10 +72,10 @@ inline void MaterialImporter::loadMaterial(NX_Material* material, int index)
 
     aiColor4D color;
     if (aiMat->Get(AI_MATKEY_BASE_COLOR, color) == AI_SUCCESS) {
-        material->albedo.color = assimp_cast<NX_Color>(color);
+        material->albedo.color = AssimpCast<NX_Color>(color);
     }
     else if (aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
-        material->albedo.color = assimp_cast<NX_Color>(color);
+        material->albedo.color = AssimpCast<NX_Color>(color);
     }
 
     /* --- Load the opacity factor --- */
@@ -103,7 +103,7 @@ inline void MaterialImporter::loadMaterial(NX_Material* material, int index)
 
     aiColor4D emissionColor;
     if (aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, emissionColor) == AI_SUCCESS) {
-        material->emission.color = assimp_cast<NX_Color>(emissionColor);
+        material->emission.color = AssimpCast<NX_Color>(emissionColor);
         material->emission.energy = 1.0f;
     }
 
@@ -185,6 +185,6 @@ inline void MaterialImporter::loadMaterial(NX_Material* material, int index)
     }
 }
 
-} // namespace render
+} // namespace import
 
-#endif // NX_RENDER_MATERIAL_IMPORTER_HPP
+#endif // NX_IMPORT_MATERIAL_IMPORTER_HPP

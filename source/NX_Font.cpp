@@ -12,7 +12,7 @@
 #include "./Detail/Util/Memory.hpp"
 
 #include "./INX_GlobalAssets.hpp"
-#include "./INX_PoolAssets.hpp"
+#include "./INX_GlobalPool.hpp"
 
 #include <NX/NX_Filesystem.h>
 #include <NX/NX_Codepoint.h>

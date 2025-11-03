@@ -11,7 +11,7 @@
 #include "./Detail/GPU/Framebuffer.hpp"
 #include "./Detail/GPU/Pipeline.hpp"
 #include "./Detail/GPU/Texture.hpp"
-#include "./INX_PoolAssets.hpp"
+#include "./INX_GlobalPool.hpp"
 
 // ============================================================================
 // OPAQUE DEFINITION

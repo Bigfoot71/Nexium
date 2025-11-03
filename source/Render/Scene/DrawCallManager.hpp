@@ -14,14 +14,15 @@
 #include "../../Detail/GPU/Pipeline.hpp"
 
 #include "../../INX_RenderUtils.hpp"
+#include "../../INX_VariantMesh.hpp"
 #include "../../INX_GPUBridge.hpp"
-#include "../NX_VertexBuffer.hpp"
-#include "../NX_DynamicMesh.hpp"
+
+#include "../../NX_DynamicMesh.hpp"
 #include "../../NX_Shader3D.hpp"
+#include "../../NX_Vertex.hpp"
 
 #include "./Environment.hpp"
 #include "./ViewFrustum.hpp"
-#include "./VariantMesh.hpp"
 #include "./Culling.hpp"
 #include "./Frustum.hpp"
 
@@ -57,7 +58,7 @@ struct DrawShared {
 /** Unique CPU data per draw call */
 struct DrawUnique {
     /** Object to draw */
-    VariantMesh mesh;
+    INX_VariantMesh mesh;
     NX_Material material;
     OrientedBoundingBox obb;
     /** Additionnal data */
@@ -81,7 +82,7 @@ public:
     DrawCallManager(int initialCapacity);
 
     /** Push/clear draw calls */
-    void push(const VariantMesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform);
+    void push(const INX_VariantMesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform);
     void push(const NX_Model& model, const NX_InstanceBuffer* instances, int instanceCount, const NX_Transform& transform);
     void clear();
 
@@ -177,7 +178,7 @@ inline DrawCallManager::DrawCallManager(int initialCapacity)
     }
 }
 
-inline void DrawCallManager::push(const VariantMesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform)
+inline void DrawCallManager::push(const INX_VariantMesh& mesh, const NX_InstanceBuffer* instances, int instanceCount, const NX_Material& material, const NX_Transform& transform)
 {
     int sharedIndex = mSharedData.size();
     int uniqueIndex = mUniqueData.size();
@@ -422,10 +423,10 @@ inline void DrawCallManager::draw(const gpu::Pipeline& pipeline, const UniqueDat
     /* --- Gets data according to the type of mesh to be drawn --- */
 
     const NX_Material& material = unique.material;
-    const VariantMesh& vMesh = unique.mesh;
+    const INX_VariantMesh& vMesh = unique.mesh;
 
     NX_PrimitiveType primitiveType = NX_PRIMITIVE_TRIANGLES;
-    NX_VertexBuffer* buffer = nullptr;
+    NX_VertexBuffer3D* buffer = nullptr;
     size_t vertexCount = 0;
     size_t indexCount = 0;
 
@@ -442,9 +443,9 @@ inline void DrawCallManager::draw(const gpu::Pipeline& pipeline, const UniqueDat
     case 1: [[unlikely]]
         {
             const NX_DynamicMesh* mesh = vMesh.get<1>();
-            primitiveType = mesh->primitiveType();
-            vertexCount = mesh->vertexCount();
-            buffer = &mesh->buffer();
+            primitiveType = mesh->primitiveType;
+            vertexCount = mesh->vertices.size();
+            buffer = mesh->buffer;
         }
         break;
     default:
@@ -456,11 +457,11 @@ inline void DrawCallManager::draw(const gpu::Pipeline& pipeline, const UniqueDat
 
     GLenum primitive = INX_GPU_GetPrimitiveType(primitiveType);
     bool useInstancing = (shared.instances && shared.instanceCount > 0);
-    bool hasEBO = buffer->ebo().isValid();
+    bool hasEBO = buffer->ebo.isValid();
 
-    pipeline.bindVertexArray(buffer->vao());
+    pipeline.bindVertexArray(buffer->vao);
     if (useInstancing) [[unlikely]] {
-        buffer->bindInstances(*shared.instances);
+        buffer->BindInstances(*shared.instances);
     }
 
     if (hasEBO) [[likely]] {

@@ -14,7 +14,7 @@
 
 #include "./Detail/Util/FixedArray.hpp"
 #include "./INX_AudioUtils.hpp"
-#include "./INX_PoolAssets.hpp"
+#include "./INX_GlobalPool.hpp"
 
 #include <stb_vorbis.h>
 #include <dr_flac.h>

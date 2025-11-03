@@ -1,4 +1,4 @@
-/* INX_PoolAssets.cpp -- Internal implementation details for managing global asset pools
+/* INX_GlobalPool.cpp -- Internal implementation details for managing global asset pools
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,10 +6,10 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#include "./INX_PoolAssets.hpp"
+#include "./INX_GlobalPool.hpp"
 
 // ============================================================================
 // ASSETS POOL
 // ============================================================================
 
-INX_PoolAssets INX_Pool{};
+INX_GlobalPool INX_Pool{};

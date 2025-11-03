@@ -12,7 +12,7 @@ int main(void)
     NX_Model* model = NX_LoadModel("models/CesiumMan.glb");
 
     int animCount = 0;
-    NX_ModelAnimation** anim = NX_LoadModelAnimations("models/CesiumMan.glb", &animCount, 30);
+    NX_Animation** anim = NX_LoadAnimations("models/CesiumMan.glb", &animCount, 30);
     model->anim = anim[0];
 
     NX_Light* light = NX_CreateLight(NX_LIGHT_DIR);

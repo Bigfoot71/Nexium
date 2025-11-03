@@ -13,7 +13,7 @@
 #include "./INX_GPUProgramCache.hpp"
 #include "./INX_GlobalAssets.hpp"
 #include "./INX_GlobalState.hpp"
-#include "./INX_PoolAssets.hpp"
+#include "./INX_GlobalPool.hpp"
 
 #include "./NX_Render2D.hpp"
 #include "./NX_Audio.hpp"

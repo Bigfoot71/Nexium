@@ -15,7 +15,7 @@
 
 #include "../../Detail/BuildInfo.hpp"
 #include "../../NX_RenderTexture.hpp"
-#include "../../INX_PoolAssets.hpp"
+#include "../../INX_GlobalPool.hpp"
 #include "../../NX_Texture.hpp"
 
 #include "../../NX_ReflectionProbe.hpp"

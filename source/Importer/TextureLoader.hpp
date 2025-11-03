@@ -1,10 +1,8 @@
-#ifndef NX_RENDER_DETAIL_TEXTURE_LOADER_HPP
-#define NX_RENDER_DETAIL_TEXTURE_LOADER_HPP
+#ifndef NX_IMPORT_DETAIL_TEXTURE_LOADER_HPP
+#define NX_IMPORT_DETAIL_TEXTURE_LOADER_HPP
 
-#include "../../../../Detail/Util/DynamicArray.hpp"
-#include "../SceneImporter.hpp"
-#include "NX/NX_Macros.h"
-#include "NX/NX_Texture.h"
+#include "../Detail/Util/DynamicArray.hpp"
+#include "./SceneImporter.hpp"
 
 #include <NX/NX_Render.h>
 #include <NX/NX_Image.h>
@@ -20,7 +18,7 @@
 #include <queue>
 #include <array>
 
-namespace render {
+namespace import {
 
 /* === Declaration === */
 
@@ -364,6 +362,6 @@ inline NX_TextureWrap TextureLoader::getWrapMode(aiTextureMapMode wrap)
     return hpWrap;
 }
 
-} // render
+} // import
 
-#endif // NX_RENDER_DETAIL_TEXTURE_LOADER_HPP
+#endif // NX_IMPORT_DETAIL_TEXTURE_LOADER_HPP

@@ -21,6 +21,13 @@ typedef enum NX_PrimitiveType {
 } NX_PrimitiveType;
 
 /**
+ * @brief Opaque handle to a GPU vertex buffer.
+ *
+ * Represents a collection of vertices stored on the GPU.
+ */
+typedef struct NX_VertexBuffer3D NX_VertexBuffer3D;
+
+/**
  * @brief Represents a 2D vertex used for rendering.
  *
  * Contains position, texture coordinates, and color.

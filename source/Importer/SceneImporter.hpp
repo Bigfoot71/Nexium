@@ -1,5 +1,5 @@
-#ifndef NX_RENDER_SCENE_IMPORTER_HPP
-#define NX_RENDER_SCENE_IMPORTER_HPP
+#ifndef NX_IMPORT_SCENE_IMPORTER_HPP
+#define NX_IMPORT_SCENE_IMPORTER_HPP
 
 #include <NX/NX_Log.h>
 
@@ -7,7 +7,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 
-namespace render {
+namespace import {
 
 /* === Declaration === */
 
@@ -110,6 +110,6 @@ inline bool SceneImporter::isValid() const
     return mScene != nullptr;
 }
 
-} // namespace render
+} // namespace import
 
-#endif // NX_RENDER_SCENE_IMPORTER_HPP
+#endif // NX_IMPORT_SCENE_IMPORTER_HPP

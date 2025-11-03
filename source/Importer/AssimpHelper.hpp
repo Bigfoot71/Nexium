@@ -6,8 +6,8 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef NX_RENDER_ASSIMP_HELPER_HPP
-#define NX_RENDER_ASSIMP_HELPER_HPP
+#ifndef NX_IMPORT_ASSIMP_HELPER_HPP
+#define NX_IMPORT_ASSIMP_HELPER_HPP
 
 #include <NX/NX_Math.h>
 
@@ -17,43 +17,45 @@
 #include <assimp/color4.h>
 #include <assimp/matrix4x4.h>
 
+namespace import {
+
 /* === Assimp Cast Helpers === */
 
 template<typename Target, typename Source>
-Target assimp_cast(const Source& src);
+Target AssimpCast(const Source& src);
 
 template<>
-constexpr NX_Vec2 assimp_cast<NX_Vec2, aiVector2D>(const aiVector2D& src)
+constexpr NX_Vec2 AssimpCast<NX_Vec2, aiVector2D>(const aiVector2D& src)
 {
     return NX_VEC2(src.x, src.y);
 }
 
 template<>
-constexpr NX_Vec2 assimp_cast<NX_Vec2, aiVector3D>(const aiVector3D& src)
+constexpr NX_Vec2 AssimpCast<NX_Vec2, aiVector3D>(const aiVector3D& src)
 {
     return NX_VEC2(src.x, src.y);
 }
 
 template<>
-constexpr NX_Vec3 assimp_cast<NX_Vec3, aiVector3D>(const aiVector3D& src)
+constexpr NX_Vec3 AssimpCast<NX_Vec3, aiVector3D>(const aiVector3D& src)
 {
     return NX_VEC3(src.x, src.y, src.z);
 }
 
 template<>
-constexpr NX_Quat assimp_cast<NX_Quat, aiQuaternion>(const aiQuaternion& src)
+constexpr NX_Quat AssimpCast<NX_Quat, aiQuaternion>(const aiQuaternion& src)
 {
     return NX_QUAT(src.w, src.x, src.y, src.z);
 }
 
 template<>
-constexpr NX_Color assimp_cast<NX_Color, aiColor4D>(const aiColor4D& src)
+constexpr NX_Color AssimpCast<NX_Color, aiColor4D>(const aiColor4D& src)
 {
     return NX_COLOR(src.r, src.g, src.b, src.a);
 }
 
 template<>
-constexpr NX_Mat4 assimp_cast<NX_Mat4, aiMatrix4x4>(const aiMatrix4x4& src)
+constexpr NX_Mat4 AssimpCast<NX_Mat4, aiMatrix4x4>(const aiMatrix4x4& src)
 {
     return NX_MAT4_T {
         src.a1, src.b1, src.c1, src.d1,
@@ -63,4 +65,6 @@ constexpr NX_Mat4 assimp_cast<NX_Mat4, aiMatrix4x4>(const aiMatrix4x4& src)
     };
 }
 
-#endif // NX_RENDER_ASSIMP_HELPER_HPP
+} // namespace import
+
+#endif // NX_IMPORT_ASSIMP_HELPER_HPP

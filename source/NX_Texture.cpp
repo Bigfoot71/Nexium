@@ -10,7 +10,7 @@
 #include <NX/NX_Log.h>
 
 #include "./Detail/GPU/Texture.hpp"
-#include "./INX_PoolAssets.hpp"
+#include "./INX_GlobalPool.hpp"
 #include "./INX_GPUBridge.hpp"
 
 // ============================================================================

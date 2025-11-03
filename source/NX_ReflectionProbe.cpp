@@ -12,7 +12,7 @@
 #include "./Detail/GPU/Pipeline.hpp"
 #include "./INX_GPUProgramCache.hpp"
 #include "./INX_RenderUtils.hpp"
-#include "./INX_PoolAssets.hpp"
+#include "./INX_GlobalPool.hpp"
 #include "Detail/GPU/Framebuffer.hpp"
 #include "Detail/GPU/Texture.hpp"
 #include "NX/NX_ReflectionProbe.h"

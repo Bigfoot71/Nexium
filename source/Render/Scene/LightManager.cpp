@@ -13,7 +13,7 @@
 #include "../../INX_GlobalAssets.hpp"
 #include "./DrawCallManager.hpp"
 #include "../../NX_Texture.hpp"
-#include "../NX_Light.hpp"
+#include "../../NX_Light.hpp"
 
 #include <NX/NX_Runtime.h>
 #include <NX/NX_Display.h>
@@ -52,13 +52,13 @@ LightManager::LightManager(const NX_AppDesc& desc)
 
     mStorageLights = gpu::Buffer(
         GL_SHADER_STORAGE_BUFFER,
-        32 * sizeof(NX_Light::LightGPU),
+        32 * sizeof(INX_GPULight),
         nullptr, GL_DYNAMIC_DRAW
     );
 
     mStorageShadow = gpu::Buffer(
         GL_SHADER_STORAGE_BUFFER,
-        32 * sizeof(NX_Light::ShadowGPU),
+        32 * sizeof(INX_GPUShadow),
         nullptr, GL_DYNAMIC_DRAW
     );
 
@@ -162,9 +162,9 @@ void LightManager::updateState(const ProcessParams& params)
     /* --- Count each active light type --- */
 
     std::array<size_t, NumLightTypes> counts{};
-    for (const NX_Light& light : mLights) {
-        if (light.isActive()) {
-            ++counts[light.type()];
+    for (const NX_Light& light : INX_Pool.Get<NX_Light>()) {
+        if (light.active) {
+            ++counts[light.type];
         }
     }
 
@@ -184,24 +184,24 @@ void LightManager::updateState(const ProcessParams& params)
 
     /* --- Update and insert active lights --- */
 
-    for (NX_Light& light : mLights)
+    for (NX_Light& light : INX_Pool.Get<NX_Light>())
     {
-        if (!light.isActive()) continue;
+        if (!light.active) continue;
 
         bool needsShadowUpdate = false;
-        light.updateState(params.viewFrustum, &needsShadowUpdate);
+        INX_UpdateLight(&light, params.viewFrustum, &needsShadowUpdate);
 
         int32_t shadowIndex = -1;
-        if (light.isShadowActive()) {
+        if (light.shadow.active) {
             shadowIndex = mActiveShadows.size();
-            uint32_t mapIndex = mActiveShadows.size(light.type());
-            mActiveShadows.emplace(light.type(), &light, mapIndex);
+            uint32_t mapIndex = mActiveShadows.size(light.type);
+            mActiveShadows.emplace(light.type, &light, mapIndex);
             if (needsShadowUpdate) {
-                mShadowNeedingUpdate.emplace(light.type(), shadowIndex);
+                mShadowNeedingUpdate.emplace(light.type, shadowIndex);
             }
         }
 
-        size_t& offset = offsets[light.type()];
+        size_t& offset = offsets[light.type];
         mActiveLights[offset++] = ActiveLight(&light, shadowIndex);
     }
 }
@@ -212,15 +212,15 @@ void LightManager::uploadLights(const ProcessParams& params)
         return;
     }
 
-    mStorageLights.reserve(mLights.size() * sizeof(NX_Light::LightGPU), false);
-    NX_Light::LightGPU* mappedLights = mStorageLights.mapRange<NX_Light::LightGPU>(
-        0, mActiveLights.size() * sizeof(NX_Light::LightGPU),
+    mStorageLights.reserve(INX_Pool.Get<NX_Light>().size() * sizeof(INX_GPULight), false);
+    INX_GPULight* mappedLights = mStorageLights.mapRange<INX_GPULight>(
+        0, mActiveLights.size() * sizeof(INX_GPULight),
         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
     );
 
     for (int i = 0; i < mActiveLights.size(); i++) {
         const ActiveLight& data = mActiveLights[i];
-        data.light->fillLightGPU(&mappedLights[i], data.shadowIndex);
+        INX_FillGPULight(data.light, &mappedLights[i], data.shadowIndex);
     }
 
     mStorageLights.unmap();
@@ -232,15 +232,15 @@ void LightManager::uploadShadows(const ProcessParams& params)
         return;
     }
 
-    mStorageShadow.reserve(mActiveShadows.size() * sizeof(NX_Light::ShadowGPU), false);
-    NX_Light::ShadowGPU* mappedShadows = mStorageShadow.mapRange<NX_Light::ShadowGPU>(
-        0, mActiveShadows.size() * sizeof(NX_Light::ShadowGPU),
+    mStorageShadow.reserve(mActiveShadows.size() * sizeof(INX_GPUShadow), false);
+    INX_GPUShadow* mappedShadows = mStorageShadow.mapRange<INX_GPUShadow>(
+        0, mActiveShadows.size() * sizeof(INX_GPUShadow),
         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
     );
 
     for (int i = 0; i < mActiveShadows.size(); i++) {
         const ActiveShadow& data = mActiveShadows[i];
-        data.light->fillShadowGPU(&mappedShadows[i], data.mapIndex);
+        INX_FillGPUShadow(data.light, &mappedShadows[i], data.mapIndex);
     }
 
     mStorageShadow.unmap();
@@ -344,20 +344,20 @@ void LightManager::renderShadowMaps(const ProcessParams& params)
             for (int face = 0; face < ((lightType == NX_LIGHT_OMNI) ? 6 : 1); ++face)
             {
                 mFramebufferShadow[lightType].setColorAttachmentTarget(0, data.mapIndex, face);
-                pipeline.clear(mFramebufferShadow[lightType], NX_COLOR_1(light.range()));
+                pipeline.clear(mFramebufferShadow[lightType], NX_COLOR_1(NX_GetLightRange(&light)));
 
                 // REVIEW: We could use a better method for per-frame data...
                 mFrameShadowUniform->uploadObject(FrameShadowUniform {
-                    .lightViewProj = light.viewProj(face),
-                    .lightPosition = light.position(),
-                    .lightRange = light.range(),
-                    .lightType = light.type(),
+                    .lightViewProj = INX_GetLightViewProj(light, face),
+                    .lightPosition = NX_GetLightPosition(&light),
+                    .lightRange = NX_GetLightRange(&light),
+                    .lightType = light.type,
                     .elapsedTime = static_cast<float>(NX_GetElapsedTime())
                 });
                 pipeline.bindUniform(0, *mFrameShadowUniform);
                 mFrameShadowUniform.rotate();
 
-                params.drawCalls.culling(light.frustum(face), light.shadowCullMask());
+                params.drawCalls.culling(INX_GetLightFrustum(light, face), light.shadow.cullMask);
 
                 for (int uniqueIndex : params.drawCalls.uniqueVisible().categories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
                 {

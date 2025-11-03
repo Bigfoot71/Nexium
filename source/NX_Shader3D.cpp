@@ -11,7 +11,7 @@
 #include <NX/NX_Filesystem.h>
 
 #include "./INX_AssetDecoder.hpp"
-#include "./INX_PoolAssets.hpp"
+#include "./INX_GlobalPool.hpp"
 
 #include <shaders/scene.vert.h>
 #include <shaders/scene_lit.frag.h>

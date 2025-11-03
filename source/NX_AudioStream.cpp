@@ -13,7 +13,7 @@
 #include "./Detail/Util/Memory.hpp"
 #include "./INX_AudioUtils.hpp"
 #include "./NX_AudioStream.hpp"
-#include "./INX_PoolAssets.hpp"
+#include "./INX_GlobalPool.hpp"
 
 #include <SDL3/SDL_assert.h>
 

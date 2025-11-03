@@ -1,4 +1,4 @@
-/* VariantMesh.cpp -- Abstraction allowing to represent several types of mesh
+/* INX_VariantMesh.cpp -- Abstraction allowing to represent several types of mesh
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,26 +6,24 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef NX_SCENE_VARIANT_MESH_HPP
-#define NX_SCENE_VARIANT_MESH_HPP
+#ifndef INX_VARIANT_MESH_HPP
+#define INX_VARIANT_MESH_HPP
 
-#include "../NX_DynamicMesh.hpp"
-#include <NX/NX_Render.h>
+#include "./NX_DynamicMesh.hpp"
+#include <NX/NX_Mesh.h>
 #include <variant>
-
-namespace scene {
 
 /* === Declaration === */
 
-class VariantMesh {
+class INX_VariantMesh {
 public:
     /** Constructors */
     template<typename T_Mesh>
-    VariantMesh(const T_Mesh* mesh);
+    INX_VariantMesh(const T_Mesh* mesh);
 
     /** Assignment operators for each variant type */
-    VariantMesh& operator=(const NX_Mesh* mesh);
-    VariantMesh& operator=(const NX_DynamicMesh* mesh);
+    INX_VariantMesh& operator=(const NX_Mesh* mesh);
+    INX_VariantMesh& operator=(const NX_DynamicMesh* mesh);
 
     /** Variant related */
     size_t index() const;
@@ -45,40 +43,40 @@ private:
 /* === Public Implementation === */
 
 template<typename T_Mesh>
-VariantMesh::VariantMesh(const T_Mesh* mesh)
+INX_VariantMesh::INX_VariantMesh(const T_Mesh* mesh)
     : mMesh(mesh)
 { }
 
-inline VariantMesh& VariantMesh::operator=(const NX_Mesh* mesh)
+inline INX_VariantMesh& INX_VariantMesh::operator=(const NX_Mesh* mesh)
 {
     mMesh = mesh;
     return *this;
 }
 
-inline VariantMesh& VariantMesh::operator=(const NX_DynamicMesh* mesh)
+inline INX_VariantMesh& INX_VariantMesh::operator=(const NX_DynamicMesh* mesh)
 {
     mMesh = mesh;
     return *this;
 }
 
-inline size_t VariantMesh::index() const
+inline size_t INX_VariantMesh::index() const
 {
     return mMesh.index();
 }
 
 template<typename T>
-inline T VariantMesh::get() const
+inline T INX_VariantMesh::get() const
 {
     return std::get<T>(mMesh);
 }
 
 template<size_t I>
-inline auto VariantMesh::get() const
+inline auto INX_VariantMesh::get() const
 {
     return std::get<I>(mMesh);
 }
 
-inline NX_ShadowCastMode VariantMesh::shadowCastMode() const
+inline NX_ShadowCastMode INX_VariantMesh::shadowCastMode() const
 {
     switch (mMesh.index()) {
     case 0: [[likely]] return std::get<0>(mMesh)->shadowCastMode;
@@ -87,7 +85,7 @@ inline NX_ShadowCastMode VariantMesh::shadowCastMode() const
     }
 }
 
-inline NX_ShadowFaceMode VariantMesh::shadowFaceMode() const
+inline NX_ShadowFaceMode INX_VariantMesh::shadowFaceMode() const
 {
     switch (mMesh.index()) {
     case 0: [[likely]] return std::get<0>(mMesh)->shadowFaceMode;
@@ -96,16 +94,16 @@ inline NX_ShadowFaceMode VariantMesh::shadowFaceMode() const
     }
 }
 
-inline const NX_BoundingBox& VariantMesh::aabb() const
+inline const NX_BoundingBox& INX_VariantMesh::aabb() const
 {
     switch (mMesh.index()) {
     case 0: [[likely]] return std::get<0>(mMesh)->aabb;
-    case 1: [[unlikely]] return std::get<1>(mMesh)->aabb();
+    case 1: [[unlikely]] return std::get<1>(mMesh)->aabb;
     default: NX_UNREACHABLE(); break;
     }
 }
 
-inline NX_Layer VariantMesh::layerMask() const
+inline NX_Layer INX_VariantMesh::layerMask() const
 {
     switch (mMesh.index()) {
     case 0: [[likely]] return std::get<0>(mMesh)->layerMask;
@@ -114,6 +112,4 @@ inline NX_Layer VariantMesh::layerMask() const
     }
 }
 
-} // namespace scene
-
-#endif // NX_SCENE_VARIANT_MESH_HPP
+#endif // INX_VARIANT_MESH_HPP

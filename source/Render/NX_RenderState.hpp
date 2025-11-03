@@ -12,9 +12,6 @@
 #include <NX/NX_Render.h>
 #include <NX/NX_Init.h>
 
-#include "./Core/PoolModel.hpp"
-#include "./Core/PoolMesh.hpp"
-
 #include "./Scene/Scene.hpp"
 
 #include <cfloat>
@@ -27,10 +24,6 @@ extern util::UniquePtr<class NX_RenderState> gRender;
 
 class NX_RenderState {
 public:
-    /** Resource Managers */
-    render::PoolMesh meshes;
-    render::PoolModel models;
-
     /** Renderers */
     scene::Scene scene;
 
@@ -43,9 +36,7 @@ public:
 /* === Public Implementation === */
 
 inline NX_RenderState::NX_RenderState(NX_AppDesc& desc)
-    : meshes()
-    , models(meshes)
-    , scene(desc)
+    : scene(desc)
 { }
 
 #endif // NX_RENDER_STATE_HP
