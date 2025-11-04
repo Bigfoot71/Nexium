@@ -42,52 +42,52 @@ public:
     Program& operator=(Program&& other) noexcept;
 
     /** Returns '-1' on failure */
-    int getUniformLocation(const char* name) const noexcept;
+    int GetUniformLocation(const char* name) const noexcept;
 
     /** Returns '-1' on failure */
-    int getUniformBlockIndex(const char* name) const noexcept;
+    int GetUniformBlockIndex(const char* name) const noexcept;
 
     /** Returns size of the uniform block */
-    size_t getUniformBlockSize(int blockIndex) const noexcept;
+    size_t GetUniformBlockSize(int blockIndex) const noexcept;
 
     /** Set uniform binding point */
-    void setUniformBlockBinding(int blockIndex, uint32_t blockBinding) noexcept;
+    void SetUniformBlockBinding(int blockIndex, uint32_t blockBinding) noexcept;
 
     /** Simple getters */
-    bool isValid() const noexcept;
-    GLuint id() const noexcept;
+    bool IsValid() const noexcept;
+    GLuint GetID() const noexcept;
 
 private:
     friend class Pipeline;
 
 private:
-    void setUint1(int location, uint32_t value) const noexcept;
-    void setUint2(int location, const NX_IVec2& value) const noexcept;
-    void setUint3(int location, const NX_IVec3& value) const noexcept;
-    void setUint4(int location, const NX_IVec4& value) const noexcept;
-    void setInt1(int location, int value) const noexcept;
-    void setInt2(int location, const NX_IVec2& value) const noexcept;
-    void setInt3(int location, const NX_IVec3& value) const noexcept;
-    void setInt4(int location, const NX_IVec4& value) const noexcept;
-    void setFloat1(int location, float value) const noexcept;
-    void setFloat2(int location, const NX_Vec2& value) const noexcept;
-    void setFloat3(int location, const NX_Vec3& value) const noexcept;
-    void setFloat3(int location, const NX_Color& value) const noexcept;
-    void setFloat4(int location, const NX_Vec4& value) const noexcept;
-    void setFloat4(int location, const NX_Quat& value) const noexcept;
-    void setFloat4(int location, const NX_Color& value) const noexcept;
-    void setMat3(int location, const NX_Mat3& value) const noexcept;
-    void setMat3(int location, const NX_Mat4& value) const noexcept;
-    void setMat4(int location, const NX_Mat4& value) const noexcept;
+    void SetUint1(int location, uint32_t value) const noexcept;
+    void SetUint2(int location, const NX_IVec2& value) const noexcept;
+    void SetUint3(int location, const NX_IVec3& value) const noexcept;
+    void SetUint4(int location, const NX_IVec4& value) const noexcept;
+    void SetInt1(int location, int value) const noexcept;
+    void SetInt2(int location, const NX_IVec2& value) const noexcept;
+    void SetInt3(int location, const NX_IVec3& value) const noexcept;
+    void SetInt4(int location, const NX_IVec4& value) const noexcept;
+    void SetFloat1(int location, float value) const noexcept;
+    void SetFloat2(int location, const NX_Vec2& value) const noexcept;
+    void SetFloat3(int location, const NX_Vec3& value) const noexcept;
+    void SetFloat3(int location, const NX_Color& value) const noexcept;
+    void SetFloat4(int location, const NX_Vec4& value) const noexcept;
+    void SetFloat4(int location, const NX_Quat& value) const noexcept;
+    void SetFloat4(int location, const NX_Color& value) const noexcept;
+    void SetMat3(int location, const NX_Mat3& value) const noexcept;
+    void SetMat3(int location, const NX_Mat4& value) const noexcept;
+    void SetMat4(int location, const NX_Mat4& value) const noexcept;
 
 private:
     template<typename... Shaders>
-    bool initProgram(const Shaders&... shaders) noexcept;
-    bool linkProgram() noexcept;
+    bool InitProgram(const Shaders&... shaders) noexcept;
+    bool LinkProgram() noexcept;
     template<typename... Shaders>
-    bool validateShaderStages(const Shaders&... shaders) noexcept;
-    bool createUniformCache() noexcept;
-    void cleanup() noexcept;
+    bool ValidateShaderStages(const Shaders&... shaders) noexcept;
+    bool CreateUniformCache() noexcept;
+    void Cleanup() noexcept;
 
 private:
     GLuint mID{0};
@@ -103,14 +103,14 @@ inline Program::Program(const Shaders&... shaders) noexcept
 {
     static_assert(sizeof...(Shaders) > 0, "At least one shader is required");
     
-    if (!initProgram(shaders...)) {
-        cleanup();
+    if (!InitProgram(shaders...)) {
+        Cleanup();
     }
 }
 
 inline Program::~Program() noexcept
 {
-    cleanup();
+    Cleanup();
 }
 
 inline Program::Program(Program&& other) noexcept
@@ -121,19 +121,19 @@ inline Program::Program(Program&& other) noexcept
 inline Program& Program::operator=(Program&& other) noexcept
 {
     if (this != &other) {
-        cleanup();
+        Cleanup();
         mID = std::exchange(other.mID, 0);
         mUniformCache = std::move(other.mUniformCache);
     }
     return *this;
 }
 
-inline int Program::getUniformLocation(const char* name) const noexcept
+inline int Program::GetUniformLocation(const char* name) const noexcept
 {
     return glGetUniformLocation(mID, name);
 }
 
-inline int Program::getUniformBlockIndex(const char* name) const noexcept
+inline int Program::GetUniformBlockIndex(const char* name) const noexcept
 {
     GLuint blockIndex = glGetUniformBlockIndex(mID, name);
     if (blockIndex == GL_INVALID_INDEX) {
@@ -143,7 +143,7 @@ inline int Program::getUniformBlockIndex(const char* name) const noexcept
     return static_cast<int>(blockIndex);
 }
 
-inline size_t Program::getUniformBlockSize(int blockIndex) const noexcept
+inline size_t Program::GetUniformBlockSize(int blockIndex) const noexcept
 {
     SDL_assert(blockIndex >= 0);
 
@@ -153,26 +153,26 @@ inline size_t Program::getUniformBlockSize(int blockIndex) const noexcept
     return static_cast<int>(blockSize);
 }
 
-inline void Program::setUniformBlockBinding(int blockIndex, uint32_t blockBinding) noexcept
+inline void Program::SetUniformBlockBinding(int blockIndex, uint32_t blockBinding) noexcept
 {
     SDL_assert(blockIndex >= 0);
 
     glUniformBlockBinding(mID, blockIndex, blockBinding);
 }
 
-inline bool Program::isValid() const noexcept
+inline bool Program::IsValid() const noexcept
 {
     return (mID > 0);
 }
 
-inline GLuint Program::id() const noexcept
+inline GLuint Program::GetID() const noexcept
 {
     return mID;
 }
 
 /* === Private Implementation === */
 
-inline void Program::setUint1(int location, uint32_t value) const noexcept
+inline void Program::SetUint1(int location, uint32_t value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -183,7 +183,7 @@ inline void Program::setUint1(int location, uint32_t value) const noexcept
     }
 }
 
-inline void Program::setUint2(int location, const NX_IVec2& value) const noexcept
+inline void Program::SetUint2(int location, const NX_IVec2& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -200,7 +200,7 @@ inline void Program::setUint2(int location, const NX_IVec2& value) const noexcep
     }
 }
 
-inline void Program::setUint3(int location, const NX_IVec3& value) const noexcept
+inline void Program::SetUint3(int location, const NX_IVec3& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -218,7 +218,7 @@ inline void Program::setUint3(int location, const NX_IVec3& value) const noexcep
     }
 }
 
-inline void Program::setUint4(int location, const NX_IVec4& value) const noexcept
+inline void Program::SetUint4(int location, const NX_IVec4& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -237,7 +237,7 @@ inline void Program::setUint4(int location, const NX_IVec4& value) const noexcep
     }
 }
 
-inline void Program::setInt1(int location, int value) const noexcept
+inline void Program::SetInt1(int location, int value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -248,7 +248,7 @@ inline void Program::setInt1(int location, int value) const noexcept
     }
 }
 
-inline void Program::setInt2(int location, const NX_IVec2& value) const noexcept
+inline void Program::SetInt2(int location, const NX_IVec2& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -259,7 +259,7 @@ inline void Program::setInt2(int location, const NX_IVec2& value) const noexcept
     }
 }
 
-inline void Program::setInt3(int location, const NX_IVec3& value) const noexcept
+inline void Program::SetInt3(int location, const NX_IVec3& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -270,7 +270,7 @@ inline void Program::setInt3(int location, const NX_IVec3& value) const noexcept
     }
 }
 
-inline void Program::setInt4(int location, const NX_IVec4& value) const noexcept
+inline void Program::SetInt4(int location, const NX_IVec4& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -281,7 +281,7 @@ inline void Program::setInt4(int location, const NX_IVec4& value) const noexcept
     }
 }
 
-inline void Program::setFloat1(int location, float value) const noexcept
+inline void Program::SetFloat1(int location, float value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -292,7 +292,7 @@ inline void Program::setFloat1(int location, float value) const noexcept
     }
 }
 
-inline void Program::setFloat2(int location, const NX_Vec2& value) const noexcept
+inline void Program::SetFloat2(int location, const NX_Vec2& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -303,7 +303,7 @@ inline void Program::setFloat2(int location, const NX_Vec2& value) const noexcep
     }
 }
 
-inline void Program::setFloat3(int location, const NX_Vec3& value) const noexcept
+inline void Program::SetFloat3(int location, const NX_Vec3& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -314,7 +314,7 @@ inline void Program::setFloat3(int location, const NX_Vec3& value) const noexcep
     }
 }
 
-inline void Program::setFloat3(int location, const NX_Color& value) const noexcept
+inline void Program::SetFloat3(int location, const NX_Color& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -325,7 +325,7 @@ inline void Program::setFloat3(int location, const NX_Color& value) const noexce
     }
 }
 
-inline void Program::setFloat4(int location, const NX_Vec4& value) const noexcept
+inline void Program::SetFloat4(int location, const NX_Vec4& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -336,7 +336,7 @@ inline void Program::setFloat4(int location, const NX_Vec4& value) const noexcep
     }
 }
 
-inline void Program::setFloat4(int location, const NX_Quat& value) const noexcept
+inline void Program::SetFloat4(int location, const NX_Quat& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -348,7 +348,7 @@ inline void Program::setFloat4(int location, const NX_Quat& value) const noexcep
     }
 }
 
-inline void Program::setFloat4(int location, const NX_Color& value) const noexcept
+inline void Program::SetFloat4(int location, const NX_Color& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -359,7 +359,7 @@ inline void Program::setFloat4(int location, const NX_Color& value) const noexce
     }
 }
 
-inline void Program::setMat3(int location, const NX_Mat3& value) const noexcept
+inline void Program::SetMat3(int location, const NX_Mat3& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -370,7 +370,7 @@ inline void Program::setMat3(int location, const NX_Mat3& value) const noexcept
     }
 }
 
-inline void Program::setMat3(int location, const NX_Mat4& value) const noexcept
+inline void Program::SetMat3(int location, const NX_Mat4& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -392,7 +392,7 @@ inline void Program::setMat3(int location, const NX_Mat4& value) const noexcept
     }
 }
 
-inline void Program::setMat4(int location, const NX_Mat4& value) const noexcept
+inline void Program::SetMat4(int location, const NX_Mat4& value) const noexcept
 {
     SDL_assert(mUniformCache.capacity() > 0);
     SDL_assert(location < mUniformCache.size());
@@ -404,15 +404,15 @@ inline void Program::setMat4(int location, const NX_Mat4& value) const noexcept
 }
 
 template<typename... Shaders>
-inline bool Program::initProgram(const Shaders&... shaders) noexcept
+inline bool Program::InitProgram(const Shaders&... shaders) noexcept
 {
-    if (!(shaders.isValid() && ...)) {
+    if (!(shaders.IsValid() && ...)) {
         NX_LOG(E, "GPU: Failed to create program; Invalid shaders");
         return false;
     }
 
     if constexpr (INX_BuildInfo::debug) {
-        SDL_assert(validateShaderStages(shaders...));
+        SDL_assert(ValidateShaderStages(shaders...));
     }
 
     mID = glCreateProgram();
@@ -421,14 +421,14 @@ inline bool Program::initProgram(const Shaders&... shaders) noexcept
         return false;
     }
 
-    (glAttachShader(mID, shaders.id()), ...);
+    (glAttachShader(mID, shaders.GetID()), ...);
 
-    if (!linkProgram()) {
+    if (!LinkProgram()) {
         NX_LOG(E, "GPU: Failed to link program");
         return false;
     }
 
-    if (!createUniformCache()) {
+    if (!CreateUniformCache()) {
         NX_LOG(E, "GPU: Failed to create uniform cache");
         return false;
     }
@@ -436,7 +436,7 @@ inline bool Program::initProgram(const Shaders&... shaders) noexcept
     return true;
 }
 
-inline bool Program::linkProgram() noexcept
+inline bool Program::LinkProgram() noexcept
 {
     glLinkProgram(mID);
 
@@ -462,7 +462,7 @@ inline bool Program::linkProgram() noexcept
 }
 
 template<typename... Shaders>
-inline bool Program::validateShaderStages(const Shaders&... shaders) noexcept
+inline bool Program::ValidateShaderStages(const Shaders&... shaders) noexcept
 {
     constexpr size_t count = sizeof...(Shaders);
     std::array<GLenum, count> stages = {shaders.stage()...};
@@ -495,7 +495,7 @@ inline bool Program::validateShaderStages(const Shaders&... shaders) noexcept
     return true;
 }
 
-inline bool Program::createUniformCache() noexcept
+inline bool Program::CreateUniformCache() noexcept
 {
     GLint numUniforms = 0;
     glGetProgramInterfaceiv(mID, GL_UNIFORM, GL_ACTIVE_RESOURCES, &numUniforms);
@@ -568,7 +568,7 @@ inline bool Program::createUniformCache() noexcept
     return true;
 }
 
-inline void Program::cleanup() noexcept
+inline void Program::Cleanup() noexcept
 {
     if (mID != 0) {
         glDeleteProgram(mID);

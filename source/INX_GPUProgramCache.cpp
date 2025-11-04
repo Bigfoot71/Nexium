@@ -48,7 +48,7 @@ gpu::Program& INX_GPUProgramCache::GetCubemapFromEquirectangular()
 {
     gpu::Program& program = mPrograms[INX_PROG_CUBEMAP_EQUIRECT];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -70,7 +70,7 @@ gpu::Program& INX_GPUProgramCache::GetCubemapIrradiance()
 {
     gpu::Program& program = mPrograms[INX_PROG_CUBEMAP_IRRADIANCE];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -92,7 +92,7 @@ gpu::Program& INX_GPUProgramCache::GetCubemapPrefilter()
 {
     gpu::Program& program = mPrograms[INX_PROG_CUBEMAP_PREFILTER];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -114,7 +114,7 @@ gpu::Program& INX_GPUProgramCache::GetCubemapSkybox()
 {
     gpu::Program& program = mPrograms[INX_PROG_CUBEMAP_SKYBOX];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -136,7 +136,7 @@ gpu::Program& INX_GPUProgramCache::GetLightCulling()
 {
     gpu::Program& program = mPrograms[INX_PROG_LIGHT_CULLING];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -157,7 +157,7 @@ gpu::Program& INX_GPUProgramCache::GetSkybox()
 {
     gpu::Program& program = mPrograms[INX_PROG_SKYBOX];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -205,7 +205,7 @@ gpu::Program& INX_GPUProgramCache::GetBloomPost(NX_Bloom mode)
 
     gpu::Program& program = mPrograms[id];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -251,7 +251,7 @@ gpu::Program& INX_GPUProgramCache::GetOutput(NX_Tonemap tonemap)
 
     gpu::Program& program = mPrograms[id];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -273,7 +273,7 @@ gpu::Program& INX_GPUProgramCache::GetSsaoBilateralBlur()
 {
     gpu::Program& program = mPrograms[INX_PROG_SSAO_BILATERAL_BLUR];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -295,7 +295,7 @@ gpu::Program& INX_GPUProgramCache::GetDownsampling()
 {
     gpu::Program& program = mPrograms[INX_PROG_DOWNSAMPLING];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -317,7 +317,7 @@ gpu::Program& INX_GPUProgramCache::GetUpsampling()
 {
     gpu::Program& program = mPrograms[INX_PROG_UPSAMPLING];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -339,7 +339,7 @@ gpu::Program& INX_GPUProgramCache::GetSsaoPass()
 {
     gpu::Program& program = mPrograms[INX_PROG_SSAO_PASS];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -361,7 +361,7 @@ gpu::Program& INX_GPUProgramCache::GetSsaoPost()
 {
     gpu::Program& program = mPrograms[INX_PROG_SSAO_POST];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -383,7 +383,7 @@ gpu::Program& INX_GPUProgramCache::GetOverlay()
 {
     gpu::Program& program = mPrograms[INX_PROG_OVERLAY];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -405,7 +405,7 @@ gpu::Program& INX_GPUProgramCache::GetScreenQuad()
 {
     gpu::Program& program = mPrograms[INX_PROG_SCREEN_QUAD];
 
-    if (program.isValid()) {
+    if (program.IsValid()) {
         return program;
     }
 
@@ -438,7 +438,7 @@ void INX_GPUProgramCache::UnloadAll()
 
 gpu::Shader& INX_GPUProgramCache::GetVertexShaderScreen()
 {
-    if (mVertexShaderScreen.isValid()) {
+    if (mVertexShaderScreen.IsValid()) {
         return mVertexShaderScreen;
     }
 
@@ -455,7 +455,7 @@ gpu::Shader& INX_GPUProgramCache::GetVertexShaderScreen()
 
 gpu::Shader& INX_GPUProgramCache::GetVertexShaderCube()
 {
-    if (mVertexShaderCube.isValid()) {
+    if (mVertexShaderCube.IsValid()) {
         return mVertexShaderCube;
     }
 

@@ -66,8 +66,8 @@ void NX_BeginDynamicMesh(NX_DynamicMesh* dynMesh, NX_PrimitiveType type)
 
 void NX_EndDynamicMesh(NX_DynamicMesh* dynMesh)
 {
-    dynMesh->buffer->vbo.reserve(dynMesh->vertices.size() * sizeof(NX_Vertex3D), false);
-    dynMesh->buffer->vbo.upload(0, dynMesh->vertices.size() * sizeof(NX_Vertex3D), dynMesh->vertices.data());
+    dynMesh->buffer->vbo.Reserve(dynMesh->vertices.size() * sizeof(NX_Vertex3D), false);
+    dynMesh->buffer->vbo.Upload(0, dynMesh->vertices.size() * sizeof(NX_Vertex3D), dynMesh->vertices.data());
 
     dynMesh->aabb.min = NX_VEC3(+FLT_MAX, +FLT_MAX, +FLT_MAX);
     dynMesh->aabb.max = NX_VEC3(-FLT_MAX, -FLT_MAX, -FLT_MAX);

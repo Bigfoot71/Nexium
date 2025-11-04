@@ -71,16 +71,16 @@ static gpu::Texture INX_LoadEquirectangular(const NX_Image& image)
 
     gpu::Pipeline pipeline;
 
-    pipeline.bindFramebuffer(fb);
-    pipeline.setViewport(fb);
+    pipeline.BindFramebuffer(fb);
+    pipeline.SetViewport(fb);
 
-    pipeline.bindTexture(0, panorama);
-    pipeline.useProgram(INX_Programs.GetCubemapFromEquirectangular());
+    pipeline.BindTexture(0, panorama);
+    pipeline.UseProgram(INX_Programs.GetCubemapFromEquirectangular());
 
     for (int i = 0; i < 6; i++) {
-        fb.setColorAttachmentTarget(0, 0, i);
-        pipeline.setUniformInt1(0, i);
-        pipeline.draw(GL_TRIANGLES, 3);
+        fb.SetColorAttachmentTarget(0, 0, i);
+        pipeline.SetUniformInt1(0, i);
+        pipeline.Draw(GL_TRIANGLES, 3);
     }
 
     return texture;
@@ -136,7 +136,7 @@ static gpu::Texture INX_LoadLineHorizontal(const NX_Image& image)
             SDL_memcpy(dstRow, srcRow, cubeFaceSize * bytesPerPixel);
         }
         region.cubeFace = gpu::CubeFace(int(gpu::CubeFace::PositiveX) + i);
-        texture.upload(faceBuffer.data(), region);
+        texture.Upload(faceBuffer.data(), region);
     }
 
     return texture;
@@ -186,7 +186,7 @@ static gpu::Texture INX_LoadLineVertical(const NX_Image& image)
 
     for (int i = 0; i < 6; i++) {
         region.cubeFace = gpu::CubeFace(int(gpu::CubeFace::PositiveX) + i);
-        texture.upload(pixels + (i * cubeFaceSize * image.w * bytesPerPixel), region);
+        texture.Upload(pixels + (i * cubeFaceSize * image.w * bytesPerPixel), region);
     }
 
     return texture;
@@ -252,7 +252,7 @@ static gpu::Texture INX_LoadCrossThreeByFour(const NX_Image& image)
                 uint8_t* dstRow = faceBuffer.data() + y * cubeFaceSize * bytesPerPixel;
                 SDL_memcpy(dstRow, srcRow, cubeFaceSize * bytesPerPixel);
             }
-            texture.upload(faceBuffer.data(), gpu::UploadRegion{
+            texture.Upload(faceBuffer.data(), gpu::UploadRegion{
                 .x = 0, .y = 0, .z = 0,
                 .width = cubeFaceSize,
                 .height = cubeFaceSize,
@@ -325,7 +325,7 @@ static gpu::Texture INX_LoadCrossFourByThree(const NX_Image& image)
                 uint8_t* dstRow = faceBuffer.data() + y * cubeFaceSize * bytesPerPixel;
                 memcpy(dstRow, srcRow, cubeFaceSize * bytesPerPixel);
             }
-            texture.upload(faceBuffer.data(), gpu::UploadRegion{
+            texture.Upload(faceBuffer.data(), gpu::UploadRegion{
                 .x = 0, .y = 0, .z = 0,
                 .width = cubeFaceSize,
                 .height = cubeFaceSize,
@@ -398,7 +398,7 @@ NX_Cubemap* NX_LoadCubemapFromData(const NX_Image* image)
         }
     }
 
-    if (!cubemap->gpu.isValid()) {
+    if (!cubemap->gpu.IsValid()) {
         NX_LOG(E, "RENDER: Unable to determine skybox cubemap layout");
         INX_Pool.Destroy(cubemap);
         return nullptr;
@@ -406,8 +406,8 @@ NX_Cubemap* NX_LoadCubemapFromData(const NX_Image* image)
 
     /* --- Generate mipmaps and setup parameters --- */
 
-    cubemap->gpu.generateMipmap(); //< Needed for prefilter
-    cubemap->gpu.setFilter(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    cubemap->gpu.GenerateMipmap(); //< Needed for prefilter
+    cubemap->gpu.SetFilter(GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
 
     return cubemap;
 }
@@ -430,32 +430,32 @@ void NX_DestroyCubemap(NX_Cubemap* cubemap)
 
 void NX_GenerateSkybox(NX_Cubemap* cubemap, const NX_Skybox* skybox)
 {
-    if (!cubemap->framebuffer.isValid()) {
+    if (!cubemap->framebuffer.IsValid()) {
         cubemap->framebuffer = gpu::Framebuffer({&cubemap->gpu}, nullptr);
     }
 
     gpu::Pipeline pipeline;
 
-    pipeline.bindFramebuffer(cubemap->framebuffer);
-    pipeline.setViewport(cubemap->framebuffer);
+    pipeline.BindFramebuffer(cubemap->framebuffer);
+    pipeline.SetViewport(cubemap->framebuffer);
 
-    pipeline.useProgram(INX_Programs.GetCubemapSkybox());
+    pipeline.UseProgram(INX_Programs.GetCubemapSkybox());
 
-    pipeline.setUniformFloat3(1, NX_Vec3Normalize(-skybox->sunDirection));
-    pipeline.setUniformFloat3(2, skybox->skyColorTop);
-    pipeline.setUniformFloat3(3, skybox->skyColorHorizon);
-    pipeline.setUniformFloat3(4, skybox->sunColor);
-    pipeline.setUniformFloat3(5, skybox->groundColor);
-    pipeline.setUniformFloat1(6, skybox->sunSize);
-    pipeline.setUniformFloat1(7, skybox->haze);
-    pipeline.setUniformFloat1(8, skybox->energy);
-    pipeline.setUniformInt1(9, cubemap->gpu.isHDR());
+    pipeline.SetUniformFloat3(1, NX_Vec3Normalize(-skybox->sunDirection));
+    pipeline.SetUniformFloat3(2, skybox->skyColorTop);
+    pipeline.SetUniformFloat3(3, skybox->skyColorHorizon);
+    pipeline.SetUniformFloat3(4, skybox->sunColor);
+    pipeline.SetUniformFloat3(5, skybox->groundColor);
+    pipeline.SetUniformFloat1(6, skybox->sunSize);
+    pipeline.SetUniformFloat1(7, skybox->haze);
+    pipeline.SetUniformFloat1(8, skybox->energy);
+    pipeline.SetUniformInt1(9, cubemap->gpu.IsHDR());
 
     for (int i = 0; i < 6; i++) {
-        cubemap->framebuffer.setColorAttachmentTarget(0, 0, i);
-        pipeline.setUniformMat4(0, INX_GetCubeView(i) * INX_GetCubeProj());
-        pipeline.draw(GL_TRIANGLES, 36);
+        cubemap->framebuffer.SetColorAttachmentTarget(0, 0, i);
+        pipeline.SetUniformMat4(0, INX_GetCubeView(i) * INX_GetCubeProj());
+        pipeline.Draw(GL_TRIANGLES, 36);
     }
 
-    cubemap->gpu.generateMipmap();
+    cubemap->gpu.GenerateMipmap();
 }

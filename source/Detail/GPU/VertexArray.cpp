@@ -27,12 +27,12 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
 
     for (const auto& vbDesc : vertexBuffers)
     {
-        if (vbDesc.buffer && !vbDesc.buffer->isValid()) {
+        if (vbDesc.buffer && !vbDesc.buffer->IsValid()) {
             NX_LOG(E, "GPU: Invalid vertex buffer provided");
             return;
         }
 
-        if (vbDesc.buffer && vbDesc.buffer->target() != GL_ARRAY_BUFFER) {
+        if (vbDesc.buffer && vbDesc.buffer->GetTarget() != GL_ARRAY_BUFFER) {
             NX_LOG(E, "GPU: Vertex buffer must have GL_ARRAY_BUFFER target");
             return;
         }
@@ -44,12 +44,12 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
 
         for (const auto& attr : vbDesc.attributes)
         {
-            if (!isValidAttributeSize(attr.size)) {
+            if (!IsValidAttributeSize(attr.size)) {
                 NX_LOG(E, "GPU: Invalid attribute size %d for location %u", attr.size, attr.location);
                 return;
             }
 
-            if (!isValidAttributeType(attr.type)) {
+            if (!IsValidAttributeType(attr.type)) {
                 NX_LOG(E, "GPU: Invalid attribute type 0x%x for location %u", attr.type, attr.location);
                 return;
             }
@@ -70,11 +70,11 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
     /* --- Validate index buffer if provided --- */
 
     if (mIndexBuffer) {
-        if (!mIndexBuffer->isValid()) {
+        if (!mIndexBuffer->IsValid()) {
             NX_LOG(E, "GPU: Invalid index buffer provided");
             return;
         }
-        if (mIndexBuffer->target() != GL_ELEMENT_ARRAY_BUFFER) {
+        if (mIndexBuffer->GetTarget() != GL_ELEMENT_ARRAY_BUFFER) {
             NX_LOG(E, "GPU: Index buffer must have GL_ELEMENT_ARRAY_BUFFER target");
             return;
         }
@@ -100,10 +100,10 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
 
     /* --- Bind VAO, set up vertex attributes and buffer bindings --- */
 
-    Pipeline::withVertexArrayBind(mID, [&]()
+    Pipeline::WithVertexArrayBind(mID, [&]()
     {
         if (mIndexBuffer) {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer->id());
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mIndexBuffer->GetID());
         }
 
         for (const VertexBufferDesc& desc : vertexBuffers)
@@ -111,13 +111,13 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
             mVertexBuffers.emplace_back(desc.buffer, util::FixedArray<VertexAttribute>(desc.attributes.size()));
 
             if (desc.buffer != nullptr) {
-                glBindBuffer(GL_ARRAY_BUFFER, desc.buffer->id());
+                glBindBuffer(GL_ARRAY_BUFFER, desc.buffer->GetID());
             }
 
             for (const VertexAttribute& attr : desc.attributes) {
                 mVertexBuffers.back()->attributes.emplace_back(attr);
-                if (desc.buffer) setupVertexAttribute(attr);
-                else applyDefaultAttribute(attr);
+                if (desc.buffer) SetupVertexAttribute(attr);
+                else ApplyDefaultAttribute(attr);
             }
         }
 
@@ -132,50 +132,50 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
     });
 }
 
-void VertexArray::bindVertexBuffer(size_t index, const Buffer* buffer) noexcept
+void VertexArray::BindVertexBuffer(size_t index, const Buffer* buffer) noexcept
 {
-    SDL_assert(buffer && !buffer->isValid());
+    SDL_assert(buffer && !buffer->IsValid());
 
     if (mVertexBuffers[index].attachedBuffer == buffer) {
         return;
     }
 
-    Pipeline::withVertexArrayBind(mID, [&]()  {
-        glBindBuffer(GL_ARRAY_BUFFER, buffer ? buffer->id() : 0);
+    Pipeline::WithVertexArrayBind(mID, [&]()  {
+        glBindBuffer(GL_ARRAY_BUFFER, buffer ? buffer->GetID() : 0);
         for (const VertexAttribute& attr : mVertexBuffers[index].attributes) {
-            if (buffer) setupVertexAttribute(attr);
-            else applyDefaultAttribute(attr);
+            if (buffer) SetupVertexAttribute(attr);
+            else ApplyDefaultAttribute(attr);
         }
     });
 
     mVertexBuffers[index].attachedBuffer = buffer;
 }
 
-void VertexArray::unbindVertexBuffer(size_t index) noexcept
+void VertexArray::UnbindVertexBuffer(size_t index) noexcept
 {
     if (mVertexBuffers[index].attachedBuffer == nullptr) {
         return;
     }
 
-    Pipeline::withVertexArrayBind(mID, [&]()  {
+    Pipeline::WithVertexArrayBind(mID, [&]()  {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         for (const VertexAttribute& attr : mVertexBuffers[index].attributes) {
-            applyDefaultAttribute(attr);
+            ApplyDefaultAttribute(attr);
         }
     });
 
     mVertexBuffers[index].attachedBuffer = nullptr;
 }
 
-void VertexArray::bindVertexBuffers(std::initializer_list<std::pair<size_t, const Buffer*>> buffers) noexcept
+void VertexArray::BindVertexBuffers(std::initializer_list<std::pair<size_t, const Buffer*>> buffers) noexcept
 {
-    Pipeline::withVertexArrayBind(mID, [&]()  {
+    Pipeline::WithVertexArrayBind(mID, [&]()  {
         for (const auto& [index, buffer] : buffers) {
             if (mVertexBuffers[index].attachedBuffer != buffer) {
-                glBindBuffer(GL_ARRAY_BUFFER, buffer ? buffer->id() : 0);
+                glBindBuffer(GL_ARRAY_BUFFER, buffer ? buffer->GetID() : 0);
                 for (const VertexAttribute& attr : mVertexBuffers[index].attributes) {
-                    if (buffer) setupVertexAttribute(attr);
-                    else applyDefaultAttribute(attr);
+                    if (buffer) SetupVertexAttribute(attr);
+                    else ApplyDefaultAttribute(attr);
                 }
                 mVertexBuffers[index].attachedBuffer = buffer;
             }
@@ -183,14 +183,14 @@ void VertexArray::bindVertexBuffers(std::initializer_list<std::pair<size_t, cons
     });
 }
 
-void VertexArray::unbindVertexBuffers(std::initializer_list<size_t> indices) noexcept
+void VertexArray::UnbindVertexBuffers(std::initializer_list<size_t> indices) noexcept
 {
-    Pipeline::withVertexArrayBind(mID, [&]() {
+    Pipeline::WithVertexArrayBind(mID, [&]() {
         for (size_t index : indices) {
             if (mVertexBuffers[index].attachedBuffer != nullptr) {
                 glBindBuffer(GL_ARRAY_BUFFER, 0);
                 for (const VertexAttribute& attr : mVertexBuffers[index].attributes) {
-                    applyDefaultAttribute(attr);
+                    ApplyDefaultAttribute(attr);
                 }
                 mVertexBuffers[index].attachedBuffer = nullptr;
             }

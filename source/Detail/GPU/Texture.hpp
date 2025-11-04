@@ -44,7 +44,7 @@ struct TextureConfig {
     int depth = 0;
     bool mipmap = false;
 
-    const TextureConfig& check() const {
+    const TextureConfig& Check() const {
         switch (target) {
         case GL_TEXTURE_2D:
             SDL_assert(width > 0 && height > 0);
@@ -64,7 +64,7 @@ struct TextureConfig {
             SDL_assert(depth > 0);
             break;
         default:
-            SDL_assert(false && "Unsupported texture target");
+            SDL_assert(false && "Unsupported texture target"); // NOLINT
             break;
         }
         return *this;
@@ -111,37 +111,37 @@ public:
     Texture& operator=(Texture&& other) noexcept;
 
     /** Public interface */
-    bool isValid() const noexcept;
-    bool isHDR() const noexcept;
-    GLuint id() const noexcept;
-    GLenum target() const noexcept;
-    GLenum internalFormat() const noexcept;
-    bool hasMipmap() const noexcept;
-    int numLevels() const noexcept;
-    NX_IVec2 dimensions() const noexcept;
-    int width() const noexcept;
-    int height() const noexcept;
-    int depth() const noexcept;
+    bool IsValid() const noexcept;
+    bool IsHDR() const noexcept;
+    GLuint GetID() const noexcept;
+    GLenum GetTarget() const noexcept;
+    GLenum GetInternalFormat() const noexcept;
+    bool HasMipmap() const noexcept;
+    int GetNumLevels() const noexcept;
+    NX_IVec2 GetDimensions() const noexcept;
+    int GetWidth() const noexcept;
+    int GetHeight() const noexcept;
+    int GetDepth() const noexcept;
 
     /** Post-creation manipulation (keeps the ID, only affects the current target) */
-    void realloc(int w, int h, int d, const void* data = nullptr) noexcept;
-    void realloc(const TextureConfig& config) noexcept;
+    void Realloc(int w, int h, int d, const void* data = nullptr) noexcept;
+    void Realloc(const TextureConfig& config) noexcept;
 
     /** Ensures the required dimensions are available, calls realloc if the size needs to be increased */
-    void reserve(int w, int h, int d) noexcept;
+    void Reserve(int w, int h, int d) noexcept;
 
     /** Data upload */
-    void upload(const void* data, int depth = 0, int level = 0) noexcept;
-    void upload(const void* data, const UploadRegion& region) noexcept;
-    void uploadCube(const void* const* data, int level = 0) noexcept;
+    void Upload(const void* data, int depth = 0, int level = 0) noexcept;
+    void Upload(const void* data, const UploadRegion& region) noexcept;
+    void UploadCube(const void* const* data, int level = 0) noexcept;
 
     /** Texture parameters */
-    void setMipLevelRange(int baseLevel, int maxLevel) noexcept;
-    void setParameters(const TextureParam& parameters) noexcept;
-    void setWrap(GLenum sWrap, GLenum tWrap, GLenum rWrap = GL_CLAMP_TO_EDGE) noexcept;
-    void setFilter(GLenum minFilter, GLenum magFilter) noexcept;
-    void setAnisotropy(float anisotropy) noexcept;
-    void generateMipmap() noexcept;
+    void SetMipLevelRange(int baseLevel, int maxLevel) noexcept;
+    void SetParameters(const TextureParam& parameters) noexcept;
+    void SetWrap(GLenum sWrap, GLenum tWrap, GLenum rWrap = GL_CLAMP_TO_EDGE) noexcept;
+    void SetFilter(GLenum minFilter, GLenum magFilter) noexcept;
+    void SetAnisotropy(float anisotropy) noexcept;
+    void GenerateMipmap() noexcept;
 
 private:
     /** Member variables */
@@ -165,39 +165,39 @@ private:
     static inline std::unordered_map<FormatKey, GLenum, FormatKeyHash> sFormatFallbacks;
 
     /** Creation and allocation */
-    void createTexture(const TextureConfig& config, const TextureParam& param) noexcept;
-    void allocateTexture(const TextureConfig& config) noexcept; // Allocates via glTexImage*, tests fallbacks
-    bool allocateWithFormat(GLenum internalFormat) noexcept;    // Attempts allocation with a specific format
-    void destroyTexture() noexcept;
+    void CreateTexture(const TextureConfig& config, const TextureParam& param) noexcept;
+    void AllocateTexture(const TextureConfig& config) noexcept; // Allocates via glTexImage*, tests fallbacks
+    bool AllocateWithFormat(GLenum internalFormat) noexcept;    // Attempts allocation with a specific format
+    void DestroyTexture() noexcept;
 
     /** Internal operations (require the texture to be bound) */
-    void uploadData_Bound(const void* data, const UploadRegion& region) noexcept;
-    void setWrap_Bound(GLenum sWrap, GLenum tWrap, GLenum rWrap) noexcept;
-    void setFilter_Bound(GLenum minFilter, GLenum magFilter) noexcept;
-    void setMipLevelRange_Bound(int baseLevel, int maxLevel) noexcept;
-    void setAnisotropy_Bound(float anisotropy) noexcept;
-    void generateMipmap_Bound() noexcept;
+    void UploadData_Bound(const void* data, const UploadRegion& region) noexcept;
+    void SetWrap_Bound(GLenum sWrap, GLenum tWrap, GLenum rWrap) noexcept;
+    void SetFilter_Bound(GLenum minFilter, GLenum magFilter) noexcept;
+    void SetMipLevelRange_Bound(int baseLevel, int maxLevel) noexcept;
+    void SetAnisotropy_Bound(float anisotropy) noexcept;
+    void GenerateMipmap_Bound() noexcept;
 
     /** Static format helpers */
-    static GLenum getFormatAndType(GLenum internalFormat, GLenum& format, GLenum& type) noexcept;
-    static GLenum getFallbackFormat(GLenum internalFormat) noexcept;
-    static const char* formatToString(GLenum internalFormat) noexcept;
-    static const char* targetToString(GLenum target) noexcept;
+    static GLenum GetFormatAndType(GLenum internalFormat, GLenum& format, GLenum& type) noexcept;
+    static GLenum GetFallbackFormat(GLenum internalFormat) noexcept;
+    static const char* FormatToString(GLenum internalFormat) noexcept;
+    static const char* TargetToString(GLenum target) noexcept;
 
     /** Static mipmap helpers */
-    static int calculateMaxMipLevels(int width, int height, int depth = 1) noexcept;
+    static int CalculateMaxMipLevels(int width, int height, int depth = 1) noexcept;
 };
 
 /* === Inline Implementations === */
 
 inline Texture::Texture(const TextureConfig& config, const TextureParam& param) noexcept
 {
-    createTexture(config.check(), param);
+    CreateTexture(config.Check(), param);
 }
 
 inline Texture::~Texture() noexcept
 {
-    destroyTexture();
+    DestroyTexture();
 }
 
 inline Texture::Texture(Texture&& other) noexcept
@@ -213,7 +213,7 @@ inline Texture::Texture(Texture&& other) noexcept
 inline Texture& Texture::operator=(Texture&& other) noexcept
 {
     if (this != &other) {
-        destroyTexture();
+        DestroyTexture();
         mID = std::exchange(other.mID, 0);
         mTarget = other.mTarget;
         mInternalFormat = other.mInternalFormat;
@@ -225,12 +225,12 @@ inline Texture& Texture::operator=(Texture&& other) noexcept
     return *this;
 }
 
-inline bool Texture::isValid() const noexcept
+inline bool Texture::IsValid() const noexcept
 {
     return mID > 0;
 }
 
-inline bool Texture::isHDR() const noexcept
+inline bool Texture::IsHDR() const noexcept
 {
     switch (mInternalFormat) {
     case GL_R16F:
@@ -248,52 +248,52 @@ inline bool Texture::isHDR() const noexcept
     return false;
 }
 
-inline GLuint Texture::id() const noexcept
+inline GLuint Texture::GetID() const noexcept
 {
     return mID;
 }
 
-inline GLenum Texture::target() const noexcept
+inline GLenum Texture::GetTarget() const noexcept
 {
     return mTarget;
 }
 
-inline GLenum Texture::internalFormat() const noexcept
+inline GLenum Texture::GetInternalFormat() const noexcept
 {
     return mInternalFormat;
 }
 
-inline bool Texture::hasMipmap() const noexcept
+inline bool Texture::HasMipmap() const noexcept
 {
     return mMipLevels > 1;
 }
 
-inline int Texture::numLevels() const noexcept
+inline int Texture::GetNumLevels() const noexcept
 {
     return mMipLevels;
 }
 
-inline NX_IVec2 Texture::dimensions() const noexcept
+inline NX_IVec2 Texture::GetDimensions() const noexcept
 {
     return NX_IVEC2(mWidth, mHeight);
 }
 
-inline int Texture::width() const noexcept
+inline int Texture::GetWidth() const noexcept
 {
     return mWidth;
 }
 
-inline int Texture::height() const noexcept
+inline int Texture::GetHeight() const noexcept
 {
     return mHeight;
 }
 
-inline int Texture::depth() const noexcept
+inline int Texture::GetDepth() const noexcept
 {
     return mDepth;
 }
 
-inline void Texture::realloc(int w, int h, int d, const void* data) noexcept
+inline void Texture::Realloc(int w, int h, int d, const void* data) noexcept
 {
     TextureConfig config {
         .target = mTarget,
@@ -305,10 +305,10 @@ inline void Texture::realloc(int w, int h, int d, const void* data) noexcept
         .mipmap = (mMipLevels > 1)
     };
 
-    realloc(config);
+    Realloc(config);
 }
 
-inline void Texture::reserve(int w, int h, int d) noexcept
+inline void Texture::Reserve(int w, int h, int d) noexcept
 {
     switch (mTarget) {
     case GL_TEXTURE_2D:
@@ -350,10 +350,10 @@ inline void Texture::reserve(int w, int h, int d) noexcept
         .mipmap = (mMipLevels > 1)
     };
 
-    realloc(config);
+    Realloc(config);
 }
 
-inline void Texture::destroyTexture() noexcept
+inline void Texture::DestroyTexture() noexcept
 {
     if (mID != 0) {
         glDeleteTextures(1, &mID);
@@ -363,7 +363,7 @@ inline void Texture::destroyTexture() noexcept
 
 /* === Format Helpers === */
 
-inline GLenum Texture::getFormatAndType(GLenum internalFormat, GLenum& format, GLenum& type) noexcept
+inline GLenum Texture::GetFormatAndType(GLenum internalFormat, GLenum& format, GLenum& type) noexcept
 {
     switch (internalFormat) {
     case GL_R8:           format = GL_RED;   type = GL_UNSIGNED_BYTE; break;
@@ -389,7 +389,7 @@ inline GLenum Texture::getFormatAndType(GLenum internalFormat, GLenum& format, G
     return internalFormat;
 }
 
-inline GLenum Texture::getFallbackFormat(GLenum internalFormat) noexcept
+inline GLenum Texture::GetFallbackFormat(GLenum internalFormat) noexcept
 {
     switch (internalFormat) {
     case GL_R11F_G11F_B10F:     return GL_RGB16F;
@@ -408,7 +408,7 @@ inline GLenum Texture::getFallbackFormat(GLenum internalFormat) noexcept
     }
 }
 
-inline const char* Texture::formatToString(GLenum internalFormat) noexcept
+inline const char* Texture::FormatToString(GLenum internalFormat) noexcept
 {
     switch (internalFormat) {
     case GL_R8: return "GL_R8";
@@ -433,7 +433,7 @@ inline const char* Texture::formatToString(GLenum internalFormat) noexcept
     }
 }
 
-inline const char* Texture::targetToString(GLenum target) noexcept
+inline const char* Texture::TargetToString(GLenum target) noexcept
 {
     switch (target) {
     case GL_TEXTURE_2D: return "GL_TEXTURE_2D";
@@ -445,7 +445,7 @@ inline const char* Texture::targetToString(GLenum target) noexcept
     }
 }
 
-inline int Texture::calculateMaxMipLevels(int width, int height, int depth) noexcept
+inline int Texture::CalculateMaxMipLevels(int width, int height, int depth) noexcept
 {
     int maxDimension = NX_MAX3(width, height, depth);
     return static_cast<int>(std::floor(std::log2(maxDimension))) + 1;

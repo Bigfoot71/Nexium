@@ -67,20 +67,20 @@ public:
     VertexArray& operator=(VertexArray&& other) noexcept;
 
     /** Public interface */
-    bool isValid() const noexcept;
-    GLuint id() const noexcept;
+    bool IsValid() const noexcept;
+    GLuint GetID() const noexcept;
 
     /** Access to index buffer */
-    const Buffer* indexBuffer() const noexcept;
+    const Buffer* GetIndexBuffer() const noexcept;
 
     /** Access to vertex buffers */
-    size_t vertexBufferCount() const noexcept;
-    const Buffer* vertexBuffer(size_t index) const noexcept;
-    bool hasVertexBuffer(size_t index) const noexcept;
-    void bindVertexBuffer(size_t index, const Buffer* buffer) noexcept;
-    void unbindVertexBuffer(size_t index) noexcept;
-    void bindVertexBuffers(std::initializer_list<std::pair<size_t, const Buffer*>> buffers) noexcept;
-    void unbindVertexBuffers(std::initializer_list<size_t> indices) noexcept;
+    size_t GetVertexBufferCount() const noexcept;
+    const Buffer* GetVertexBuffer(size_t index) const noexcept;
+    bool HasVertexBuffer(size_t index) const noexcept;
+    void BindVertexBuffer(size_t index, const Buffer* buffer) noexcept;
+    void UnbindVertexBuffer(size_t index) noexcept;
+    void BindVertexBuffers(std::initializer_list<std::pair<size_t, const Buffer*>> buffers) noexcept;
+    void UnbindVertexBuffers(std::initializer_list<size_t> indices) noexcept;
 
 private:
     /** Member variables */
@@ -90,14 +90,14 @@ private:
 
 private:
     /** Private helpers */
-    void applyDefaultAttribute(const VertexAttribute& attr) noexcept;
-    void setupVertexAttribute(const VertexAttribute& attr) noexcept;
+    void ApplyDefaultAttribute(const VertexAttribute& attr) noexcept;
+    void SetupVertexAttribute(const VertexAttribute& attr) noexcept;
 
     /** Static helpers */
-    static bool isValidAttributeSize(GLint size) noexcept;
-    static bool isValidAttributeType(GLenum type) noexcept;
-    static bool isIntegerAttributeType(GLenum type) noexcept;
-    static const char* attributeTypeToString(GLenum type) noexcept;
+    static bool IsValidAttributeSize(GLint size) noexcept;
+    static bool IsValidAttributeType(GLenum type) noexcept;
+    static bool IsIntegerAttributeType(GLenum type) noexcept;
+    static const char* AttributeTypeToString(GLenum type) noexcept;
 };
 
 /* === Public Implementation === */
@@ -132,43 +132,43 @@ inline VertexArray& VertexArray::operator=(VertexArray&& other) noexcept
     return *this;
 }
 
-inline bool VertexArray::isValid() const noexcept
+inline bool VertexArray::IsValid() const noexcept
 {
     return (mID > 0);
 }
 
-inline GLuint VertexArray::id() const noexcept
+inline GLuint VertexArray::GetID() const noexcept
 {
     return mID;
 }
 
-inline const Buffer* VertexArray::indexBuffer() const noexcept
+inline const Buffer* VertexArray::GetIndexBuffer() const noexcept
 {
     return mIndexBuffer;
 }
 
-inline size_t VertexArray::vertexBufferCount() const noexcept
+inline size_t VertexArray::GetVertexBufferCount() const noexcept
 {
     return mVertexBuffers.size();
 }
 
-inline const Buffer* VertexArray::vertexBuffer(size_t index) const noexcept
+inline const Buffer* VertexArray::GetVertexBuffer(size_t index) const noexcept
 {
     return mVertexBuffers[index].attachedBuffer;
 }
 
-inline bool VertexArray::hasVertexBuffer(size_t index) const noexcept
+inline bool VertexArray::HasVertexBuffer(size_t index) const noexcept
 {
     return (mVertexBuffers[index].attachedBuffer != nullptr);
 }
 
 /* === Private Implementation === */
 
-inline void VertexArray::applyDefaultAttribute(const VertexAttribute& attr) noexcept
+inline void VertexArray::ApplyDefaultAttribute(const VertexAttribute& attr) noexcept
 {
     glDisableVertexAttribArray(attr.location);
 
-    if (isIntegerAttributeType(attr.type)) {
+    if (IsIntegerAttributeType(attr.type)) {
         glVertexAttribI4iv(attr.location, attr.defaultValue.vInt.v);
     }
     else {
@@ -180,11 +180,11 @@ inline void VertexArray::applyDefaultAttribute(const VertexAttribute& attr) noex
     }
 }
 
-inline void VertexArray::setupVertexAttribute(const VertexAttribute& attr) noexcept
+inline void VertexArray::SetupVertexAttribute(const VertexAttribute& attr) noexcept
 {
     glEnableVertexAttribArray(attr.location);
 
-    if (isIntegerAttributeType(attr.type) && attr.normalized == GL_FALSE) {
+    if (IsIntegerAttributeType(attr.type) && attr.normalized == GL_FALSE) {
         glVertexAttribIPointer(
             attr.location, attr.size, attr.type, attr.stride,
             reinterpret_cast<const void*>(attr.offset)
@@ -202,12 +202,12 @@ inline void VertexArray::setupVertexAttribute(const VertexAttribute& attr) noexc
     }
 }
 
-inline bool VertexArray::isValidAttributeSize(GLint size) noexcept
+inline bool VertexArray::IsValidAttributeSize(GLint size) noexcept
 {
     return (size >= 1 && size <= 4);
 }
 
-inline bool VertexArray::isValidAttributeType(GLenum type) noexcept
+inline bool VertexArray::IsValidAttributeType(GLenum type) noexcept
 {
     switch (type) {
     case GL_BYTE:
@@ -227,7 +227,7 @@ inline bool VertexArray::isValidAttributeType(GLenum type) noexcept
     }
 }
 
-inline bool VertexArray::isIntegerAttributeType(GLenum type) noexcept
+inline bool VertexArray::IsIntegerAttributeType(GLenum type) noexcept
 {
     switch (type) {
     case GL_BYTE:
@@ -242,7 +242,7 @@ inline bool VertexArray::isIntegerAttributeType(GLenum type) noexcept
     }
 }
 
-inline const char* VertexArray::attributeTypeToString(GLenum type) noexcept
+inline const char* VertexArray::AttributeTypeToString(GLenum type) noexcept
 {
     switch (type) {
     case GL_BYTE: return "GL_BYTE";

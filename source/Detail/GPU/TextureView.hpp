@@ -33,16 +33,16 @@ public:
     TextureView() noexcept = default;
     TextureView(const Texture& texture) noexcept;
 
-    bool isValid() const noexcept;
+    bool IsValid() const noexcept;
 
-    GLuint id() const noexcept;
-    GLenum target() const noexcept;
-    GLenum internalFormat() const noexcept;
-    NX_IVec2 dimensions() const noexcept;
-    int width() const noexcept;
-    int height() const noexcept;
-    int depth() const noexcept;
-    int numLevels() const noexcept;
+    GLuint GetID() const noexcept;
+    GLenum GetTarget() const noexcept;
+    GLenum GetInternalFormat() const noexcept;
+    NX_IVec2 GetDimensions() const noexcept;
+    int GetWidth() const noexcept;
+    int GetHeight() const noexcept;
+    int GetDepth() const noexcept;
+    int GetNumLevels() const noexcept;
 
 private:
     GLuint mID{0};
@@ -55,56 +55,56 @@ private:
 /* === Public Implementation === */
 
 inline TextureView::TextureView(const Texture& texture) noexcept
-    : mID(texture.id())
-    , mTarget(texture.target())
-    , mInternalFormat(texture.internalFormat())
-    , mWidth(texture.width())
-    , mHeight(texture.height())
-    , mDepth(texture.depth())
-    , mMipLevels(texture.numLevels())
+    : mID(texture.GetID())
+    , mTarget(texture.GetTarget())
+    , mInternalFormat(texture.GetInternalFormat())
+    , mWidth(texture.GetWidth())
+    , mHeight(texture.GetHeight())
+    , mDepth(texture.GetDepth())
+    , mMipLevels(texture.GetNumLevels())
 { }
 
-inline bool TextureView::isValid() const noexcept
+inline bool TextureView::IsValid() const noexcept
 {
     return (mID > 0);
 }
 
-inline GLenum TextureView::id() const noexcept
+inline GLenum TextureView::GetID() const noexcept
 {
     return mID;
 }
 
-inline GLenum TextureView::target() const noexcept
+inline GLenum TextureView::GetTarget() const noexcept
 {
     return mTarget;
 }
 
-inline GLenum TextureView::internalFormat() const noexcept
+inline GLenum TextureView::GetInternalFormat() const noexcept
 {
     return mInternalFormat;
 }
 
-inline NX_IVec2 TextureView::dimensions() const noexcept
+inline NX_IVec2 TextureView::GetDimensions() const noexcept
 {
     return NX_IVEC2(mWidth, mHeight);
 }
 
-inline int TextureView::width() const noexcept
+inline int TextureView::GetWidth() const noexcept
 {
     return mWidth;
 }
 
-inline int TextureView::height() const noexcept
+inline int TextureView::GetHeight() const noexcept
 {
     return mHeight;
 }
 
-inline int TextureView::depth() const noexcept
+inline int TextureView::GetDepth() const noexcept
 {
     return mDepth;
 }
 
-inline int TextureView::numLevels() const noexcept
+inline int TextureView::GetNumLevels() const noexcept
 {
     return mMipLevels;
 }

@@ -170,26 +170,26 @@ void INX_Shader<Derived>::SetTexture(int slot, const NX_Texture* texture)
 template <typename Derived>
 void INX_Shader<Derived>::UpdateStaticBuffer(size_t offset, size_t size, const void* data)
 {
-    if (!mStaticBuffer.isValid()) {
+    if (!mStaticBuffer.IsValid()) {
         NX_LOG(E, "RENDER: No static uniform buffer allocated for this shader");
         return;
     }
 
-    if (offset + size > mStaticBuffer.size()) {
+    if (offset + size > mStaticBuffer.GetSize()) {
         NX_LOG(E, 
             "RENDER: Upload out of bounds (offset=%zu + size=%zu > buffer=%zu)",
-            offset, size, mStaticBuffer.size()
+            offset, size, mStaticBuffer.GetSize()
         );
         return;
     }
 
-    mStaticBuffer.upload(offset, size, data);
+    mStaticBuffer.Upload(offset, size, data);
 }
 
 template <typename Derived>
 void INX_Shader<Derived>::UpdateDynamicBuffer(size_t size, const void* data)
 {
-    if (!mDynamicBuffer.buffer.isValid()) {
+    if (!mDynamicBuffer.buffer.IsValid()) {
         NX_LOG(W, "RENDER: No dynamic uniform buffer allocated for this shader");
         return;
     }
@@ -199,12 +199,12 @@ void INX_Shader<Derived>::UpdateDynamicBuffer(size_t size, const void* data)
         return;
     }
 
-    size_t alignment = gpu::Pipeline::uniformBufferOffsetAlignment();
+    size_t alignment = gpu::Pipeline::GetUniformBufferOffsetAlignment();
     size_t alignedOffset = NX_ALIGN_UP(mDynamicBuffer.currentOffset, alignment);
 
     size_t requiredSize = alignedOffset + size;
-    size_t currentSize = mDynamicBuffer.buffer.size();
-    size_t maxUBOSize = static_cast<size_t>(gpu::Pipeline::maxUniformBufferSize());
+    size_t currentSize = mDynamicBuffer.buffer.GetSize();
+    size_t maxUBOSize = static_cast<size_t>(gpu::Pipeline::GetMaxUniformBufferSize());
 
     // Grow buffer if needed
     if (requiredSize > currentSize) {
@@ -222,30 +222,30 @@ void INX_Shader<Derived>::UpdateDynamicBuffer(size_t size, const void* data)
             return;
         }
         
-        mDynamicBuffer.buffer.realloc(newSize, true);
+        mDynamicBuffer.buffer.Realloc(newSize, true);
     }
 
     // Record this range for binding
     mDynamicBuffer.currentRangeIndex = static_cast<int>(mDynamicBuffer.ranges.size());
     mDynamicBuffer.ranges.emplace_back(alignedOffset, size);
 
-    mDynamicBuffer.buffer.upload(alignedOffset, size, data);
+    mDynamicBuffer.buffer.Upload(alignedOffset, size, data);
     mDynamicBuffer.currentOffset = alignedOffset + size;
 }
 
 template <typename Derived>
 void INX_Shader<Derived>::BindUniforms(const gpu::Pipeline& pipeline, int dynamicRangeIndex) const
 {
-    if (mStaticBuffer.isValid()) {
-        pipeline.bindUniform(
+    if (mStaticBuffer.IsValid()) {
+        pipeline.BindUniform(
             UniformBinding[STATIC_UNIFORM],
             mStaticBuffer
         );
     }
 
-    if (mDynamicBuffer.buffer.isValid() && dynamicRangeIndex >= 0) {
+    if (mDynamicBuffer.buffer.IsValid() && dynamicRangeIndex >= 0) {
         const auto& range = mDynamicBuffer.ranges[dynamicRangeIndex];
-        pipeline.bindUniform(
+        pipeline.BindUniform(
             UniformBinding[DYNAMIC_UNIFORM],
             mDynamicBuffer.buffer,
             range.offset,
@@ -260,7 +260,7 @@ void INX_Shader<Derived>::BindTextures(const gpu::Pipeline& pipeline, const Text
     for (int i = 0; i < SAMPLER_COUNT; i++) {
         if (mSamplerExists[i]) {
             const gpu::Texture& tex = INX_Assets.Select(textures[i], INX_TextureAsset::WHITE)->gpu;
-            pipeline.bindTexture(SamplerBinding[i], tex);
+            pipeline.BindTexture(SamplerBinding[i], tex);
         }
     }
 }

@@ -13,9 +13,6 @@
 #include "./INX_GPUProgramCache.hpp"
 #include "./INX_RenderUtils.hpp"
 #include "./INX_GlobalPool.hpp"
-#include "Detail/GPU/Framebuffer.hpp"
-#include "Detail/GPU/Texture.hpp"
-#include "NX/NX_ReflectionProbe.h"
 
 // ============================================================================
 // PUBLIC API
@@ -105,40 +102,40 @@ void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap* cubem
 
     gpu::Pipeline pipeline;
 
-    pipeline.bindTexture(0, cubemap->gpu);
+    pipeline.BindTexture(0, cubemap->gpu);
 
     /* --- Generate irradiance --- */
 
-    pipeline.bindFramebuffer(probe->irradiance.framebuffer);
-    pipeline.setViewport(probe->irradiance.framebuffer);
+    pipeline.BindFramebuffer(probe->irradiance.framebuffer);
+    pipeline.SetViewport(probe->irradiance.framebuffer);
 
-    pipeline.useProgram(INX_Programs.GetCubemapIrradiance());
+    pipeline.UseProgram(INX_Programs.GetCubemapIrradiance());
 
     for (int i = 0; i < 6; i++) {
-        probe->irradiance.framebuffer.setColorAttachmentTarget(0, 0, i);
-        pipeline.setUniformMat4(0, INX_GetCubeView(i) * INX_GetCubeProj());
-        pipeline.draw(GL_TRIANGLES, 36);
+        probe->irradiance.framebuffer.SetColorAttachmentTarget(0, 0, i);
+        pipeline.SetUniformMat4(0, INX_GetCubeView(i) * INX_GetCubeProj());
+        pipeline.Draw(GL_TRIANGLES, 36);
     }
 
     /* --- Generate prefilter --- */
 
-    pipeline.bindFramebuffer(probe->prefilter.framebuffer);
-    pipeline.setViewport(probe->prefilter.framebuffer);
+    pipeline.BindFramebuffer(probe->prefilter.framebuffer);
+    pipeline.SetViewport(probe->prefilter.framebuffer);
 
-    pipeline.useProgram(INX_Programs.GetCubemapPrefilter());
+    pipeline.UseProgram(INX_Programs.GetCubemapPrefilter());
 
-    pipeline.setUniformFloat1(1, cubemap->gpu.dimensions().x);
-    pipeline.setUniformInt1(2, cubemap->gpu.numLevels());
+    pipeline.SetUniformFloat1(1, cubemap->gpu.GetDimensions().x);
+    pipeline.SetUniformInt1(2, cubemap->gpu.GetNumLevels());
 
-    int baseSize = probe->prefilter.gpu.width();
-    for (int mip = 0; mip < probe->prefilter.gpu.numLevels(); mip++) {
+    int baseSize = probe->prefilter.gpu.GetWidth();
+    for (int mip = 0; mip < probe->prefilter.gpu.GetNumLevels(); mip++) {
         int mipSize = std::max(1, baseSize >> mip);
-        pipeline.setViewport(0, 0, mipSize, mipSize);
-        pipeline.setUniformFloat1(3, static_cast<float>(mip) / (probe->prefilter.gpu.numLevels() - 1));
+        pipeline.SetViewport(0, 0, mipSize, mipSize);
+        pipeline.SetUniformFloat1(3, static_cast<float>(mip) / (probe->prefilter.gpu.GetNumLevels() - 1));
         for (int i = 0; i < 6; i++) {
-            probe->prefilter.framebuffer.setColorAttachmentTarget(0, 0, i, mip);
-            pipeline.setUniformMat4(0, INX_GetCubeView(i) * INX_GetCubeProj());
-            pipeline.draw(GL_TRIANGLES, 36);
+            probe->prefilter.framebuffer.SetColorAttachmentTarget(0, 0, i, mip);
+            pipeline.SetUniformMat4(0, INX_GetCubeView(i) * INX_GetCubeProj());
+            pipeline.Draw(GL_TRIANGLES, 36);
         }
     }
 }

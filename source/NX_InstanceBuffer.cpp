@@ -37,9 +37,9 @@ void NX_DestroyInstanceBuffer(NX_InstanceBuffer* buffer)
 void NX_RaeallocInstanceBuffer(NX_InstanceBuffer* buffer, size_t count, bool keepData)
 {
     for (int i = 0; i < buffer->buffers.size(); i++) {
-        if (buffer->buffers[i].isValid()) {
+        if (buffer->buffers[i].IsValid()) {
             size_t size = count * NX_InstanceBuffer::TypeSizes[i];
-            buffer->buffers[i].realloc(size, keepData);
+            buffer->buffers[i].Realloc(size, keepData);
         }
     }
 
@@ -54,18 +54,18 @@ void NX_UpdateInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type, si
     offset *= NX_InstanceBuffer::TypeSizes[type];
     count *= NX_InstanceBuffer::TypeSizes[type];
 
-    if (!gpu.isValid()) {
+    if (!gpu.IsValid()) {
         NX_LOG(E, "RENDER: Cannot upload to instance buffer; type '%s' is not initialized.", NX_InstanceBuffer::TypeNames[type]);
         return;
     }
 
-    if (offset + count > gpu.size()) {
+    if (offset + count > gpu.GetSize()) {
         NX_LOG(E, "RENDER: Upload range out of bounds for type '%s' (offset %zu + count %zu > buffer size %zu).",
-            NX_InstanceBuffer::TypeNames[type], offset, count, gpu.size());
+            NX_InstanceBuffer::TypeNames[type], offset, count, gpu.GetSize());
         return;
     }
 
-    gpu.upload(offset, count, data);
+    gpu.Upload(offset, count, data);
 }
 
 void* NX_MapInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type)
@@ -73,12 +73,12 @@ void* NX_MapInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type)
     type = INX_BitScanForward(type);
     gpu::Buffer& gpu = buffer->buffers[type];
 
-    if (!gpu.isValid()) {
+    if (!gpu.IsValid()) {
         NX_LOG(E, "RENDER: Cannot map instance buffer; type '%s' is not initialized.", NX_InstanceBuffer::TypeNames[type]);
         return nullptr;
     }
 
-    return gpu.map(GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+    return gpu.Map(GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
 }
 
 void* NX_MapInstanceBufferRange(NX_InstanceBuffer* buffer, NX_InstanceData type, size_t offset, size_t count)
@@ -89,23 +89,23 @@ void* NX_MapInstanceBufferRange(NX_InstanceBuffer* buffer, NX_InstanceData type,
     offset *= NX_InstanceBuffer::TypeSizes[type];
     count *= NX_InstanceBuffer::TypeSizes[type];
 
-    if (!gpu.isValid()) {
+    if (!gpu.IsValid()) {
         NX_LOG(E, "RENDER: Cannot map instance buffer range; type '%s' is not initialized.", NX_InstanceBuffer::TypeNames[type]);
         return nullptr;
     }
 
-    if (offset + count > gpu.size()) {
+    if (offset + count > gpu.GetSize()) {
         NX_LOG(E, "RENDER: Map range out of bounds for type '%s' (offset %zu + count %zu > buffer size %zu).",
-            NX_InstanceBuffer::TypeNames[type], offset, count, gpu.size());
+            NX_InstanceBuffer::TypeNames[type], offset, count, gpu.GetSize());
         return nullptr;
     }
 
-    return gpu.mapRange(offset, count, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+    return gpu.MapRange(offset, count, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
 }
 
 void NX_UnmapInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData type)
 {
-    buffer->buffers[INX_BitScanForward(type)].unmap();
+    buffer->buffers[INX_BitScanForward(type)].Unmap();
 }
 
 void NX_QueryInstanceBuffer(NX_InstanceBuffer* buffer, NX_InstanceData* bitfield, size_t* count)

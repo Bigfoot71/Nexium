@@ -25,12 +25,12 @@ public:
     StagingBuffer(GLenum target, int initialCapacity) noexcept;
 
     /** Update methods */
-    T* stageMap(int count, int* index) noexcept;
-    int stage(const T& data) noexcept;
-    void upload() noexcept;
+    T* StageMap(int count, int* index) noexcept;
+    int Stage(const T& data) noexcept;
+    void Upload() noexcept;
 
     /** Getters */
-    const gpu::Buffer& buffer() const noexcept;
+    const gpu::Buffer& GetBuffer() const noexcept;
 
 private:
     util::ObjectRing<gpu::Buffer, BufferCount> mBuffer{};
@@ -49,7 +49,7 @@ StagingBuffer<T, BufferCount>::StagingBuffer(GLenum target, int initialCapacity)
 }
 
 template <typename T, int BufferCount>
-T* StagingBuffer<T, BufferCount>::stageMap(int count, int* index) noexcept
+T* StagingBuffer<T, BufferCount>::StageMap(int count, int* index) noexcept
 {
     SDL_assert(index != nullptr);
 
@@ -65,7 +65,7 @@ T* StagingBuffer<T, BufferCount>::stageMap(int count, int* index) noexcept
 }
 
 template <typename T, int BufferCount>
-int StagingBuffer<T, BufferCount>::stage(const T& data) noexcept
+int StagingBuffer<T, BufferCount>::Stage(const T& data) noexcept
 {
     int index = static_cast<int>(mStagingBuffer.size());
 
@@ -79,7 +79,7 @@ int StagingBuffer<T, BufferCount>::stage(const T& data) noexcept
 }
 
 template <typename T, int BufferCount>
-void StagingBuffer<T, BufferCount>::upload() noexcept
+void StagingBuffer<T, BufferCount>::Upload() noexcept
 {
     if (mStagingBuffer.empty()) {
         return;
@@ -87,14 +87,14 @@ void StagingBuffer<T, BufferCount>::upload() noexcept
 
     size_t size = mStagingBuffer.size() * sizeof(T);
 
-    mBuffer->reserve(size, false);
-    mBuffer->upload(0, size, mStagingBuffer.data());
+    mBuffer->Reserve(size, false);
+    mBuffer->Upload(0, size, mStagingBuffer.data());
 
     mStagingBuffer.clear();
 }
 
 template <typename T, int BufferCount>
-const gpu::Buffer& StagingBuffer<T, BufferCount>::buffer() const noexcept
+const gpu::Buffer& StagingBuffer<T, BufferCount>::GetBuffer() const noexcept
 {
     return *mBuffer;
 }

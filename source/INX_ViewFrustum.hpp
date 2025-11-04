@@ -124,7 +124,7 @@ inline void INX_ViewFrustum::Update(const NX_Camera& camera, float aspect)
 
     /* --- Upload to the uniform buffer --- */
 
-    mUniform.upload(&mData);
+    mUniform.Upload(&mData);
 }
 
 inline NX_Layer INX_ViewFrustum::GetCullMask() const

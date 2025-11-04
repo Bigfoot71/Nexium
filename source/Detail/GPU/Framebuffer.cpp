@@ -15,9 +15,9 @@ namespace gpu {
 
 /* === Public Implementation === */
 
-void Framebuffer::setDrawBuffers(std::initializer_list<int> buffers) noexcept
+void Framebuffer::SetDrawBuffers(std::initializer_list<int> buffers) noexcept
 {
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot set draw buffers on invalid framebuffer");
         return;
     }
@@ -27,14 +27,14 @@ void Framebuffer::setDrawBuffers(std::initializer_list<int> buffers) noexcept
         glBuffers.push_back(GL_COLOR_ATTACHMENT0 + buffers.begin()[i]);
     }
 
-    Pipeline::withFramebufferBind(renderId(), [&]() {
+    Pipeline::WithFramebufferBind(GetRenderId(), [&]() {
         glDrawBuffers(static_cast<GLsizei>(glBuffers.size()), glBuffers.begin());
     });
 }
 
-void Framebuffer::enableDrawBuffers() noexcept
+void Framebuffer::EnableDrawBuffers() noexcept
 {
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot enable draw buffers on invalid framebuffer");
         return;
     }
@@ -44,27 +44,27 @@ void Framebuffer::enableDrawBuffers() noexcept
         buffers.push_back(GL_COLOR_ATTACHMENT0 + i);
     }
 
-    Pipeline::withFramebufferBind(renderId(), [&]() {
+    Pipeline::WithFramebufferBind(GetRenderId(), [&]() {
         glDrawBuffers(static_cast<GLsizei>(buffers.size()), buffers.data());
     });
 }
 
-void Framebuffer::disableDrawBuffers() noexcept
+void Framebuffer::DisableDrawBuffers() noexcept
 {
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot disable draw buffers on invalid framebuffer");
         return;
     }
 
     GLenum none = GL_NONE;
-    Pipeline::withFramebufferBind(renderId(), [&]() {
+    Pipeline::WithFramebufferBind(GetRenderId(), [&]() {
         glDrawBuffers(1, &none);
     });
 }
 
-void Framebuffer::invalidate(std::initializer_list<int> buffers) noexcept
+void Framebuffer::Invalidate(std::initializer_list<int> buffers) noexcept
 {
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot invalidate an invalid framebuffer");
         return;
     }
@@ -72,17 +72,17 @@ void Framebuffer::invalidate(std::initializer_list<int> buffers) noexcept
     util::StaticArray<GLenum, 32> glBuffers{};
     for (int i = 0; i < NX_MIN(glBuffers.capacity(), buffers.size()); i++) {
         if (buffers.begin()[i] >= 0) glBuffers.push_back(GL_COLOR_ATTACHMENT0 + buffers.begin()[i]);
-        else glBuffers.push_back(getDepthStencilAttachment(mDepthStencilAttachment.internalFormat()));
+        else glBuffers.push_back(GetDepthStencilAttachment(mDepthStencilAttachment.GetInternalFormat()));
     }
 
-    Pipeline::withFramebufferBind(renderId(), [&]() {
+    Pipeline::WithFramebufferBind(GetRenderId(), [&]() {
         glInvalidateFramebuffer(GL_FRAMEBUFFER, static_cast<GLsizei>(glBuffers.size()), glBuffers.begin());
     });
 }
 
-void Framebuffer::invalidate() noexcept
+void Framebuffer::Invalidate() noexcept
 {
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot invalidate an invalid framebuffer");
         return;
     }
@@ -92,61 +92,61 @@ void Framebuffer::invalidate() noexcept
         buffers.push_back(GL_COLOR_ATTACHMENT0 + i);
     }
 
-    if (mDepthStencilAttachment.isValid()) {
-        buffers.push_back(getDepthStencilAttachment(
-            mDepthStencilAttachment.internalFormat()
+    if (mDepthStencilAttachment.IsValid()) {
+        buffers.push_back(GetDepthStencilAttachment(
+            mDepthStencilAttachment.GetInternalFormat()
         ));
     }
 
-    Pipeline::withFramebufferBind(renderId(), [&]() {
+    Pipeline::WithFramebufferBind(GetRenderId(), [&]() {
         glInvalidateFramebuffer(GL_FRAMEBUFFER, static_cast<GLsizei>(buffers.size()), buffers.data());
     });
 }
 
-void Framebuffer::resolve() noexcept
+void Framebuffer::Resolve() noexcept
 {
-    if (!isValid() || mSampleCount == 0 || mMultisampleFramebuffer == 0) {
+    if (!IsValid() || mSampleCount == 0 || mMultisampleFramebuffer == 0) {
         return; // Nothing to resolve
     }
 
     // Resolve each color attachment
     for (size_t i = 0; i < mColorAttachments.size(); ++i) {
-        resolveColorAttachment(static_cast<int>(i));
+        ResolveColorAttachment(static_cast<int>(i));
     }
 
     // Resolve depth attachment if present
-    if (mDepthStencilAttachment.isValid()) {
-        resolveDepthAttachment();
+    if (mDepthStencilAttachment.IsValid()) {
+        ResolveDepthAttachment();
     }
 
     // Invalidate multisample framebuffer
-    invalidate();
+    Invalidate();
 }
 
 /* === Private Implementation === */
 
-void Framebuffer::attachTexturesToResolveFramebuffer() noexcept
+void Framebuffer::AttachTexturesToResolveFramebuffer() noexcept
 {
-    Pipeline::withFramebufferBind(mResolveFramebuffer, [&]()
+    Pipeline::WithFramebufferBind(mResolveFramebuffer, [&]()
     {
         for (size_t i = 0; i < mColorAttachments.size(); ++i) {
-            updateColorAttachment(static_cast<int>(i), false);
+            UpdateColorAttachment(static_cast<int>(i), false);
         }
 
-        if (mDepthStencilAttachment.isValid()) {
-            updateDepthAttachment(false);
+        if (mDepthStencilAttachment.IsValid()) {
+            UpdateDepthAttachment(false);
         }
     });
 }
 
-void Framebuffer::updateColorAttachment(int index, bool bind) noexcept
+void Framebuffer::UpdateColorAttachment(int index, bool bind) noexcept
 {
-    SDL_assert(mColorAttachments[index].isValid());
+    SDL_assert(mColorAttachments[index].IsValid());
 
     const TextureView& texture = mColorAttachments[index];
     GLenum attachment = GL_COLOR_ATTACHMENT0 + static_cast<GLenum>(index);
-    GLenum target = texture.target();
-    GLuint textureId = texture.id();
+    GLenum target = texture.GetTarget();
+    GLuint textureId = texture.GetID();
 
     const AttachmentTarget& targetInfo = mColorTargets[index];
 
@@ -168,21 +168,21 @@ void Framebuffer::updateColorAttachment(int index, bool bind) noexcept
     };
 
     if (bind) {
-        Pipeline::withFramebufferBind(mResolveFramebuffer, action);
+        Pipeline::WithFramebufferBind(mResolveFramebuffer, action);
     }
     else {
         action();
     }
 }
 
-void Framebuffer::updateDepthAttachment(bool bind) noexcept
+void Framebuffer::UpdateDepthAttachment(bool bind) noexcept
 {
-    SDL_assert(mDepthStencilAttachment.isValid());
+    SDL_assert(mDepthStencilAttachment.IsValid());
 
     const TextureView& texture = mDepthStencilAttachment;
-    GLenum attachment = getDepthStencilAttachment(texture.internalFormat());
-    GLenum target = texture.target();
-    GLuint textureId = texture.id();
+    GLenum attachment = GetDepthStencilAttachment(texture.GetInternalFormat());
+    GLenum target = texture.GetTarget();
+    GLuint textureId = texture.GetID();
 
     const AttachmentTarget& targetInfo = mDepthTarget;
 
@@ -204,22 +204,22 @@ void Framebuffer::updateDepthAttachment(bool bind) noexcept
     };
 
     if (bind) {
-        Pipeline::withFramebufferBind(mResolveFramebuffer, action);
+        Pipeline::WithFramebufferBind(mResolveFramebuffer, action);
     }
     else {
         action();
     }
 }
 
-void Framebuffer::resolveColorAttachment(int index) noexcept
+void Framebuffer::ResolveColorAttachment(int index) noexcept
 {
-    SDL_assert(mColorAttachments[index].isValid());
+    SDL_assert(mColorAttachments[index].IsValid());
 
-    int fbWidth = width();
-    int fbHeight = height();
+    int fbWidth = GetWidth();
+    int fbHeight = GetHeight();
 
     // Update the resolve framebuffer attachment to current layer/face
-    updateColorAttachment(index, true);
+    UpdateColorAttachment(index, true);
 
     // Bind multisampled framebuffer as read
     glBindFramebuffer(GL_READ_FRAMEBUFFER, mMultisampleFramebuffer);
@@ -238,15 +238,15 @@ void Framebuffer::resolveColorAttachment(int index) noexcept
     );
 }
 
-void Framebuffer::resolveDepthAttachment() noexcept
+void Framebuffer::ResolveDepthAttachment() noexcept
 {
-    SDL_assert(mDepthStencilAttachment.isValid());
+    SDL_assert(mDepthStencilAttachment.IsValid());
 
-    int fbWidth = width();
-    int fbHeight = height();
+    int fbWidth = GetWidth();
+    int fbHeight = GetHeight();
 
     // Update the resolve framebuffer attachment to current layer/face
-    updateDepthAttachment(true);
+    UpdateDepthAttachment(true);
 
     // Bind multisampled framebuffer as read
     glBindFramebuffer(GL_READ_FRAMEBUFFER, mMultisampleFramebuffer);
@@ -262,14 +262,14 @@ void Framebuffer::resolveDepthAttachment() noexcept
     );
 }
 
-void Framebuffer::createAndAttachMultisampleRenderbuffers() noexcept
+void Framebuffer::CreateAndAttachMultisampleRenderbuffers() noexcept
 {
     if (mSampleCount <= 0) {
         return;
     }
 
-    int fbWidth = width();
-    int fbHeight = height();
+    int fbWidth = GetWidth();
+    int fbHeight = GetHeight();
 
     /* --- Generates renderbuffers if they haven't already been generated --- */
 
@@ -281,24 +281,24 @@ void Framebuffer::createAndAttachMultisampleRenderbuffers() noexcept
 
     /* --- Generates depth renderbuffer if needed --- */
 
-    if (mDepthStencilAttachment.isValid() && mDepthStencilRenderbuffer == 0) {
+    if (mDepthStencilAttachment.IsValid() && mDepthStencilRenderbuffer == 0) {
         glGenRenderbuffers(1, &mDepthStencilRenderbuffer);
     }
 
     /* --- Attach and configure multisample renderbuffers in the framebuffer --- */
 
-    Pipeline::withFramebufferBind(mMultisampleFramebuffer, [&]()
+    Pipeline::WithFramebufferBind(mMultisampleFramebuffer, [&]()
     {
         /* --- Configure color renderbuffers --- */
 
         for (size_t i = 0; i < mColorAttachments.size(); ++i)
         {
-            SDL_assert(mColorAttachments[i].isValid());
+            SDL_assert(mColorAttachments[i].IsValid());
 
             glBindRenderbuffer(GL_RENDERBUFFER, mColorRenderbuffers[i]);
             glRenderbufferStorageMultisample(
                 GL_RENDERBUFFER, mSampleCount,
-                mColorAttachments[i].internalFormat(),
+                mColorAttachments[i].GetInternalFormat(),
                 fbWidth, fbHeight
             );
 
@@ -312,16 +312,16 @@ void Framebuffer::createAndAttachMultisampleRenderbuffers() noexcept
 
         /* --- Configure depth/stencil renderbuffer --- */
 
-        if (mDepthStencilAttachment.isValid() && mDepthStencilRenderbuffer > 0)
+        if (mDepthStencilAttachment.IsValid() && mDepthStencilRenderbuffer > 0)
         {
             glBindRenderbuffer(GL_RENDERBUFFER, mDepthStencilRenderbuffer);
             glRenderbufferStorageMultisample(
                 GL_RENDERBUFFER, mSampleCount,
-                mDepthStencilAttachment.internalFormat(),
+                mDepthStencilAttachment.GetInternalFormat(),
                 fbWidth, fbHeight
             );
 
-            GLenum attachment = getDepthStencilAttachment(mDepthStencilAttachment.internalFormat());
+            GLenum attachment = GetDepthStencilAttachment(mDepthStencilAttachment.GetInternalFormat());
             glFramebufferRenderbuffer(
                 GL_FRAMEBUFFER, attachment,
                 GL_RENDERBUFFER,
@@ -333,10 +333,10 @@ void Framebuffer::createAndAttachMultisampleRenderbuffers() noexcept
     });
 }
 
-bool Framebuffer::checkFramebufferComplete(GLuint framebuffer) noexcept
+bool Framebuffer::CheckFramebufferComplete(GLuint framebuffer) noexcept
 {
     GLenum status = GL_FRAMEBUFFER_COMPLETE;
-    Pipeline::withFramebufferBind(framebuffer, [&]() {
+    Pipeline::WithFramebufferBind(framebuffer, [&]() {
         status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     });
 

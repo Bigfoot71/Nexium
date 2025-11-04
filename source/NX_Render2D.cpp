@@ -224,7 +224,7 @@ bool INX_Render2DState_Init(NX_AppDesc* desc)
     });
 
     if (desc->render2D.sampleCount > 1) {
-        INX_Render2D->framebuffer.setSampleCount(desc->render2D.sampleCount);
+        INX_Render2D->framebuffer.SetSampleCount(desc->render2D.sampleCount);
     }
 
     return true;
@@ -243,12 +243,12 @@ static void INX_Render2D_Flush()
 
     /* --- Upload to vertex buffer --- */
 
-    INX_Render2D->vertexBuffer.vbo.upload(
+    INX_Render2D->vertexBuffer.vbo.Upload(
         0, INX_Render2D->vertices.size() * sizeof(NX_Vertex2D),
         INX_Render2D->vertices.data()
     );
 
-    INX_Render2D->vertexBuffer.ebo.upload(
+    INX_Render2D->vertexBuffer.ebo.Upload(
         0, INX_Render2D->indices.size() * sizeof(uint16_t),
         INX_Render2D->indices.data()
     );
@@ -257,11 +257,11 @@ static void INX_Render2D_Flush()
 
     gpu::Pipeline pipeline;
 
-    pipeline.setBlendMode(gpu::BlendMode::Premultiplied);
-    pipeline.bindVertexArray(INX_Render2D->vertexBuffer.vao);
-    pipeline.bindUniform(0, INX_Render2D->uniformBuffer);
-    pipeline.bindFramebuffer(INX_Render2D->framebuffer);
-    pipeline.setViewport(INX_Render2D->framebuffer);
+    pipeline.SetBlendMode(gpu::BlendMode::Premultiplied);
+    pipeline.BindVertexArray(INX_Render2D->vertexBuffer.vao);
+    pipeline.BindUniform(0, INX_Render2D->uniformBuffer);
+    pipeline.BindFramebuffer(INX_Render2D->framebuffer);
+    pipeline.SetViewport(INX_Render2D->framebuffer);
 
     /* --- Render all draw calls --- */
 
@@ -275,11 +275,11 @@ static void INX_Render2D_Flush()
         switch (call.mode) {
         case INX_DrawMode2D::SHAPE:
             if (call.texture != nullptr) {
-                pipeline.useProgram(shader->GetProgram(NX_Shader2D::Variant::SHAPE_TEXTURE));
-                pipeline.bindTexture(0, *reinterpret_cast<const gpu::Texture*>(call.texture));
+                pipeline.UseProgram(shader->GetProgram(NX_Shader2D::Variant::SHAPE_TEXTURE));
+                pipeline.BindTexture(0, *reinterpret_cast<const gpu::Texture*>(call.texture));
             }
             else {
-                pipeline.useProgram(shader->GetProgram(NX_Shader2D::Variant::SHAPE_COLOR));
+                pipeline.UseProgram(shader->GetProgram(NX_Shader2D::Variant::SHAPE_COLOR));
             }
             break;
         case INX_DrawMode2D::TEXT:
@@ -288,17 +288,17 @@ static void INX_Render2D_Flush()
             case NX_FONT_NORMAL:
             case NX_FONT_LIGHT:
             case NX_FONT_MONO:
-                pipeline.useProgram(shader->GetProgram(NX_Shader2D::Variant::TEXT_BITMAP));
+                pipeline.UseProgram(shader->GetProgram(NX_Shader2D::Variant::TEXT_BITMAP));
                 break;
             case NX_FONT_SDF:
-                pipeline.useProgram(shader->GetProgram(NX_Shader2D::Variant::TEXT_SDF));
+                pipeline.UseProgram(shader->GetProgram(NX_Shader2D::Variant::TEXT_SDF));
                 break;
             }
-            pipeline.bindTexture(0, font->texture->gpu);
+            pipeline.BindTexture(0, font->texture->gpu);
             break;
         }
 
-        pipeline.drawElements(
+        pipeline.DrawElements(
             GL_TRIANGLES, GL_UNSIGNED_SHORT,
             call.offset, call.count
         );
@@ -393,23 +393,23 @@ static void INX_Render2D_EnsureDrawCall(INX_DrawMode2D mode, int vertices, int i
 
 static void INX_Render2D_Blit()
 {
-    INX_Render2D->framebuffer.resolve();
+    INX_Render2D->framebuffer.Resolve();
 
     gpu::Pipeline pipeline;
 
     if (INX_Render2D->currentTarget != nullptr) {
-        pipeline.bindFramebuffer(INX_Render2D->currentTarget->gpu);
-        pipeline.setViewport(INX_Render2D->currentTarget->gpu);
+        pipeline.BindFramebuffer(INX_Render2D->currentTarget->gpu);
+        pipeline.SetViewport(INX_Render2D->currentTarget->gpu);
     }
     else {
-        pipeline.setViewport(NX_GetWindowSize());
+        pipeline.SetViewport(NX_GetWindowSize());
     }
 
-    pipeline.bindTexture(0, INX_Render2D->targetColor);
-    pipeline.useProgram(INX_Programs.GetOverlay());
+    pipeline.BindTexture(0, INX_Render2D->targetColor);
+    pipeline.UseProgram(INX_Programs.GetOverlay());
 
-    pipeline.setBlendMode(gpu::BlendMode::Premultiplied);
-    pipeline.draw(GL_TRIANGLES, 3);
+    pipeline.SetBlendMode(gpu::BlendMode::Premultiplied);
+    pipeline.Draw(GL_TRIANGLES, 3);
 }
 
 static uint16_t INX_Render2D_NextVertexIndex()
@@ -460,9 +460,9 @@ static float INX_Render2D_ToPixelSize(float unit)
 
 void NX_Begin2D(NX_RenderTexture* target)
 {
-    NX_IVec2 size = target ? target->gpu.dimensions() : NX_GetWindowSize();
+    NX_IVec2 size = target ? target->gpu.GetDimensions() : NX_GetWindowSize();
 
-    INX_Render2D->uniformBuffer.uploadObject(INX_FrameUniform2D {
+    INX_Render2D->uniformBuffer.UploadObject(INX_FrameUniform2D {
         .projection = NX_Mat4Ortho(0, size.x, size.y, 0, 0, 1),
         .time = static_cast<float>(NX_GetElapsedTime())
     });
@@ -470,8 +470,8 @@ void NX_Begin2D(NX_RenderTexture* target)
 
     // TODO: Move the clear during the first draw
     gpu::Pipeline([&](gpu::Pipeline pipeline) {
-        pipeline.bindFramebuffer(INX_Render2D->framebuffer);
-        pipeline.clear(INX_Render2D->framebuffer, NX_BLANK);
+        pipeline.BindFramebuffer(INX_Render2D->framebuffer);
+        pipeline.Clear(INX_Render2D->framebuffer, NX_BLANK);
     });
 }
 
@@ -1702,8 +1702,8 @@ void NX_DrawCodepoint2D(int codepoint, NX_Vec2 position, float fontSize)
 
     /* --- Convert the source rect to texture coordinates --- */
 
-    float iwAtlas = 1.0f / font->texture->gpu.width();
-    float ihAtlas = 1.0f / font->texture->gpu.height();
+    float iwAtlas = 1.0f / font->texture->gpu.GetWidth();
+    float ihAtlas = 1.0f / font->texture->gpu.GetHeight();
 
     float u0 = glyph.xAtlas * iwAtlas;
     float v0 = glyph.yAtlas * ihAtlas;

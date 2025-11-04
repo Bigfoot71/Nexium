@@ -13,70 +13,70 @@ namespace gpu {
 
 /* === Public Implementation === */
 
-void Texture::realloc(const TextureConfig& config) noexcept
+void Texture::Realloc(const TextureConfig& config) noexcept
 {
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot replace invalid texture");
         return;
     }
 
-    SDL_assert(config.target == mTarget && "realloc cannot change texture target");
-    config.check();
+    SDL_assert(config.target == mTarget && "realloc cannot change texture target"); // NOLINT
+    config.Check();
 
-    Pipeline::withTextureBind(mTarget, mID,
+    Pipeline::WithTextureBind(mTarget, mID,
         [&]()
         {
-            allocateTexture(config);
+            AllocateTexture(config);
 
             if (config.data != nullptr) {
                 if (mTarget == GL_TEXTURE_CUBE_MAP) {
                     const void* const* cubeData = static_cast<const void* const*>(config.data);
-                    uploadCube(cubeData, 0);
+                    UploadCube(cubeData, 0);
                 }
                 else {
                     UploadRegion fullRegion;
                     fullRegion.level = 0;
-                    uploadData_Bound(config.data, fullRegion);
+                    UploadData_Bound(config.data, fullRegion);
                 }
             }
 
             if (config.mipmap) {
-                generateMipmap_Bound();
+                GenerateMipmap_Bound();
             }
         }
     );
 }
 
-void Texture::upload(const void* data, int depth, int level) noexcept
+void Texture::Upload(const void* data, int depth, int level) noexcept
 {
-    SDL_assert(isValid() && "Cannot upload data to invalid texture");
+    SDL_assert(IsValid() && "Cannot upload data to invalid texture"); // NOLINT
 
     UploadRegion region;
     region.depth = depth;
     region.level = level;
 
-    Pipeline::withTextureBind(mTarget, mID, [&]() {
-        uploadData_Bound(data, region);
+    Pipeline::WithTextureBind(mTarget, mID, [&]() {
+        UploadData_Bound(data, region);
     });
 }
 
-void Texture::upload(const void* data, const UploadRegion& region) noexcept
+void Texture::Upload(const void* data, const UploadRegion& region) noexcept
 {
-    SDL_assert(isValid() && "Cannot upload data to invalid texture");
+    SDL_assert(IsValid() && "Cannot upload data to invalid texture"); // NOLINT
 
-    Pipeline::withTextureBind(mTarget, mID, [&]() {
-        uploadData_Bound(data, region);
+    Pipeline::WithTextureBind(mTarget, mID, [&]() {
+        UploadData_Bound(data, region);
     });
 }
 
-void Texture::uploadCube(const void* const* data, int level) noexcept
+void Texture::UploadCube(const void* const* data, int level) noexcept
 {
-    SDL_assert(isValid() && "Cannot upload cube data to invalid texture");
+    SDL_assert(IsValid() && "Cannot upload cube data to invalid texture"); // NOLINT
     SDL_assert(mTarget == GL_TEXTURE_CUBE_MAP);
 
-    Pipeline::withTextureBind(mTarget, mID, [&]() {
+    Pipeline::WithTextureBind(mTarget, mID, [&]() {
         GLenum format, type;
-        getFormatAndType(mInternalFormat, format, type);
+        GetFormatAndType(mInternalFormat, format, type);
         for (int i = 0; i < 6; ++i) {
             const void* faceData = data ? data[i] : nullptr;
             glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, level, 0, 0, mWidth, mHeight, format, type, faceData);
@@ -84,65 +84,65 @@ void Texture::uploadCube(const void* const* data, int level) noexcept
     });
 }
 
-void Texture::setMipLevelRange(int baseLevel, int maxLevel) noexcept
+void Texture::SetMipLevelRange(int baseLevel, int maxLevel) noexcept
 {
-    SDL_assert(isValid() && "Cannot set sampling levels on invalid texture");
+    SDL_assert(IsValid() && "Cannot set sampling levels on invalid texture"); // NOLINT
 
-    Pipeline::withTextureBind(mTarget, mID, [&]() {
-        setMipLevelRange_Bound(baseLevel, maxLevel);
+    Pipeline::WithTextureBind(mTarget, mID, [&]() {
+        SetMipLevelRange_Bound(baseLevel, maxLevel);
     });
 }
 
-void Texture::setParameters(const TextureParam& parameters) noexcept
+void Texture::SetParameters(const TextureParam& parameters) noexcept
 {
-    SDL_assert(isValid() && "Cannot set parameters on invalid texture");
+    SDL_assert(IsValid() && "Cannot set parameters on invalid texture"); // NOLINT
 
-    Pipeline::withTextureBind(mTarget, mID, [&]() {
-        setFilter_Bound(parameters.minFilter, parameters.magFilter);
-        setWrap_Bound(parameters.sWrap, parameters.tWrap, parameters.rWrap);
-        setAnisotropy_Bound(parameters.anisotropy);
+    Pipeline::WithTextureBind(mTarget, mID, [&]() {
+        SetFilter_Bound(parameters.minFilter, parameters.magFilter);
+        SetWrap_Bound(parameters.sWrap, parameters.tWrap, parameters.rWrap);
+        SetAnisotropy_Bound(parameters.anisotropy);
     });
 }
 
-void Texture::setWrap(GLenum sWrap, GLenum tWrap, GLenum rWrap) noexcept
+void Texture::SetWrap(GLenum sWrap, GLenum tWrap, GLenum rWrap) noexcept
 {
-    SDL_assert(isValid() && "Cannot set wrap on invalid texture");
+    SDL_assert(IsValid() && "Cannot set wrap on invalid texture"); // NOLINT
 
-    Pipeline::withTextureBind(mTarget, mID, [&]() {
-        setWrap_Bound(sWrap, tWrap, rWrap);
+    Pipeline::WithTextureBind(mTarget, mID, [&]() {
+        SetWrap_Bound(sWrap, tWrap, rWrap);
     });
 }
 
-void Texture::setFilter(GLenum minFilter, GLenum magFilter) noexcept
+void Texture::SetFilter(GLenum minFilter, GLenum magFilter) noexcept
 {
-    SDL_assert(isValid() && "Cannot set filter on invalid texture");
+    SDL_assert(IsValid() && "Cannot set filter on invalid texture"); // NOLINT
 
-    Pipeline::withTextureBind(mTarget, mID, [&]() {
-        setFilter_Bound(minFilter, magFilter);
+    Pipeline::WithTextureBind(mTarget, mID, [&]() {
+        SetFilter_Bound(minFilter, magFilter);
     });
 }
 
-void Texture::setAnisotropy(float anisotropy) noexcept
+void Texture::SetAnisotropy(float anisotropy) noexcept
 {
-    SDL_assert(isValid() && "Cannot set anisotropy on invalid texture");
+    SDL_assert(IsValid() && "Cannot set anisotropy on invalid texture"); // NOLINT
 
-    Pipeline::withTextureBind(mTarget, mID, [&]() {
-        setAnisotropy_Bound(anisotropy);
+    Pipeline::WithTextureBind(mTarget, mID, [&]() {
+        SetAnisotropy_Bound(anisotropy);
     });
 }
 
-void Texture::generateMipmap() noexcept
+void Texture::GenerateMipmap() noexcept
 {
-    SDL_assert(isValid() && "Cannot generate mipmap on invalid texture");
+    SDL_assert(IsValid() && "Cannot generate mipmap on invalid texture"); // NOLINT
 
-    Pipeline::withTextureBind(mTarget, mID, [&]() {
-        generateMipmap_Bound();
+    Pipeline::WithTextureBind(mTarget, mID, [&]() {
+        GenerateMipmap_Bound();
     });
 }
 
 /* === Private Implementation === */
 
-void Texture::createTexture(const TextureConfig& config, const TextureParam& param) noexcept
+void Texture::CreateTexture(const TextureConfig& config, const TextureParam& param) noexcept
 {
     mTarget = config.target;
 
@@ -152,37 +152,37 @@ void Texture::createTexture(const TextureConfig& config, const TextureParam& par
         return;
     }
 
-    Pipeline::withTextureBind(mTarget, mID,
+    Pipeline::WithTextureBind(mTarget, mID,
         [&]()
         {
-            allocateTexture(config);
-            if (!isValid()) {
+            AllocateTexture(config);
+            if (!IsValid()) {
                 return;
             }
 
             if (config.data != nullptr) {
                 if (mTarget == GL_TEXTURE_CUBE_MAP) {
-                    uploadCube(static_cast<const void* const*>(config.data), 0);
+                    UploadCube(static_cast<const void* const*>(config.data), 0);
                 }
                 else {
                     UploadRegion fullRegion;
                     fullRegion.level = 0;
-                    uploadData_Bound(config.data, fullRegion);
+                    UploadData_Bound(config.data, fullRegion);
                 }
             }
 
             if (config.mipmap) {
-                generateMipmap_Bound();
+                GenerateMipmap_Bound();
             }
 
-            setFilter_Bound(param.minFilter, param.magFilter);
-            setWrap_Bound(param.sWrap, param.tWrap, param.rWrap);
-            setAnisotropy_Bound(param.anisotropy);
+            SetFilter_Bound(param.minFilter, param.magFilter);
+            SetWrap_Bound(param.sWrap, param.tWrap, param.rWrap);
+            SetAnisotropy_Bound(param.anisotropy);
         }
     );
 }
 
-void Texture::allocateTexture(const TextureConfig& config) noexcept
+void Texture::AllocateTexture(const TextureConfig& config) noexcept
 {
     FormatKey key = {config.target, config.internalFormat};
 
@@ -198,7 +198,7 @@ void Texture::allocateTexture(const TextureConfig& config) noexcept
         mDepth = config.depth;
         mMipLevels = 1;
         // Allocate directly with known format
-        allocateWithFormat(formatToUse);
+        AllocateWithFormat(formatToUse);
         return;
     }
 
@@ -215,10 +215,10 @@ void Texture::allocateTexture(const TextureConfig& config) noexcept
 
         // Try the allocation
         glGetError(); // Clean up previous errors
-        if (allocateWithFormat(currentFormat)) {
+        if (AllocateWithFormat(currentFormat)) {
             if (currentFormat != config.internalFormat) {
                 NX_LOG(W, "GPU: Format %s not supported for %s, using fallback %s",
-                    formatToString(config.internalFormat), targetToString(config.target), formatToString(currentFormat));
+                    FormatToString(config.internalFormat), TargetToString(config.target), FormatToString(currentFormat));
                 sFormatFallbacks[key] = currentFormat;
             }
             else {
@@ -228,7 +228,7 @@ void Texture::allocateTexture(const TextureConfig& config) noexcept
         }
 
         // Failed, try fallback
-        GLenum nextFormat = getFallbackFormat(currentFormat);
+        GLenum nextFormat = GetFallbackFormat(currentFormat);
         if (nextFormat == currentFormat) {
             break; // No more fallbacks
         }
@@ -238,16 +238,16 @@ void Texture::allocateTexture(const TextureConfig& config) noexcept
     /* --- All formats failed --- */
 
     NX_LOG(E, "GPU: All formats failed for %s (%dx%dx%d), texture creation failed",
-        targetToString(config.target), config.width, config.height, config.depth);
+        TargetToString(config.target), config.width, config.height, config.depth);
 
     sFormatFallbacks[key] = GL_NONE;    // Mark as tested but failed
-    destroyTexture();                   // Invalidate texture
+    DestroyTexture();                   // Invalidate texture
 }
 
-bool Texture::allocateWithFormat(GLenum internalFormat) noexcept
+bool Texture::AllocateWithFormat(GLenum internalFormat) noexcept
 {
     GLenum format, type;
-    getFormatAndType(internalFormat, format, type);
+    GetFormatAndType(internalFormat, format, type);
 
     switch (mTarget) {
     case GL_TEXTURE_2D:
@@ -277,17 +277,17 @@ bool Texture::allocateWithFormat(GLenum internalFormat) noexcept
         }
         break;
     default:
-        SDL_assert(false && "Unsupported texture target");
+        SDL_assert(false && "Unsupported texture target"); // NOLINT
         return false;
     }
 
     return glGetError() == GL_NO_ERROR;
 }
 
-void Texture::uploadData_Bound(const void* data, const UploadRegion& region) noexcept
+void Texture::UploadData_Bound(const void* data, const UploadRegion& region) noexcept
 {
     GLenum format, type;
-    getFormatAndType(mInternalFormat, format, type);
+    GetFormatAndType(mInternalFormat, format, type);
 
     // Calculate dimensions (0 = full texture)
     int uploadWidth = (region.width > 0) ? region.width : mWidth;
@@ -312,12 +312,12 @@ void Texture::uploadData_Bound(const void* data, const UploadRegion& region) noe
         }
         break;
     default:
-        SDL_assert(false && "Unsupported texture target");
+        SDL_assert(false && "Unsupported texture target"); // NOLINT
         break;
     }
 }
 
-void Texture::setWrap_Bound(GLenum sWrap, GLenum tWrap, GLenum rWrap) noexcept
+void Texture::SetWrap_Bound(GLenum sWrap, GLenum tWrap, GLenum rWrap) noexcept
 {
     glTexParameteri(mTarget, GL_TEXTURE_WRAP_S, sWrap);
     glTexParameteri(mTarget, GL_TEXTURE_WRAP_T, tWrap);
@@ -327,19 +327,19 @@ void Texture::setWrap_Bound(GLenum sWrap, GLenum tWrap, GLenum rWrap) noexcept
     }
 }
 
-void Texture::setFilter_Bound(GLenum minFilter, GLenum magFilter) noexcept
+void Texture::SetFilter_Bound(GLenum minFilter, GLenum magFilter) noexcept
 {
     glTexParameteri(mTarget, GL_TEXTURE_MAG_FILTER, magFilter);
     glTexParameteri(mTarget, GL_TEXTURE_MIN_FILTER, minFilter);
 }
 
-void Texture::setMipLevelRange_Bound(int baseLevel, int maxLevel) noexcept
+void Texture::SetMipLevelRange_Bound(int baseLevel, int maxLevel) noexcept
 {
     glTexParameteri(mTarget, GL_TEXTURE_BASE_LEVEL, baseLevel);
     glTexParameteri(mTarget, GL_TEXTURE_MAX_LEVEL, maxLevel);
 }
 
-void Texture::setAnisotropy_Bound(float anisotropy) noexcept
+void Texture::SetAnisotropy_Bound(float anisotropy) noexcept
 {
     /* --- Check anisotropy support --- */
 
@@ -364,11 +364,11 @@ void Texture::setAnisotropy_Bound(float anisotropy) noexcept
     }
 }
 
-void Texture::generateMipmap_Bound() noexcept
+void Texture::GenerateMipmap_Bound() noexcept
 {
     glGenerateMipmap(mTarget);
 
-    mMipLevels = calculateMaxMipLevels(
+    mMipLevels = CalculateMaxMipLevels(
         mWidth, mHeight, mDepth
     );
 }

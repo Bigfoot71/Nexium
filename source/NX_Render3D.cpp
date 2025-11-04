@@ -518,7 +518,7 @@ bool INX_Render3DState_Init(NX_AppDesc* desc)
     );
 
     if (desc->render3D.sampleCount > 1) {
-        INX_Render3D->framebufferScene.setSampleCount(desc->render3D.sampleCount);
+        INX_Render3D->framebufferScene.SetSampleCount(desc->render3D.sampleCount);
     }
 
     /* --- Create mip chain --- */
@@ -583,7 +583,7 @@ static int INX_ComputeBoneMatrices(const NX_Model& model)
         boneMatrices = model.boneOverride;
     }
 
-    NX_Mat4* bones = INX_Render3D->drawCalls.boneBuffer.stageMap(model.boneCount, &boneMatrixOffset);
+    NX_Mat4* bones = INX_Render3D->drawCalls.boneBuffer.StageMap(model.boneCount, &boneMatrixOffset);
     NX_Mat4MulBatch(bones, model.boneOffsets, boneMatrices, model.boneCount);
 
     return boneMatrixOffset;
@@ -688,22 +688,22 @@ static void INX_UploadDrawCalls()
 {
     INX_Render3DState::DrawCalls& state = INX_Render3D->drawCalls;
 
-    state.boneBuffer.upload();
+    state.boneBuffer.Upload();
 
     const size_t sharedCount = state.sharedData.size();
     const size_t uniqueCount = state.uniqueData.size();
     const size_t sharedBytes = sharedCount * sizeof(INX_GPUDrawShared);
     const size_t uniqueBytes = uniqueCount * sizeof(INX_GPUDrawUnique);
 
-    state.sharedBuffer.reserve(sharedBytes, false);
-    state.uniqueBuffer.reserve(uniqueBytes, false);
+    state.sharedBuffer.Reserve(sharedBytes, false);
+    state.uniqueBuffer.Reserve(uniqueBytes, false);
 
-    INX_GPUDrawShared* sharedBuffer = state.sharedBuffer.mapRange<INX_GPUDrawShared>(
+    INX_GPUDrawShared* sharedBuffer = state.sharedBuffer.MapRange<INX_GPUDrawShared>(
         0, sharedBytes,
         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
     );
 
-    INX_GPUDrawUnique* uniqueBuffer = state.uniqueBuffer.mapRange<INX_GPUDrawUnique>(
+    INX_GPUDrawUnique* uniqueBuffer = state.uniqueBuffer.MapRange<INX_GPUDrawUnique>(
         0, uniqueBytes,
         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
     );
@@ -748,8 +748,8 @@ static void INX_UploadDrawCalls()
         }
     }
 
-    state.sharedBuffer.unmap();
-    state.uniqueBuffer.unmap();
+    state.sharedBuffer.Unmap();
+    state.uniqueBuffer.Unmap();
 }
 
 static void INX_CullDrawCalls(const INX_Frustum& frustum, NX_Layer frustumCullMask)
@@ -883,21 +883,21 @@ static void INX_Draw3D(const gpu::Pipeline& pipeline, const INX_DrawUnique& uniq
 
     GLenum primitive = INX_GPU_GetPrimitiveType(primitiveType);
     bool useInstancing = (shared.instances && shared.instanceCount > 0);
-    bool hasEBO = buffer->ebo.isValid();
+    bool hasEBO = buffer->ebo.IsValid();
 
-    pipeline.bindVertexArray(buffer->vao);
+    pipeline.BindVertexArray(buffer->vao);
     if (useInstancing) [[unlikely]] {
         buffer->BindInstances(*shared.instances);
     }
 
     if (hasEBO) [[likely]] {
         useInstancing ? 
-            pipeline.drawElementsInstanced(primitive, GL_UNSIGNED_INT, indexCount, shared.instanceCount) :
-            pipeline.drawElements(primitive, GL_UNSIGNED_INT, indexCount);
+            pipeline.DrawElementsInstanced(primitive, GL_UNSIGNED_INT, indexCount, shared.instanceCount) :
+            pipeline.DrawElements(primitive, GL_UNSIGNED_INT, indexCount);
     } else {
         useInstancing ?
-            pipeline.drawInstanced(primitive, vertexCount, shared.instanceCount) :
-            pipeline.draw(primitive, vertexCount);
+            pipeline.DrawInstanced(primitive, vertexCount, shared.instanceCount) :
+            pipeline.Draw(primitive, vertexCount);
     }
 }
 
@@ -923,7 +923,7 @@ static NX_Vec4 INX_GetBloomPrefilter(float threshold, float softThreshold)
 static void INX_ProcessEnvironment(const NX_Environment& env)
 {
     INX_ProcessedEnv& state = INX_Render3D->environment;
-    int bloomMipCount = INX_Render3D->mipChain.numLevels();
+    int bloomMipCount = INX_Render3D->mipChain.GetNumLevels();
 
     /* --- Store textures --- */
 
@@ -1001,7 +1001,7 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
 
     /* --- Upload GPU data --- */
 
-    state.buffer.upload(&data);
+    state.buffer.Upload(&data);
 }
 
 static void INX_UpdateLights()
@@ -1069,8 +1069,8 @@ static void INX_UploadLightData()
         return;
     }
 
-    state.storageLights.reserve(INX_Pool.Get<NX_Light>().size() * sizeof(INX_GPULight), false);
-    INX_GPULight* mappedLights = state.storageLights.mapRange<INX_GPULight>(
+    state.storageLights.Reserve(INX_Pool.Get<NX_Light>().size() * sizeof(INX_GPULight), false);
+    INX_GPULight* mappedLights = state.storageLights.MapRange<INX_GPULight>(
         0, state.activeLights.size() * sizeof(INX_GPULight),
         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
     );
@@ -1080,7 +1080,7 @@ static void INX_UploadLightData()
         INX_FillGPULight(data.light, &mappedLights[i], data.shadowIndex);
     }
 
-    state.storageLights.unmap();
+    state.storageLights.Unmap();
 }
 
 static void INX_UploadShadowData()
@@ -1091,8 +1091,8 @@ static void INX_UploadShadowData()
         return;
     }
 
-    state.storageShadow.reserve(state.activeShadows.size() * sizeof(INX_GPUShadow), false);
-    INX_GPUShadow* mappedShadows = state.storageShadow.mapRange<INX_GPUShadow>(
+    state.storageShadow.Reserve(state.activeShadows.size() * sizeof(INX_GPUShadow), false);
+    INX_GPUShadow* mappedShadows = state.storageShadow.MapRange<INX_GPUShadow>(
         0, state.activeShadows.size() * sizeof(INX_GPUShadow),
         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
     );
@@ -1102,7 +1102,7 @@ static void INX_UploadShadowData()
         INX_FillGPUShadow(data.light, &mappedShadows[i], data.mapIndex);
     }
 
-    state.storageShadow.unmap();
+    state.storageShadow.Unmap();
 }
 
 static void INX_ComputeClusters()
@@ -1127,9 +1127,9 @@ static void INX_ComputeClusters()
     state.clusterCount.z = std::clamp(int(std::log2(far / near) * state.SlicesPerDepthOctave), 16, 64);
     int clusterTotal = state.clusterCount.x * state.clusterCount.y * state.clusterCount.z;
 
-    state.storageClusters.reserve(clusterTotal * 4 * sizeof(uint32_t), false);
-    state.storageIndices.reserve(clusterTotal * state.MaxLightsPerCluster * sizeof(uint32_t), false);
-    state.storageClusterAABB.reserve(clusterTotal * (sizeof(NX_Vec4) + sizeof(NX_Vec3)), false); //< minBounds and maxBounds with padding
+    state.storageClusters.Reserve(clusterTotal * 4 * sizeof(uint32_t), false);
+    state.storageIndices.Reserve(clusterTotal * state.MaxLightsPerCluster * sizeof(uint32_t), false);
+    state.storageClusterAABB.Reserve(clusterTotal * (sizeof(NX_Vec4) + sizeof(NX_Vec3)), false); //< minBounds and maxBounds with padding
 
     /* --- Calculate the Z-slicing parameters --- */
 
@@ -1139,21 +1139,21 @@ static void INX_ComputeClusters()
     /* --- Obtaining the lights affecting each tile --- */
 
     gpu::Pipeline pipeline;
-    pipeline.useProgram(INX_Programs.GetLightCulling());
+    pipeline.UseProgram(INX_Programs.GetLightCulling());
 
-    pipeline.bindUniform(0, INX_Render3D->viewFrustum.GetBuffer());
-    pipeline.bindStorage(0, state.storageLights);
-    pipeline.bindStorage(1, state.storageClusters);
-    pipeline.bindStorage(2, state.storageIndices);
-    pipeline.bindStorage(3, state.storageClusterAABB);
+    pipeline.BindUniform(0, INX_Render3D->viewFrustum.GetBuffer());
+    pipeline.BindStorage(0, state.storageLights);
+    pipeline.BindStorage(1, state.storageClusters);
+    pipeline.BindStorage(2, state.storageIndices);
+    pipeline.BindStorage(3, state.storageClusterAABB);
 
-    pipeline.setUniformUint3(0, state.clusterCount);
-    pipeline.setUniformFloat1(1, state.clusterSliceScale);
-    pipeline.setUniformFloat1(2, state.clusterSliceBias);
-    pipeline.setUniformUint1(3, state.activeLights.size());
-    pipeline.setUniformUint1(4, state.MaxLightsPerCluster);
+    pipeline.SetUniformUint3(0, state.clusterCount);
+    pipeline.SetUniformFloat1(1, state.clusterSliceScale);
+    pipeline.SetUniformFloat1(2, state.clusterSliceBias);
+    pipeline.SetUniformUint1(3, state.activeLights.size());
+    pipeline.SetUniformUint1(4, state.MaxLightsPerCluster);
 
-    pipeline.dispatchCompute(
+    pipeline.DispatchCompute(
         NX_DIV_CEIL(state.clusterCount.x, 4),
         NX_DIV_CEIL(state.clusterCount.y, 4),
         NX_DIV_CEIL(state.clusterCount.z, 4)
@@ -1175,9 +1175,9 @@ static void INX_RenderShadowMaps()
 
     for (int i = 0; i < state.targetShadow.size(); i++) {
         size_t activeCount = state.activeShadows.size(static_cast<NX_LightType>(i));
-        if (activeCount > state.targetShadow[i].depth()) {
-            state.targetShadow[i].realloc(state.targetShadow[i].width(), state.targetShadow[i].height(), activeCount);
-            state.framebufferShadow[i].updateColorTextureView(0, state.targetShadow[i]);
+        if (activeCount > state.targetShadow[i].GetDepth()) {
+            state.targetShadow[i].Realloc(state.targetShadow[i].GetWidth(), state.targetShadow[i].GetHeight(), activeCount);
+            state.framebufferShadow[i].UpdateColorTextureView(0, state.targetShadow[i]);
         }
     }
 
@@ -1185,14 +1185,14 @@ static void INX_RenderShadowMaps()
 
     gpu::Pipeline pipeline;
 
-    pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
+    pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
 
-    pipeline.bindStorage(0, INX_Render3D->drawCalls.sharedBuffer);
-    pipeline.bindStorage(1, INX_Render3D->drawCalls.uniqueBuffer);
-    pipeline.bindStorage(2, INX_Render3D->drawCalls.boneBuffer.buffer());
+    pipeline.BindStorage(0, INX_Render3D->drawCalls.sharedBuffer);
+    pipeline.BindStorage(1, INX_Render3D->drawCalls.uniqueBuffer);
+    pipeline.BindStorage(2, INX_Render3D->drawCalls.boneBuffer.GetBuffer());
 
-    pipeline.bindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
-    pipeline.bindUniform(2, INX_Render3D->environment.buffer);
+    pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
+    pipeline.BindUniform(2, INX_Render3D->environment.buffer);
 
     /* --- Render shadows for each lights --- */
 
@@ -1201,8 +1201,8 @@ static void INX_RenderShadowMaps()
         NX_LightType lightType = static_cast<NX_LightType>(i);
         if (state.shadowNeedingUpdate.empty(lightType)) continue;
 
-        pipeline.bindFramebuffer(state.framebufferShadow[lightType]);
-        pipeline.setViewport(state.framebufferShadow[lightType]);
+        pipeline.BindFramebuffer(state.framebufferShadow[lightType]);
+        pipeline.SetViewport(state.framebufferShadow[lightType]);
 
         for (uint32_t shadowIndex : state.shadowNeedingUpdate.category(lightType))
         {
@@ -1211,18 +1211,18 @@ static void INX_RenderShadowMaps()
 
             for (int face = 0; face < ((lightType == NX_LIGHT_OMNI) ? 6 : 1); ++face)
             {
-                state.framebufferShadow[lightType].setColorAttachmentTarget(0, data.mapIndex, face);
-                pipeline.clear(state.framebufferShadow[lightType], NX_COLOR_1(NX_GetLightRange(&light)));
+                state.framebufferShadow[lightType].SetColorAttachmentTarget(0, data.mapIndex, face);
+                pipeline.Clear(state.framebufferShadow[lightType], NX_COLOR_1(NX_GetLightRange(&light)));
 
                 // REVIEW: We could use a better method for per-frame data...
-                state.frameShadowUniform->uploadObject(INX_FrameUniformShadow {
+                state.frameShadowUniform->UploadObject(INX_FrameUniformShadow {
                     .lightViewProj = INX_GetLightViewProj(light, face),
                     .lightPosition = NX_GetLightPosition(&light),
                     .lightRange = NX_GetLightRange(&light),
                     .lightType = light.type,
                     .elapsedTime = static_cast<float>(NX_GetElapsedTime())
                 });
-                pipeline.bindUniform(0, *state.frameShadowUniform);
+                pipeline.BindUniform(0, *state.frameShadowUniform);
                 state.frameShadowUniform.rotate();
 
                 INX_CullDrawCalls(INX_GetLightFrustum(light, face), light.shadow.cullMask);
@@ -1233,8 +1233,8 @@ static void INX_RenderShadowMaps()
                     if (unique.mesh.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
 
                     const NX_Shader3D* shader = INX_Assets.Select(unique.material.shader, INX_Shader3DAsset::DEFAULT);
-                    pipeline.useProgram(shader->GetProgram(NX_Shader3D::Variant::SCENE_SHADOW));
-                    pipeline.setCullMode(INX_GPU_GetCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
+                    pipeline.UseProgram(shader->GetProgram(NX_Shader3D::Variant::SCENE_SHADOW));
+                    pipeline.SetCullMode(INX_GPU_GetCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
 
                     shader->BindTextures(pipeline, unique.textures);
                     shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
@@ -1244,9 +1244,9 @@ static void INX_RenderShadowMaps()
                         INX_TextureAsset::WHITE
                     );
 
-                    pipeline.bindTexture(0,  texAlbedo->gpu);
-                    pipeline.setUniformUint1(0, unique.sharedDataIndex);
-                    pipeline.setUniformUint1(1, unique.uniqueDataIndex);
+                    pipeline.BindTexture(0,  texAlbedo->gpu);
+                    pipeline.SetUniformUint1(0, unique.sharedDataIndex);
+                    pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
 
                     INX_Draw3D(pipeline, unique);
                 }
@@ -1257,30 +1257,30 @@ static void INX_RenderShadowMaps()
 
 static void INX_RenderBackground(const gpu::Pipeline& pipeline)
 {
-    pipeline.bindFramebuffer(INX_Render3D->framebufferScene);
-    pipeline.setViewport(INX_Render3D->framebufferScene);
-    pipeline.setDepthMode(gpu::DepthMode::WriteOnly);
+    pipeline.BindFramebuffer(INX_Render3D->framebufferScene);
+    pipeline.SetViewport(INX_Render3D->framebufferScene);
+    pipeline.SetDepthMode(gpu::DepthMode::WriteOnly);
 
-    pipeline.clearDepth(1.0f);
-    pipeline.clearColor(0, INX_Render3D->environment.background);
-    pipeline.clearColor(1, NX_COLOR(0.25f, 0.25f, 1.0f, 1.0f));
+    pipeline.ClearDepth(1.0f);
+    pipeline.ClearColor(0, INX_Render3D->environment.background);
+    pipeline.ClearColor(1, NX_COLOR(0.25f, 0.25f, 1.0f, 1.0f));
 
     if (INX_Render3D->environment.skyCubemap == nullptr) {
         return;
     }
 
-    INX_Render3D->framebufferScene.setDrawBuffers({0});
+    INX_Render3D->framebufferScene.SetDrawBuffers({0});
 
-    pipeline.bindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
-    pipeline.bindUniform(2, INX_Render3D->environment.buffer);
+    pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
+    pipeline.BindUniform(2, INX_Render3D->environment.buffer);
 
-    pipeline.setDepthMode(gpu::DepthMode::Disabled);
-    pipeline.useProgram(INX_Programs.GetSkybox());
+    pipeline.SetDepthMode(gpu::DepthMode::Disabled);
+    pipeline.UseProgram(INX_Programs.GetSkybox());
 
-    pipeline.bindTexture(0, INX_Render3D->environment.skyCubemap->gpu);
-    pipeline.draw(GL_TRIANGLES, 36);
+    pipeline.BindTexture(0, INX_Render3D->environment.skyCubemap->gpu);
+    pipeline.Draw(GL_TRIANGLES, 36);
 
-    INX_Render3D->framebufferScene.enableDrawBuffers();
+    INX_Render3D->framebufferScene.EnableDrawBuffers();
 }
 
 static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
@@ -1291,16 +1291,16 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
         return;
     }
 
-    pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
-    pipeline.setColorWrite(gpu::ColorWrite::Disabled);
+    pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
+    pipeline.SetColorWrite(gpu::ColorWrite::Disabled);
 
-    pipeline.bindStorage(0, drawCalls.sharedBuffer);
-    pipeline.bindStorage(1, drawCalls.uniqueBuffer);
-    pipeline.bindStorage(2, drawCalls.boneBuffer.buffer());
+    pipeline.BindStorage(0, drawCalls.sharedBuffer);
+    pipeline.BindStorage(1, drawCalls.uniqueBuffer);
+    pipeline.BindStorage(2, drawCalls.boneBuffer.GetBuffer());
 
-    pipeline.bindUniform(0, INX_Render3D->frameUniform);
-    pipeline.bindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
-    pipeline.bindUniform(2, INX_Render3D->environment.buffer);
+    pipeline.BindUniform(0, INX_Render3D->frameUniform);
+    pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
+    pipeline.BindUniform(2, INX_Render3D->environment.buffer);
 
     for (int uniqueIndex : drawCalls.uniqueVisible.category(DRAW_PREPASS))
     {
@@ -1308,10 +1308,10 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
         const NX_Material& mat = unique.material;
 
         const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
-        pipeline.useProgram(shader->GetProgram(NX_Shader3D::Variant::SCENE_PREPASS));
+        pipeline.UseProgram(shader->GetProgram(NX_Shader3D::Variant::SCENE_PREPASS));
 
-        pipeline.setDepthFunc(INX_GPU_GetDepthFunc(mat.depth.test));
-        pipeline.setCullMode(INX_GPU_GetCullMode(mat.cull));
+        pipeline.SetDepthFunc(INX_GPU_GetDepthFunc(mat.depth.test));
+        pipeline.SetCullMode(INX_GPU_GetCullMode(mat.cull));
 
         shader->BindTextures(pipeline, unique.textures);
         shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
@@ -1321,10 +1321,10 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
             INX_TextureAsset::WHITE
         );
 
-        pipeline.bindTexture(0, texAlbedo->gpu);
+        pipeline.BindTexture(0, texAlbedo->gpu);
 
-        pipeline.setUniformUint1(0, unique.sharedDataIndex);
-        pipeline.setUniformUint1(1, unique.uniqueDataIndex);
+        pipeline.SetUniformUint1(0, unique.sharedDataIndex);
+        pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
 
         INX_Draw3D(pipeline, unique);
     }
@@ -1335,33 +1335,33 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
     INX_Render3DState::DrawCalls& drawCalls = INX_Render3D->drawCalls;
     INX_Render3DState::Lighting& lighting = INX_Render3D->lighting;
 
-    pipeline.setDepthMode(gpu::DepthMode::TestAndWrite);
-    pipeline.setColorWrite(gpu::ColorWrite::RGBA);
+    pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
+    pipeline.SetColorWrite(gpu::ColorWrite::RGBA);
 
-    pipeline.bindStorage(0, drawCalls.sharedBuffer);
-    pipeline.bindStorage(1, drawCalls.uniqueBuffer);
-    pipeline.bindStorage(2, drawCalls.boneBuffer.buffer());
-    pipeline.bindStorage(3, lighting.storageLights);
-    pipeline.bindStorage(4, lighting.storageShadow);
-    pipeline.bindStorage(5, lighting.storageClusters);
-    pipeline.bindStorage(6, lighting.storageIndices);
+    pipeline.BindStorage(0, drawCalls.sharedBuffer);
+    pipeline.BindStorage(1, drawCalls.uniqueBuffer);
+    pipeline.BindStorage(2, drawCalls.boneBuffer.GetBuffer());
+    pipeline.BindStorage(3, lighting.storageLights);
+    pipeline.BindStorage(4, lighting.storageShadow);
+    pipeline.BindStorage(5, lighting.storageClusters);
+    pipeline.BindStorage(6, lighting.storageIndices);
 
-    pipeline.bindTexture(4, INX_Assets.Get(INX_TextureAsset::BRDF_LUT)->gpu);
-    pipeline.bindTexture(7, lighting.targetShadow[NX_LIGHT_DIR]);
-    pipeline.bindTexture(8, lighting.targetShadow[NX_LIGHT_SPOT]);
-    pipeline.bindTexture(9, lighting.targetShadow[NX_LIGHT_OMNI]);
+    pipeline.BindTexture(4, INX_Assets.Get(INX_TextureAsset::BRDF_LUT)->gpu);
+    pipeline.BindTexture(7, lighting.targetShadow[NX_LIGHT_DIR]);
+    pipeline.BindTexture(8, lighting.targetShadow[NX_LIGHT_SPOT]);
+    pipeline.BindTexture(9, lighting.targetShadow[NX_LIGHT_OMNI]);
 
-    pipeline.bindUniform(0, INX_Render3D->frameUniform);
-    pipeline.bindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
-    pipeline.bindUniform(2, INX_Render3D->environment.buffer);
+    pipeline.BindUniform(0, INX_Render3D->frameUniform);
+    pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
+    pipeline.BindUniform(2, INX_Render3D->environment.buffer);
 
     if (INX_Render3D->environment.skyProbe != nullptr) {
-        pipeline.bindTexture(5, INX_Render3D->environment.skyProbe->irradiance.gpu);
-        pipeline.bindTexture(6, INX_Render3D->environment.skyProbe->prefilter.gpu);
+        pipeline.BindTexture(5, INX_Render3D->environment.skyProbe->irradiance.gpu);
+        pipeline.BindTexture(6, INX_Render3D->environment.skyProbe->prefilter.gpu);
     }
 
     // Ensures SSBOs are ready (especially clusters)
-    pipeline.memoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    pipeline.MemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
     for (int uniqueIndex : drawCalls.uniqueVisible.categories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
     {
@@ -1369,22 +1369,22 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
         const NX_Material& mat = unique.material;
 
         const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
-        pipeline.useProgram(shader->GetProgramFromShadingMode(unique.material.shading));
+        pipeline.UseProgram(shader->GetProgramFromShadingMode(unique.material.shading));
 
         shader->BindTextures(pipeline, unique.textures);
         shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
 
-        pipeline.setDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : INX_GPU_GetDepthFunc(mat.depth.test));
-        pipeline.setBlendMode(INX_GPU_GetBlendMode(mat.blend));
-        pipeline.setCullMode(INX_GPU_GetCullMode(mat.cull));
+        pipeline.SetDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : INX_GPU_GetDepthFunc(mat.depth.test));
+        pipeline.SetBlendMode(INX_GPU_GetBlendMode(mat.blend));
+        pipeline.SetCullMode(INX_GPU_GetCullMode(mat.cull));
 
-        pipeline.bindTexture(0, INX_Assets.Select(mat.albedo.texture, INX_TextureAsset::WHITE)->gpu);
-        pipeline.bindTexture(1, INX_Assets.Select(mat.emission.texture, INX_TextureAsset::WHITE)->gpu);
-        pipeline.bindTexture(2, INX_Assets.Select(mat.orm.texture, INX_TextureAsset::WHITE)->gpu);
-        pipeline.bindTexture(3, INX_Assets.Select(mat.normal.texture, INX_TextureAsset::NORMAL)->gpu);
+        pipeline.BindTexture(0, INX_Assets.Select(mat.albedo.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.BindTexture(1, INX_Assets.Select(mat.emission.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.BindTexture(2, INX_Assets.Select(mat.orm.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.BindTexture(3, INX_Assets.Select(mat.normal.texture, INX_TextureAsset::NORMAL)->gpu);
 
-        pipeline.setUniformUint1(0, unique.sharedDataIndex);
-        pipeline.setUniformUint1(1, unique.uniqueDataIndex);
+        pipeline.SetUniformUint1(0, unique.sharedDataIndex);
+        pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
 
         INX_Draw3D(pipeline, unique);
     }
@@ -1405,62 +1405,62 @@ static const gpu::Texture& INX_PostSSAO(const gpu::Texture& source)
 
     /* --- Bind common stuff --- */
 
-    pipeline.bindUniform(0, INX_Render3D->viewFrustum.GetBuffer());
-    pipeline.bindUniform(1, INX_Render3D->environment.buffer);
+    pipeline.BindUniform(0, INX_Render3D->viewFrustum.GetBuffer());
+    pipeline.BindUniform(1, INX_Render3D->environment.buffer);
 
     /* --- Generate ambient occlusion --- */
 
-    pipeline.bindFramebuffer(INX_Render3D->swapAuxiliary.target());
+    pipeline.BindFramebuffer(INX_Render3D->swapAuxiliary.GetTarget());
     {
-        pipeline.setViewport(INX_Render3D->swapAuxiliary.target());
-        pipeline.useProgram(INX_Programs.GetSsaoPass());
+        pipeline.SetViewport(INX_Render3D->swapAuxiliary.GetTarget());
+        pipeline.UseProgram(INX_Programs.GetSsaoPass());
 
-        pipeline.bindTexture(0, INX_Render3D->targetSceneDepth);
-        pipeline.bindTexture(1, INX_Render3D->targetSceneNormal);
-        pipeline.bindTexture(2, INX_Assets.Get(INX_TextureAsset::SSAO_KERNEL)->gpu);
-        pipeline.bindTexture(3, INX_Assets.Get(INX_TextureAsset::SSAO_NOISE)->gpu);
+        pipeline.BindTexture(0, INX_Render3D->targetSceneDepth);
+        pipeline.BindTexture(1, INX_Render3D->targetSceneNormal);
+        pipeline.BindTexture(2, INX_Assets.Get(INX_TextureAsset::SSAO_KERNEL)->gpu);
+        pipeline.BindTexture(3, INX_Assets.Get(INX_TextureAsset::SSAO_NOISE)->gpu);
 
-        pipeline.draw(GL_TRIANGLES, 3);
+        pipeline.Draw(GL_TRIANGLES, 3);
     }
-    INX_Render3D->swapAuxiliary.swap();
+    INX_Render3D->swapAuxiliary.Swap();
 
     /* --- Blur ambient occlusion --- */
 
-    pipeline.useProgram(INX_Programs.GetSsaoBilateralBlur());
+    pipeline.UseProgram(INX_Programs.GetSsaoBilateralBlur());
 
-    pipeline.bindTexture(1, INX_Render3D->targetSceneDepth);
+    pipeline.BindTexture(1, INX_Render3D->targetSceneDepth);
 
-    pipeline.bindFramebuffer(INX_Render3D->swapAuxiliary.target());
+    pipeline.BindFramebuffer(INX_Render3D->swapAuxiliary.GetTarget());
     {
-        pipeline.bindTexture(0, INX_Render3D->swapAuxiliary.source());
-        pipeline.setUniformFloat2(0, NX_VEC2(1.0f / INX_Render3D->swapAuxiliary.source().width(), 0.0f));
-        pipeline.draw(GL_TRIANGLES, 3);
+        pipeline.BindTexture(0, INX_Render3D->swapAuxiliary.GetSource());
+        pipeline.SetUniformFloat2(0, NX_VEC2(1.0f / INX_Render3D->swapAuxiliary.GetSource().GetWidth(), 0.0f));
+        pipeline.Draw(GL_TRIANGLES, 3);
     }
-    INX_Render3D->swapAuxiliary.swap();
+    INX_Render3D->swapAuxiliary.Swap();
 
-    pipeline.bindFramebuffer(INX_Render3D->swapAuxiliary.target());
+    pipeline.BindFramebuffer(INX_Render3D->swapAuxiliary.GetTarget());
     {
-        pipeline.bindTexture(0, INX_Render3D->swapAuxiliary.source());
-        pipeline.setUniformFloat2(0, NX_VEC2(0.0f, 1.0f / INX_Render3D->swapAuxiliary.source().height()));
-        pipeline.draw(GL_TRIANGLES, 3);
+        pipeline.BindTexture(0, INX_Render3D->swapAuxiliary.GetSource());
+        pipeline.SetUniformFloat2(0, NX_VEC2(0.0f, 1.0f / INX_Render3D->swapAuxiliary.GetSource().GetHeight()));
+        pipeline.Draw(GL_TRIANGLES, 3);
     }
-    INX_Render3D->swapAuxiliary.swap();
+    INX_Render3D->swapAuxiliary.Swap();
 
     /* --- Apply SSAO --- */
 
-    pipeline.bindFramebuffer(INX_Render3D->swapPostProcess.target());
+    pipeline.BindFramebuffer(INX_Render3D->swapPostProcess.GetTarget());
     {
-        pipeline.setViewport(INX_Render3D->swapPostProcess.target());
-        pipeline.useProgram(INX_Programs.GetSsaoPost());
+        pipeline.SetViewport(INX_Render3D->swapPostProcess.GetTarget());
+        pipeline.UseProgram(INX_Programs.GetSsaoPost());
 
-        pipeline.bindTexture(0, source);
-        pipeline.bindTexture(1, INX_Render3D->swapAuxiliary.source());
+        pipeline.BindTexture(0, source);
+        pipeline.BindTexture(1, INX_Render3D->swapAuxiliary.GetSource());
 
-        pipeline.draw(GL_TRIANGLES, 3);
+        pipeline.Draw(GL_TRIANGLES, 3);
     }
-    INX_Render3D->swapPostProcess.swap();
+    INX_Render3D->swapPostProcess.Swap();
 
-    return INX_Render3D->swapPostProcess.source();
+    return INX_Render3D->swapPostProcess.GetSource();
 }
 
 static const gpu::Texture& INX_PostBloom(const gpu::Texture& source)
@@ -1469,56 +1469,56 @@ static const gpu::Texture& INX_PostBloom(const gpu::Texture& source)
 
     /* --- Bind common stuff --- */
 
-    pipeline.bindUniform(0, INX_Render3D->environment.buffer);
+    pipeline.BindUniform(0, INX_Render3D->environment.buffer);
 
     /* --- Downsampling of the source --- */
 
-    pipeline.useProgram(INX_Programs.GetDownsampling());
+    pipeline.UseProgram(INX_Programs.GetDownsampling());
 
-    INX_Render3D->mipChain.downsample(pipeline, 0, [&](int targetLevel, int sourceLevel) {
-        const gpu::Texture& texSource = (targetLevel == 0) ? source : INX_Render3D->mipChain.texture();
-        pipeline.setUniformFloat2(0, NX_IVec2Rcp(texSource.dimensions()));
-        pipeline.setUniformInt1(1, targetLevel);
-        pipeline.bindTexture(0, texSource);
-        pipeline.draw(GL_TRIANGLES, 3);
+    INX_Render3D->mipChain.Downsample(pipeline, 0, [&](int targetLevel, int sourceLevel) {
+        const gpu::Texture& texSource = (targetLevel == 0) ? source : INX_Render3D->mipChain.GetTexture();
+        pipeline.SetUniformFloat2(0, NX_IVec2Rcp(texSource.GetDimensions()));
+        pipeline.SetUniformInt1(1, targetLevel);
+        pipeline.BindTexture(0, texSource);
+        pipeline.Draw(GL_TRIANGLES, 3);
     });
 
     /* --- Apply bloom level factors --- */
 
-    pipeline.useProgram(INX_Programs.GetScreenQuad());
-    pipeline.setBlendMode(gpu::BlendMode::Multiply);
+    pipeline.UseProgram(INX_Programs.GetScreenQuad());
+    pipeline.SetBlendMode(gpu::BlendMode::Multiply);
 
-    INX_Render3D->mipChain.iterate(pipeline, [&](int targetLevel) {
-        pipeline.setUniformFloat4(0, NX_VEC4_1(INX_Render3D->environment.bloomLevels[targetLevel]));
-        pipeline.draw(GL_TRIANGLES, 3);
+    INX_Render3D->mipChain.Iterate(pipeline, [&](int targetLevel) {
+        pipeline.SetUniformFloat4(0, NX_VEC4_1(INX_Render3D->environment.bloomLevels[targetLevel]));
+        pipeline.Draw(GL_TRIANGLES, 3);
     });
 
     /* --- Upsampling of the source --- */
 
-    pipeline.useProgram(INX_Programs.GetUpsampling());
-    pipeline.setBlendMode(gpu::BlendMode::Additive);
+    pipeline.UseProgram(INX_Programs.GetUpsampling());
+    pipeline.SetBlendMode(gpu::BlendMode::Additive);
 
-    INX_Render3D->mipChain.upsample(pipeline, [&](int targetLevel, int sourceLevel) {
-        pipeline.draw(GL_TRIANGLES, 3);
+    INX_Render3D->mipChain.Upsample(pipeline, [&](int targetLevel, int sourceLevel) {
+        pipeline.Draw(GL_TRIANGLES, 3);
     });
 
-    pipeline.setBlendMode(gpu::BlendMode::Disabled);
+    pipeline.SetBlendMode(gpu::BlendMode::Disabled);
 
     /* --- Applying bloom to the scene --- */
 
-    pipeline.bindFramebuffer(INX_Render3D->swapPostProcess.target());
-    pipeline.setViewport(INX_Render3D->swapPostProcess.target());
+    pipeline.BindFramebuffer(INX_Render3D->swapPostProcess.GetTarget());
+    pipeline.SetViewport(INX_Render3D->swapPostProcess.GetTarget());
 
-    pipeline.useProgram(INX_Programs.GetBloomPost(INX_Render3D->environment.bloomMode));
+    pipeline.UseProgram(INX_Programs.GetBloomPost(INX_Render3D->environment.bloomMode));
 
-    pipeline.bindTexture(0, source);
-    pipeline.bindTexture(1, INX_Render3D->mipChain.texture());
+    pipeline.BindTexture(0, source);
+    pipeline.BindTexture(1, INX_Render3D->mipChain.GetTexture());
 
-    pipeline.draw(GL_TRIANGLES, 3);
+    pipeline.Draw(GL_TRIANGLES, 3);
 
-    INX_Render3D->swapPostProcess.swap();
+    INX_Render3D->swapPostProcess.Swap();
 
-    return INX_Render3D->swapPostProcess.source();
+    return INX_Render3D->swapPostProcess.GetSource();
 }
 
 static void INX_PostFinal(const gpu::Texture& source)
@@ -1526,15 +1526,15 @@ static void INX_PostFinal(const gpu::Texture& source)
     gpu::Pipeline pipeline;
 
     if (INX_Render3D->renderTarget.target != nullptr) {
-        pipeline.bindFramebuffer(INX_Render3D->renderTarget.target->gpu);
+        pipeline.BindFramebuffer(INX_Render3D->renderTarget.target->gpu);
     }
-    pipeline.setViewport(INX_Render3D->renderTarget.resolution);
+    pipeline.SetViewport(INX_Render3D->renderTarget.resolution);
 
-    pipeline.useProgram(INX_Programs.GetOutput(INX_Render3D->environment.tonemapMode));
-    pipeline.bindUniform(0, INX_Render3D->environment.buffer);
-    pipeline.bindTexture(0, source);
+    pipeline.UseProgram(INX_Programs.GetOutput(INX_Render3D->environment.tonemapMode));
+    pipeline.BindUniform(0, INX_Render3D->environment.buffer);
+    pipeline.BindTexture(0, source);
 
-    pipeline.draw(GL_TRIANGLES, 3);
+    pipeline.Draw(GL_TRIANGLES, 3);
 }
 
 // ============================================================================
@@ -1569,8 +1569,8 @@ void NX_End3D()
 
     /* --- Upload frame info data --- */
 
-    INX_Render3D->frameUniform.uploadObject(INX_FrameUniform3D {
-        .screenSize = INX_Render3D->framebufferScene.dimensions(),
+    INX_Render3D->frameUniform.UploadObject(INX_FrameUniform3D {
+        .screenSize = INX_Render3D->framebufferScene.GetDimensions(),
         .clusterCount = INX_Render3D->lighting.clusterCount,
         .maxLightsPerCluster = INX_Render3D->lighting.MaxLightsPerCluster,
         .clusterSliceScale = INX_Render3D->lighting.clusterSliceScale,
@@ -1593,7 +1593,7 @@ void NX_End3D()
         INX_RenderScene(pipeline);
     });
 
-    INX_Render3D->framebufferScene.resolve();
+    INX_Render3D->framebufferScene.Resolve();
 
     /* --- Post process --- */
 

@@ -34,33 +34,33 @@ public:
     Buffer& operator=(Buffer&& other) noexcept;
 
     /** Public interface */
-    bool isValid() const noexcept;
-    GLuint id() const noexcept;
-    GLenum target() const noexcept;
-    GLsizeiptr size() const noexcept;
-    GLenum usage() const noexcept;
+    bool IsValid() const noexcept;
+    GLuint GetID() const noexcept;
+    GLenum GetTarget() const noexcept;
+    GLsizeiptr GetSize() const noexcept;
+    GLenum GetUsage() const noexcept;
 
     /** Data management */
-    void reserve(GLsizeiptr minSize, bool keepData) noexcept;                   // Reallocates buffer if its size is < minSize, optionally preserving existing data
-    void realloc(GLsizeiptr newSize, const void* data) noexcept;                // Reallocates buffer to newSize and uploads data, no data preservation guarantee
-    void realloc(GLsizeiptr newSize, bool keepData) noexcept;                   // Reallocates buffer to newSize, optionally preserving existing data
+    void Reserve(GLsizeiptr minSize, bool keepData) noexcept;                   // Reallocates buffer if its size is < minSize, optionally preserving existing data
+    void Realloc(GLsizeiptr newSize, const void* data) noexcept;                // Reallocates buffer to newSize and uploads data, no data preservation guarantee
+    void Realloc(GLsizeiptr newSize, bool keepData) noexcept;                   // Reallocates buffer to newSize, optionally preserving existing data
 
-    bool upload(const void* data) noexcept;                                     // Overwrite entire buffer content, keep current size
-    bool upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept;   // Overwrite part of the buffer at given offset
+    bool Upload(const void* data) noexcept;                                     // Overwrite entire buffer content, keep current size
+    bool Upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept;   // Overwrite part of the buffer at given offset
 
     template<typename T>
-    bool uploadObject(const T& data) noexcept;                                  // Overwrite entire buffer from offset 0 with provided data (size = sizeof(T))
+    bool UploadObject(const T& data) noexcept;                                  // Overwrite entire buffer from offset 0 with provided data (size = sizeof(T))
 
     /** Memory mapping */
     template <typename T>
-    T* map(GLenum access = GL_MAP_WRITE_BIT) noexcept;
-    void* map(GLenum access = GL_MAP_WRITE_BIT) noexcept;
+    T* Map(GLenum access = GL_MAP_WRITE_BIT) noexcept;
+    void* Map(GLenum access = GL_MAP_WRITE_BIT) noexcept;
 
     template <typename T>
-    T* mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access = GL_MAP_WRITE_BIT) noexcept;
-    void* mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access = GL_MAP_WRITE_BIT) noexcept;
+    T* MapRange(GLintptr offset, GLsizeiptr length, GLbitfield access = GL_MAP_WRITE_BIT) noexcept;
+    void* MapRange(GLintptr offset, GLsizeiptr length, GLbitfield access = GL_MAP_WRITE_BIT) noexcept;
 
-    bool unmap() noexcept;
+    bool Unmap() noexcept;
 
 private:
     /** Member variables */
@@ -73,11 +73,11 @@ private:
     void createBuffer(const void* data, GLenum usage) noexcept;
 
     /** Static helpers */
-    static bool isValidTarget(GLenum target) noexcept;
-    static bool isValidUsage(GLenum usage) noexcept;
-    static bool isValidMapAccess(GLbitfield access) noexcept;
-    static const char* targetToString(GLenum target) noexcept;
-    static const char* usageToString(GLenum usage) noexcept;
+    static bool IsValidTarget(GLenum target) noexcept;
+    static bool IsValidUsage(GLenum usage) noexcept;
+    static bool IsValidMapAccess(GLbitfield access) noexcept;
+    static const char* TargetToString(GLenum target) noexcept;
+    static const char* UsageToString(GLenum usage) noexcept;
 };
 
 /* === Public Implementation === */
@@ -87,12 +87,12 @@ inline Buffer::Buffer(GLenum target, GLsizeiptr size, const void* data, GLenum u
 {
     SDL_assert(size > 0);
 
-    if (!isValidTarget(target)) {
+    if (!IsValidTarget(target)) {
         NX_LOG(E, "GPU: Invalid buffer target: 0x%x", target);
         return;
     }
 
-    if (!isValidUsage(usage)) {
+    if (!IsValidUsage(usage)) {
         NX_LOG(E, "GPU: Invalid buffer usage: 0x%x", usage);
         return;
     }
@@ -131,65 +131,65 @@ inline Buffer& Buffer::operator=(Buffer&& other) noexcept
     return *this;
 }
 
-inline bool Buffer::isValid() const noexcept
+inline bool Buffer::IsValid() const noexcept
 {
     return (mID > 0);
 }
 
-inline GLuint Buffer::id() const noexcept
+inline GLuint Buffer::GetID() const noexcept
 {
     return mID;
 }
 
-inline GLenum Buffer::target() const noexcept
+inline GLenum Buffer::GetTarget() const noexcept
 {
     return mTarget;
 }
 
-inline GLsizeiptr Buffer::size() const noexcept
+inline GLsizeiptr Buffer::GetSize() const noexcept
 {
     return mSize;
 }
 
-inline GLenum Buffer::usage() const noexcept
+inline GLenum Buffer::GetUsage() const noexcept
 {
     return mUsage;
 }
 
-inline void Buffer::reserve(GLsizeiptr size, bool keepData) noexcept
+inline void Buffer::Reserve(GLsizeiptr size, bool keepData) noexcept
 {
     if (size > mSize) {
-        realloc(size, keepData);
+        Realloc(size, keepData);
     }
 }
 
 template<typename T>
-inline bool Buffer::uploadObject(const T& data) noexcept
+inline bool Buffer::UploadObject(const T& data) noexcept
 {
-    static_assert(!std::is_pointer_v<T>, "Do not pass pointers to uploadObject<T>!");
-    return upload(0, sizeof(T), &data);
+    static_assert(!std::is_pointer_v<T>, "Do not pass pointers to UploadObject<T>!");
+    return Upload(0, sizeof(T), &data);
 }
 
-inline bool Buffer::upload(const void* data) noexcept
+inline bool Buffer::Upload(const void* data) noexcept
 {
-    return upload(0, mSize, data);
-}
-
-template <typename T>
-inline T* Buffer::map(GLenum access) noexcept
-{
-    return static_cast<T*>(map(access));
+    return Upload(0, mSize, data);
 }
 
 template <typename T>
-inline T* Buffer::mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access) noexcept
+inline T* Buffer::Map(GLenum access) noexcept
 {
-    return static_cast<T*>(mapRange(offset, length, access));
+    return static_cast<T*>(Map(access));
+}
+
+template <typename T>
+inline T* Buffer::MapRange(GLintptr offset, GLsizeiptr length, GLbitfield access) noexcept
+{
+    return static_cast<T*>(MapRange(offset, length, access));
 }
 
 /* === Private Implementation === */
 
-inline bool Buffer::isValidTarget(GLenum target) noexcept
+inline bool Buffer::IsValidTarget(GLenum target) noexcept
 {
     switch (target) {
     case GL_ARRAY_BUFFER:
@@ -207,7 +207,7 @@ inline bool Buffer::isValidTarget(GLenum target) noexcept
     }
 }
 
-inline bool Buffer::isValidUsage(GLenum usage) noexcept
+inline bool Buffer::IsValidUsage(GLenum usage) noexcept
 {
     switch (usage) {
     case GL_STREAM_DRAW:
@@ -225,7 +225,7 @@ inline bool Buffer::isValidUsage(GLenum usage) noexcept
     }
 }
 
-inline bool Buffer::isValidMapAccess(GLbitfield access) noexcept
+inline bool Buffer::IsValidMapAccess(GLbitfield access) noexcept
 {
     // Must have at least one of READ or WRITE
     if (!(access & (GL_MAP_READ_BIT | GL_MAP_WRITE_BIT))) {
@@ -241,7 +241,7 @@ inline bool Buffer::isValidMapAccess(GLbitfield access) noexcept
     return (access & ~validBits) == 0;
 }
 
-inline const char* Buffer::targetToString(GLenum target) noexcept
+inline const char* Buffer::TargetToString(GLenum target) noexcept
 {
     switch (target) {
     case GL_ARRAY_BUFFER: return "GL_ARRAY_BUFFER";
@@ -257,7 +257,7 @@ inline const char* Buffer::targetToString(GLenum target) noexcept
     }
 }
 
-inline const char* Buffer::usageToString(GLenum usage) noexcept
+inline const char* Buffer::UsageToString(GLenum usage) noexcept
 {
     switch (usage) {
     case GL_STREAM_DRAW: return "GL_STREAM_DRAW";

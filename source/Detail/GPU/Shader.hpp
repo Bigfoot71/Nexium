@@ -36,16 +36,16 @@ public:
     Shader(Shader&& other) noexcept;
     Shader& operator=(Shader&& other) noexcept;
 
-    bool isValid() const noexcept;
-    GLuint id() const noexcept;
-    GLenum stage() const noexcept;
+    bool IsValid() const noexcept;
+    GLuint GetID() const noexcept;
+    GLenum GetStage() const noexcept;
 
 private:
     GLuint mID{0};
     GLenum mStage{};
 
 private:
-    static const char* stageToString(GLenum stage) noexcept;
+    static const char* StageToString(GLenum stage) noexcept;
 };
 
 /* === Public Implementation === */
@@ -107,10 +107,10 @@ inline Shader::Shader(GLenum stage, const char* source, std::initializer_list<co
         if (logLength > 0) {
             std::string errorLog(logLength, '\0');
             glGetShaderInfoLog(mID, logLength, nullptr, errorLog.data());
-            NX_LOG(E, "GPU: Failed to compile %s shader:\n%s", stageToString(stage), errorLog.c_str());
+            NX_LOG(E, "GPU: Failed to compile %s shader:\n%s", StageToString(stage), errorLog.c_str());
         }
         else {
-            NX_LOG(E, "GPU: Failed to compile %s shader (no error log available)", stageToString(stage));
+            NX_LOG(E, "GPU: Failed to compile %s shader (no error log available)", StageToString(stage));
         }
 
         glDeleteShader(mID);
@@ -145,22 +145,22 @@ inline Shader& Shader::operator=(Shader&& other) noexcept
     return *this;
 }
 
-inline bool Shader::isValid() const noexcept
+inline bool Shader::IsValid() const noexcept
 {
     return (mID > 0);
 }
 
-inline GLuint Shader::id() const noexcept
+inline GLuint Shader::GetID() const noexcept
 {
     return mID;
 }
 
-inline GLenum Shader::stage() const noexcept
+inline GLenum Shader::GetStage() const noexcept
 {
     return mStage;
 }
 
-inline const char* Shader::stageToString(GLenum stage) noexcept
+inline const char* Shader::StageToString(GLenum stage) noexcept
 {
     switch (stage) {
     case GL_VERTEX_SHADER:          return "vertex";

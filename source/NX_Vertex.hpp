@@ -183,7 +183,7 @@ inline NX_VertexBuffer3D::NX_VertexBuffer3D(const NX_Vertex3D* vertices, int vCo
     /* --- Create vertex array --- */
 
     vao = gpu::VertexArray(
-        ebo.isValid() ? &ebo : nullptr,
+        ebo.IsValid() ? &ebo : nullptr,
         {
             gpu::VertexBufferDesc
             {
@@ -255,7 +255,7 @@ inline NX_VertexBuffer3D& NX_VertexBuffer3D::operator=(NX_VertexBuffer3D&& other
 
 inline void NX_VertexBuffer3D::BindInstances(const NX_InstanceBuffer& instances)
 {
-    vao.bindVertexBuffers({
+    vao.BindVertexBuffers({
         { 1, instances.GetBuffer(NX_INSTANCE_POSITION) },
         { 2, instances.GetBuffer(NX_INSTANCE_ROTATION) },
         { 3, instances.GetBuffer(NX_INSTANCE_SCALE) },
@@ -266,7 +266,7 @@ inline void NX_VertexBuffer3D::BindInstances(const NX_InstanceBuffer& instances)
 
 inline void NX_VertexBuffer3D::UnbindInstances()
 {
-    vao.unbindVertexBuffers({
+    vao.UnbindVertexBuffers({
         1, 2, 3, 4, 5
     });
 }

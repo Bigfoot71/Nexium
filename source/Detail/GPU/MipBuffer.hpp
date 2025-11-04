@@ -31,20 +31,20 @@ public:
     MipBuffer& operator=(MipBuffer&& other) noexcept;
 
     /** Getters */
-    int numLevels() const noexcept;
-    int width(int level) const noexcept;
-    int height(int level) const noexcept;
-    NX_IVec2 dimensions(int level) const noexcept;
-    const gpu::Texture& texture() const noexcept;
+    int GetNumLevels() const noexcept;
+    int GetWidth(int level) const noexcept;
+    int GetHeight(int level) const noexcept;
+    NX_IVec2 GetDimensions(int level) const noexcept;
+    const gpu::Texture& GetTexture() const noexcept;
 
     template <std::invocable<int, int> Func>
-    void downsample(const gpu::Pipeline& pipeline, int firstLevel, Func&& f) noexcept;
+    void Downsample(const gpu::Pipeline& pipeline, int firstLevel, Func&& f) noexcept;
 
     template <std::invocable<int> Func>
-    void iterate(const gpu::Pipeline& pipeline, Func&& f) noexcept;
+    void Iterate(const gpu::Pipeline& pipeline, Func&& f) noexcept;
 
     template <std::invocable<int, int> Func>
-    void upsample(const gpu::Pipeline& pipeline, Func&& func) noexcept;
+    void Upsample(const gpu::Pipeline& pipeline, Func&& func) noexcept;
 
 private:
     gpu::Framebuffer mFramebuffer{};
@@ -95,81 +95,81 @@ inline MipBuffer& MipBuffer::operator=(MipBuffer&& other) noexcept
     return *this;
 }
 
-inline int MipBuffer::numLevels() const noexcept
+inline int MipBuffer::GetNumLevels() const noexcept
 {
-    return mTexture.numLevels();
+    return mTexture.GetNumLevels();
 }
 
-inline int MipBuffer::width(int level) const noexcept
+inline int MipBuffer::GetWidth(int level) const noexcept
 {
-    return NX_MAX(1, mTexture.width() >> level);
+    return NX_MAX(1, mTexture.GetWidth() >> level);
 }
 
-inline int MipBuffer::height(int level) const noexcept
+inline int MipBuffer::GetHeight(int level) const noexcept
 {
-    return NX_MAX(1, mTexture.height() >> level);
+    return NX_MAX(1, mTexture.GetHeight() >> level);
 }
 
-inline NX_IVec2 MipBuffer::dimensions(int level) const noexcept
+inline NX_IVec2 MipBuffer::GetDimensions(int level) const noexcept
 {
-    int w = NX_MAX(1, mTexture.width() >> level);
-    int h = NX_MAX(1, mTexture.height() >> level);
+    int w = NX_MAX(1, mTexture.GetWidth() >> level);
+    int h = NX_MAX(1, mTexture.GetHeight() >> level);
 
     return NX_IVEC2(w, h);
 }
 
-inline const gpu::Texture& MipBuffer::texture() const noexcept
+inline const gpu::Texture& MipBuffer::GetTexture() const noexcept
 {
     return mTexture;
 }
 
 template <std::invocable<int, int> Func>
-void MipBuffer::downsample(const gpu::Pipeline& pipeline, int firstLevel, Func&& f) noexcept
+void MipBuffer::Downsample(const gpu::Pipeline& pipeline, int firstLevel, Func&& f) noexcept
 {
-    pipeline.bindFramebuffer(mFramebuffer);
+    pipeline.BindFramebuffer(mFramebuffer);
 
-    for (int dstLevel = firstLevel, srcLevel = firstLevel - 1; dstLevel < mTexture.numLevels(); dstLevel++, srcLevel++) {
-        mFramebuffer.setColorAttachmentTarget(0, 0, 0, dstLevel);
-        pipeline.setViewport(dimensions(dstLevel));
+    for (int dstLevel = firstLevel, srcLevel = firstLevel - 1; dstLevel < mTexture.GetNumLevels(); dstLevel++, srcLevel++) {
+        mFramebuffer.SetColorAttachmentTarget(0, 0, 0, dstLevel);
+        pipeline.SetViewport(GetDimensions(dstLevel));
         if (srcLevel >= 0) {
-            mTexture.setMipLevelRange(srcLevel, srcLevel);
+            mTexture.SetMipLevelRange(srcLevel, srcLevel);
         }
         f(dstLevel, srcLevel);
     }
 
     // Reset mipmap sampling levels for debugging with RenderDoc
     if constexpr (INX_BuildInfo::debug) {
-        mTexture.setMipLevelRange(0, mTexture.numLevels() - 1);
+        mTexture.SetMipLevelRange(0, mTexture.GetNumLevels() - 1);
     }
 }
 
 template <std::invocable<int> Func>
-void MipBuffer::iterate(const gpu::Pipeline& pipeline, Func&& f) noexcept
+void MipBuffer::Iterate(const gpu::Pipeline& pipeline, Func&& f) noexcept
 {
-    pipeline.bindFramebuffer(mFramebuffer);
+    pipeline.BindFramebuffer(mFramebuffer);
 
-    for (int dstLevel = 0; dstLevel < mTexture.numLevels(); dstLevel++) {
-        mFramebuffer.setColorAttachmentTarget(0, 0, 0, dstLevel);
-        pipeline.setViewport(dimensions(dstLevel));
+    for (int dstLevel = 0; dstLevel < mTexture.GetNumLevels(); dstLevel++) {
+        mFramebuffer.SetColorAttachmentTarget(0, 0, 0, dstLevel);
+        pipeline.SetViewport(GetDimensions(dstLevel));
         f(dstLevel);
     }
 }
 
 template <std::invocable<int, int> Func>
-void MipBuffer::upsample(const gpu::Pipeline& pipeline, Func&& f) noexcept
+void MipBuffer::Upsample(const gpu::Pipeline& pipeline, Func&& f) noexcept
 {
-    pipeline.bindFramebuffer(mFramebuffer);
+    pipeline.BindFramebuffer(mFramebuffer);
 
-    for (int srcLevel = mTexture.numLevels() - 1, dstLevel = srcLevel - 1; srcLevel > 0; srcLevel--, dstLevel--) {
-        mFramebuffer.setColorAttachmentTarget(0, 0, 0, dstLevel);
-        mTexture.setMipLevelRange(srcLevel, srcLevel);
-        pipeline.setViewport(dimensions(dstLevel));
+    for (int srcLevel = mTexture.GetNumLevels() - 1, dstLevel = srcLevel - 1; srcLevel > 0; srcLevel--, dstLevel--) {
+        mFramebuffer.SetColorAttachmentTarget(0, 0, 0, dstLevel);
+        mTexture.SetMipLevelRange(srcLevel, srcLevel);
+        pipeline.SetViewport(GetDimensions(dstLevel));
         f(dstLevel, srcLevel);
     }
 
     // Reset mipmap sampling levels for debugging with RenderDoc
     if constexpr (INX_BuildInfo::debug) {
-        mTexture.setMipLevelRange(0, mTexture.numLevels() - 1);
+        mTexture.SetMipLevelRange(0, mTexture.GetNumLevels() - 1);
     }
 }
 

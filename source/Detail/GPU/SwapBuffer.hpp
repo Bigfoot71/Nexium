@@ -27,9 +27,9 @@ public:
     SwapBuffer(SwapBuffer&& other) noexcept;
     SwapBuffer& operator=(SwapBuffer&& other) noexcept;
 
-    const Framebuffer& target() const noexcept;
-    const Texture& source() const noexcept;
-    void swap() noexcept;
+    const Framebuffer& GetTarget() const noexcept;
+    const Texture& GetSource() const noexcept;
+    void Swap() noexcept;
 
 private:
     using Buffer = std::pair<Framebuffer, Texture>;
@@ -80,17 +80,17 @@ inline SwapBuffer& SwapBuffer::operator=(SwapBuffer&& other) noexcept
     return *this;
 }
 
-inline const Framebuffer& SwapBuffer::target() const noexcept
+inline const Framebuffer& SwapBuffer::GetTarget() const noexcept
 {
     return mBuffers[mTargetIdx].first;
 }
 
-inline const Texture& SwapBuffer::source() const noexcept
+inline const Texture& SwapBuffer::GetSource() const noexcept
 {
     return mBuffers[!mTargetIdx].second;
 }
 
-inline void SwapBuffer::swap() noexcept
+inline void SwapBuffer::Swap() noexcept
 {
     mTargetIdx = !mTargetIdx;
 }

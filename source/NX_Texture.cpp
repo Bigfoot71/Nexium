@@ -200,15 +200,15 @@ void NX_DestroyTexture(NX_Texture* texture)
 
 NX_IVec2 NX_GetTextureSize(const NX_Texture* texture)
 {
-    return texture->gpu.dimensions();
+    return texture->gpu.GetDimensions();
 }
 
 void NX_SetTextureParameters(NX_Texture* texture, NX_TextureFilter filter, NX_TextureWrap wrap, float anisotropy)
 {
-    std::pair<GLenum, GLenum> glFilter = INX_GetFilter(filter, texture->gpu.hasMipmap());
+    std::pair<GLenum, GLenum> glFilter = INX_GetFilter(filter, texture->gpu.HasMipmap());
     GLenum glWrap = INX_GetWrap(wrap);
 
-    texture->gpu.setParameters({
+    texture->gpu.SetParameters({
         .minFilter = glFilter.first,
         .magFilter = glFilter.second,
         .sWrap = glWrap,
@@ -220,34 +220,34 @@ void NX_SetTextureParameters(NX_Texture* texture, NX_TextureFilter filter, NX_Te
 
 void NX_SetTextureAnisotropy(NX_Texture* texture, float anisotropy)
 {
-    texture->gpu.setAnisotropy(anisotropy);
+    texture->gpu.SetAnisotropy(anisotropy);
 }
 
 void NX_SetTextureFilter(NX_Texture* texture, NX_TextureFilter filter)
 {
-    std::pair<GLenum, GLenum> glFilter = INX_GetFilter(filter, texture->gpu.hasMipmap());
-    texture->gpu.setFilter(glFilter.first, glFilter.second);
+    std::pair<GLenum, GLenum> glFilter = INX_GetFilter(filter, texture->gpu.HasMipmap());
+    texture->gpu.SetFilter(glFilter.first, glFilter.second);
 }
 
 void NX_SetTextureWrap(NX_Texture* texture, NX_TextureWrap wrap)
 {
     GLenum glWrap = INX_GetWrap(wrap);
-    texture->gpu.setWrap(glWrap, glWrap, glWrap);
+    texture->gpu.SetWrap(glWrap, glWrap, glWrap);
 }
 
 void NX_UploadTexture(NX_Texture* texture, const NX_Image* image)
 {
     NX_Image source = *image;
 
-    NX_PixelFormat texFormat = INX_GPU_GetPixelFormat(texture->gpu.internalFormat());
+    NX_PixelFormat texFormat = INX_GPU_GetPixelFormat(texture->gpu.GetInternalFormat());
 
     if (texFormat != image->format) {
         source = NX_CopyImage(image, texFormat);
     }
 
-    texture->gpu.upload(image->pixels, 0, 0);
-    if (texture->gpu.hasMipmap()) {
-        texture->gpu.generateMipmap();
+    texture->gpu.Upload(image->pixels, 0, 0);
+    if (texture->gpu.HasMipmap()) {
+        texture->gpu.GenerateMipmap();
     }
 
     if (source.pixels != image->pixels) {
@@ -257,5 +257,5 @@ void NX_UploadTexture(NX_Texture* texture, const NX_Image* image)
 
 void NX_GenerateMipmap(NX_Texture* texture)
 {
-    texture->gpu.generateMipmap();
+    texture->gpu.GenerateMipmap();
 }

@@ -62,49 +62,49 @@ public:
     Framebuffer& operator=(Framebuffer&& other) noexcept;
 
     /** Public interface */
-    bool isValid() const noexcept;
-    GLuint resolveId() const noexcept;  // Always returns the resolve framebuffer (with original, sampleable textures)
-    GLuint renderId() const noexcept;   // Always returns the active framebuffer (MSAA or normal)
-    int width() const noexcept;
-    int height() const noexcept;
-    NX_IVec2 dimensions() const noexcept;
+    bool IsValid() const noexcept;
+    GLuint GetResolveId() const noexcept;  // Always returns the resolve framebuffer (with original, sampleable textures)
+    GLuint GetRenderId() const noexcept;   // Always returns the active framebuffer (MSAA or normal)
+    int GetWidth() const noexcept;
+    int GetHeight() const noexcept;
+    NX_IVec2 GetDimensions() const noexcept;
 
     /** Attachment access (always the original textures) */
-    const TextureView& getColorAttachment(int index) const noexcept;
-    const TextureView& getDepthAttachment() const noexcept;
-    size_t colorAttachmentCount() const noexcept;
+    const TextureView& GetColorAttachment(int index) const noexcept;
+    const TextureView& GetDepthAttachment() const noexcept;
+    size_t GetColorAttachmentCount() const noexcept;
 
     /** Draw buffers control */
-    void setDrawBuffers(std::initializer_list<int> buffers) noexcept;
-    void enableDrawBuffers() noexcept;
-    void disableDrawBuffers() noexcept;
+    void SetDrawBuffers(std::initializer_list<int> buffers) noexcept;
+    void EnableDrawBuffers() noexcept;
+    void DisableDrawBuffers() noexcept;
 
     /** Invalidate content */
-    void invalidate(std::initializer_list<int> buffers) noexcept;
-    void invalidate() noexcept;
+    void Invalidate(std::initializer_list<int> buffers) noexcept;
+    void Invalidate() noexcept;
 
     /** Multisampling control */
-    void setSampleCount(int sampleCount) noexcept;
-    int getSampleCount() const noexcept;
+    void SetSampleCount(int sampleCount) noexcept;
+    int GetSampleCount() const noexcept;
 
     /** Resolve (blit multisampled renderbuffers to original textures) */
-    void resolve() noexcept;
+    void Resolve() noexcept;
 
     /** Layered rendering support */
-    void setColorAttachmentTarget(int attachmentIndex, int layer = 0, int face = 0, int level = 0) noexcept;
-    void setDepthAttachmentTarget(int layer = 0, int face = 0, int level = 0) noexcept;
+    void SetColorAttachmentTarget(int attachmentIndex, int layer = 0, int face = 0, int level = 0) noexcept;
+    void SetDepthAttachmentTarget(int layer = 0, int face = 0, int level = 0) noexcept;
 
     /** @warning These methods only accept depth and mip level changes */
-    void updateColorTextureView(int attachmentIndex, const gpu::Texture& texture) noexcept;
-    void updateDepthTextureView(const gpu::Texture& texture) noexcept;
+    void UpdateColorTextureView(int attachmentIndex, const gpu::Texture& texture) noexcept;
+    void UpdateDepthTextureView(const gpu::Texture& texture) noexcept;
 
     /** Get current layer/face targets */
-    int getColorAttachmentLayer(int attachmentIndex) const noexcept;
-    int getColorAttachmentFace(int attachmentIndex) const noexcept;
-    int getColorAttachmentLevel(int attachmentIndex) const noexcept;
-    int getDepthAttachmentLayer() const noexcept;
-    int getDepthAttachmentFace() const noexcept;
-    int getDepthAttachmentLevel() const noexcept;
+    int GetColorAttachmentLayer(int attachmentIndex) const noexcept;
+    int GetColorAttachmentFace(int attachmentIndex) const noexcept;
+    int GetColorAttachmentLevel(int attachmentIndex) const noexcept;
+    int GetDepthAttachmentLayer() const noexcept;
+    int GetDepthAttachmentFace() const noexcept;
+    int GetDepthAttachmentLevel() const noexcept;
 
 private:
     /** Structure to track layer/face targets for each attachment */
@@ -128,19 +128,19 @@ private:
     AttachmentTarget mDepthTarget;
 
     /** Utility functions */
-    void createResolveFramebuffer() noexcept;
-    void createMultisampleFramebuffer() noexcept;
-    void destroyMultisampleFramebuffer() noexcept;
-    void attachTexturesToResolveFramebuffer() noexcept;
-    void createAndAttachMultisampleRenderbuffers() noexcept;
-    bool checkFramebufferComplete(GLuint framebuffer) noexcept;
-    void updateColorAttachment(int index, bool bind) noexcept;
-    void updateDepthAttachment(bool bind) noexcept;
-    void resolveColorAttachment(int index) noexcept;
-    void resolveDepthAttachment() noexcept;
+    void CreateResolveFramebuffer() noexcept;
+    void CreateMultisampleFramebuffer() noexcept;
+    void DestroyMultisampleFramebuffer() noexcept;
+    void AttachTexturesToResolveFramebuffer() noexcept;
+    void CreateAndAttachMultisampleRenderbuffers() noexcept;
+    bool CheckFramebufferComplete(GLuint framebuffer) noexcept;
+    void UpdateColorAttachment(int index, bool bind) noexcept;
+    void UpdateDepthAttachment(bool bind) noexcept;
+    void ResolveColorAttachment(int index) noexcept;
+    void ResolveDepthAttachment() noexcept;
 
     /** Static helpers */
-    static GLenum getDepthStencilAttachment(GLenum internalFormat) noexcept;
+    static GLenum GetDepthStencilAttachment(GLenum internalFormat) noexcept;
 };
 
 /* === Public Implementation === */
@@ -159,11 +159,11 @@ inline Framebuffer::Framebuffer(std::initializer_list<const Texture*> colorAttac
         bool first = true;
         for (const Texture* tex : colorAttachments)  {
             SDL_assert(tex != nullptr);
-            if (first) expectedDims = tex->dimensions(), first = false;
-            else SDL_assert(tex->dimensions() == expectedDims);
+            if (first) expectedDims = tex->GetDimensions(), first = false;
+            else SDL_assert(tex->GetDimensions() == expectedDims);
         }
         if (depthStencilAttachment) {
-            SDL_assert(depthStencilAttachment->dimensions() == expectedDims);
+            SDL_assert(depthStencilAttachment->GetDimensions() == expectedDims);
         }
     }
 
@@ -186,23 +186,23 @@ inline Framebuffer::Framebuffer(std::initializer_list<const Texture*> colorAttac
     /* --- Validate depth/stencil attachment if provided and keep its ID --- */
 
     if (depthStencilAttachment) {
-        if (!depthStencilAttachment->isValid()) {
+        if (!depthStencilAttachment->IsValid()) {
             NX_LOG(E, "GPU: Invalid depth/stencil attachment");
             return;
         }
         mDepthStencilAttachment = *depthStencilAttachment;
     }
 
-    createResolveFramebuffer();
+    CreateResolveFramebuffer();
 
-    if (isValid()) {
-        enableDrawBuffers();
+    if (IsValid()) {
+        EnableDrawBuffers();
     }
 }
 
 inline Framebuffer::~Framebuffer() noexcept
 {
-    destroyMultisampleFramebuffer();
+    DestroyMultisampleFramebuffer();
     if (mResolveFramebuffer != 0) {
         glDeleteFramebuffers(1, &mResolveFramebuffer);
     }
@@ -223,7 +223,7 @@ inline Framebuffer::Framebuffer(Framebuffer&& other) noexcept
 inline Framebuffer& Framebuffer::operator=(Framebuffer&& other) noexcept
 {
     if (this != &other) {
-        destroyMultisampleFramebuffer();
+        DestroyMultisampleFramebuffer();
         if (mResolveFramebuffer != 0) {
             glDeleteFramebuffers(1, &mResolveFramebuffer);
         }
@@ -240,56 +240,56 @@ inline Framebuffer& Framebuffer::operator=(Framebuffer&& other) noexcept
     return *this;
 }
 
-inline bool Framebuffer::isValid() const noexcept
+inline bool Framebuffer::IsValid() const noexcept
 {
     return (mResolveFramebuffer > 0);
 }
 
-inline GLuint Framebuffer::resolveId() const noexcept
+inline GLuint Framebuffer::GetResolveId() const noexcept
 {
     // Always returns the resolve framebuffer (with original textures)
     return mResolveFramebuffer;
 }
 
-inline GLuint Framebuffer::renderId() const noexcept
+inline GLuint Framebuffer::GetRenderId() const noexcept
 {
     // Returns the active framebuffer for rendering (MSAA if enabled, otherwise the resolve framebuffer)
     return (mSampleCount > 0 && mMultisampleFramebuffer > 0) ? mMultisampleFramebuffer : mResolveFramebuffer;
 }
 
-inline int Framebuffer::width() const noexcept
+inline int Framebuffer::GetWidth() const noexcept
 {
-    return mColorAttachments[0].width();
+    return mColorAttachments[0].GetWidth();
 }
 
-inline int Framebuffer::height() const noexcept
+inline int Framebuffer::GetHeight() const noexcept
 {
-    return mColorAttachments[0].height();
+    return mColorAttachments[0].GetHeight();
 }
 
-inline NX_IVec2 Framebuffer::dimensions() const noexcept
+inline NX_IVec2 Framebuffer::GetDimensions() const noexcept
 {
-    return mColorAttachments[0].dimensions();
+    return mColorAttachments[0].GetDimensions();
 }
 
-inline const TextureView& Framebuffer::getColorAttachment(int index) const noexcept
+inline const TextureView& Framebuffer::GetColorAttachment(int index) const noexcept
 {
     return mColorAttachments[index];
 }
 
-inline const TextureView& Framebuffer::getDepthAttachment() const noexcept
+inline const TextureView& Framebuffer::GetDepthAttachment() const noexcept
 {
     return mDepthStencilAttachment;
 }
 
-inline size_t Framebuffer::colorAttachmentCount() const noexcept
+inline size_t Framebuffer::GetColorAttachmentCount() const noexcept
 {
     return mColorAttachments.size();
 }
 
-inline void Framebuffer::setSampleCount(int sampleCount) noexcept
+inline void Framebuffer::SetSampleCount(int sampleCount) noexcept
 {
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot set sample count on invalid framebuffer");
         return;
     }
@@ -311,17 +311,17 @@ inline void Framebuffer::setSampleCount(int sampleCount) noexcept
     }
 
     // Create or recreate the MSAA framebuffer
-    createMultisampleFramebuffer();
+    CreateMultisampleFramebuffer();
 }
 
-inline int Framebuffer::getSampleCount() const noexcept
+inline int Framebuffer::GetSampleCount() const noexcept
 {
     return mSampleCount;
 }
 
-inline void Framebuffer::setColorAttachmentTarget(int attachmentIndex, int layer, int face, int level) noexcept
+inline void Framebuffer::SetColorAttachmentTarget(int attachmentIndex, int layer, int face, int level) noexcept
 {
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot set attachment target on invalid framebuffer");
         return;
     }
@@ -330,14 +330,14 @@ inline void Framebuffer::setColorAttachmentTarget(int attachmentIndex, int layer
     const TextureView& texture = mColorAttachments[attachmentIndex];
 
     // Validate mipmap level
-    SDL_assert(level >= 0 && level < texture.numLevels());
+    SDL_assert(level >= 0 && level < texture.GetNumLevels());
 
     // Validate target
-    GLenum target = texture.target();
+    GLenum target = texture.GetTarget();
 
     // Validate layer and face parameters
     if (target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY) {
-        SDL_assert(layer >= 0 && layer < texture.depth());
+        SDL_assert(layer >= 0 && layer < texture.GetDepth());
         if (target == GL_TEXTURE_2D_ARRAY) {
             SDL_assert(face == 0);
         }
@@ -352,26 +352,26 @@ inline void Framebuffer::setColorAttachmentTarget(int attachmentIndex, int layer
     mColorTargets[attachmentIndex].face = face;
     mColorTargets[attachmentIndex].level = level;
 
-    updateColorAttachment(attachmentIndex, true);
+    UpdateColorAttachment(attachmentIndex, true);
 }
 
-inline void Framebuffer::setDepthAttachmentTarget(int layer, int face, int level) noexcept
+inline void Framebuffer::SetDepthAttachmentTarget(int layer, int face, int level) noexcept
 {
-    if (!isValid() || !mDepthStencilAttachment.isValid()) {
+    if (!IsValid() || !mDepthStencilAttachment.IsValid()) {
         NX_LOG(E, "GPU: Cannot set depth attachment target on invalid framebuffer or no depth attachment");
         return;
     }
 
     // Validate mipmap level
-    SDL_assert(level >= 0 && level < mDepthStencilAttachment.numLevels());
+    SDL_assert(level >= 0 && level < mDepthStencilAttachment.GetNumLevels());
 
     // Validate target
-    GLenum target = mDepthStencilAttachment.target();
+    GLenum target = mDepthStencilAttachment.GetTarget();
     SDL_assert(target != GL_TEXTURE_2D);
 
     // Validate layer and face parameters
     if (target == GL_TEXTURE_2D_ARRAY || target == GL_TEXTURE_CUBE_MAP_ARRAY) {
-        SDL_assert(layer >= 0 && layer < mDepthStencilAttachment.depth());
+        SDL_assert(layer >= 0 && layer < mDepthStencilAttachment.GetDepth());
         if (target == GL_TEXTURE_2D_ARRAY) {
             SDL_assert(face == 0);
         }
@@ -386,69 +386,69 @@ inline void Framebuffer::setDepthAttachmentTarget(int layer, int face, int level
     mDepthTarget.face = face;
     mDepthTarget.level = level;
 
-    updateDepthAttachment(true);
+    UpdateDepthAttachment(true);
 }
 
-inline void Framebuffer::updateColorTextureView(int attachmentIndex, const gpu::Texture& texture) noexcept
+inline void Framebuffer::UpdateColorTextureView(int attachmentIndex, const gpu::Texture& texture) noexcept
 {
     // Only depth and mip count changes are accepted
 
-    SDL_assert(texture.id() == mColorAttachments[attachmentIndex].id());
-    SDL_assert(texture.target() == mColorAttachments[attachmentIndex].target());
-    SDL_assert(texture.dimensions() == mColorAttachments[attachmentIndex].dimensions());
-    SDL_assert(texture.internalFormat() == mColorAttachments[attachmentIndex].internalFormat());
+    SDL_assert(texture.GetID() == mColorAttachments[attachmentIndex].GetID());
+    SDL_assert(texture.GetTarget() == mColorAttachments[attachmentIndex].GetTarget());
+    SDL_assert(texture.GetDimensions() == mColorAttachments[attachmentIndex].GetDimensions());
+    SDL_assert(texture.GetInternalFormat() == mColorAttachments[attachmentIndex].GetInternalFormat());
 
     mColorAttachments[attachmentIndex] = gpu::TextureView(texture);
 }
 
-inline void Framebuffer::updateDepthTextureView(const gpu::Texture& texture) noexcept
+inline void Framebuffer::UpdateDepthTextureView(const gpu::Texture& texture) noexcept
 {
     // Only depth and mip count changes are accepted
 
-    SDL_assert(texture.id() == mDepthStencilAttachment.id());
-    SDL_assert(texture.target() == mDepthStencilAttachment.target());
-    SDL_assert(texture.dimensions() == mDepthStencilAttachment.dimensions());
-    SDL_assert(texture.internalFormat() == mDepthStencilAttachment.internalFormat());
+    SDL_assert(texture.GetID() == mDepthStencilAttachment.GetID());
+    SDL_assert(texture.GetTarget() == mDepthStencilAttachment.GetTarget());
+    SDL_assert(texture.GetDimensions() == mDepthStencilAttachment.GetDimensions());
+    SDL_assert(texture.GetInternalFormat() == mDepthStencilAttachment.GetInternalFormat());
 
     mDepthStencilAttachment = gpu::TextureView(texture);
 }
 
-inline int Framebuffer::getColorAttachmentLayer(int attachmentIndex) const noexcept
+inline int Framebuffer::GetColorAttachmentLayer(int attachmentIndex) const noexcept
 {
     SDL_assert(attachmentIndex >= 0 && attachmentIndex < static_cast<int>(mColorTargets.size()));
     return mColorTargets[attachmentIndex].layer;
 }
 
-inline int Framebuffer::getColorAttachmentFace(int attachmentIndex) const noexcept
+inline int Framebuffer::GetColorAttachmentFace(int attachmentIndex) const noexcept
 {
     SDL_assert(attachmentIndex >= 0 && attachmentIndex < static_cast<int>(mColorTargets.size()));
     return mColorTargets[attachmentIndex].face;
 }
 
-inline int Framebuffer::getColorAttachmentLevel(int attachmentIndex) const noexcept
+inline int Framebuffer::GetColorAttachmentLevel(int attachmentIndex) const noexcept
 {
     SDL_assert(attachmentIndex >= 0 && attachmentIndex < static_cast<int>(mColorTargets.size()));
     return mColorTargets[attachmentIndex].level;
 }
 
-inline int Framebuffer::getDepthAttachmentLayer() const noexcept
+inline int Framebuffer::GetDepthAttachmentLayer() const noexcept
 {
     return mDepthTarget.layer;
 }
 
-inline int Framebuffer::getDepthAttachmentFace() const noexcept
+inline int Framebuffer::GetDepthAttachmentFace() const noexcept
 {
     return mDepthTarget.face;
 }
 
-inline int Framebuffer::getDepthAttachmentLevel() const noexcept
+inline int Framebuffer::GetDepthAttachmentLevel() const noexcept
 {
     return mDepthTarget.level;
 }
 
 /* === Private Implementation === */
 
-inline void Framebuffer::createResolveFramebuffer() noexcept
+inline void Framebuffer::CreateResolveFramebuffer() noexcept
 {
     glGenFramebuffers(1, &mResolveFramebuffer);
     if (mResolveFramebuffer == 0) {
@@ -456,16 +456,16 @@ inline void Framebuffer::createResolveFramebuffer() noexcept
         return;
     }
 
-    attachTexturesToResolveFramebuffer();
+    AttachTexturesToResolveFramebuffer();
 
-    if (!checkFramebufferComplete(mResolveFramebuffer)) {
+    if (!CheckFramebufferComplete(mResolveFramebuffer)) {
         glDeleteFramebuffers(1, &mResolveFramebuffer);
         mResolveFramebuffer = 0;
         return;
     }
 }
 
-inline void Framebuffer::createMultisampleFramebuffer() noexcept
+inline void Framebuffer::CreateMultisampleFramebuffer() noexcept
 {
     if (mSampleCount <= 0) {
         return;
@@ -481,18 +481,18 @@ inline void Framebuffer::createMultisampleFramebuffer() noexcept
         }
     }
 
-    createAndAttachMultisampleRenderbuffers();
+    CreateAndAttachMultisampleRenderbuffers();
 
-    if (!checkFramebufferComplete(mMultisampleFramebuffer)) {
+    if (!CheckFramebufferComplete(mMultisampleFramebuffer)) {
         NX_LOG(E, "GPU: Multisampled framebuffer is not complete");
-        destroyMultisampleFramebuffer();
+        DestroyMultisampleFramebuffer();
         mSampleCount = 0;
     }
 
-    enableDrawBuffers();
+    EnableDrawBuffers();
 }
 
-inline void Framebuffer::destroyMultisampleFramebuffer() noexcept
+inline void Framebuffer::DestroyMultisampleFramebuffer() noexcept
 {
     if (!mColorRenderbuffers.empty()) {
         glDeleteRenderbuffers(static_cast<GLsizei>(mColorRenderbuffers.size()), mColorRenderbuffers.data());
@@ -510,7 +510,7 @@ inline void Framebuffer::destroyMultisampleFramebuffer() noexcept
 
 /* === Private Static Implementation === */
 
-inline GLenum Framebuffer::getDepthStencilAttachment(GLenum internalFormat) noexcept
+inline GLenum Framebuffer::GetDepthStencilAttachment(GLenum internalFormat) noexcept
 {
     switch (internalFormat) {
     case GL_DEPTH_COMPONENT16:

@@ -793,8 +793,8 @@ void NX_UpdateMeshBuffer(NX_Mesh* mesh)
         return;
     }
 
-    mesh->buffer->vbo.upload(0, mesh->vertexCount * sizeof(NX_Vertex3D), mesh->vertices);
-    mesh->buffer->ebo.upload(0, mesh->indexCount * sizeof(uint32_t), mesh->indices);
+    mesh->buffer->vbo.Upload(0, mesh->vertexCount * sizeof(NX_Vertex3D), mesh->vertices);
+    mesh->buffer->ebo.Upload(0, mesh->indexCount * sizeof(uint32_t), mesh->indices);
 }
 
 void NX_UpdateMeshAABB(NX_Mesh* mesh)

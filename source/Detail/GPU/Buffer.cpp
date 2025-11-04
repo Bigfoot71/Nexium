@@ -13,11 +13,11 @@ namespace gpu {
 
 /* === Public Implementation === */
 
-void Buffer::realloc(GLsizeiptr newSize, const void* data) noexcept
+void Buffer::Realloc(GLsizeiptr newSize, const void* data) noexcept
 {
     SDL_assert(newSize > 0);
 
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot realloc an invalid buffer (id=%u)", mID);
         return;
     }
@@ -27,7 +27,7 @@ void Buffer::realloc(GLsizeiptr newSize, const void* data) noexcept
         return;
     }
 
-    Pipeline::withBufferBind(mTarget, mID, [&]()
+    Pipeline::WithBufferBind(mTarget, mID, [&]()
     {
         if (newSize != mSize) {
             glBufferData(mTarget, newSize, data, mUsage);
@@ -48,11 +48,11 @@ void Buffer::realloc(GLsizeiptr newSize, const void* data) noexcept
     });
 }
 
-void Buffer::realloc(GLsizeiptr newSize, bool keepData) noexcept
+void Buffer::Realloc(GLsizeiptr newSize, bool keepData) noexcept
 {
     SDL_assert(newSize > 0);
 
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot realloc an invalid buffer (id=%u)", mID);
         return;
     }
@@ -68,7 +68,7 @@ void Buffer::realloc(GLsizeiptr newSize, bool keepData) noexcept
 
     const GLsizeiptr oldSize = mSize;
 
-    Pipeline::withBufferBind(mTarget, mID, [&]()
+    Pipeline::WithBufferBind(mTarget, mID, [&]()
     {
         const GLsizeiptr preserveSize = std::min(oldSize, newSize);
 
@@ -138,9 +138,9 @@ void Buffer::realloc(GLsizeiptr newSize, bool keepData) noexcept
     });
 }
 
-bool Buffer::upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept
+bool Buffer::Upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept
 {
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot set sub data on invalid buffer");
         return false;
     }
@@ -158,7 +158,7 @@ bool Buffer::upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept
         return false;
     }
 
-    Pipeline::withBufferBind(mTarget, mID, [&]() {
+    Pipeline::WithBufferBind(mTarget, mID, [&]() {
         glBufferSubData(mTarget, offset, size, data);
         if (glGetError() != GL_NO_ERROR) {
             NX_LOG(E, "GPU: Failed to set buffer sub data");
@@ -168,20 +168,20 @@ bool Buffer::upload(GLintptr offset, GLsizeiptr size, const void* data) noexcept
     return true;
 }
 
-void* Buffer::map(GLenum access) noexcept
+void* Buffer::Map(GLenum access) noexcept
 {
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot map invalid buffer");
         return nullptr;
     }
 
-    if (!isValidMapAccess(access)) {
+    if (!IsValidMapAccess(access)) {
         NX_LOG(E, "GPU: Invalid map access: 0x%x", access);
         return nullptr;
     }
 
     void* ptr = nullptr;
-    Pipeline::withBufferBind(mTarget, mID, [&]() {
+    Pipeline::WithBufferBind(mTarget, mID, [&]() {
         ptr = glMapBufferRange(mTarget, 0, mSize, access);
         if (!ptr) {
             NX_LOG(E, "GPU: Failed to map buffer");
@@ -191,9 +191,9 @@ void* Buffer::map(GLenum access) noexcept
     return ptr;
 }
 
-void* Buffer::mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access) noexcept
+void* Buffer::MapRange(GLintptr offset, GLsizeiptr length, GLbitfield access) noexcept
 {
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot map range on invalid buffer");
         return nullptr;
     }
@@ -206,13 +206,13 @@ void* Buffer::mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access) no
         return nullptr;
     }
 
-    if (!isValidMapAccess(access)) {
+    if (!IsValidMapAccess(access)) {
         NX_LOG(E, "GPU: Invalid map range access: 0x%x", access);
         return nullptr;
     }
 
     void* ptr = nullptr;
-    Pipeline::withBufferBind(mTarget, mID, [&]() {
+    Pipeline::WithBufferBind(mTarget, mID, [&]() {
         ptr = glMapBufferRange(mTarget, offset, length, access);
         if (!ptr) {
             NX_LOG(E, "GPU: Failed to map buffer range");
@@ -222,15 +222,15 @@ void* Buffer::mapRange(GLintptr offset, GLsizeiptr length, GLbitfield access) no
     return ptr;
 }
 
-bool Buffer::unmap() noexcept
+bool Buffer::Unmap() noexcept
 {
-    if (!isValid()) {
+    if (!IsValid()) {
         NX_LOG(E, "GPU: Cannot unmap invalid buffer");
         return false;
     }
 
     GLboolean result = GL_FALSE;
-    Pipeline::withBufferBind(mTarget, mID, [&]() {
+    Pipeline::WithBufferBind(mTarget, mID, [&]() {
         result = glUnmapBuffer(mTarget);
         if (result == GL_FALSE) {
             NX_LOG(W, "GPU: Buffer unmap returned GL_FALSE (data corrupted)");
@@ -250,7 +250,7 @@ void Buffer::createBuffer(const void* data, GLenum usage) noexcept
         return;
     }
 
-    Pipeline::withBufferBind(mTarget, mID, [&]() {
+    Pipeline::WithBufferBind(mTarget, mID, [&]() {
         glBufferData(mTarget, mSize, data, usage);
         if (glGetError() != GL_NO_ERROR) {
             NX_LOG(E, "GPU: Failed to upload buffer data");

@@ -69,7 +69,7 @@ void NX_DestroyRenderTexture(NX_RenderTexture* target)
 
 NX_IVec2 NX_GetRenderTextureSize(const NX_RenderTexture* target)
 {
-    return target->gpu.dimensions();
+    return target->gpu.GetDimensions();
 }
 
 NX_Texture* NX_GetRenderTexture(const NX_RenderTexture* target)
@@ -79,7 +79,7 @@ NX_Texture* NX_GetRenderTexture(const NX_RenderTexture* target)
 
 void NX_BlitRenderTexture(const NX_RenderTexture* target, int xDst, int yDst, int wDst, int hDst, bool linear)
 {
-    gpu::Pipeline::blitToBackBuffer(
+    gpu::Pipeline::BlitToBackBuffer(
         *reinterpret_cast<const gpu::Framebuffer*>(target),
         xDst, yDst, wDst, hDst, linear
     );

@@ -86,11 +86,11 @@ NX_Shader2D::NX_Shader2D(const char* vert, const char* frag)
     for (int i = 0; i < VariantCount; ++i) {
         auto& program = mPrograms[i];
         for (int j = 0; j < UNIFORM_COUNT; ++j) {
-            int blockIndex = program.getUniformBlockIndex(UniformName[j]);
+            int blockIndex = program.GetUniformBlockIndex(UniformName[j]);
             if (blockIndex < 0) continue;
-            program.setUniformBlockBinding(blockIndex, UniformBinding[j]);
+            program.SetUniformBlockBinding(blockIndex, UniformBinding[j]);
             if (bufferSize[j] == 0) {
-                bufferSize[j] = program.getUniformBlockSize(blockIndex);
+                bufferSize[j] = program.GetUniformBlockSize(blockIndex);
             }
         }
     }
@@ -102,7 +102,7 @@ NX_Shader2D::NX_Shader2D(const char* vert, const char* frag)
     }
 
     if (bufferSize[DYNAMIC_UNIFORM] > 0) {
-        int alignment = gpu::Pipeline::uniformBufferOffsetAlignment();
+        int alignment = gpu::Pipeline::GetUniformBufferOffsetAlignment();
         int alignedSize = NX_ALIGN_UP(8 * bufferSize[DYNAMIC_UNIFORM], alignment);
         mDynamicBuffer.buffer = gpu::Buffer(GL_UNIFORM_BUFFER, alignedSize, nullptr, GL_DYNAMIC_DRAW);
         if (!mDynamicBuffer.ranges.reserve(8)) {

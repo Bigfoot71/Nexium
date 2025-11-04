@@ -49,7 +49,7 @@ struct NX_InstanceBuffer {
 inline const gpu::Buffer* NX_InstanceBuffer::GetBuffer(NX_InstanceData type) const
 {
     const gpu::Buffer& buffer = this->buffers[INX_BitScanForward(type)];
-    return buffer.isValid() ? &buffer : nullptr;
+    return buffer.IsValid() ? &buffer : nullptr;
 }
 
 #endif // NX_INSTANCE_BUFFER_HPP
