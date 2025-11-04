@@ -9,6 +9,8 @@
 #include "./VertexArray.hpp"
 #include "./Pipeline.hpp"
 
+#include "../Util/Ranges.hpp"
+
 namespace gpu {
 
 /* === Public Implementation === */

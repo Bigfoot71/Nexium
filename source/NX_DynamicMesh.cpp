@@ -7,6 +7,8 @@
  */
 
 #include <NX/NX_DynamicMesh.h>
+
+#include "./Detail/Util/Ranges.hpp"
 #include "./INX_GlobalPool.hpp"
 #include <cfloat>
 

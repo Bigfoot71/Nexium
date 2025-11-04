@@ -22,6 +22,7 @@
 
 #include "./Detail/Util/StaticArray.hpp"
 #include "./Detail/Util/Memory.hpp"
+#include "./Detail/Util/Ranges.hpp"
 
 #include "./Detail/GPU/VertexArray.hpp"
 #include "./Detail/GPU/Pipeline.hpp"

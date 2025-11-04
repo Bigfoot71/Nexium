@@ -27,6 +27,7 @@
 
 #include "./Detail/Util/DynamicArray.hpp"
 #include "./Detail/Util/BucketArray.hpp"
+#include "./Detail/Util/Ranges.hpp"
 
 #include "./Detail/GPU/StagingBuffer.hpp"
 #include "./Detail/GPU/Framebuffer.hpp"

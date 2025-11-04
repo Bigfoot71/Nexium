@@ -99,9 +99,6 @@ public:
     public:
         CategoryView(const DynamicArray<T>& data, const DynamicArray<size_t>& indices) noexcept;
 
-        CategoryIterator begin() const noexcept;
-        CategoryIterator end() const noexcept;
-
         CategoryIterator Begin() const noexcept;
         CategoryIterator End() const noexcept;
 
@@ -123,9 +120,6 @@ public:
     class MultiCategoryView {
     public:
         MultiCategoryView(const BucketArray& parent, std::array<Category, CatCount>&& categories) noexcept;
-
-        MultiCategoryIterator<CatCount> begin() const noexcept;
-        MultiCategoryIterator<CatCount> end() const noexcept;
 
         MultiCategoryIterator<CatCount> Begin() const noexcept;
         MultiCategoryIterator<CatCount> End() const noexcept;
@@ -520,30 +514,16 @@ BucketArray<T, Category, N>::CategoryView::CategoryView(
 
 template<typename T, typename Category, size_t N>
 typename BucketArray<T, Category, N>::CategoryIterator 
-BucketArray<T, Category, N>::CategoryView::begin() const noexcept
+BucketArray<T, Category, N>::CategoryView::Begin() const noexcept
 {
     return CategoryIterator(mObjects, mIndices, 0);
 }
 
 template<typename T, typename Category, size_t N>
 typename BucketArray<T, Category, N>::CategoryIterator 
-BucketArray<T, Category, N>::CategoryView::end() const noexcept
-{
-    return CategoryIterator(mObjects, mIndices, mIndices.GetSize());
-}
-
-template<typename T, typename Category, size_t N>
-typename BucketArray<T, Category, N>::CategoryIterator 
-BucketArray<T, Category, N>::CategoryView::Begin() const noexcept
-{
-    return this->begin();
-}
-
-template<typename T, typename Category, size_t N>
-typename BucketArray<T, Category, N>::CategoryIterator 
 BucketArray<T, Category, N>::CategoryView::End() const noexcept
 {
-    return this->end();
+    return CategoryIterator(mObjects, mIndices, mIndices.GetSize());
 }
 
 template<typename T, typename Category, size_t N>
@@ -576,7 +556,7 @@ BucketArray<T, Category, N>::MultiCategoryView<CatCount>::MultiCategoryView(
 template<typename T, typename Category, size_t N>
 template<size_t CatCount>
 typename BucketArray<T, Category, N>::template MultiCategoryIterator<CatCount> 
-BucketArray<T, Category, N>::MultiCategoryView<CatCount>::begin() const noexcept
+BucketArray<T, Category, N>::MultiCategoryView<CatCount>::Begin() const noexcept
 {
     return MultiCategoryIterator<CatCount>(mParent, std::array<Category, CatCount>(mCategories), 0, 0);
 }
@@ -584,25 +564,9 @@ BucketArray<T, Category, N>::MultiCategoryView<CatCount>::begin() const noexcept
 template<typename T, typename Category, size_t N>
 template<size_t CatCount>
 typename BucketArray<T, Category, N>::template MultiCategoryIterator<CatCount> 
-BucketArray<T, Category, N>::MultiCategoryView<CatCount>::end() const noexcept
-{
-    return MultiCategoryIterator<CatCount>(mParent, std::array<Category, CatCount>(mCategories), CatCount, 0);
-}
-
-template<typename T, typename Category, size_t N>
-template<size_t CatCount>
-typename BucketArray<T, Category, N>::template MultiCategoryIterator<CatCount> 
-BucketArray<T, Category, N>::MultiCategoryView<CatCount>::Begin() const noexcept
-{
-    return this->begin();
-}
-
-template<typename T, typename Category, size_t N>
-template<size_t CatCount>
-typename BucketArray<T, Category, N>::template MultiCategoryIterator<CatCount> 
 BucketArray<T, Category, N>::MultiCategoryView<CatCount>::End() const noexcept
 {
-    return this->end();
+    return MultiCategoryIterator<CatCount>(mParent, std::array<Category, CatCount>(mCategories), CatCount, 0);
 }
 
 template<typename T, typename Category, size_t N>

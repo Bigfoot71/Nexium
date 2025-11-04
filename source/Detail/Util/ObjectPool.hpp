@@ -504,32 +504,6 @@ inline bool ObjectPool<T, PoolSize>::ReverseIterator::operator!=(const ReverseIt
     return !(*this == other);
 }
 
-/* === Non-member functions === */
-
-template<typename T, std::size_t PoolSize>
-constexpr typename ObjectPool<T, PoolSize>::Iterator begin(ObjectPool<T, PoolSize>& arr) noexcept
-{
-    return arr.Begin();
-}
-
-template<typename T, std::size_t PoolSize>
-constexpr typename ObjectPool<T, PoolSize>::Iterator end(ObjectPool<T, PoolSize>& arr) noexcept
-{
-    return arr.End();
-}
-
-template<typename T, std::size_t PoolSize>
-constexpr typename ObjectPool<T, PoolSize>::ReverseIterator rbegin(ObjectPool<T, PoolSize>& arr) noexcept
-{
-    return arr.ReverseBegin();
-}
-
-template<typename T, std::size_t PoolSize>
-constexpr typename ObjectPool<T, PoolSize>::ReverseIterator rend(ObjectPool<T, PoolSize>& arr) noexcept
-{
-    return arr.ReverseEnd();
-}
-
 } // namespace util
 
 #endif // NX_UTIL_OBJECT_POOL_HPP

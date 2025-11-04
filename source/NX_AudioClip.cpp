@@ -13,6 +13,7 @@
 #include <NX/NX_Log.h>
 
 #include "./Detail/Util/FixedArray.hpp"
+#include "./Detail/Util/Ranges.hpp"
 #include "./INX_AudioUtils.hpp"
 #include "./INX_GlobalPool.hpp"
 
