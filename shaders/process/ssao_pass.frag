@@ -32,7 +32,7 @@ layout(binding = 3) uniform sampler2D uTexNoise;
 /* === Uniform Buffers === */
 
 layout(std140, binding = 0) uniform U_ViewFrustum {
-    INX_Frustum uFrustum;
+    Frustum uFrustum;
 };
 
 layout(std140, binding = 1) uniform U_Environment {
