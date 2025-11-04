@@ -182,7 +182,8 @@ inline NX_VertexBuffer3D::NX_VertexBuffer3D(const NX_Vertex3D* vertices, int vCo
 
     /* --- Create vertex array --- */
 
-    vao = gpu::VertexArray(&ebo,
+    vao = gpu::VertexArray(
+        ebo.isValid() ? &ebo : nullptr,
         {
             gpu::VertexBufferDesc
             {
