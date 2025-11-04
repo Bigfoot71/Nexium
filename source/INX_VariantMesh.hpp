@@ -26,15 +26,15 @@ public:
     INX_VariantMesh& operator=(const NX_DynamicMesh* mesh);
 
     /** Variant related */
-    size_t index() const;
-    template<typename T> T get() const;
-    template<size_t I> auto get() const;
+    size_t GetTypeIndex() const;
+    template<typename T> T Get() const;
+    template<size_t I> auto Get() const;
 
     /** Getters */
-    NX_ShadowCastMode shadowCastMode() const;
-    NX_ShadowFaceMode shadowFaceMode() const;
-    const NX_BoundingBox3D& aabb() const;
-    NX_Layer layerMask() const;
+    NX_ShadowCastMode GetShadowCastMode() const;
+    NX_ShadowFaceMode GetShadowFaceMode() const;
+    const NX_BoundingBox3D& GetAABB() const;
+    NX_Layer GetLayerMask() const;
 
 private:
     std::variant<const NX_Mesh*, const NX_DynamicMesh*> mMesh;
@@ -59,24 +59,24 @@ inline INX_VariantMesh& INX_VariantMesh::operator=(const NX_DynamicMesh* mesh)
     return *this;
 }
 
-inline size_t INX_VariantMesh::index() const
+inline size_t INX_VariantMesh::GetTypeIndex() const
 {
     return mMesh.index();
 }
 
 template<typename T>
-inline T INX_VariantMesh::get() const
+inline T INX_VariantMesh::Get() const
 {
     return std::get<T>(mMesh);
 }
 
 template<size_t I>
-inline auto INX_VariantMesh::get() const
+inline auto INX_VariantMesh::Get() const
 {
     return std::get<I>(mMesh);
 }
 
-inline NX_ShadowCastMode INX_VariantMesh::shadowCastMode() const
+inline NX_ShadowCastMode INX_VariantMesh::GetShadowCastMode() const
 {
     switch (mMesh.index()) {
     case 0: [[likely]] return std::get<0>(mMesh)->shadowCastMode;
@@ -85,7 +85,7 @@ inline NX_ShadowCastMode INX_VariantMesh::shadowCastMode() const
     }
 }
 
-inline NX_ShadowFaceMode INX_VariantMesh::shadowFaceMode() const
+inline NX_ShadowFaceMode INX_VariantMesh::GetShadowFaceMode() const
 {
     switch (mMesh.index()) {
     case 0: [[likely]] return std::get<0>(mMesh)->shadowFaceMode;
@@ -94,7 +94,7 @@ inline NX_ShadowFaceMode INX_VariantMesh::shadowFaceMode() const
     }
 }
 
-inline const NX_BoundingBox3D& INX_VariantMesh::aabb() const
+inline const NX_BoundingBox3D& INX_VariantMesh::GetAABB() const
 {
     switch (mMesh.index()) {
     case 0: [[likely]] return std::get<0>(mMesh)->aabb;
@@ -103,7 +103,7 @@ inline const NX_BoundingBox3D& INX_VariantMesh::aabb() const
     }
 }
 
-inline NX_Layer INX_VariantMesh::layerMask() const
+inline NX_Layer INX_VariantMesh::GetLayerMask() const
 {
     switch (mMesh.index()) {
     case 0: [[likely]] return std::get<0>(mMesh)->layerMask;

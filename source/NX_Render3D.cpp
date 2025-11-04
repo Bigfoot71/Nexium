@@ -601,7 +601,7 @@ static void INX_PushDrawCall(
 
     state.sharedData.EmplaceBack(INX_DrawShared {
         .transform = transform,
-        .sphere = INX_BoundingSphere3D(mesh.aabb(), transform),
+        .sphere = INX_BoundingSphere3D(mesh.GetAABB(), transform),
         .instances = instances,
         .instanceCount = instanceCount,
         .boneMatrixOffset = -1,
@@ -612,7 +612,7 @@ static void INX_PushDrawCall(
     INX_DrawUnique uniqueData{
         .mesh = mesh,
         .material = material,
-        .obb = INX_OrientedBoundingBox3D(mesh.aabb(), transform),
+        .obb = INX_OrientedBoundingBox3D(mesh.GetAABB(), transform),
         .textures = {},
         .dynamicRangeIndex = -1,
         .sharedDataIndex = sharedIndex,
@@ -745,7 +745,7 @@ static void INX_UploadDrawCalls()
             gpuUnique.texOffset = material.texOffset;
             gpuUnique.texScale = material.texScale;
             gpuUnique.billboard = material.billboard;
-            gpuUnique.layerMask = unique.mesh.layerMask();
+            gpuUnique.layerMask = unique.mesh.GetLayerMask();
         }
     }
 
@@ -765,7 +765,7 @@ static void INX_CullDrawCalls(const INX_Frustum& frustum, NX_Layer frustumCullMa
             int end = shared.uniqueDataIndex + shared.uniqueDataCount;
             for (int i = shared.uniqueDataIndex; i < end; ++i) {
                 const INX_DrawUnique& u = state.uniqueData[i];
-                if ((frustumCullMask & u.mesh.layerMask()) != 0) {
+                if ((frustumCullMask & u.mesh.GetLayerMask()) != 0) {
                     state.uniqueVisible.Emplace(u.type, i);
                 }
             }
@@ -782,7 +782,7 @@ static void INX_CullDrawCalls(const INX_Frustum& frustum, NX_Layer frustumCullMa
 
         for (int i = shared.uniqueDataIndex; i < end; ++i) {
             const INX_DrawUnique& u = state.uniqueData[i];
-            if ((frustumCullMask & u.mesh.layerMask()) != 0) [[likely]] {
+            if ((frustumCullMask & u.mesh.GetLayerMask()) != 0) [[likely]] {
                 if (!needsObbTest || frustum.ContainsObb(u.obb)) {
                     state.uniqueVisible.Emplace(u.type, i);
                 }
@@ -809,7 +809,7 @@ static void INX_SortDrawCalls()
             const INX_DrawUnique& unique = state.uniqueData[i];
             const INX_DrawShared& shared = state.sharedData[unique.sharedDataIndex];
             state.sortKeysCenterDist[i] = INX_Render3D->viewFrustum.GetDistanceSqToCenter(
-                unique.mesh.aabb(), shared.transform
+                unique.mesh.GetAABB(), shared.transform
             );
         }
 
@@ -835,7 +835,7 @@ static void INX_SortDrawCalls()
             const INX_DrawUnique& unique = state.uniqueData[i];
             const INX_DrawShared& shared = state.sharedData[unique.sharedDataIndex];
             state.sortKeysFarthestDist[i] = INX_Render3D->viewFrustum.GetDistanceSqToFarthestCorner(
-                unique.mesh.aabb(), shared.transform
+                unique.mesh.GetAABB(), shared.transform
             );
         }
 
@@ -857,10 +857,10 @@ static void INX_Draw3D(const gpu::Pipeline& pipeline, const INX_DrawUnique& uniq
     size_t vertexCount = 0;
     size_t indexCount = 0;
 
-    switch (vMesh.index()) {
+    switch (vMesh.GetTypeIndex()) {
     case 0: [[likely]]
         {
-            const NX_Mesh* mesh = vMesh.get<0>();
+            const NX_Mesh* mesh = vMesh.Get<0>();
             primitiveType = mesh->primitiveType;
             vertexCount = mesh->vertexCount;
             indexCount = mesh->indexCount;
@@ -869,7 +869,7 @@ static void INX_Draw3D(const gpu::Pipeline& pipeline, const INX_DrawUnique& uniq
         break;
     case 1: [[unlikely]]
         {
-            const NX_DynamicMesh* mesh = vMesh.get<1>();
+            const NX_DynamicMesh* mesh = vMesh.Get<1>();
             primitiveType = mesh->primitiveType;
             vertexCount = mesh->vertices.GetSize();
             buffer = mesh->buffer;
@@ -1231,11 +1231,11 @@ static void INX_RenderShadowMaps()
                 for (int uniqueIndex : drawCalls.uniqueVisible.GetCategories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
                 {
                     const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
-                    if (unique.mesh.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
+                    if (unique.mesh.GetShadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
 
                     const NX_Shader3D* shader = INX_Assets.Select(unique.material.shader, INX_Shader3DAsset::DEFAULT);
                     pipeline.UseProgram(shader->GetProgram(NX_Shader3D::Variant::SCENE_SHADOW));
-                    pipeline.SetCullMode(INX_GPU_GetCullMode(unique.mesh.shadowFaceMode(), unique.material.cull));
+                    pipeline.SetCullMode(INX_GPU_GetCullMode(unique.mesh.GetShadowFaceMode(), unique.material.cull));
 
                     shader->BindTextures(pipeline, unique.textures);
                     shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
