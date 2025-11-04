@@ -10,7 +10,7 @@
 #define NX_RENDER_SHADER_3D_HPP
 
 #include "./INX_Shader.hpp"
-#include <NX/NX_Render.h>
+#include <NX/NX_Material.h>
 
 // ============================================================================
 // OPAQUE DEFINITION

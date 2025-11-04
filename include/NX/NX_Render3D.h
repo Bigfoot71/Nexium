@@ -1,4 +1,4 @@
-/* NX_Render.h -- API declaration for Nexium's render module
+/* NX_Render3D.h -- API declaration for Nexium's 3D renderer module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,26 +6,19 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef NX_RENDER_H
-#define NX_RENDER_H
+#ifndef NX_RENDER_3D_H
+#define NX_RENDER_3D_H
 
-#include "./NX_ReflectionProbe.h"
 #include "./NX_InstanceBuffer.h"
 #include "./NX_RenderTexture.h"
 #include "./NX_DynamicMesh.h"
 #include "./NX_Environment.h"
 #include "./NX_Material.h"
-#include "./NX_Shader3D.h"
-#include "./NX_Cubemap.h"
-#include "./NX_Texture.h"
 #include "./NX_Camera.h"
-#include "./NX_Vertex.h"
 #include "./NX_Model.h"
 #include "./NX_Mesh.h"
 #include "./NX_Math.h"
 #include "./NX_API.h"
-
-#include <stdint.h>
 
 // ============================================================================
 // FUNCTIONS DECLARATIONS
@@ -34,11 +27,6 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
-/**
- * @defgroup Draw3D 3D Drawing Functions
- * @{
- */
 
 /**
  * @brief Begins 3D rendering.
@@ -133,10 +121,8 @@ NXAPI void NX_DrawModel3D(const NX_Model* model, const NX_Transform* transform);
 NXAPI void NX_DrawModelInstanced3D(const NX_Model* model, const NX_InstanceBuffer* instances,
                                    int instanceCount, const NX_Transform* transform);
 
-/** @} */ // end of Draw3D
-
 #if defined(__cplusplus)
 } // extern "C"
 #endif
 
-#endif // NX_RENDER_H
+#endif // NX_RENDER_3D_H

@@ -277,9 +277,6 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/Detail/GPU/Texture.cpp"
     "${NX_ROOT_PATH}/source/Detail/GPU/Buffer.cpp"
 
-    "${NX_ROOT_PATH}/source/Render/Scene/LightManager.cpp"
-    "${NX_ROOT_PATH}/source/Render/Scene/Scene.cpp"
-
     "${NX_ROOT_PATH}/source/INX_GPUProgramCache.cpp"
     "${NX_ROOT_PATH}/source/INX_GlobalAssets.cpp"
     "${NX_ROOT_PATH}/source/INX_GlobalState.cpp"
@@ -300,6 +297,7 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/NX_Material.cpp"
     "${NX_ROOT_PATH}/source/NX_Shader3D.cpp"
     "${NX_ROOT_PATH}/source/NX_Shader2D.cpp"
+    "${NX_ROOT_PATH}/source/NX_Render3D.cpp"
     "${NX_ROOT_PATH}/source/NX_Render2D.cpp"
     "${NX_ROOT_PATH}/source/NX_Keyboard.cpp"
     "${NX_ROOT_PATH}/source/NX_Display.cpp"
@@ -311,7 +309,6 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/NX_Memory.cpp"
     "${NX_ROOT_PATH}/source/NX_Window.cpp"
     "${NX_ROOT_PATH}/source/NX_Memory.cpp"
-    "${NX_ROOT_PATH}/source/NX_Render.cpp"
     "${NX_ROOT_PATH}/source/NX_Mouse.cpp"
     "${NX_ROOT_PATH}/source/NX_Image.cpp"
     "${NX_ROOT_PATH}/source/NX_Audio.cpp"

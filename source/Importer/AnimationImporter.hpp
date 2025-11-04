@@ -1,12 +1,9 @@
 #ifndef NX_IMPORT_ANIMATION_IMPORTER_HPP
 #define NX_IMPORT_ANIMATION_IMPORTER_HPP
 
-#include <NX/NX_Render.h>
-
 #include "../INX_GlobalPool.hpp"
 #include "./SceneImporter.hpp"
 #include "./AssimpHelper.hpp"
-#include "NX/NX_Model.h"
 #include <SDL3/SDL_assert.h>
 
 namespace import {

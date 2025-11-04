@@ -4,7 +4,7 @@
 #include "../Detail/Util/DynamicArray.hpp"
 #include "./SceneImporter.hpp"
 
-#include <NX/NX_Render.h>
+#include <NX/NX_Texture.h>
 #include <NX/NX_Image.h>
 
 #include <assimp/GltfMaterial.h>

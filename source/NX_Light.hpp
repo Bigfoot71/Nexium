@@ -9,12 +9,12 @@
 #ifndef NX_LIGHT_HPP
 #define NX_LIGHT_HPP
 
-#include "./Render/Scene/ViewFrustum.hpp"
-#include "./Render/Scene/Frustum.hpp"
-#include "NX/NX_Light.h"
+#include <NX/NX_Light.h>
+
+#include "./INX_ViewFrustum.hpp"
+#include "./INX_Frustum.hpp"
 
 #include <NX/NX_Macros.h>
-#include <NX/NX_Render.h>
 #include <NX/NX_Math.h>
 
 #include <SDL3/SDL_assert.h>
@@ -88,7 +88,7 @@ using INX_LightData = std::variant<
 
 struct INX_ShadowLightData {
     // NOTE: We store the viewProj matrices and frustums for each face in case of omni-light
-    std::array<scene::Frustum, 6> frustum{};
+    std::array<INX_Frustum, 6> frustum{};
     std::array<NX_Mat4, 6> viewProj{};
     float slopeBias{0.005f};
     float bias{0.001f};
@@ -151,11 +151,11 @@ inline NX_Light::NX_Light(NX_LightType type)
 // INTERNAL FUNCTIONS
 // ============================================================================
 
-void INX_UpdateLight(NX_Light* light, const scene::ViewFrustum& viewFrustum, bool* needsShadowUpdate);
+void INX_UpdateLight(NX_Light* light, const INX_ViewFrustum& viewFrustum, bool* needsShadowUpdate);
 void INX_FillGPULight(NX_Light* light, INX_GPULight* gpu, int shadowIndex);
 void INX_FillGPUShadow(NX_Light* light, INX_GPUShadow* gpu, int mapIndex);
 
-const scene::Frustum& INX_GetLightFrustum(const NX_Light& light, int face);
+const INX_Frustum& INX_GetLightFrustum(const NX_Light& light, int face);
 const NX_Mat4& INX_GetLightViewProj(const NX_Light& light, int face);
 
 #endif // NX_LIGHT_HPP

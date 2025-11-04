@@ -36,7 +36,7 @@ typedef struct NX_Mesh {
     NX_ShadowCastMode shadowCastMode;   ///< Shadow casting mode for the mesh.
     NX_ShadowFaceMode shadowFaceMode;   ///< Which faces are rendered into the shadow map.
     NX_PrimitiveType primitiveType;     ///< Type of primitive that constitutes the vertices.
-    NX_BoundingBox aabb;                ///< Axis-Aligned Bounding Box in local space.
+    NX_BoundingBox3D aabb;                ///< Axis-Aligned Bounding Box in local space.
     NX_Layer layerMask;                 ///< Bitfield indicating the rendering layer(s) of this mesh.
 
 } NX_Mesh;
@@ -62,7 +62,7 @@ extern "C" {
  */
 NXAPI NX_Mesh* NX_CreateMesh(
     NX_PrimitiveType type, const NX_Vertex3D* vertices, int vertexCount,
-    const uint32_t* indices, int indexCount, const NX_BoundingBox* aabb);
+    const uint32_t* indices, int indexCount, const NX_BoundingBox3D* aabb);
 
 /**
  * @brief Creates a 3D mesh by taking ownership of pre-allocated vertex and index arrays.
@@ -78,7 +78,7 @@ NXAPI NX_Mesh* NX_CreateMesh(
  */
 NXAPI NX_Mesh* NX_CreateMeshFrom(
     NX_PrimitiveType type, NX_Vertex3D* vertices, int vertexCount,
-    uint32_t* indices, int indexCount, const NX_BoundingBox* aabb);
+    uint32_t* indices, int indexCount, const NX_BoundingBox3D* aabb);
 
 /**
  * @brief Destroys a 3D mesh and frees its resources.

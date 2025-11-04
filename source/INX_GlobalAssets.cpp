@@ -11,9 +11,8 @@
 #include <NX/NX_Shader3D.h>
 #include <NX/NX_Shader2D.h>
 #include <NX/NX_Texture.h>
-#include <NX/NX_Render.h>
-#include <NX/NX_Image.h>
 #include <NX/NX_Random.h>
+#include <NX/NX_Image.h>
 
 #include <SDL3/SDL_stdinc.h>
 #include <fp16.h>

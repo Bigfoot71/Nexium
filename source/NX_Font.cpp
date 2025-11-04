@@ -18,7 +18,6 @@
 #include <NX/NX_Codepoint.h>
 #include <NX/NX_Texture.h>
 #include <NX/NX_Memory.h>
-#include <NX/NX_Render.h>
 #include <NX/NX_Font.h>
 #include <NX/NX_Log.h>
 

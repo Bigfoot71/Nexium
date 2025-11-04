@@ -29,7 +29,7 @@ struct NX_DynamicMesh {
     NX_ShadowCastMode shadowCastMode;
     NX_ShadowFaceMode shadowFaceMode;
     NX_PrimitiveType primitiveType;
-    NX_BoundingBox aabb;
+    NX_BoundingBox3D aabb;
     NX_Layer layerMask;
 };
 

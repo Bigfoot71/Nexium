@@ -9,7 +9,7 @@
 #ifndef NX_RENDER_PROGRAM_CACHE_HPP
 #define NX_RENDER_PROGRAM_CACHE_HPP
 
-#include <NX/NX_Render.h>
+#include <NX/NX_Environment.h>
 
 #include "./Detail/Util/Memory.hpp"
 #include "./Detail/GPU/Program.hpp"

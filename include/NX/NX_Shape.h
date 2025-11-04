@@ -21,9 +21,9 @@
  * Defined by minimum and maximum corners.
  * Used for meshes, models, collision, and spatial calculations.
  */
-typedef struct NX_BoundingBox {
+typedef struct NX_BoundingBox3D {
     NX_Vec3 min;        ///< Minimum corner of the bounding box.
     NX_Vec3 max;        ///< Maximum corner of the bounding box.
-} NX_BoundingBox;
+} NX_BoundingBox3D;
 
 #endif // NX_SHAPE_H

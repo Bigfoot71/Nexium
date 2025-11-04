@@ -21,7 +21,7 @@
 // PUBLIC API
 // ============================================================================
 
-NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int vertexCount, const uint32_t* indices, int indexCount, const NX_BoundingBox* aabb)
+NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int vertexCount, const uint32_t* indices, int indexCount, const NX_BoundingBox3D* aabb)
 {
     if (vertices == nullptr || vertexCount == 0) {
         NX_LOG(E, "RENDER: Failed to create mesh; Vertices and their count cannot be null");
@@ -47,7 +47,7 @@ NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int v
     return mesh;
 }
 
-NX_Mesh* NX_CreateMeshFrom(NX_PrimitiveType type, NX_Vertex3D* vertices, int vertexCount, uint32_t* indices, int indexCount, const NX_BoundingBox* aabb)
+NX_Mesh* NX_CreateMeshFrom(NX_PrimitiveType type, NX_Vertex3D* vertices, int vertexCount, uint32_t* indices, int indexCount, const NX_BoundingBox3D* aabb)
 {
     if (vertices == nullptr || vertexCount == 0) {
         NX_LOG(E, "RENDER: Failed to vertex mesh; Vertices and their count cannot be null");

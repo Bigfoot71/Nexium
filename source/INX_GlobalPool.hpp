@@ -9,6 +9,8 @@
 #ifndef INX_GLOBAL_POOL_HPP
 #define INX_GLOBAL_POOL_HPP
 
+#include <NX/NX_Model.h>
+
 #include "./Detail/Util/ObjectPool.hpp"
 #include "./NX_ReflectionProbe.hpp"
 #include "./NX_InstanceBuffer.hpp"

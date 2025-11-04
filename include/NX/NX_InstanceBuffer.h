@@ -10,6 +10,7 @@
 #define NX_INSTANCE_BUFFER_H
 
 #include "./NX_API.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 

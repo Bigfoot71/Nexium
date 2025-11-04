@@ -8,7 +8,7 @@
 
 /* === Structures === */
 
-struct Frustum {
+struct INX_Frustum {
     mat4 viewProj;
     mat4 view;
     mat4 proj;

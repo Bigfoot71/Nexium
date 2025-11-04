@@ -21,6 +21,7 @@ template <typename T, int BufferCount>
 class StagingBuffer {
 public:
     /** Constructors */
+    StagingBuffer() noexcept = default;
     StagingBuffer(GLenum target, int initialCapacity) noexcept;
 
     /** Update methods */
@@ -32,7 +33,7 @@ public:
     const gpu::Buffer& buffer() const noexcept;
 
 private:
-    util::ObjectRing<gpu::Buffer, BufferCount> mBuffer;
+    util::ObjectRing<gpu::Buffer, BufferCount> mBuffer{};
     util::DynamicArray<T> mStagingBuffer{};
 };
 

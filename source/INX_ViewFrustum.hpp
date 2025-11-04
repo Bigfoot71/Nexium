@@ -1,4 +1,4 @@
-/* ViewFrustum.hpp -- Class representing the frustum and all associated data for the main view point of the scene
+/* INX_ViewFrustum.hpp -- Class representing the frustum and all associated data for the main view point of the scene
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -9,45 +9,43 @@
 #ifndef NX_SCENE_VIEW_FRUSTUM_HPP
 #define NX_SCENE_VIEW_FRUSTUM_HPP
 
-#include <NX/NX_Render.h>
+#include <NX/NX_Camera.h>
 #include <NX/NX_Math.h>
 
-#include "../../Detail/GPU/Buffer.hpp"
-#include "./Frustum.hpp"
-
-namespace scene {
+#include "./Detail/GPU/Buffer.hpp"
+#include "./INX_Frustum.hpp"
 
 /* === Declaration === */
 
-class ViewFrustum : public Frustum {
+class INX_ViewFrustum : public INX_Frustum {
 public:
-    ViewFrustum();
+    INX_ViewFrustum();
 
-    /** ViewFrustum update */
-    void update(const NX_Camera& camera, float aspect);
+    /** INX_ViewFrustum update */
+    void Update(const NX_Camera& camera, float aspect);
 
     /** Layer culling */
-    NX_Layer cullMask() const;
+    NX_Layer GetCullMask() const;
 
     /** Distance to view */
-    float getDistanceSqTo(const NX_Vec3& point) const;
-    float getDistanceSqToCenterPoint(const NX_BoundingBox& box, const NX_Transform& transform) const;
-    float getDistanceSqToFarthestPoint(const NX_BoundingBox& box, const NX_Transform& transform) const;
+    float GetDistanceSqTo(const NX_Vec3& point) const;
+    float GetDistanceSqToCenter(const NX_BoundingBox3D& box, const NX_Transform& transform) const;
+    float GetDistanceSqToFarthestCorner(const NX_BoundingBox3D& box, const NX_Transform& transform) const;
 
     /** Matrices */
-    const NX_Vec3& viewPosition() const;
-    const NX_Mat4& viewProj() const;
-    const NX_Mat4& invView() const;
-    const NX_Mat4& invProj() const;
-    const NX_Mat4& view() const;
-    const NX_Mat4& proj() const;
+    const NX_Vec3& GetViewPosition() const;
+    const NX_Mat4& GetViewProj() const;
+    const NX_Mat4& GetInvView() const;
+    const NX_Mat4& GetInvProj() const;
+    const NX_Mat4& GetView() const;
+    const NX_Mat4& GetProj() const;
 
     /** Projection */
-    float near() const;
-    float far() const;
+    float GetNear() const;
+    float GetFar() const;
 
-    /** ViewFrustum UBO */
-    const gpu::Buffer& buffer() const;
+    /** INX_ViewFrustum UBO */
+    const gpu::Buffer& GetBuffer() const;
 
 private:
     struct GPUData {
@@ -70,11 +68,11 @@ private:
 
 /* === Public Implementation === */
 
-inline ViewFrustum::ViewFrustum()
+inline INX_ViewFrustum::INX_ViewFrustum()
     : mUniform(GL_UNIFORM_BUFFER, sizeof(GPUData), nullptr, GL_DYNAMIC_DRAW)
 { }
 
-inline void ViewFrustum::update(const NX_Camera& camera, float aspect)
+inline void INX_ViewFrustum::Update(const NX_Camera& camera, float aspect)
 {
     /* --- Save raw data from camera --- */
 
@@ -122,24 +120,24 @@ inline void ViewFrustum::update(const NX_Camera& camera, float aspect)
 
     /* --- Compute frustum planes --- */
 
-    Frustum::update(mData.viewProj);
+    INX_Frustum::Update(mData.viewProj);
 
     /* --- Upload to the uniform buffer --- */
 
     mUniform.upload(&mData);
 }
 
-inline NX_Layer ViewFrustum::cullMask() const
+inline NX_Layer INX_ViewFrustum::GetCullMask() const
 {
     return mData.cullMask;
 }
 
-inline float ViewFrustum::getDistanceSqTo(const NX_Vec3& point) const
+inline float INX_ViewFrustum::GetDistanceSqTo(const NX_Vec3& point) const
 {
     return NX_Vec3DistanceSq(mData.position, point);
 }
 
-inline float ViewFrustum::getDistanceSqToCenterPoint(const NX_BoundingBox& box, const NX_Transform& transform) const
+inline float INX_ViewFrustum::GetDistanceSqToCenter(const NX_BoundingBox3D& box, const NX_Transform& transform) const
 {
     NX_Vec3 local = (box.min + box.max) * 0.5f;
     NX_Vec3 world = local * transform;
@@ -147,7 +145,7 @@ inline float ViewFrustum::getDistanceSqToCenterPoint(const NX_BoundingBox& box, 
     return NX_Vec3DistanceSq(mData.position, world);
 }
 
-inline float ViewFrustum::getDistanceSqToFarthestPoint(const NX_BoundingBox& box, const NX_Transform& transform) const
+inline float INX_ViewFrustum::GetDistanceSqToFarthestCorner(const NX_BoundingBox3D& box, const NX_Transform& transform) const
 {
     const NX_Vec3 corners[8] = {
         NX_VEC3(box.min.x, box.min.y, box.min.z) * transform,
@@ -170,51 +168,49 @@ inline float ViewFrustum::getDistanceSqToFarthestPoint(const NX_BoundingBox& box
     return maxDistSq;
 }
 
-inline const NX_Vec3& ViewFrustum::viewPosition() const
+inline const NX_Vec3& INX_ViewFrustum::GetViewPosition() const
 {
     return mData.position;
 }
 
-inline const NX_Mat4& ViewFrustum::viewProj() const
+inline const NX_Mat4& INX_ViewFrustum::GetViewProj() const
 {
     return mData.viewProj;
 }
 
-inline const NX_Mat4& ViewFrustum::invView() const
+inline const NX_Mat4& INX_ViewFrustum::GetInvView() const
 {
     return mData.invView;
 }
 
-inline const NX_Mat4& ViewFrustum::invProj() const
+inline const NX_Mat4& INX_ViewFrustum::GetInvProj() const
 {
     return mData.invProj;
 }
 
-inline const NX_Mat4& ViewFrustum::view() const
+inline const NX_Mat4& INX_ViewFrustum::GetView() const
 {
     return mData.view;
 }
 
-inline const NX_Mat4& ViewFrustum::proj() const
+inline const NX_Mat4& INX_ViewFrustum::GetProj() const
 {
     return mData.proj;
 }
 
-inline float ViewFrustum::near() const
+inline float INX_ViewFrustum::GetNear() const
 {
     return mData.near;
 }
 
-inline float ViewFrustum::far() const
+inline float INX_ViewFrustum::GetFar() const
 {
     return mData.far;
 }
 
-inline const gpu::Buffer& ViewFrustum::buffer() const
+inline const gpu::Buffer& INX_ViewFrustum::GetBuffer() const
 {
     return mUniform;
 }
-
-} // namespace scene
 
 #endif // NX_SCENE_VIEW_FRUSTUM_HPP

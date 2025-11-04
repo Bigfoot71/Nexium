@@ -15,6 +15,7 @@
 #include "./INX_GlobalState.hpp"
 #include "./INX_GlobalPool.hpp"
 
+#include "./NX_Render3D.hpp"
 #include "./NX_Render2D.hpp"
 #include "./NX_Audio.hpp"
 
@@ -28,16 +29,6 @@
 #include <glad/gles2.h>
 #include <physfs.h>
 #include <alc.h>
-
-#include "./Render/NX_RenderState.hpp"
-
-#include <memory>
-
-// ============================================================================
-// GLOBAL STATES (NOTE: Will be withdrawn eventually)
-// ============================================================================
-
-util::UniquePtr<NX_RenderState> gRender;
 
 // ============================================================================
 // PHYSFS COMPATIBILITY
@@ -316,20 +307,15 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
         return false;
     }
 
+    if (!INX_Render3DState_Init(desc)) {
+        return false;
+    }
+
     if (!INX_Render2DState_Init(desc)) {
         return false;
     }
 
     if (!INX_AudioState_Init(desc)) {
-        return false;
-    }
-
-    try {
-        gRender = util::MakeUnique<NX_RenderState>(*desc);
-    }
-    catch (const std::exception& e) {
-        NX_LOG(E, e.what());
-        gRender.reset();
         return false;
     }
 
@@ -352,12 +338,11 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
 
 void NX_Quit()
 {
-    gRender.reset();
-
     INX_Programs.UnloadAll();
     INX_Assets.UnloadAll();
     INX_Pool.UnloadAll();
 
+    INX_Render3DState_Quit();
     INX_Render2DState_Quit();
     INX_AudioState_Quit();
 

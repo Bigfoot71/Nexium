@@ -42,6 +42,30 @@
 #define NX_BIT_CHECK(var, bit) \
     (!!((var) & (1ULL << (bit))))
 
+/**
+ * @brief Sets a specific flag in a variable
+ */
+#define NX_FLAG_SET(var, flag) \
+    ((var) |= (flag))
+
+/**
+ * @brief Clears a specific flag in a variable
+ */
+#define NX_FLAG_CLEAR(var, flag) \
+    ((var) &= ~(flag))
+
+/**
+ * @brief Toggles a specific flag in a variable
+ */
+#define NX_FLAG_TOGGLE(var, flag) \
+    ((var) ^= (flag))
+
+/**
+ * @brief Checks if a specific flag is set
+ */
+#define NX_FLAG_CHECK(var, flag) \
+    (!!((var) & (flag)))
+
 /* === Functions === */
 
 #if defined(__cplusplus)

@@ -18,13 +18,13 @@
 // INTERNAL FUNCTIONS
 // ============================================================================
 
-static void INX_UpdateDirectionalLight_ViewProj(NX_Light* light, const scene::ViewFrustum& viewFrustum)
+static void INX_UpdateDirectionalLight_ViewProj(NX_Light* light, const INX_ViewFrustum& viewFrustum)
 {
     SDL_assert(light->type == NX_LIGHT_DIR);
     SDL_assert(light->shadow.active);
 
     INX_DirectionalLight& dirLight = std::get<INX_DirectionalLight>(light->data);
-    const NX_Vec3& cameraPos = viewFrustum.viewPosition();
+    const NX_Vec3& cameraPos = viewFrustum.GetViewPosition();
     const NX_Vec3& lightDir = dirLight.direction;
 
     /* --- Calcuate view matrix --- */
@@ -62,7 +62,7 @@ static void INX_UpdateDirectionalLight_ViewProj(NX_Light* light, const scene::Vi
 
     /* --- Update frustum --- */
 
-    light->shadow.data.frustum[0].update(light->shadow.data.viewProj[0]);
+    light->shadow.data.frustum[0].Update(light->shadow.data.viewProj[0]);
 }
 
 static void INX_UpdateSpotLight_ViewProj(NX_Light* light)
@@ -83,7 +83,7 @@ static void INX_UpdateSpotLight_ViewProj(NX_Light* light)
 
     /* --- Update frustum --- */
 
-    light->shadow.data.frustum[0].update(light->shadow.data.viewProj[0]);
+    light->shadow.data.frustum[0].Update(light->shadow.data.viewProj[0]);
 }
 
 static void INX_UpdateOmniLight_ViewProj(NX_Light* light)
@@ -103,11 +103,11 @@ static void INX_UpdateOmniLight_ViewProj(NX_Light* light)
             INX_GetCubeView(i, omniLight.position) *
             INX_GetCubeProj(nearPlane, nearPlane + omniLight.range);
 
-        light->shadow.data.frustum[i].update(light->shadow.data.viewProj[i]);
+        light->shadow.data.frustum[i].Update(light->shadow.data.viewProj[i]);
     }
 }
 
-void INX_UpdateLight(NX_Light* light, const scene::ViewFrustum& viewFrustum, bool* needsShadowUpdate)
+void INX_UpdateLight(NX_Light* light, const INX_ViewFrustum& viewFrustum, bool* needsShadowUpdate)
 {
     SDL_assert(needsShadowUpdate != nullptr);
     SDL_assert(light->active);
@@ -236,7 +236,7 @@ void INX_FillGPUShadow(NX_Light* light, INX_GPUShadow* gpu, int mapIndex)
     gpu->softness = light->shadow.data.softness;
 }
 
-const scene::Frustum& INX_GetLightFrustum(const NX_Light& light, int face)
+const INX_Frustum& INX_GetLightFrustum(const NX_Light& light, int face)
 {
     // Assert that:
     // - For non-omni lights, only face 0 is valid.

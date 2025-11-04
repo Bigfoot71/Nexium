@@ -1,4 +1,4 @@
-/* Frustum.hpp -- Base class representing a frustum
+/* INX_Frustum.hpp -- Base class representing a frustum
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,20 +6,16 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef NX_SCENE_FRUSTUM_HPP
-#define NX_SCENE_FRUSTUM_HPP
+#ifndef INX_FRUSTUM_HPP
+#define INX_FRUSTUM_HPP
 
-#include "./Culling.hpp"
-
-#include <NX/NX_Render.h>
+#include "./NX_Shape.hpp"
 #include <NX/NX_Math.h>
 #include <array>
 
-namespace scene {
-
 /* === Declaration === */
 
-class Frustum {
+class INX_Frustum {
 public:
     enum Plane : uint32_t {
         Back, Front,
@@ -33,24 +29,24 @@ public:
     };
 
 public:
-    Frustum() = default;
+    INX_Frustum() = default;
 
-    /** Frustum update */
-    void update(const NX_Mat4& viewProj);
+    /** INX_Frustum update */
+    void Update(const NX_Mat4& viewProj);
 
     /** Contains or not */
-    bool containsPoint(const NX_Vec3& position) const;
-    bool containsPoints(const NX_Vec3* positions, int count) const;
-    bool containsSphere(const BoundingSphere& sphere) const;
-    bool containsAabb(const NX_BoundingBox& aabb) const;
-    bool containsObb(const OrientedBoundingBox& obb) const;
+    bool ContainsPoint(const NX_Vec3& position) const;
+    bool ContainsPoints(const NX_Vec3* positions, int count) const;
+    bool ContainsSphere(const INX_BoundingSphere3D& sphere) const;
+    bool ContainsAabb(const NX_BoundingBox3D& aabb) const;
+    bool ContainsObb(const INX_OrientedBoundingBox3D& obb) const;
 
     /** Classification */
-    Containment classifySphere(const BoundingSphere& sphere) const;
+    Containment ClassifySphere(const INX_BoundingSphere3D& sphere) const;
 
 private:
     /** Helper functions */
-    static float distanceToPlane(const NX_Vec4& plane, const NX_Vec3& position);
+    static float DistanceToPlane(const NX_Vec4& plane, const NX_Vec3& position);
 
 private:
     NX_Vec4 mPlanes[6]{};
@@ -58,7 +54,7 @@ private:
 
 /* === Public Implementation === */
 
-inline void Frustum::update(const NX_Mat4& viewProj)
+inline void INX_Frustum::Update(const NX_Mat4& viewProj)
 {
     mPlanes[Right] = NX_Vec4Normalize({
         viewProj.m03 - viewProj.m00,
@@ -103,37 +99,37 @@ inline void Frustum::update(const NX_Mat4& viewProj)
     });
 }
 
-inline bool Frustum::containsPoint(const NX_Vec3& position) const
+inline bool INX_Frustum::ContainsPoint(const NX_Vec3& position) const
 {
     for (int i = 0; i < PLANE_COUNT; i++) {
-        if (distanceToPlane(mPlanes[i], position) <= 0) {
+        if (DistanceToPlane(mPlanes[i], position) <= 0) {
             return false;
         }
     }
     return true;
 }
 
-inline bool Frustum::containsPoints(const NX_Vec3* positions, int count) const
+inline bool INX_Frustum::ContainsPoints(const NX_Vec3* positions, int count) const
 {
     for (int i = 0; i < count; i++) {
-        if (containsPoint(positions[i])) {
+        if (ContainsPoint(positions[i])) {
             return true;
         }
     }
     return false;
 }
 
-inline bool Frustum::containsSphere(const BoundingSphere& sphere) const
+inline bool INX_Frustum::ContainsSphere(const INX_BoundingSphere3D& sphere) const
 {
     for (int i = 0; i < PLANE_COUNT; i++) {
-        if (distanceToPlane(mPlanes[i], sphere.center) < -sphere.radius) {
+        if (DistanceToPlane(mPlanes[i], sphere.center) < -sphere.radius) {
             return false;
         }
     }
     return true;
 }
 
-inline bool Frustum::containsAabb(const NX_BoundingBox& aabb) const
+inline bool INX_Frustum::ContainsAabb(const NX_BoundingBox3D& aabb) const
 {
     float xMin = aabb.min.x, yMin = aabb.min.y, zMin = aabb.min.z;
     float xMax = aabb.max.x, yMax = aabb.max.y, zMax = aabb.max.z;
@@ -143,7 +139,7 @@ inline bool Frustum::containsAabb(const NX_BoundingBox& aabb) const
         const NX_Vec4& plane = mPlanes[i];
 
         // Choose the optimal coordinates according to the sign of the normal
-        float distance = distanceToPlane(mPlanes[i], NX_Vec3 {
+        float distance = DistanceToPlane(mPlanes[i], NX_Vec3 {
             .x = (plane.x >= 0.0f) ? xMax : xMin,
             .y = (plane.y >= 0.0f) ? yMax : yMin,
             .z = (plane.z >= 0.0f) ? zMax : zMin
@@ -156,13 +152,13 @@ inline bool Frustum::containsAabb(const NX_BoundingBox& aabb) const
     return true;
 }
 
-inline bool Frustum::containsObb(const OrientedBoundingBox& obb) const
+inline bool INX_Frustum::ContainsObb(const INX_OrientedBoundingBox3D& obb) const
 {
     for (int i = 0; i < PLANE_COUNT; i++)
     {
         const NX_Vec4& plane = mPlanes[i];
 
-        float centerDistance = distanceToPlane(plane, obb.center);
+        float centerDistance = DistanceToPlane(plane, obb.center);
 
         float projectedRadius =
             fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obb.axes[0])) * obb.extents.x +
@@ -177,12 +173,12 @@ inline bool Frustum::containsObb(const OrientedBoundingBox& obb) const
     return true;
 }
 
-inline Frustum::Containment Frustum::classifySphere(const BoundingSphere& sphere) const
+inline INX_Frustum::Containment INX_Frustum::ClassifySphere(const INX_BoundingSphere3D& sphere) const
 {
     bool fullyInside = true;
 
     for (int i = 0; i < PLANE_COUNT; ++i) {
-        float d = distanceToPlane(mPlanes[i], sphere.center);
+        float d = DistanceToPlane(mPlanes[i], sphere.center);
         if (d < -sphere.radius) return Containment::Outside;
         if (d < sphere.radius) fullyInside = false;
     }
@@ -192,11 +188,9 @@ inline Frustum::Containment Frustum::classifySphere(const BoundingSphere& sphere
 
 /* === Private Implementation === */
 
-inline float Frustum::distanceToPlane(const NX_Vec4& plane, const NX_Vec3& position)
+inline float INX_Frustum::DistanceToPlane(const NX_Vec4& plane, const NX_Vec3& position)
 {
     return plane.x * position.x + plane.y * position.y + plane.z * position.z + plane.w;
 }
 
-} // namespace scene
-
-#endif // NX_SCENE_FRUSTUM_HPP
+#endif // INX_FRUSTUM_HPP

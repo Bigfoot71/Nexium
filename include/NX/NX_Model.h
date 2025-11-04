@@ -70,7 +70,7 @@ typedef struct NX_Model {
     int meshCount;                      ///< Number of meshes.
     int materialCount;                  ///< Number of materials.
 
-    NX_BoundingBox aabb;                ///< Axis-Aligned Bounding Box encompassing the whole model.
+    NX_BoundingBox3D aabb;                ///< Axis-Aligned Bounding Box encompassing the whole model.
 
     NX_Mat4* boneOverride;              ///< Array of matrices we'll use if we have it instead of internal calculations, Used in skinning.
     NX_Mat4* boneBindPose;              ///< Array of matrices representing the bind pose of the model, this is the pose used by default for non-animated skinned models.

@@ -1,7 +1,7 @@
 #ifndef NX_IMPORT_BONE_IMPORTER_HPP
 #define NX_IMPORT_BONE_IMPORTER_HPP
 
-#include <NX/NX_Render.h>
+#include <NX/NX_Model.h>
 
 #include "./SceneImporter.hpp"
 #include "./AssimpHelper.hpp"

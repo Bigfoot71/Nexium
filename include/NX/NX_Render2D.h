@@ -1,3 +1,11 @@
+/* NX_Render2D.h -- API declaration for Nexium's 2D renderer module
+ *
+ * Copyright (c) 2025 Le Juez Victor
+ *
+ * This software is provided 'as-is', without any express or implied warranty.
+ * For conditions of distribution and use, see accompanying LICENSE file.
+ */
+
 #ifndef NX_RENDER_2D_H
 #define NX_RENDER_2D_H
 
@@ -8,12 +16,6 @@
 #include "./NX_Font.h"
 #include "./NX_Math.h"
 #include "./NX_API.h"
-
-// ============================================================================
-// TYPES DEFINITIONS
-// ============================================================================
-
-
 
 // ============================================================================
 // FUNCTIONS DECLARATIONS

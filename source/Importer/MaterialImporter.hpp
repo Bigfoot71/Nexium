@@ -1,7 +1,8 @@
 #ifndef NX_IMPORT_MATERIAL_IMPORTER_HPP
 #define NX_IMPORT_MATERIAL_IMPORTER_HPP
 
-#include <NX/NX_Render.h>
+#include <NX/NX_Material.h>
+#include <NX/NX_Model.h>
 
 #include "./TextureLoader.hpp"
 #include "./SceneImporter.hpp"

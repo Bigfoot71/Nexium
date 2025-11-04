@@ -1,7 +1,7 @@
 #ifndef NX_IMPORT_MESH_IMPORTER_HPP
 #define NX_IMPORT_MESH_IMPORTER_HPP
 
-#include <NX/NX_Render.h>
+#include <NX/NX_Model.h>
 
 #include "./SceneImporter.hpp"
 #include "./AssimpHelper.hpp"
@@ -153,7 +153,7 @@ NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
 
     /* --- Initialize bounding box --- */
 
-    NX_BoundingBox aabb;
+    NX_BoundingBox3D aabb;
     aabb.min = NX_VEC3(+FLT_MAX, +FLT_MAX, +FLT_MAX);
     aabb.max = NX_VEC3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 

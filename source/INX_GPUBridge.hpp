@@ -10,7 +10,11 @@
 #define INX_GPU_BRIDGE_HPP
 
 #include "./Detail/GPU/Pipeline.hpp"
-#include <NX/NX_Render.h>
+
+#include <NX/NX_Material.h>
+#include <NX/NX_Vertex.h>
+#include <NX/NX_Image.h>
+#include <NX/NX_Light.h>
 
 #include "./INX_GlobalState.hpp"  //< Used to get OpenGL profile (core/es)
 #include <SDL3/SDL_video.h>

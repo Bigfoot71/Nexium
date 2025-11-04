@@ -54,7 +54,7 @@ layout(std140, binding = 0) uniform U_Frame {
 };
 
 layout(std140, binding = 1) uniform U_ViewFrustum {
-    Frustum uFrustum;
+    INX_Frustum uFrustum;
 };
 
 layout(std140, binding = 2) uniform U_Environment {

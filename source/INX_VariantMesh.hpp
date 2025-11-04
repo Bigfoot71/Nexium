@@ -33,7 +33,7 @@ public:
     /** Getters */
     NX_ShadowCastMode shadowCastMode() const;
     NX_ShadowFaceMode shadowFaceMode() const;
-    const NX_BoundingBox& aabb() const;
+    const NX_BoundingBox3D& aabb() const;
     NX_Layer layerMask() const;
 
 private:
@@ -94,7 +94,7 @@ inline NX_ShadowFaceMode INX_VariantMesh::shadowFaceMode() const
     }
 }
 
-inline const NX_BoundingBox& INX_VariantMesh::aabb() const
+inline const NX_BoundingBox3D& INX_VariantMesh::aabb() const
 {
     switch (mMesh.index()) {
     case 0: [[likely]] return std::get<0>(mMesh)->aabb;

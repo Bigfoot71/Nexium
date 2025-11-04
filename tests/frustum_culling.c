@@ -1,4 +1,4 @@
-/* frustum_culling.c -- Frustum culling test useful when measuring performance
+/* frustum_culling.c -- INX_Frustum culling test useful when measuring performance
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -18,7 +18,7 @@ int main(void)
         //.targetFPS = 60
     };
 
-    NX_InitEx("Nexium - Frustum Culling", 800, 450, &desc);
+    NX_InitEx("Nexium - INX_Frustum Culling", 800, 450, &desc);
 
     NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_1(0.5f), NX_IVEC3_ONE);
     NX_Material material = NX_GetDefaultMaterial();
