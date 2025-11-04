@@ -27,10 +27,10 @@ public:
     T* operator->() noexcept;
 
     /** Faire tourner l'objet actif vers l'objet suivant */
-    void rotate();
+    void Rotate();
 
     /** Taille du ring */
-    constexpr size_t size() const;
+    constexpr size_t GetObjectCount() const;
 
 private:
     template<typename... Args, size_t... Is>
@@ -74,13 +74,13 @@ const T* ObjectRing<T, N>::operator->() const noexcept
 }
 
 template<typename T, size_t N>
-void ObjectRing<T, N>::rotate()
+void ObjectRing<T, N>::Rotate()
 {
     mActiveIndex = (mActiveIndex + 1) % N;
 }
 
 template<typename T, size_t N>
-constexpr size_t ObjectRing<T, N>::size() const
+constexpr size_t ObjectRing<T, N>::GetObjectCount() const
 {
     return N;
 }

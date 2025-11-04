@@ -91,7 +91,7 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
     /* --- Reserve space to store references of vertex buffers and attributes --- */
 
     mVertexBuffers = decltype(mVertexBuffers)(vertexBuffers.size());
-    if (mVertexBuffers.capacity() < vertexBuffers.size()) {
+    if (mVertexBuffers.GetCapacity() < vertexBuffers.size()) {
         NX_LOG(E, "GPU: Failed to allocate buffer to store vertex array buffers");
         glDeleteVertexArrays(1, &mID);
         mID = 0;
@@ -108,14 +108,14 @@ VertexArray::VertexArray(Buffer* indexBuffer, std::initializer_list<VertexBuffer
 
         for (const VertexBufferDesc& desc : vertexBuffers)
         {
-            mVertexBuffers.emplace_back(desc.buffer, util::FixedArray<VertexAttribute>(desc.attributes.size()));
+            mVertexBuffers.EmplaceBack(desc.buffer, util::FixedArray<VertexAttribute>(desc.attributes.size()));
 
             if (desc.buffer != nullptr) {
                 glBindBuffer(GL_ARRAY_BUFFER, desc.buffer->GetID());
             }
 
             for (const VertexAttribute& attr : desc.attributes) {
-                mVertexBuffers.back()->attributes.emplace_back(attr);
+                mVertexBuffers.GetBack()->attributes.EmplaceBack(attr);
                 if (desc.buffer) SetupVertexAttribute(attr);
                 else ApplyDefaultAttribute(attr);
             }

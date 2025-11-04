@@ -78,12 +78,12 @@ inline TextureLoader::TextureLoader(const SceneImporter& importer)
     //         encountered a model where this happens yet, but it is possible!
 
     const int matCount = importer.materialCount();
-    mTextures.resize(matCount);
+    mTextures.Resize(matCount);
 
     /* --- Temporary storage of images --- */
 
     util::DynamicArray<MaterialImages> images;
-    images.resize(matCount);
+    images.Resize(matCount);
 
     /* --- Thread pool setup --- */
 

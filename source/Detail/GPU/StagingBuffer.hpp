@@ -43,7 +43,7 @@ template <typename T, int BufferCount>
 StagingBuffer<T, BufferCount>::StagingBuffer(GLenum target, int initialCapacity) noexcept
     : mBuffer(target, initialCapacity * sizeof(T), nullptr, GL_STATIC_DRAW)
 {
-    if (!mStagingBuffer.reserve(initialCapacity)) {
+    if (!mStagingBuffer.Reserve(initialCapacity)) {
         NX_LOG(E, "RENDER: Staging buffer memory reservation failed (requested: %i entries)", initialCapacity);
     }
 }
@@ -53,13 +53,13 @@ T* StagingBuffer<T, BufferCount>::StageMap(int count, int* index) noexcept
 {
     SDL_assert(index != nullptr);
 
-    *index = static_cast<int>(mStagingBuffer.size());
+    *index = static_cast<int>(mStagingBuffer.GetSize());
 
     if constexpr (BufferCount > 1) {
-        if (index == 0) mBuffer.rotate();
+        if (index == 0) mBuffer.Rotate();
     }
 
-    mStagingBuffer.resize(*index + count);
+    mStagingBuffer.Resize(*index + count);
 
     return &mStagingBuffer[*index];
 }
@@ -67,13 +67,13 @@ T* StagingBuffer<T, BufferCount>::StageMap(int count, int* index) noexcept
 template <typename T, int BufferCount>
 int StagingBuffer<T, BufferCount>::Stage(const T& data) noexcept
 {
-    int index = static_cast<int>(mStagingBuffer.size());
+    int index = static_cast<int>(mStagingBuffer.GetSize());
 
     if constexpr (BufferCount > 1) {
-        if (index == 0) mBuffer.rotate();
+        if (index == 0) mBuffer.Rotate();
     }
 
-    mStagingBuffer.push_back(data);
+    mStagingBuffer.PushBack(data);
 
     return index;
 }
@@ -81,16 +81,16 @@ int StagingBuffer<T, BufferCount>::Stage(const T& data) noexcept
 template <typename T, int BufferCount>
 void StagingBuffer<T, BufferCount>::Upload() noexcept
 {
-    if (mStagingBuffer.empty()) {
+    if (mStagingBuffer.IsEmpty()) {
         return;
     }
 
-    size_t size = mStagingBuffer.size() * sizeof(T);
+    size_t size = mStagingBuffer.GetSize() * sizeof(T);
 
     mBuffer->Reserve(size, false);
-    mBuffer->Upload(0, size, mStagingBuffer.data());
+    mBuffer->Upload(0, size, mStagingBuffer.GetData());
 
-    mStagingBuffer.clear();
+    mStagingBuffer.Clear();
 }
 
 template <typename T, int BufferCount>

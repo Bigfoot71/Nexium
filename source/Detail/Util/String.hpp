@@ -50,57 +50,57 @@ public:
 
     /** Element access */
     char operator[](size_t index) const noexcept;
-    char at(size_t index) const noexcept;
+    char GetAt(size_t index) const noexcept;
 
     /** Getters */
-    const char* data() const noexcept;
-    size_t size() const noexcept;
-    size_t length() const noexcept;
-    bool empty() const noexcept;
+    const char* GetCString() const noexcept;
+    size_t GetSize() const noexcept;
+    size_t GetLength() const noexcept;
+    bool IsEmpty() const noexcept;
 
     /** Capacity */
-    size_t capacity() const noexcept;
-    void reserve(size_t newCapacity) noexcept;
-    void shrink_to_fit() noexcept;
+    size_t GetCapacity() const noexcept;
+    void Reserve(size_t newCapacity) noexcept;
+    void ShrinkToFit() noexcept;
 
     /** Modifiers */
-    void clear() noexcept;
-    void append(const char* str) noexcept;
-    void append(const char* str, size_t len) noexcept;
-    void append(const String& str) noexcept;
-    void push_back(char c) noexcept;
-    void pop_back() noexcept;
+    void Clear() noexcept;
+    void Append(const char* str) noexcept;
+    void Append(const char* str, size_t len) noexcept;
+    void Append(const String& str) noexcept;
+    void PushBack(char c) noexcept;
+    void PopBack() noexcept;
 
     /** String operations */
-    String substr(size_t pos, size_t len = static_cast<size_t>(-1)) const noexcept;
-    size_t find(const char* str, size_t pos = 0) const noexcept;
-    size_t find(char c, size_t pos = 0) const noexcept;
-    size_t rfind(const char* str, size_t pos = static_cast<size_t>(-1)) const noexcept;
-    size_t rfind(char c, size_t pos = static_cast<size_t>(-1)) const noexcept;
-    bool contains(const char* str) const noexcept;
-    bool contains(char c) const noexcept;
-    bool starts_with(const char* prefix) const noexcept;
-    bool ends_with(const char* suffix) const noexcept;
+    String Substring(size_t pos, size_t len = static_cast<size_t>(-1)) const noexcept;
+    size_t Find(const char* str, size_t pos = 0) const noexcept;
+    size_t Find(char c, size_t pos = 0) const noexcept;
+    size_t FindLast(const char* str, size_t pos = static_cast<size_t>(-1)) const noexcept;
+    size_t FindLast(char c, size_t pos = static_cast<size_t>(-1)) const noexcept;
+    bool Contains(const char* str) const noexcept;
+    bool Contains(char c) const noexcept;
+    bool StartsWith(const char* prefix) const noexcept;
+    bool EndsWith(const char* suffix) const noexcept;
 
     /** Replace operations */
-    String& replace(size_t pos, size_t len, const char* str) noexcept;
-    String& replace_all(const char* from, const char* to) noexcept;
-    String& replace_first(const char* from, const char* to) noexcept;
+    String& Replace(size_t pos, size_t len, const char* str) noexcept;
+    String& ReplaceAll(const char* from, const char* to) noexcept;
+    String& ReplaceFirst(const char* from, const char* to) noexcept;
 
     /** Trim operations */
-    String& trim() noexcept;
-    String& trim_left() noexcept;
-    String& trim_right() noexcept;
-    String trimmed() const noexcept;
+    String& Trim() noexcept;
+    String& TrimLeft() noexcept;
+    String& TrimRight() noexcept;
+    String TrimmedCopy() const noexcept;
 
     /** Case conversion */
-    String& to_lower() noexcept;
-    String& to_upper() noexcept;
-    String lower() const noexcept;
-    String upper() const noexcept;
+    String& ToLower() noexcept;
+    String& ToUpper() noexcept;
+    String LowerCopy() const noexcept;
+    String UpperCopy() const noexcept;
 
     /** Utility */
-    void swap(String& other) noexcept;
+    void Swap(String& other) noexcept;
 
     /** Static constants */
     static constexpr size_t npos = static_cast<size_t>(-1);
@@ -111,10 +111,10 @@ private:
     size_t mCapacity{};
 
     /** Helper functions */
-    void allocate(size_t size) noexcept;
-    void reallocate(size_t newCapacity) noexcept;
-    void free_data() noexcept;
-    static size_t safe_strlen(const char* str) noexcept;
+    void Allocate(size_t size) noexcept;
+    void Reallocate(size_t newCapacity) noexcept;
+    void FreeData() noexcept;
+    static size_t MeasureCString(const char* str) noexcept;
 };
 
 /* === Public Implementation === */
@@ -127,9 +127,9 @@ inline String::String(const char* str) noexcept
     : mData(nullptr), mSize(0), mCapacity(0)
 {
     if (str) {
-        mSize = safe_strlen(str);
+        mSize = MeasureCString(str);
         if (mSize > 0) {
-            allocate(mSize);
+            Allocate(mSize);
             if (mData) {
                 SDL_memcpy(mData, str, mSize);
                 mData[mSize] = '\0';
@@ -143,7 +143,7 @@ inline String::String(const char* str, size_t len) noexcept
 {
     if (str && len > 0) {
         mSize = len;
-        allocate(mSize);
+        Allocate(mSize);
         if (mData) {
             SDL_memcpy(mData, str, mSize);
             mData[mSize] = '\0';
@@ -156,7 +156,7 @@ inline String::String(const String& other) noexcept
 {
     if (other.mSize > 0 && other.mData) {
         mSize = other.mSize;
-        allocate(mSize);
+        Allocate(mSize);
         if (mData) {
             SDL_memcpy(mData, other.mData, mSize);
             mData[mSize] = '\0';
@@ -172,16 +172,16 @@ inline String::String(String&& other) noexcept
 
 inline String::~String() noexcept
 {
-    free_data();
+    FreeData();
 }
 
 inline String& String::operator=(const String& other) noexcept
 {
     if (this != &other) {
-        free_data();
+        FreeData();
         if (other.mSize > 0 && other.mData) {
             mSize = other.mSize;
-            allocate(mSize);
+            Allocate(mSize);
             if (mData) {
                 SDL_memcpy(mData, other.mData, mSize);
                 mData[mSize] = '\0';
@@ -194,7 +194,7 @@ inline String& String::operator=(const String& other) noexcept
 inline String& String::operator=(String&& other) noexcept
 {
     if (this != &other) {
-        free_data();
+        FreeData();
         mData = std::exchange(other.mData, nullptr);
         mSize = std::exchange(other.mSize, 0);
         mCapacity = std::exchange(other.mCapacity, 0);
@@ -204,11 +204,11 @@ inline String& String::operator=(String&& other) noexcept
 
 inline String& String::operator=(const char* str) noexcept
 {
-    free_data();
+    FreeData();
     if (str) {
-        mSize = safe_strlen(str);
+        mSize = MeasureCString(str);
         if (mSize > 0) {
-            allocate(mSize);
+            Allocate(mSize);
             if (mData) {
                 SDL_memcpy(mData, str, mSize);
                 mData[mSize] = '\0';
@@ -267,19 +267,19 @@ inline String String::operator+(const char* str) const noexcept
 
 inline String& String::operator+=(const String& other) noexcept
 {
-    append(other.mData, other.mSize);
+    Append(other.mData, other.mSize);
     return *this;
 }
 
 inline String& String::operator+=(const char* str) noexcept
 {
-    append(str);
+    Append(str);
     return *this;
 }
 
 inline String& String::operator+=(char c) noexcept
 {
-    push_back(c);
+    PushBack(c);
     return *this;
 }
 
@@ -289,51 +289,51 @@ inline char String::operator[](size_t index) const noexcept
     return mData[index];
 }
 
-inline char String::at(size_t index) const noexcept
+inline char String::GetAt(size_t index) const noexcept
 {
     return (*this)[index];
 }
 
-inline const char* String::data() const noexcept
+inline const char* String::GetCString() const noexcept
 {
     return mData ? mData : "";
 }
 
-inline size_t String::size() const noexcept
+inline size_t String::GetSize() const noexcept
 {
     return mSize;
 }
 
-inline size_t String::length() const noexcept
+inline size_t String::GetLength() const noexcept
 {
     return mSize;
 }
 
-inline bool String::empty() const noexcept
+inline bool String::IsEmpty() const noexcept
 {
     return mSize == 0;
 }
 
-inline size_t String::capacity() const noexcept
+inline size_t String::GetCapacity() const noexcept
 {
     return mCapacity;
 }
 
-inline void String::reserve(size_t newCapacity) noexcept
+inline void String::Reserve(size_t newCapacity) noexcept
 {
     if (newCapacity > mCapacity) {
-        reallocate(newCapacity);
+        Reallocate(newCapacity);
     }
 }
 
-inline void String::shrink_to_fit() noexcept
+inline void String::ShrinkToFit() noexcept
 {
     if (mCapacity > mSize) {
-        reallocate(mSize);
+        Reallocate(mSize);
     }
 }
 
-inline void String::clear() noexcept
+inline void String::Clear() noexcept
 {
     if (mData) {
         mData[0] = '\0';
@@ -341,20 +341,20 @@ inline void String::clear() noexcept
     mSize = 0;
 }
 
-inline void String::append(const char* str) noexcept
+inline void String::Append(const char* str) noexcept
 {
     if (str) {
-        append(str, safe_strlen(str));
+        Append(str, MeasureCString(str));
     }
 }
 
-inline void String::append(const char* str, size_t len) noexcept
+inline void String::Append(const char* str, size_t len) noexcept
 {
     if (!str || len == 0) return;
 
     size_t newSize = mSize + len;
     if (newSize >= mCapacity) {
-        reallocate(newSize + 1);
+        Reallocate(newSize + 1);
     }
 
     if (mData && mCapacity > newSize) {
@@ -364,18 +364,18 @@ inline void String::append(const char* str, size_t len) noexcept
     }
 }
 
-inline void String::append(const String& str) noexcept
+inline void String::Append(const String& str) noexcept
 {
-    append(str.mData, str.mSize);
+    Append(str.mData, str.mSize);
 }
 
-inline void String::push_back(char c) noexcept
+inline void String::PushBack(char c) noexcept
 {
     char temp[2] = {c, '\0'};
-    append(temp, 1);
+    Append(temp, 1);
 }
 
-inline void String::pop_back() noexcept
+inline void String::PopBack() noexcept
 {
     if (mSize > 0) {
         --mSize;
@@ -385,7 +385,7 @@ inline void String::pop_back() noexcept
     }
 }
 
-inline String String::substr(size_t pos, size_t len) const noexcept
+inline String String::Substring(size_t pos, size_t len) const noexcept
 {
     if (pos >= mSize || !mData) return String();
 
@@ -397,7 +397,7 @@ inline String String::substr(size_t pos, size_t len) const noexcept
     return String(mData + pos, actualLen);
 }
 
-inline size_t String::find(const char* str, size_t pos) const noexcept
+inline size_t String::Find(const char* str, size_t pos) const noexcept
 {
     if (!str || !mData || pos >= mSize) return npos;
 
@@ -407,7 +407,7 @@ inline size_t String::find(const char* str, size_t pos) const noexcept
     return static_cast<size_t>(result - mData);
 }
 
-inline size_t String::find(char c, size_t pos) const noexcept
+inline size_t String::Find(char c, size_t pos) const noexcept
 {
     if (!mData || pos >= mSize) return npos;
 
@@ -417,11 +417,11 @@ inline size_t String::find(char c, size_t pos) const noexcept
     return static_cast<size_t>(result - mData);
 }
 
-inline size_t String::rfind(const char* str, size_t pos) const noexcept
+inline size_t String::FindLast(const char* str, size_t pos) const noexcept
 {
     if (!str || !mData || mSize == 0) return npos;
 
-    size_t strLen = safe_strlen(str);
+    size_t strLen = MeasureCString(str);
     if (strLen == 0 || strLen > mSize) return npos;
 
     size_t searchPos = (pos == npos || pos >= mSize) ? mSize - strLen : pos;
@@ -437,7 +437,7 @@ inline size_t String::rfind(const char* str, size_t pos) const noexcept
     return npos;
 }
 
-inline size_t String::rfind(char c, size_t pos) const noexcept
+inline size_t String::FindLast(char c, size_t pos) const noexcept
 {
     if (!mData || mSize == 0) return npos;
 
@@ -452,41 +452,41 @@ inline size_t String::rfind(char c, size_t pos) const noexcept
     return npos;
 }
 
-inline bool String::contains(const char* str) const noexcept
+inline bool String::Contains(const char* str) const noexcept
 {
-    return find(str) != npos;
+    return Find(str) != npos;
 }
 
-inline bool String::contains(char c) const noexcept
+inline bool String::Contains(char c) const noexcept
 {
-    return find(c) != npos;
+    return Find(c) != npos;
 }
 
-inline bool String::starts_with(const char* prefix) const noexcept
+inline bool String::StartsWith(const char* prefix) const noexcept
 {
     if (!prefix || !mData) return false;
 
-    size_t prefixLen = safe_strlen(prefix);
+    size_t prefixLen = MeasureCString(prefix);
     if (prefixLen > mSize) return false;
 
     return SDL_memcmp(mData, prefix, prefixLen) == 0;
 }
 
-inline bool String::ends_with(const char* suffix) const noexcept
+inline bool String::EndsWith(const char* suffix) const noexcept
 {
     if (!suffix || !mData) return false;
 
-    size_t suffixLen = safe_strlen(suffix);
+    size_t suffixLen = MeasureCString(suffix);
     if (suffixLen > mSize) return false;
 
     return SDL_memcmp(mData + mSize - suffixLen, suffix, suffixLen) == 0;
 }
 
-inline String& String::replace(size_t pos, size_t len, const char* str) noexcept
+inline String& String::Replace(size_t pos, size_t len, const char* str) noexcept
 {
     if (!str || pos >= mSize || !mData) return *this;
 
-    size_t replaceLen = safe_strlen(str);
+    size_t replaceLen = MeasureCString(str);
     size_t actualLen = (pos + len > mSize) ? mSize - pos : len;
 
     if (replaceLen == actualLen) {
@@ -520,42 +520,42 @@ inline String& String::replace(size_t pos, size_t len, const char* str) noexcept
     return *this;
 }
 
-inline String& String::replace_all(const char* from, const char* to) noexcept
+inline String& String::ReplaceAll(const char* from, const char* to) noexcept
 {
     if (!from || !to || !mData) return *this;
 
-    size_t fromLen = safe_strlen(from);
+    size_t fromLen = MeasureCString(from);
     if (fromLen == 0) return *this;
 
     size_t pos = 0;
-    while ((pos = find(from, pos)) != npos) {
-        replace(pos, fromLen, to);
-        pos += safe_strlen(to);
+    while ((pos = Find(from, pos)) != npos) {
+        Replace(pos, fromLen, to);
+        pos += MeasureCString(to);
     }
 
     return *this;
 }
 
-inline String& String::replace_first(const char* from, const char* to) noexcept
+inline String& String::ReplaceFirst(const char* from, const char* to) noexcept
 {
     if (!from || !to || !mData) return *this;
 
-    size_t pos = find(from);
+    size_t pos = Find(from);
     if (pos != npos) {
-        replace(pos, safe_strlen(from), to);
+        Replace(pos, MeasureCString(from), to);
     }
 
     return *this;
 }
 
-inline String& String::trim() noexcept
+inline String& String::Trim() noexcept
 {
-    trim_left();
-    trim_right();
+    TrimLeft();
+    TrimRight();
     return *this;
 }
 
-inline String& String::trim_left() noexcept
+inline String& String::TrimLeft() noexcept
 {
     if (!mData || mSize == 0) return *this;
 
@@ -574,7 +574,7 @@ inline String& String::trim_left() noexcept
     return *this;
 }
 
-inline String& String::trim_right() noexcept
+inline String& String::TrimRight() noexcept
 {
     if (!mData || mSize == 0) return *this;
 
@@ -587,14 +587,14 @@ inline String& String::trim_right() noexcept
     return *this;
 }
 
-inline String String::trimmed() const noexcept
+inline String String::TrimmedCopy() const noexcept
 {
     String result(*this);
-    result.trim();
+    result.Trim();
     return result;
 }
 
-inline String& String::to_lower() noexcept
+inline String& String::ToLower() noexcept
 {
     if (!mData) return *this;
 
@@ -607,7 +607,7 @@ inline String& String::to_lower() noexcept
     return *this;
 }
 
-inline String& String::to_upper() noexcept
+inline String& String::ToUpper() noexcept
 {
     if (!mData) return *this;
 
@@ -620,21 +620,21 @@ inline String& String::to_upper() noexcept
     return *this;
 }
 
-inline String String::lower() const noexcept
+inline String String::LowerCopy() const noexcept
 {
     String result(*this);
-    result.to_lower();
+    result.ToLower();
     return result;
 }
 
-inline String String::upper() const noexcept
+inline String String::UpperCopy() const noexcept
 {
     String result(*this);
-    result.to_upper();
+    result.ToUpper();
     return result;
 }
 
-inline void String::swap(String& other) noexcept
+inline void String::Swap(String& other) noexcept
 {
     char* tempData = mData;
     size_t tempSize = mSize;
@@ -651,7 +651,7 @@ inline void String::swap(String& other) noexcept
 
 /* === Private Implementation === */
 
-inline void String::allocate(size_t size) noexcept
+inline void String::Allocate(size_t size) noexcept
 {
     mCapacity = size + 1;
     mData = NX_Malloc<char>(mCapacity);
@@ -664,10 +664,10 @@ inline void String::allocate(size_t size) noexcept
     }
 }
 
-inline void String::reallocate(size_t newCapacity) noexcept
+inline void String::Reallocate(size_t newCapacity) noexcept
 {
     if (newCapacity == 0) {
-        free_data();
+        FreeData();
         return;
     }
 
@@ -682,7 +682,7 @@ inline void String::reallocate(size_t newCapacity) noexcept
     }
 }
 
-inline void String::free_data() noexcept
+inline void String::FreeData() noexcept
 {
     if (mData) {
         NX_Free(mData);
@@ -692,10 +692,12 @@ inline void String::free_data() noexcept
     mCapacity = 0;
 }
 
-inline size_t String::safe_strlen(const char* str) noexcept
+inline size_t String::MeasureCString(const char* str) noexcept
 {
-    if (!str) return 0;
-    return SDL_strlen(str);
+    if (str != nullptr) {
+        return SDL_strlen(str);
+    }
+    return 0;
 }
 
 } // namespace util

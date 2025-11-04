@@ -57,12 +57,12 @@ NX_RandGen PCG32::createStacked(uint64_t seed)
 
 NX_RandGen* PCG32::createPooled(uint64_t seed)
 {
-    return mPool.create(createStacked(seed));
+    return mPool.Create(createStacked(seed));
 }
 
 void PCG32::destroyPooled(NX_RandGen* generator)
 {
-    mPool.destroy(generator);
+    mPool.Destroy(generator);
 }
 
 NX_RandGen& PCG32::get(NX_RandGen* generator)
@@ -243,9 +243,9 @@ void NX_RandShuffle(NX_RandGen* generator, void* array, size_t elemSize, size_t 
             if (i != j) {
                 char* iElem = arr + i * elemSize;
                 char* jElem = arr + j * elemSize;
-                SDL_memcpy(temp.data(), iElem, elemSize);
+                SDL_memcpy(temp.GetData(), iElem, elemSize);
                 SDL_memcpy(iElem, jElem, elemSize);
-                SDL_memcpy(jElem, temp.data(), elemSize);
+                SDL_memcpy(jElem, temp.GetData(), elemSize);
             }
         }
     }

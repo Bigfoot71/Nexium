@@ -149,7 +149,7 @@ inline const Buffer* VertexArray::GetIndexBuffer() const noexcept
 
 inline size_t VertexArray::GetVertexBufferCount() const noexcept
 {
-    return mVertexBuffers.size();
+    return mVertexBuffers.GetSize();
 }
 
 inline const Buffer* VertexArray::GetVertexBuffer(size_t index) const noexcept

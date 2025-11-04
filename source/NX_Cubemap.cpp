@@ -132,11 +132,11 @@ static gpu::Texture INX_LoadLineHorizontal(const NX_Image& image)
     for (int i = 0; i < 6; i++) {
         for (int y = 0; y < cubeFaceSize; y++) {
             const uint8_t* srcRow = pixels + (y * image.w + i * cubeFaceSize) * bytesPerPixel;
-            uint8_t* dstRow = faceBuffer.data() + y * cubeFaceSize * bytesPerPixel;
+            uint8_t* dstRow = faceBuffer.GetData() + y * cubeFaceSize * bytesPerPixel;
             SDL_memcpy(dstRow, srcRow, cubeFaceSize * bytesPerPixel);
         }
         region.cubeFace = gpu::CubeFace(int(gpu::CubeFace::PositiveX) + i);
-        texture.Upload(faceBuffer.data(), region);
+        texture.Upload(faceBuffer.GetData(), region);
     }
 
     return texture;
@@ -249,10 +249,10 @@ static gpu::Texture INX_LoadCrossThreeByFour(const NX_Image& image)
         if (pos.x * cubeFaceSize + cubeFaceSize <= image.w && pos.y * cubeFaceSize + cubeFaceSize <= image.h) {
             for (int y = 0; y < cubeFaceSize; y++) {
                 const uint8_t* srcRow = pixels + ((pos.y * cubeFaceSize + y) * image.w + pos.x * cubeFaceSize) * bytesPerPixel;
-                uint8_t* dstRow = faceBuffer.data() + y * cubeFaceSize * bytesPerPixel;
+                uint8_t* dstRow = faceBuffer.GetData() + y * cubeFaceSize * bytesPerPixel;
                 SDL_memcpy(dstRow, srcRow, cubeFaceSize * bytesPerPixel);
             }
-            texture.Upload(faceBuffer.data(), gpu::UploadRegion{
+            texture.Upload(faceBuffer.GetData(), gpu::UploadRegion{
                 .x = 0, .y = 0, .z = 0,
                 .width = cubeFaceSize,
                 .height = cubeFaceSize,
@@ -322,10 +322,10 @@ static gpu::Texture INX_LoadCrossFourByThree(const NX_Image& image)
         if (pos.x * cubeFaceSize + cubeFaceSize <= image.w && pos.y * cubeFaceSize + cubeFaceSize <= image.h) {
             for (int y = 0; y < cubeFaceSize; y++) {
                 const uint8_t* srcRow = pixels + ((pos.y * cubeFaceSize + y) * image.w + pos.x * cubeFaceSize) * bytesPerPixel;
-                uint8_t* dstRow = faceBuffer.data() + y * cubeFaceSize * bytesPerPixel;
-                memcpy(dstRow, srcRow, cubeFaceSize * bytesPerPixel);
+                uint8_t* dstRow = faceBuffer.GetData() + y * cubeFaceSize * bytesPerPixel;
+                SDL_memcpy(dstRow, srcRow, cubeFaceSize * bytesPerPixel);
             }
-            texture.Upload(faceBuffer.data(), gpu::UploadRegion{
+            texture.Upload(faceBuffer.GetData(), gpu::UploadRegion{
                 .x = 0, .y = 0, .z = 0,
                 .width = cubeFaceSize,
                 .height = cubeFaceSize,

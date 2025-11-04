@@ -63,62 +63,58 @@ public:
     constexpr StaticArray& operator=(StaticArray&& other) noexcept;
 
     /** Assignment */
-    constexpr bool assign(size_type count, const T& value) noexcept;
+    constexpr bool Assign(size_type count, const T& value) noexcept;
     template<typename InputIt>
-    constexpr bool assign(InputIt first, InputIt last) noexcept;
-    constexpr bool assign(std::initializer_list<T> init) noexcept;
+    constexpr bool Assign(InputIt first, InputIt last) noexcept;
+    constexpr bool Assign(std::initializer_list<T> init) noexcept;
 
     /** Element access */
-    [[nodiscard]] constexpr pointer at(size_type pos) noexcept;
-    [[nodiscard]] constexpr const_pointer at(size_type pos) const noexcept;
+    [[nodiscard]] constexpr pointer GetAt(size_type pos) noexcept;
+    [[nodiscard]] constexpr const_pointer GetAt(size_type pos) const noexcept;
     [[nodiscard]] constexpr reference operator[](size_type index) noexcept;
     [[nodiscard]] constexpr const_reference operator[](size_type index) const noexcept;
-    [[nodiscard]] constexpr pointer front() noexcept;
-    [[nodiscard]] constexpr const_pointer front() const noexcept;
-    [[nodiscard]] constexpr pointer back() noexcept;
-    [[nodiscard]] constexpr const_pointer back() const noexcept;
-    [[nodiscard]] constexpr pointer data() noexcept;
-    [[nodiscard]] constexpr const_pointer data() const noexcept;
+    [[nodiscard]] constexpr pointer GetFront() noexcept;
+    [[nodiscard]] constexpr const_pointer GetFront() const noexcept;
+    [[nodiscard]] constexpr pointer GetBack() noexcept;
+    [[nodiscard]] constexpr const_pointer GetBack() const noexcept;
+    [[nodiscard]] constexpr pointer GetData() noexcept;
+    [[nodiscard]] constexpr const_pointer GetData() const noexcept;
 
     /** Iterators */
-    [[nodiscard]] constexpr iterator begin() noexcept;
-    [[nodiscard]] constexpr const_iterator begin() const noexcept;
-    [[nodiscard]] constexpr const_iterator cbegin() const noexcept;
-    [[nodiscard]] constexpr iterator end() noexcept;
-    [[nodiscard]] constexpr const_iterator end() const noexcept;
-    [[nodiscard]] constexpr const_iterator cend() const noexcept;
-    [[nodiscard]] constexpr reverse_iterator rbegin() noexcept;
-    [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept;
-    [[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept;
-    [[nodiscard]] constexpr reverse_iterator rend() noexcept;
-    [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept;
-    [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept;
+    [[nodiscard]] constexpr iterator Begin() noexcept;
+    [[nodiscard]] constexpr const_iterator Begin() const noexcept;
+    [[nodiscard]] constexpr iterator End() noexcept;
+    [[nodiscard]] constexpr const_iterator End() const noexcept;
+    [[nodiscard]] constexpr reverse_iterator ReverseBegin() noexcept;
+    [[nodiscard]] constexpr const_reverse_iterator ReverseBegin() const noexcept;
+    [[nodiscard]] constexpr reverse_iterator ReverseEnd() noexcept;
+    [[nodiscard]] constexpr const_reverse_iterator ReverseEnd() const noexcept;
 
     /** Capacity */
-    [[nodiscard]] constexpr bool empty() const noexcept;
-    [[nodiscard]] constexpr size_type size() const noexcept;
-    [[nodiscard]] static constexpr size_type capacity() noexcept;
-    [[nodiscard]] static constexpr size_type max_size() noexcept;
+    [[nodiscard]] constexpr bool IsEmpty() const noexcept;
+    [[nodiscard]] constexpr size_type GetSize() const noexcept;
+    [[nodiscard]] static constexpr size_type GetCapacity() noexcept;
+    [[nodiscard]] static constexpr size_type GetMaxSize() noexcept;
 
     /** Modifiers */
-    constexpr void clear() noexcept;
-    constexpr bool push_back(const T& value) noexcept;
-    constexpr bool push_back(T&& value) noexcept;
+    constexpr void Clear() noexcept;
+    constexpr bool PushBack(const T& value) noexcept;
+    constexpr bool PushBack(T&& value) noexcept;
 
     template<typename... Args>
-    constexpr pointer emplace_back(Args&&... args) noexcept;
+    constexpr pointer EmplaceBack(Args&&... args) noexcept;
 
-    constexpr void pop_back() noexcept;
-    constexpr bool resize(size_type count) noexcept;
-    constexpr bool resize(size_type count, const T& value) noexcept;
-    constexpr void swap(StaticArray& other) noexcept;
+    constexpr void PopBack() noexcept;
+    constexpr bool Resize(size_type count) noexcept;
+    constexpr bool Resize(size_type count, const T& value) noexcept;
+    constexpr void Swap(StaticArray& other) noexcept;
 
 private:
     /** Helpers for construction/destruction */
     template<typename... Args>
-    [[nodiscard]] constexpr pointer construct_at(pointer p, Args&&... args) noexcept;
-    constexpr void destroy_at(pointer p) noexcept;
-    constexpr void destroy_range(pointer first, pointer last) noexcept;
+    [[nodiscard]] constexpr pointer ConstructAt(pointer p, Args&&... args) noexcept;
+    constexpr void DestroyAt(pointer p) noexcept;
+    constexpr void DestroyRange(pointer first, pointer last) noexcept;
 
 private:
     T mData[N];
@@ -137,7 +133,7 @@ constexpr StaticArray<T, N>::StaticArray(size_type count) noexcept
     : StaticArray()
 {
     if (count > 0) {
-        resize(count);
+        Resize(count);
     }
 }
 
@@ -145,7 +141,7 @@ template<typename T, size_t N>
 constexpr StaticArray<T, N>::StaticArray(size_type count, const T& value) noexcept
     : StaticArray()
 {
-    assign(count, value);
+    Assign(count, value);
 }
 
 template<typename T, size_t N>
@@ -153,12 +149,12 @@ template<typename InputIt>
 constexpr StaticArray<T, N>::StaticArray(InputIt first, InputIt last) noexcept
     : StaticArray()
 {
-    assign(first, last);
+    Assign(first, last);
 }
 
 template<typename T, size_t N>
 constexpr StaticArray<T, N>::StaticArray(std::initializer_list<T> init) noexcept
-    : StaticArray(init.begin(), init.end())
+    : StaticArray(init.Begin(), init.End())
 { }
 
 template<typename T, size_t N>
@@ -166,8 +162,8 @@ constexpr StaticArray<T, N>::StaticArray(StaticArray&& other) noexcept
     : mData{}, mSize(other.mSize)
 {
     for (size_type i = 0; i < mSize; ++i) {
-        construct_at(mData + i, std::move(other.mData[i]));
-        destroy_at(other.mData + i);
+        ConstructAt(mData + i, std::move(other.mData[i]));
+        DestroyAt(other.mData + i);
     }
     other.mSize = 0;
 }
@@ -176,11 +172,11 @@ template<typename T, size_t N>
 constexpr StaticArray<T, N>& StaticArray<T, N>::operator=(StaticArray&& other) noexcept
 {
     if (this != &other) {
-        clear();
+        Clear();
         mSize = other.mSize;
         for (size_type i = 0; i < mSize; ++i) {
-            construct_at(mData + i, std::move(other.mData[i]));
-            destroy_at(other.mData + i);
+            ConstructAt(mData + i, std::move(other.mData[i]));
+            DestroyAt(other.mData + i);
         }
         other.mSize = 0;
     }
@@ -188,19 +184,19 @@ constexpr StaticArray<T, N>& StaticArray<T, N>::operator=(StaticArray&& other) n
 }
 
 template<typename T, size_t N>
-constexpr bool StaticArray<T, N>::assign(size_type count, const T& value) noexcept
+constexpr bool StaticArray<T, N>::Assign(size_type count, const T& value) noexcept
 {
-    clear();
-    return resize(count, value);
+    Clear();
+    return Resize(count, value);
 }
 
 template<typename T, size_t N>
 template<typename InputIt>
-constexpr bool StaticArray<T, N>::assign(InputIt first, InputIt last) noexcept
+constexpr bool StaticArray<T, N>::Assign(InputIt first, InputIt last) noexcept
 {
-    clear();
+    Clear();
     for (auto it = first; it != last; ++it) {
-        if (!push_back(*it)) {
+        if (!PushBack(*it)) {
             return false;
         }
     }
@@ -208,19 +204,19 @@ constexpr bool StaticArray<T, N>::assign(InputIt first, InputIt last) noexcept
 }
 
 template<typename T, size_t N>
-constexpr bool StaticArray<T, N>::assign(std::initializer_list<T> init) noexcept
+constexpr bool StaticArray<T, N>::Assign(std::initializer_list<T> init) noexcept
 {
-    return assign(init.begin(), init.end());
+    return Assign(init.Begin(), init.End());
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::at(size_type pos) noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::GetAt(size_type pos) noexcept
 {
     return (pos < mSize) ? mData + pos : nullptr;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::const_pointer StaticArray<T, N>::at(size_type pos) const noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::const_pointer StaticArray<T, N>::GetAt(size_type pos) const noexcept
 {
     return (pos < mSize) ? mData + pos : nullptr;
 }
@@ -238,164 +234,140 @@ template<typename T, size_t N>
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::front() noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::GetFront() noexcept
 {
     return mSize > 0 ? mData : nullptr;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::const_pointer StaticArray<T, N>::front() const noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::const_pointer StaticArray<T, N>::GetFront() const noexcept
 {
     return mSize > 0 ? mData : nullptr;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::back() noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::GetBack() noexcept
 {
     return mSize > 0 ? mData + mSize - 1 : nullptr;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::const_pointer StaticArray<T, N>::back() const noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::const_pointer StaticArray<T, N>::GetBack() const noexcept
 {
     return mSize > 0 ? mData + mSize - 1 : nullptr;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::data() noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::GetData() noexcept
 {
     return mData;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::const_pointer StaticArray<T, N>::data() const noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::const_pointer StaticArray<T, N>::GetData() const noexcept
 {
     return mData;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::iterator StaticArray<T, N>::begin() noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::iterator StaticArray<T, N>::Begin() noexcept
 {
     return mData;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::const_iterator StaticArray<T, N>::begin() const noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::const_iterator StaticArray<T, N>::Begin() const noexcept
 {
     return mData;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::const_iterator StaticArray<T, N>::cbegin() const noexcept
-{
-    return mData;
-}
-
-template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::iterator StaticArray<T, N>::end() noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::iterator StaticArray<T, N>::End() noexcept
 {
     return mData + mSize;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::const_iterator StaticArray<T, N>::end() const noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::const_iterator StaticArray<T, N>::End() const noexcept
 {
     return mData + mSize;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::const_iterator StaticArray<T, N>::cend() const noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::reverse_iterator StaticArray<T, N>::ReverseBegin() noexcept
 {
-    return mData + mSize;
+    return reverse_iterator(End());
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::reverse_iterator StaticArray<T, N>::rbegin() noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::const_reverse_iterator StaticArray<T, N>::ReverseBegin() const noexcept
 {
-    return reverse_iterator(end());
+    return const_reverse_iterator(End());
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::const_reverse_iterator StaticArray<T, N>::rbegin() const noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::reverse_iterator StaticArray<T, N>::ReverseEnd() noexcept
 {
-    return const_reverse_iterator(end());
+    return reverse_iterator(Begin());
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::const_reverse_iterator StaticArray<T, N>::crbegin() const noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::const_reverse_iterator StaticArray<T, N>::ReverseEnd() const noexcept
 {
-    return const_reverse_iterator(end());
+    return const_reverse_iterator(Begin());
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::reverse_iterator StaticArray<T, N>::rend() noexcept
-{
-    return reverse_iterator(begin());
-}
-
-template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::const_reverse_iterator StaticArray<T, N>::rend() const noexcept
-{
-    return const_reverse_iterator(begin());
-}
-
-template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::const_reverse_iterator StaticArray<T, N>::crend() const noexcept
-{
-    return const_reverse_iterator(begin());
-}
-
-template<typename T, size_t N>
-[[nodiscard]] constexpr bool StaticArray<T, N>::empty() const noexcept
+[[nodiscard]] constexpr bool StaticArray<T, N>::IsEmpty() const noexcept
 {
     return mSize == 0;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::size_type StaticArray<T, N>::size() const noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::size_type StaticArray<T, N>::GetSize() const noexcept
 {
     return mSize;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::size_type StaticArray<T, N>::capacity() noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::size_type StaticArray<T, N>::GetCapacity() noexcept
 {
     return N;
 }
 
 template<typename T, size_t N>
-[[nodiscard]] constexpr typename StaticArray<T, N>::size_type StaticArray<T, N>::max_size() noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::size_type StaticArray<T, N>::GetMaxSize() noexcept
 {
-    return N; // For StaticArray, max_size = capacity = N
+    return N; // For StaticArray, maxSize = capacity = N
 }
 
 template<typename T, size_t N>
-constexpr void StaticArray<T, N>::clear() noexcept
+constexpr void StaticArray<T, N>::Clear() noexcept
 {
-    destroy_range(mData, mData + mSize);
+    DestroyRange(mData, mData + mSize);
     mSize = 0;
 }
 
 template<typename T, size_t N>
-constexpr bool StaticArray<T, N>::push_back(const T& value) noexcept
+constexpr bool StaticArray<T, N>::PushBack(const T& value) noexcept
 {
-    return emplace_back(value) != nullptr;
+    return EmplaceBack(value) != nullptr;
 }
 
 template<typename T, size_t N>
-constexpr bool StaticArray<T, N>::push_back(T&& value) noexcept
+constexpr bool StaticArray<T, N>::PushBack(T&& value) noexcept
 {
-    return emplace_back(std::move(value)) != nullptr;
+    return EmplaceBack(std::move(value)) != nullptr;
 }
 
 template<typename T, size_t N>
 template<typename... Args>
-constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::emplace_back(Args&&... args) noexcept
+constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::EmplaceBack(Args&&... args) noexcept
 {
     if (mSize >= N) {
         return nullptr;
     }
-    pointer result = construct_at(mData + mSize, std::forward<Args>(args)...);
+    pointer result = ConstructAt(mData + mSize, std::forward<Args>(args)...);
     if (result) {
         ++mSize;
     }
@@ -403,34 +375,34 @@ constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::emplace_back(Ar
 }
 
 template<typename T, size_t N>
-constexpr void StaticArray<T, N>::pop_back() noexcept
+constexpr void StaticArray<T, N>::PopBack() noexcept
 {
     if (mSize > 0) {
         --mSize;
-        destroy_at(mData + mSize);
+        DestroyAt(mData + mSize);
     }
 }
 
 template<typename T, size_t N>
-constexpr bool StaticArray<T, N>::resize(size_type count) noexcept
+constexpr bool StaticArray<T, N>::Resize(size_type count) noexcept
 {
     if (count > N) {
         return false;
     }
 
     if (count < mSize) {
-        destroy_range(mData + count, mData + mSize);
+        DestroyRange(mData + count, mData + mSize);
         mSize = count;
         return true;
     }
     else if (count > mSize) {
-        size_type old_size = mSize;
+        size_type oldSize = mSize;
         mSize = count; // Optimistic, we go back to the old one if it fails
-        for (size_type i = old_size; i < count; ++i) {
-            if (!construct_at(mData + i)) {
+        for (size_type i = oldSize; i < count; ++i) {
+            if (!ConstructAt(mData + i)) {
                 // Failure, cleaning and return
-                destroy_range(mData + old_size, mData + i);
-                mSize = old_size;
+                DestroyRange(mData + oldSize, mData + i);
+                mSize = oldSize;
                 return false;
             }
         }
@@ -439,24 +411,24 @@ constexpr bool StaticArray<T, N>::resize(size_type count) noexcept
 }
 
 template<typename T, size_t N>
-constexpr bool StaticArray<T, N>::resize(size_type count, const T& value) noexcept
+constexpr bool StaticArray<T, N>::Resize(size_type count, const T& value) noexcept
 {
     if (count > N) {
         return false;
     }
 
     if (count < mSize) {
-        destroy_range(mData + count, mData + mSize);
+        DestroyRange(mData + count, mData + mSize);
         mSize = count;
         return true;
     }
     else if (count > mSize) {
-        size_type old_size = mSize;
+        size_type oldSize = mSize;
         mSize = count;
-        for (size_type i = old_size; i < count; ++i) {
-            if (!construct_at(mData + i, value)) {
-                destroy_range(mData + old_size, mData + i);
-                mSize = old_size;
+        for (size_type i = oldSize; i < count; ++i) {
+            if (!ConstructAt(mData + i, value)) {
+                DestroyRange(mData + oldSize, mData + i);
+                mSize = oldSize;
                 return false;
             }
         }
@@ -465,42 +437,38 @@ constexpr bool StaticArray<T, N>::resize(size_type count, const T& value) noexce
 }
 
 template<typename T, size_t N>
-constexpr void StaticArray<T, N>::swap(StaticArray& other) noexcept
+constexpr void StaticArray<T, N>::Swap(StaticArray& other) noexcept
 {
-    size_type max_size = mSize > other.mSize ? mSize : other.mSize;
+    size_type maxSize = mSize > other.mSize ? mSize : other.mSize;
 
     // Swap existing elements
-    size_type min_size = mSize < other.mSize ? mSize : other.mSize;
-    for (size_type i = 0; i < min_size; ++i) {
-        auto temp = std::move(mData[i]);
-        mData[i] = std::move(other.mData[i]);
-        other.mData[i] = std::move(temp);
+    size_type minSize = mSize < other.mSize ? mSize : other.mSize;
+    for (size_type i = 0; i < minSize; ++i) {
+        std::swap(mData[i], other.mData[i]);
     }
 
     // Move the extra items
     if (mSize > other.mSize) {
-        for (size_type i = min_size; i < mSize; ++i) {
-            construct_at(other.mData + i, std::move(mData[i]));
-            destroy_at(mData + i);
+        for (size_type i = minSize; i < mSize; ++i) {
+            ConstructAt(other.mData + i, std::move(mData[i]));
+            DestroyAt(mData + i);
         }
     }
     else if (other.mSize > mSize) {
-        for (size_type i = min_size; i < other.mSize; ++i) {
-            construct_at(mData + i, std::move(other.mData[i]));
-            destroy_at(other.mData + i);
+        for (size_type i = minSize; i < other.mSize; ++i) {
+            ConstructAt(mData + i, std::move(other.mData[i]));
+            DestroyAt(other.mData + i);
         }
     }
 
-    auto temp_size = mSize;
-    mSize = other.mSize;
-    other.mSize = temp_size;
+    std::swap(mSize, other.mSize);
 }
 
 /* === Private Implementation === */
 
 template<typename T, size_t N>
 template<typename... Args>
-[[nodiscard]] constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::construct_at(pointer p, Args&&... args) noexcept
+[[nodiscard]] constexpr typename StaticArray<T, N>::pointer StaticArray<T, N>::ConstructAt(pointer p, Args&&... args) noexcept
 {
     if constexpr (std::is_nothrow_constructible_v<T, Args...>) {
         new (p) T(std::forward<Args>(args)...);
@@ -515,7 +483,7 @@ template<typename... Args>
 }
 
 template<typename T, size_t N>
-constexpr void StaticArray<T, N>::destroy_at(pointer p) noexcept
+constexpr void StaticArray<T, N>::DestroyAt(pointer p) noexcept
 {
     if constexpr (!std::is_trivially_destructible_v<T>) {
         p->~T();
@@ -523,11 +491,11 @@ constexpr void StaticArray<T, N>::destroy_at(pointer p) noexcept
 }
 
 template<typename T, size_t N>
-constexpr void StaticArray<T, N>::destroy_range(pointer first, pointer last) noexcept
+constexpr void StaticArray<T, N>::DestroyRange(pointer first, pointer last) noexcept
 {
     if constexpr (!std::is_trivially_destructible_v<T>) {
         for (; first != last; ++first) {
-            destroy_at(first);
+            DestroyAt(first);
         }
     }
 }
@@ -537,10 +505,10 @@ constexpr void StaticArray<T, N>::destroy_range(pointer first, pointer last) noe
 template<typename T, size_t N>
 [[nodiscard]] constexpr bool operator==(const StaticArray<T, N>& lhs, const StaticArray<T, N>& rhs) noexcept
 {
-    if (lhs.size() != rhs.size()) {
+    if (lhs.GetSize() != rhs.GetSize()) {
         return false;
     }
-    for (typename StaticArray<T, N>::size_type i = 0; i < lhs.size(); ++i) {
+    for (typename StaticArray<T, N>::size_type i = 0; i < lhs.GetSize(); ++i) {
         if (!(lhs[i] == rhs[i])) {
             return false;
         }
@@ -557,15 +525,15 @@ template<typename T, size_t N>
 template<typename T, size_t N>
 [[nodiscard]] constexpr bool operator<(const StaticArray<T, N>& lhs, const StaticArray<T, N>& rhs) noexcept
 {
-    auto lhs_size = lhs.size();
-    auto rhs_size = rhs.size();
-    auto min_size = lhs_size < rhs_size ? lhs_size : rhs_size;
+    auto lhsSize = lhs.GetSize();
+    auto rhsSize = rhs.GetSize();
+    auto minSize = lhsSize < rhsSize ? lhsSize : rhsSize;
 
-    for (typename StaticArray<T, N>::size_type i = 0; i < min_size; ++i) {
+    for (typename StaticArray<T, N>::size_type i = 0; i < minSize; ++i) {
         if (lhs[i] < rhs[i]) return true;
         if (rhs[i] < lhs[i]) return false;
     }
-    return lhs_size < rhs_size;
+    return lhsSize < rhsSize;
 }
 
 template<typename T, size_t N>
@@ -587,9 +555,81 @@ template<typename T, size_t N>
 }
 
 template<typename T, size_t N>
+constexpr typename StaticArray<T, N>::iterator begin(StaticArray<T, N>& arr) noexcept
+{
+    return arr.Begin();
+}
+
+template<typename T, size_t N>
+constexpr typename StaticArray<T, N>::const_iterator begin(const StaticArray<T, N>& arr) noexcept
+{
+    return arr.Begin();
+}
+
+template<typename T, size_t N>
+constexpr typename StaticArray<T, N>::iterator end(StaticArray<T, N>& arr) noexcept
+{
+    return arr.End();
+}
+
+template<typename T, size_t N>
+constexpr typename StaticArray<T, N>::const_iterator end(const StaticArray<T, N>& arr) noexcept
+{
+    return arr.End();
+}
+
+template<typename T, size_t N>
+constexpr typename StaticArray<T, N>::reverse_iterator rbegin(StaticArray<T, N>& arr) noexcept
+{
+    return arr.ReverseBegin();
+}
+
+template<typename T, size_t N>
+constexpr typename StaticArray<T, N>::const_reverse_iterator rbegin(const StaticArray<T, N>& arr) noexcept
+{
+    return arr.ReverseBegin();
+}
+
+template<typename T, size_t N>
+constexpr typename StaticArray<T, N>::reverse_iterator rend(StaticArray<T, N>& arr) noexcept
+{
+    return arr.ReverseEnd();
+}
+
+template<typename T, size_t N>
+constexpr typename StaticArray<T, N>::const_reverse_iterator rend(const StaticArray<T, N>& arr) noexcept
+{
+    return arr.ReverseEnd();
+}
+
+template<typename T, size_t N>
+constexpr typename StaticArray<T, N>::const_iterator cbegin(const StaticArray<T, N>& arr) noexcept
+{
+    return arr.Begin();
+}
+
+template<typename T, size_t N>
+constexpr typename StaticArray<T, N>::const_iterator cend(const StaticArray<T, N>& arr) noexcept
+{
+    return arr.End();
+}
+
+template<typename T, size_t N>
+constexpr typename StaticArray<T, N>::const_reverse_iterator crbegin(const StaticArray<T, N>& arr) noexcept
+{
+    return arr.ReverseBegin();
+}
+
+template<typename T, size_t N>
+constexpr typename StaticArray<T, N>::const_reverse_iterator crend(const StaticArray<T, N>& arr) noexcept
+{
+    return arr.ReverseEnd();
+}
+
+template<typename T, size_t N>
 constexpr void swap(StaticArray<T, N>& lhs, StaticArray<T, N>& rhs) noexcept
 {
-    lhs.swap(rhs);
+    lhs.Swap(rhs);
 }
 
 } // namespace util

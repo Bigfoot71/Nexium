@@ -240,7 +240,7 @@ int INX_GetGlyphIndex(const NX_Font* font, int codepoint)
 
     int index = 0, fallbackIndex = 0;
 
-    for (int i = 0; i < font->glyphs.size(); i++) {
+    for (int i = 0; i < font->glyphs.GetSize(); i++) {
         if (font->glyphs[i].value == codepoint) {
             index = i;
             break;
@@ -353,7 +353,7 @@ bool INX_GenerateAtlas(NX_Image* atlas, const uint8_t* fileData, int dataSize,
     }
 
     util::FixedArray<INX_Glyph> glyphs(codepointCount, codepointCount);
-    if (glyphs.data() == nullptr) {
+    if (glyphs.GetData() == nullptr) {
         FT_Done_Face(ftFace);
         FT_Done_FreeType(ftLibrary);
         return false;

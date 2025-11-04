@@ -23,12 +23,12 @@ void Framebuffer::SetDrawBuffers(std::initializer_list<int> buffers) noexcept
     }
 
     util::StaticArray<GLenum, 32> glBuffers{};
-    for (int i = 0; i < NX_MIN(glBuffers.capacity(), buffers.size()); i++) {
-        glBuffers.push_back(GL_COLOR_ATTACHMENT0 + buffers.begin()[i]);
+    for (int i = 0; i < NX_MIN(glBuffers.GetCapacity(), buffers.size()); i++) {
+        glBuffers.PushBack(GL_COLOR_ATTACHMENT0 + buffers.begin()[i]);
     }
 
     Pipeline::WithFramebufferBind(GetRenderId(), [&]() {
-        glDrawBuffers(static_cast<GLsizei>(glBuffers.size()), glBuffers.begin());
+        glDrawBuffers(static_cast<GLsizei>(glBuffers.GetSize()), glBuffers.Begin());
     });
 }
 
@@ -40,12 +40,12 @@ void Framebuffer::EnableDrawBuffers() noexcept
     }
 
     util::StaticArray<GLenum, 32> buffers{};
-    for (int i = 0; i < mColorAttachments.size(); i++) {
-        buffers.push_back(GL_COLOR_ATTACHMENT0 + i);
+    for (int i = 0; i < mColorAttachments.GetSize(); i++) {
+        buffers.PushBack(GL_COLOR_ATTACHMENT0 + i);
     }
 
     Pipeline::WithFramebufferBind(GetRenderId(), [&]() {
-        glDrawBuffers(static_cast<GLsizei>(buffers.size()), buffers.data());
+        glDrawBuffers(static_cast<GLsizei>(buffers.GetSize()), buffers.GetData());
     });
 }
 
@@ -70,13 +70,13 @@ void Framebuffer::Invalidate(std::initializer_list<int> buffers) noexcept
     }
 
     util::StaticArray<GLenum, 32> glBuffers{};
-    for (int i = 0; i < NX_MIN(glBuffers.capacity(), buffers.size()); i++) {
-        if (buffers.begin()[i] >= 0) glBuffers.push_back(GL_COLOR_ATTACHMENT0 + buffers.begin()[i]);
-        else glBuffers.push_back(GetDepthStencilAttachment(mDepthStencilAttachment.GetInternalFormat()));
+    for (int i = 0; i < NX_MIN(glBuffers.GetCapacity(), buffers.size()); i++) {
+        if (buffers.begin()[i] >= 0) glBuffers.PushBack(GL_COLOR_ATTACHMENT0 + buffers.begin()[i]);
+        else glBuffers.PushBack(GetDepthStencilAttachment(mDepthStencilAttachment.GetInternalFormat()));
     }
 
     Pipeline::WithFramebufferBind(GetRenderId(), [&]() {
-        glInvalidateFramebuffer(GL_FRAMEBUFFER, static_cast<GLsizei>(glBuffers.size()), glBuffers.begin());
+        glInvalidateFramebuffer(GL_FRAMEBUFFER, static_cast<GLsizei>(glBuffers.GetSize()), glBuffers.Begin());
     });
 }
 
@@ -88,18 +88,18 @@ void Framebuffer::Invalidate() noexcept
     }
 
     util::StaticArray<GLenum, 32> buffers{};
-    for (int i = 0; i < mColorAttachments.size(); i++) {
-        buffers.push_back(GL_COLOR_ATTACHMENT0 + i);
+    for (int i = 0; i < mColorAttachments.GetSize(); i++) {
+        buffers.PushBack(GL_COLOR_ATTACHMENT0 + i);
     }
 
     if (mDepthStencilAttachment.IsValid()) {
-        buffers.push_back(GetDepthStencilAttachment(
+        buffers.PushBack(GetDepthStencilAttachment(
             mDepthStencilAttachment.GetInternalFormat()
         ));
     }
 
     Pipeline::WithFramebufferBind(GetRenderId(), [&]() {
-        glInvalidateFramebuffer(GL_FRAMEBUFFER, static_cast<GLsizei>(buffers.size()), buffers.data());
+        glInvalidateFramebuffer(GL_FRAMEBUFFER, static_cast<GLsizei>(buffers.GetSize()), buffers.GetData());
     });
 }
 
@@ -110,7 +110,7 @@ void Framebuffer::Resolve() noexcept
     }
 
     // Resolve each color attachment
-    for (size_t i = 0; i < mColorAttachments.size(); ++i) {
+    for (size_t i = 0; i < mColorAttachments.GetSize(); ++i) {
         ResolveColorAttachment(static_cast<int>(i));
     }
 
@@ -129,7 +129,7 @@ void Framebuffer::AttachTexturesToResolveFramebuffer() noexcept
 {
     Pipeline::WithFramebufferBind(mResolveFramebuffer, [&]()
     {
-        for (size_t i = 0; i < mColorAttachments.size(); ++i) {
+        for (size_t i = 0; i < mColorAttachments.GetSize(); ++i) {
             UpdateColorAttachment(static_cast<int>(i), false);
         }
 
@@ -273,10 +273,10 @@ void Framebuffer::CreateAndAttachMultisampleRenderbuffers() noexcept
 
     /* --- Generates renderbuffers if they haven't already been generated --- */
 
-    if (mColorRenderbuffers.empty()) {
-        mColorRenderbuffers.reset(mColorAttachments.size());
-        mColorRenderbuffers.resize(mColorAttachments.size());
-        glGenRenderbuffers(static_cast<GLsizei>(mColorRenderbuffers.size()), mColorRenderbuffers.data());
+    if (mColorRenderbuffers.IsEmpty()) {
+        mColorRenderbuffers.Reset(mColorAttachments.GetSize());
+        mColorRenderbuffers.Resize(mColorAttachments.GetSize());
+        glGenRenderbuffers(static_cast<GLsizei>(mColorRenderbuffers.GetSize()), mColorRenderbuffers.GetData());
     }
 
     /* --- Generates depth renderbuffer if needed --- */
@@ -291,7 +291,7 @@ void Framebuffer::CreateAndAttachMultisampleRenderbuffers() noexcept
     {
         /* --- Configure color renderbuffers --- */
 
-        for (size_t i = 0; i < mColorAttachments.size(); ++i)
+        for (size_t i = 0; i < mColorAttachments.GetSize(); ++i)
         {
             SDL_assert(mColorAttachments[i].IsValid());
 

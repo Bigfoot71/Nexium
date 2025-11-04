@@ -22,7 +22,7 @@ public:
     INX_ShaderDecoder(const void* code, size_t size);
 
     /** Getters */
-    const char* code() const noexcept;
+    const char* GetCode() const noexcept;
     operator const char*() const noexcept;
 
 private:
@@ -35,7 +35,7 @@ inline INX_ShaderDecoder::INX_ShaderDecoder(const void* code, size_t size)
     mCode = util::UniquePtr<char>(decomp);
 }
 
-inline const char* INX_ShaderDecoder::code() const noexcept
+inline const char* INX_ShaderDecoder::GetCode() const noexcept
 {
     return mCode.get();
 }

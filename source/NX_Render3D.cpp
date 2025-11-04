@@ -331,15 +331,15 @@ bool INX_Render3DState_Init(NX_AppDesc* desc)
     drawCalls.uniqueBuffer = gpu::Buffer(GL_SHADER_STORAGE_BUFFER, drawCallReserveCount * sizeof(INX_GPUDrawUnique));
     drawCalls.boneBuffer = gpu::StagingBuffer<NX_Mat4, 1>(GL_SHADER_STORAGE_BUFFER, 1024);
 
-    if (!drawCalls.sharedData.reserve(drawCallReserveCount)) {
+    if (!drawCalls.sharedData.Reserve(drawCallReserveCount)) {
         NX_LOG(E, "RENDER: Shared draw call data array pre-allocation failed (requested: %i entries)", drawCallReserveCount);
     }
 
-    if (!drawCalls.uniqueData.reserve(drawCallReserveCount)) {
+    if (!drawCalls.uniqueData.Reserve(drawCallReserveCount)) {
         NX_LOG(E, "RENDER: Unique draw call data array pre-allocation failed (requested: %i entries)", drawCallReserveCount);
     }
 
-    if (!drawCalls.uniqueVisible.reserve(drawCallReserveCount)) {
+    if (!drawCalls.uniqueVisible.Reserve(drawCallReserveCount)) {
         NX_LOG(E, "RENDER: Visible unique draw call list pre-allocation failed (requested: %i entries)", drawCallReserveCount);
     }
 
@@ -463,15 +463,15 @@ bool INX_Render3DState_Init(NX_AppDesc* desc)
 
     /* --- Reserve light caches space --- */
 
-    if (!lighting.activeLights.reserve(32)) {
+    if (!lighting.activeLights.Reserve(32)) {
         NX_LOG(E, "RENDER: Active lights cache pre-allocation failed (requested: 32 entries)");
     }
 
-    if (!lighting.activeShadows.reserve(8)) {
+    if (!lighting.activeShadows.Reserve(8)) {
         NX_LOG(E, "RENDER: Active shadows cache pre-allocation failed (requested: 8 entries)");
     }
 
-    if (!lighting.shadowNeedingUpdate.reserve(8)) {
+    if (!lighting.shadowNeedingUpdate.Reserve(8)) {
         NX_LOG(E, "RENDER: Shadows needing update cache pre-allocation failed (requested: 8 entries)");
     }
 
@@ -595,10 +595,10 @@ static void INX_PushDrawCall(
 {
     INX_Render3DState::DrawCalls& state = INX_Render3D->drawCalls;
 
-    int sharedIndex = state.sharedData.size();
-    int uniqueIndex = state.uniqueData.size();
+    int sharedIndex = state.sharedData.GetSize();
+    int uniqueIndex = state.uniqueData.GetSize();
 
-    state.sharedData.emplace_back(INX_DrawShared {
+    state.sharedData.EmplaceBack(INX_DrawShared {
         .transform = transform,
         .sphere = INX_BoundingSphere3D(mesh.aabb(), transform),
         .instances = instances,
@@ -624,7 +624,7 @@ static void INX_PushDrawCall(
         uniqueData.dynamicRangeIndex = material.shader->GetDynamicRangeIndex();
     }
 
-    state.uniqueData.push_back(uniqueData);
+    state.uniqueData.PushBack(uniqueData);
 }
 
 static void INX_PushDrawCall(
@@ -643,10 +643,10 @@ static void INX_PushDrawCall(
 
     /* --- Push draw calls data --- */
 
-    int sharedIndex = state.sharedData.size();
-    int uniqueIndex = state.uniqueData.size();
+    int sharedIndex = state.sharedData.GetSize();
+    int uniqueIndex = state.uniqueData.GetSize();
 
-    state.sharedData.emplace_back(INX_DrawShared {
+    state.sharedData.EmplaceBack(INX_DrawShared {
         .transform = transform,
         .sphere = INX_BoundingSphere3D(model.aabb, transform),
         .instances = instances,
@@ -665,7 +665,7 @@ static void INX_PushDrawCall(
             .textures = {},
             .dynamicRangeIndex = -1,
             .sharedDataIndex = sharedIndex,
-            .uniqueDataIndex = static_cast<int>(state.uniqueData.size()),
+            .uniqueDataIndex = static_cast<int>(state.uniqueData.GetSize()),
             .type = INX_GetDrawType(model.materials[model.meshMaterials[i]])
         };
 
@@ -674,14 +674,14 @@ static void INX_PushDrawCall(
             uniqueData.dynamicRangeIndex = uniqueData.material.shader->GetDynamicRangeIndex();
         }
 
-        state.uniqueData.push_back(uniqueData);
+        state.uniqueData.PushBack(uniqueData);
     }
 }
 
 inline void INX_ClearDrawCalls()
 {
-    INX_Render3D->drawCalls.sharedData.clear();
-    INX_Render3D->drawCalls.uniqueData.clear();
+    INX_Render3D->drawCalls.sharedData.Clear();
+    INX_Render3D->drawCalls.uniqueData.Clear();
 }
 
 static void INX_UploadDrawCalls()
@@ -690,8 +690,8 @@ static void INX_UploadDrawCalls()
 
     state.boneBuffer.Upload();
 
-    const size_t sharedCount = state.sharedData.size();
-    const size_t uniqueCount = state.uniqueData.size();
+    const size_t sharedCount = state.sharedData.GetSize();
+    const size_t uniqueCount = state.uniqueData.GetSize();
     const size_t sharedBytes = sharedCount * sizeof(INX_GPUDrawShared);
     const size_t uniqueBytes = uniqueCount * sizeof(INX_GPUDrawUnique);
 
@@ -756,7 +756,7 @@ static void INX_CullDrawCalls(const INX_Frustum& frustum, NX_Layer frustumCullMa
 {
     INX_Render3DState::DrawCalls& state = INX_Render3D->drawCalls;
 
-    state.uniqueVisible.clear();
+    state.uniqueVisible.Clear();
 
     for (const INX_DrawShared& shared : state.sharedData)
     {
@@ -765,7 +765,7 @@ static void INX_CullDrawCalls(const INX_Frustum& frustum, NX_Layer frustumCullMa
             for (int i = shared.uniqueDataIndex; i < end; ++i) {
                 const INX_DrawUnique& u = state.uniqueData[i];
                 if ((frustumCullMask & u.mesh.layerMask()) != 0) {
-                    state.uniqueVisible.emplace(u.type, i);
+                    state.uniqueVisible.Emplace(u.type, i);
                 }
             }
             continue;
@@ -783,7 +783,7 @@ static void INX_CullDrawCalls(const INX_Frustum& frustum, NX_Layer frustumCullMa
             const INX_DrawUnique& u = state.uniqueData[i];
             if ((frustumCullMask & u.mesh.layerMask()) != 0) [[likely]] {
                 if (!needsObbTest || frustum.ContainsObb(u.obb)) {
-                    state.uniqueVisible.emplace(u.type, i);
+                    state.uniqueVisible.Emplace(u.type, i);
                 }
             }
         }
@@ -801,8 +801,8 @@ static void INX_SortDrawCalls()
 
     if (needsOpaque || needsPrepass)
     {
-        const size_t count = state.uniqueData.size();
-        state.sortKeysCenterDist.resize(count);
+        const size_t count = state.uniqueData.GetSize();
+        state.sortKeysCenterDist.Resize(count);
 
         for (size_t i = 0; i < count; ++i) {
             const INX_DrawUnique& unique = state.uniqueData[i];
@@ -813,13 +813,13 @@ static void INX_SortDrawCalls()
         }
 
         if (needsOpaque) {
-            state.uniqueVisible.sort(DRAW_OPAQUE, [&state](int a, int b) {
+            state.uniqueVisible.Sort(DRAW_OPAQUE, [&state](int a, int b) {
                 return state.sortKeysCenterDist[a] < state.sortKeysCenterDist[b];
             });
         }
 
         if (needsPrepass) {
-            state.uniqueVisible.sort(DRAW_PREPASS, [&state](int a, int b) {
+            state.uniqueVisible.Sort(DRAW_PREPASS, [&state](int a, int b) {
                 return state.sortKeysCenterDist[a] < state.sortKeysCenterDist[b];
             });
         }
@@ -827,8 +827,8 @@ static void INX_SortDrawCalls()
 
     if (needsTransparent)
     {
-        const size_t count = state.uniqueData.size();
-        state.sortKeysFarthestDist.resize(count);
+        const size_t count = state.uniqueData.GetSize();
+        state.sortKeysFarthestDist.Resize(count);
 
         for (size_t i = 0; i < count; ++i) {
             const INX_DrawUnique& unique = state.uniqueData[i];
@@ -838,7 +838,7 @@ static void INX_SortDrawCalls()
             );
         }
 
-        state.uniqueVisible.sort(DRAW_TRANSPARENT, [&state](int a, int b) {
+        state.uniqueVisible.Sort(DRAW_TRANSPARENT, [&state](int a, int b) {
             return state.sortKeysFarthestDist[a] > state.sortKeysFarthestDist[b];
         });
     }
@@ -870,7 +870,7 @@ static void INX_Draw3D(const gpu::Pipeline& pipeline, const INX_DrawUnique& uniq
         {
             const NX_DynamicMesh* mesh = vMesh.get<1>();
             primitiveType = mesh->primitiveType;
-            vertexCount = mesh->vertices.size();
+            vertexCount = mesh->vertices.GetSize();
             buffer = mesh->buffer;
         }
         break;
@@ -942,8 +942,8 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
 
     // Calculation of physical bloom level factors
     if (env.bloom.mode != NX_BLOOM_DISABLED) {
-        state.bloomLevels.clear();
-        if (!state.bloomLevels.reserve(bloomMipCount)) {
+        state.bloomLevels.Clear();
+        if (!state.bloomLevels.Reserve(bloomMipCount)) {
             NX_LOG(E, "RENDER: Bloom mip factor buffer reservation failed (requested: %d levels)", bloomMipCount);
         }
         for (uint32_t i = 0; i < bloomMipCount; ++i) {
@@ -952,7 +952,7 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
             uint32_t idx0 = uint32_t(mapped);
             uint32_t idx1 = NX_MIN(idx0 + 1, uint32_t(NX_ARRAY_SIZE(env.bloom.levels) - 1));
             float frac = mapped - idx0;
-            state.bloomLevels.emplace_back(
+            state.bloomLevels.EmplaceBack(
                 env.bloom.levels[idx0] * (1.0f - frac) +
                 env.bloom.levels[idx1] * frac
             );
@@ -1010,9 +1010,9 @@ static void INX_UpdateLights()
 
     /* --- Clear the previous state --- */
 
-    state.activeLights.clear();
-    state.activeShadows.clear();
-    state.shadowNeedingUpdate.clear();
+    state.activeLights.Clear();
+    state.activeShadows.Clear();
+    state.shadowNeedingUpdate.Clear();
 
     /* --- Count each active light type --- */
 
@@ -1023,7 +1023,7 @@ static void INX_UpdateLights()
         }
     }
 
-    state.activeLights.resize(
+    state.activeLights.Resize(
         counts[NX_LIGHT_DIR] +
         counts[NX_LIGHT_SPOT] +
         counts[NX_LIGHT_OMNI]
@@ -1048,11 +1048,11 @@ static void INX_UpdateLights()
 
         int32_t shadowIndex = -1;
         if (light.shadow.active) {
-            shadowIndex = state.activeShadows.size();
-            uint32_t mapIndex = state.activeShadows.size(light.type);
-            state.activeShadows.emplace(light.type, &light, mapIndex);
+            shadowIndex = state.activeShadows.GetSize();
+            uint32_t mapIndex = state.activeShadows.GetSize(light.type);
+            state.activeShadows.Emplace(light.type, &light, mapIndex);
             if (needsShadowUpdate) {
-                state.shadowNeedingUpdate.emplace(light.type, shadowIndex);
+                state.shadowNeedingUpdate.Emplace(light.type, shadowIndex);
             }
         }
 
@@ -1065,17 +1065,17 @@ static void INX_UploadLightData()
 {
     INX_Render3DState::Lighting& state = INX_Render3D->lighting;
 
-    if (state.activeLights.empty()) {
+    if (state.activeLights.IsEmpty()) {
         return;
     }
 
-    state.storageLights.Reserve(INX_Pool.Get<NX_Light>().size() * sizeof(INX_GPULight), false);
+    state.storageLights.Reserve(INX_Pool.Get<NX_Light>().GetSize() * sizeof(INX_GPULight), false);
     INX_GPULight* mappedLights = state.storageLights.MapRange<INX_GPULight>(
-        0, state.activeLights.size() * sizeof(INX_GPULight),
+        0, state.activeLights.GetSize() * sizeof(INX_GPULight),
         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
     );
 
-    for (int i = 0; i < state.activeLights.size(); i++) {
+    for (int i = 0; i < state.activeLights.GetSize(); i++) {
         const INX_ActiveLight& data = state.activeLights[i];
         INX_FillGPULight(data.light, &mappedLights[i], data.shadowIndex);
     }
@@ -1087,17 +1087,17 @@ static void INX_UploadShadowData()
 {
     INX_Render3DState::Lighting& state = INX_Render3D->lighting;
 
-    if (state.activeShadows.empty()) {
+    if (state.activeShadows.IsEmpty()) {
         return;
     }
 
-    state.storageShadow.Reserve(state.activeShadows.size() * sizeof(INX_GPUShadow), false);
+    state.storageShadow.Reserve(state.activeShadows.GetSize() * sizeof(INX_GPUShadow), false);
     INX_GPUShadow* mappedShadows = state.storageShadow.MapRange<INX_GPUShadow>(
-        0, state.activeShadows.size() * sizeof(INX_GPUShadow),
+        0, state.activeShadows.GetSize() * sizeof(INX_GPUShadow),
         GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
     );
 
-    for (int i = 0; i < state.activeShadows.size(); i++) {
+    for (int i = 0; i < state.activeShadows.GetSize(); i++) {
         const INX_ActiveShadow& data = state.activeShadows[i];
         INX_FillGPUShadow(data.light, &mappedShadows[i], data.mapIndex);
     }
@@ -1111,7 +1111,7 @@ static void INX_ComputeClusters()
 
     /* --- Early exit if no active light --- */
 
-    if (state.activeLights.empty()) {
+    if (state.activeLights.IsEmpty()) {
         return;
     }
 
@@ -1150,7 +1150,7 @@ static void INX_ComputeClusters()
     pipeline.SetUniformUint3(0, state.clusterCount);
     pipeline.SetUniformFloat1(1, state.clusterSliceScale);
     pipeline.SetUniformFloat1(2, state.clusterSliceBias);
-    pipeline.SetUniformUint1(3, state.activeLights.size());
+    pipeline.SetUniformUint1(3, state.activeLights.GetSize());
     pipeline.SetUniformUint1(4, state.MaxLightsPerCluster);
 
     pipeline.DispatchCompute(
@@ -1167,14 +1167,14 @@ static void INX_RenderShadowMaps()
 
     /* --- Early exit if no shadows to render --- */
 
-    if (state.shadowNeedingUpdate.empty()) {
+    if (state.shadowNeedingUpdate.IsEmpty()) {
         return;
     }
 
     /* --- Ensures that there are enough shadow maps in each texture array --- */
 
     for (int i = 0; i < state.targetShadow.size(); i++) {
-        size_t activeCount = state.activeShadows.size(static_cast<NX_LightType>(i));
+        size_t activeCount = state.activeShadows.GetSize(static_cast<NX_LightType>(i));
         if (activeCount > state.targetShadow[i].GetDepth()) {
             state.targetShadow[i].Realloc(state.targetShadow[i].GetWidth(), state.targetShadow[i].GetHeight(), activeCount);
             state.framebufferShadow[i].UpdateColorTextureView(0, state.targetShadow[i]);
@@ -1199,12 +1199,12 @@ static void INX_RenderShadowMaps()
     for (int i = 0; i < state.framebufferShadow.size(); ++i)
     {
         NX_LightType lightType = static_cast<NX_LightType>(i);
-        if (state.shadowNeedingUpdate.empty(lightType)) continue;
+        if (state.shadowNeedingUpdate.IsEmpty(lightType)) continue;
 
         pipeline.BindFramebuffer(state.framebufferShadow[lightType]);
         pipeline.SetViewport(state.framebufferShadow[lightType]);
 
-        for (uint32_t shadowIndex : state.shadowNeedingUpdate.category(lightType))
+        for (uint32_t shadowIndex : state.shadowNeedingUpdate.GetCategory(lightType))
         {
             const INX_ActiveShadow& data = state.activeShadows[shadowIndex];
             const NX_Light& light = *data.light;
@@ -1223,11 +1223,11 @@ static void INX_RenderShadowMaps()
                     .elapsedTime = static_cast<float>(NX_GetElapsedTime())
                 });
                 pipeline.BindUniform(0, *state.frameShadowUniform);
-                state.frameShadowUniform.rotate();
+                state.frameShadowUniform.Rotate();
 
                 INX_CullDrawCalls(INX_GetLightFrustum(light, face), light.shadow.cullMask);
 
-                for (int uniqueIndex : drawCalls.uniqueVisible.categories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
+                for (int uniqueIndex : drawCalls.uniqueVisible.GetCategories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
                 {
                     const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
                     if (unique.mesh.shadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
@@ -1287,7 +1287,7 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
 {
     INX_Render3DState::DrawCalls& drawCalls = INX_Render3D->drawCalls;
 
-    if (drawCalls.uniqueVisible.category(DRAW_PREPASS).empty()) {
+    if (drawCalls.uniqueVisible.GetCategory(DRAW_PREPASS).IsEmpty()) {
         return;
     }
 
@@ -1302,7 +1302,7 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
     pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
     pipeline.BindUniform(2, INX_Render3D->environment.buffer);
 
-    for (int uniqueIndex : drawCalls.uniqueVisible.category(DRAW_PREPASS))
+    for (int uniqueIndex : drawCalls.uniqueVisible.GetCategory(DRAW_PREPASS))
     {
         const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
         const NX_Material& mat = unique.material;
@@ -1363,7 +1363,7 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
     // Ensures SSBOs are ready (especially clusters)
     pipeline.MemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-    for (int uniqueIndex : drawCalls.uniqueVisible.categories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
+    for (int uniqueIndex : drawCalls.uniqueVisible.GetCategories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
     {
         const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
         const NX_Material& mat = unique.material;
@@ -1576,7 +1576,7 @@ void NX_End3D()
         .clusterSliceScale = INX_Render3D->lighting.clusterSliceScale,
         .clusterSliceBias = INX_Render3D->lighting.clusterSliceBias,
         .elapsedTime = static_cast<float>(NX_GetElapsedTime()),
-        .hasActiveLights = (INX_Render3D->lighting.activeLights.size() > 0),
+        .hasActiveLights = (INX_Render3D->lighting.activeLights.GetSize() > 0),
         .hasProbe = (INX_Render3D->environment.skyProbe != nullptr)
     });
 

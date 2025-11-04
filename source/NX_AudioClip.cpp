@@ -36,7 +36,7 @@ NX_AudioClip::~NX_AudioClip()
                 alSourceStop(source);
             }
         }
-        alDeleteSources(sources.size(), sources.data());
+        alDeleteSources(sources.GetSize(), sources.GetData());
         if (alIsBuffer(buffer)) {
             alDeleteBuffers(1, &buffer);
         }
@@ -297,7 +297,7 @@ NX_AudioClip* NX_LoadAudioClip(const char* filePath, int channelCount)
     /* --- Create the OpenAL sources --- */
 
     util::FixedArray<ALuint> sources(channelCount, channelCount);
-    alGenSources(channelCount, sources.data());
+    alGenSources(channelCount, sources.GetData());
     if (alGetError() != AL_NO_ERROR) {
         NX_LOG(E, "AUDIO: Could not generate OpenAL sources");
         alDeleteBuffers(1, &buffer);
@@ -310,7 +310,7 @@ NX_AudioClip* NX_LoadAudioClip(const char* filePath, int channelCount)
         alSourcei(sources[i], AL_BUFFER, buffer);
         if (alGetError() != AL_NO_ERROR) {
             NX_LOG(E, "AUDIO: Could not attach buffer to source %d", i);
-            alDeleteSources(channelCount, sources.data());
+            alDeleteSources(channelCount, sources.GetData());
             alDeleteBuffers(1, &buffer);
             return nullptr;
         }
@@ -328,12 +328,12 @@ void NX_DestroyAudioClip(NX_AudioClip* clip)
 
 int NX_PlayAudioClip(NX_AudioClip* clip, int channel)
 {
-    channel = std::min(channel, static_cast<int>(clip->sources.size() - 1));
+    channel = std::min(channel, static_cast<int>(clip->sources.GetSize() - 1));
 
     /* --- Select a free channel if necessary --- */
 
     if (channel < 0) {
-        for (int i = 0; i < clip->sources.size(); i++) {
+        for (int i = 0; i < clip->sources.GetSize(); i++) {
             ALint state = 0;
             alGetSourcei(clip->sources[i], AL_SOURCE_STATE, &state);
             if (state != AL_PLAYING) {
@@ -365,28 +365,28 @@ int NX_PlayAudioClip(NX_AudioClip* clip, int channel)
 
 void NX_PauseAudioClip(NX_AudioClip* clip, int channel)
 {
-    if (channel >= static_cast<int>(clip->sources.size())) return;
+    if (channel >= static_cast<int>(clip->sources.GetSize())) return;
     if (channel >= 0) alSourcePause(clip->sources[channel]);
-    else alSourcePausev(clip->sources.size(), clip->sources.data());
+    else alSourcePausev(clip->sources.GetSize(), clip->sources.GetData());
 }
 
 void NX_StopAudioClip(NX_AudioClip* clip, int channel)
 {
-    if (channel >= static_cast<int>(clip->sources.size())) return;
+    if (channel >= static_cast<int>(clip->sources.GetSize())) return;
     if (channel >= 0) alSourceStop(clip->sources[channel]);
-    else alSourceStopv(clip->sources.size(), clip->sources.data());
+    else alSourceStopv(clip->sources.GetSize(), clip->sources.GetData());
 }
 
 void NX_RewindAudioStream(NX_AudioClip* clip, int channel)
 {
-    if (channel >= static_cast<int>(clip->sources.size())) return;
+    if (channel >= static_cast<int>(clip->sources.GetSize())) return;
     if (channel >= 0) alSourceRewind(clip->sources[channel]);
-    else alSourceRewindv(clip->sources.size(), clip->sources.data());
+    else alSourceRewindv(clip->sources.GetSize(), clip->sources.GetData());
 }
 
 bool NX_IsAudioClipPlaying(NX_AudioClip* clip, int channel)
 {
-    if (channel >= static_cast<int>(clip->sources.size())) {
+    if (channel >= static_cast<int>(clip->sources.GetSize())) {
         return false;
     }
 
@@ -407,6 +407,6 @@ bool NX_IsAudioClipPlaying(NX_AudioClip* clip, int channel)
 
 int NX_GetAudioClipChannelCount(NX_AudioClip* clip)
 {
-    return clip->sources.size();
+    return clip->sources.GetSize();
 }
 

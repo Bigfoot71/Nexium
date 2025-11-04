@@ -57,29 +57,29 @@ NX_Shader3D::NX_Shader3D(const char* vert, const char* frag)
 
     /* --- Prepare base sources --- */
 
-    util::String vertSceneCode = INX_ShaderDecoder(SCENE_VERT, SCENE_VERT_SIZE).code();
-    util::String fragLitCode   = INX_ShaderDecoder(SCENE_LIT_FRAG, SCENE_LIT_FRAG_SIZE).code();
-    util::String fragUnlitCode = INX_ShaderDecoder(SCENE_UNLIT_FRAG, SCENE_UNLIT_FRAG_SIZE).code();
+    util::String vertSceneCode = INX_ShaderDecoder(SCENE_VERT, SCENE_VERT_SIZE).GetCode();
+    util::String fragLitCode   = INX_ShaderDecoder(SCENE_LIT_FRAG, SCENE_LIT_FRAG_SIZE).GetCode();
+    util::String fragUnlitCode = INX_ShaderDecoder(SCENE_UNLIT_FRAG, SCENE_UNLIT_FRAG_SIZE).GetCode();
 
     /* --- Process and insert the user code --- */
 
     if (vert != nullptr) {
         util::String vertUser = ProcessUserCode(vert);
-        InsertUserCode(vertSceneCode, vertMarker, vertUser.data());
+        InsertUserCode(vertSceneCode, vertMarker, vertUser.GetCString());
     }
 
     if (frag != nullptr) {
         util::String fragUser = ProcessUserCode(frag);
-        InsertUserCode(fragLitCode,   fragMarker, fragUser.data());
-        InsertUserCode(fragUnlitCode, fragMarker, fragUser.data());
+        InsertUserCode(fragLitCode,   fragMarker, fragUser.GetCString());
+        InsertUserCode(fragUnlitCode, fragMarker, fragUser.GetCString());
     }
 
     /* --- Compile shaders --- */
 
-    gpu::Shader vertScene(GL_VERTEX_SHADER, vertSceneCode.data());
-    gpu::Shader vertShadow(GL_VERTEX_SHADER, vertSceneCode.data(), {"SHADOW"});
-    gpu::Shader fragLit(GL_FRAGMENT_SHADER, fragLitCode.data());
-    gpu::Shader fragUnlit(GL_FRAGMENT_SHADER, fragUnlitCode.data());
+    gpu::Shader vertScene(GL_VERTEX_SHADER, vertSceneCode.GetCString());
+    gpu::Shader vertShadow(GL_VERTEX_SHADER, vertSceneCode.GetCString(), {"SHADOW"});
+    gpu::Shader fragLit(GL_FRAGMENT_SHADER, fragLitCode.GetCString());
+    gpu::Shader fragUnlit(GL_FRAGMENT_SHADER, fragUnlitCode.GetCString());
     gpu::Shader fragPrepass(GL_FRAGMENT_SHADER, INX_ShaderDecoder(SCENE_PREPASS_FRAG, SCENE_PREPASS_FRAG_SIZE));
     gpu::Shader fragShadow(GL_FRAGMENT_SHADER, INX_ShaderDecoder(SCENE_SHADOW_FRAG, SCENE_SHADOW_FRAG_SIZE));
 
@@ -115,7 +115,7 @@ NX_Shader3D::NX_Shader3D(const char* vert, const char* frag)
         int alignment = gpu::Pipeline::GetUniformBufferOffsetAlignment();
         int alignedSize = NX_ALIGN_UP(8 * bufferSize[DYNAMIC_UNIFORM], alignment);
         mDynamicBuffer.buffer = gpu::Buffer(GL_UNIFORM_BUFFER, alignedSize, nullptr, GL_DYNAMIC_DRAW);
-        if (!mDynamicBuffer.ranges.reserve(8)) {
+        if (!mDynamicBuffer.ranges.Reserve(8)) {
             NX_LOG(E, "RENDER: Dynamic uniform buffer range info reservation failed (requested: 8 entries)");
         }
     }

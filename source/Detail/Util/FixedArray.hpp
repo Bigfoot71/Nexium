@@ -67,67 +67,63 @@ public:
     FixedArray& operator=(FixedArray&& other) noexcept;
 
     /** Assignment */
-    bool assign(size_type count, const T& value) noexcept;
+    bool Assign(size_type count, const T& value) noexcept;
 
     template<typename InputIt>
-    bool assign(InputIt first, InputIt last) noexcept;
+    bool Assign(InputIt first, InputIt last) noexcept;
 
-    bool assign(std::initializer_list<T> init) noexcept;
+    bool Assign(std::initializer_list<T> init) noexcept;
 
     /** Element access */
-    [[nodiscard]] pointer at(size_type pos) noexcept;
-    [[nodiscard]] const_pointer at(size_type pos) const noexcept;
+    [[nodiscard]] pointer GetAt(size_type pos) noexcept;
+    [[nodiscard]] const_pointer GetAt(size_type pos) const noexcept;
     [[nodiscard]] reference operator[](size_type index) noexcept;
     [[nodiscard]] const_reference operator[](size_type index) const noexcept;
-    [[nodiscard]] pointer front() noexcept;
-    [[nodiscard]] const_pointer front() const noexcept;
-    [[nodiscard]] pointer back() noexcept;
-    [[nodiscard]] const_pointer back() const noexcept;
-    [[nodiscard]] pointer data() noexcept;
-    [[nodiscard]] const_pointer data() const noexcept;
+    [[nodiscard]] pointer GetFront() noexcept;
+    [[nodiscard]] const_pointer GetFront() const noexcept;
+    [[nodiscard]] pointer GetBack() noexcept;
+    [[nodiscard]] const_pointer GetBack() const noexcept;
+    [[nodiscard]] pointer GetData() noexcept;
+    [[nodiscard]] const_pointer GetData() const noexcept;
 
     /** Iterators */
-    [[nodiscard]] iterator begin() noexcept;
-    [[nodiscard]] const_iterator begin() const noexcept;
-    [[nodiscard]] const_iterator cbegin() const noexcept;
-    [[nodiscard]] iterator end() noexcept;
-    [[nodiscard]] const_iterator end() const noexcept;
-    [[nodiscard]] const_iterator cend() const noexcept;
-    [[nodiscard]] reverse_iterator rbegin() noexcept;
-    [[nodiscard]] const_reverse_iterator rbegin() const noexcept;
-    [[nodiscard]] const_reverse_iterator crbegin() const noexcept;
-    [[nodiscard]] reverse_iterator rend() noexcept;
-    [[nodiscard]] const_reverse_iterator rend() const noexcept;
-    [[nodiscard]] const_reverse_iterator crend() const noexcept;
+    [[nodiscard]] iterator Begin() noexcept;
+    [[nodiscard]] const_iterator Begin() const noexcept;
+    [[nodiscard]] iterator End() noexcept;
+    [[nodiscard]] const_iterator End() const noexcept;
+    [[nodiscard]] reverse_iterator ReverseBegin() noexcept;
+    [[nodiscard]] const_reverse_iterator ReverseBegin() const noexcept;
+    [[nodiscard]] reverse_iterator ReverseEnd() noexcept;
+    [[nodiscard]] const_reverse_iterator ReverseEnd() const noexcept;
 
     /** Capacity */
-    [[nodiscard]] bool empty() const noexcept;
-    [[nodiscard]] size_type size() const noexcept;
-    [[nodiscard]] size_type capacity() const noexcept;
-    [[nodiscard]] size_type max_size() const noexcept;
+    [[nodiscard]] bool IsEmpty() const noexcept;
+    [[nodiscard]] size_type GetSize() const noexcept;
+    [[nodiscard]] size_type GetCapacity() const noexcept;
+    [[nodiscard]] size_type GetMaxSize() const noexcept;
 
     /** Modifiers */
-    void clear() noexcept;
-    bool push_back(const T& value) noexcept;
-    bool push_back(T&& value) noexcept;
+    void Clear() noexcept;
+    bool PushBack(const T& value) noexcept;
+    bool PushBack(T&& value) noexcept;
 
     template<typename... Args>
-    pointer emplace_back(Args&&... args) noexcept;
+    pointer EmplaceBack(Args&&... args) noexcept;
 
-    void pop_back() noexcept;
-    bool resize(size_type count) noexcept;
-    bool resize(size_type count, const T& value) noexcept;
-    void swap(FixedArray& other) noexcept;
+    void PopBack() noexcept;
+    bool Resize(size_type count) noexcept;
+    bool Resize(size_type count, const T& value) noexcept;
+    void Swap(FixedArray& other) noexcept;
 
     /** @warning This function recreates the array and discards existing data */
-    bool reset(size_t size) noexcept;
+    bool Reset(size_t size) noexcept;
 
 private:
     /** Helpers for construction/destruction */
     template<typename... Args>
-    [[nodiscard]] pointer construct_at(pointer p, Args&&... args) noexcept;
-    void destroy_at(pointer p) noexcept;
-    void destroy_range(pointer first, pointer last) noexcept;
+    [[nodiscard]] pointer ConstructAt(pointer p, Args&&... args) noexcept;
+    void DestroyAt(pointer p) noexcept;
+    void DestroyRange(pointer first, pointer last) noexcept;
 
 private:
     T* mData;
@@ -159,7 +155,7 @@ FixedArray<T>::FixedArray(size_type max_capacity, size_type count) noexcept
     : FixedArray(max_capacity)
 {
     if (count > 0 && mData) {
-        resize(count);
+        Resize(count);
     }
 }
 
@@ -168,7 +164,7 @@ FixedArray<T>::FixedArray(size_type max_capacity, size_type count, const T& valu
     : FixedArray(max_capacity)
 {
     if (mData) {
-        assign(count, value);
+        Assign(count, value);
     }
 }
 
@@ -178,19 +174,19 @@ FixedArray<T>::FixedArray(size_type max_capacity, InputIt first, InputIt last) n
     : FixedArray(max_capacity)
 {
     if (mData) {
-        assign(first, last);
+        Assign(first, last);
     }
 }
 
 template<typename T>
 FixedArray<T>::FixedArray(size_type max_capacity, std::initializer_list<T> init) noexcept
-    : FixedArray(max_capacity, init.begin(), init.end())
+    : FixedArray(max_capacity, init.Begin(), init.End())
 { }
 
 template<typename T>
 FixedArray<T>::~FixedArray() noexcept
 {
-    clear();
+    Clear();
     NX_Free(mData);
 }
 
@@ -207,7 +203,7 @@ template<typename T>
 FixedArray<T>& FixedArray<T>::operator=(FixedArray&& other) noexcept
 {
     if (this != &other) {
-        clear();
+        Clear();
         NX_Free(mData);
         mData = other.mData;
         mSize = other.mSize;
@@ -220,19 +216,19 @@ FixedArray<T>& FixedArray<T>::operator=(FixedArray&& other) noexcept
 }
 
 template<typename T>
-bool FixedArray<T>::assign(size_type count, const T& value) noexcept
+bool FixedArray<T>::Assign(size_type count, const T& value) noexcept
 {
-    clear();
-    return resize(count, value);
+    Clear();
+    return Resize(count, value);
 }
 
 template<typename T>
 template<typename InputIt>
-bool FixedArray<T>::assign(InputIt first, InputIt last) noexcept
+bool FixedArray<T>::Assign(InputIt first, InputIt last) noexcept
 {
-    clear();
+    Clear();
     for (auto it = first; it != last; ++it) {
-        if (!push_back(*it)) {
+        if (!PushBack(*it)) {
             return false;
         }
     }
@@ -240,19 +236,19 @@ bool FixedArray<T>::assign(InputIt first, InputIt last) noexcept
 }
 
 template<typename T>
-bool FixedArray<T>::assign(std::initializer_list<T> init) noexcept
+bool FixedArray<T>::Assign(std::initializer_list<T> init) noexcept
 {
-    return assign(init.begin(), init.end());
+    return Assign(init.Begin(), init.End());
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::pointer FixedArray<T>::at(size_type pos) noexcept
+[[nodiscard]] typename FixedArray<T>::pointer FixedArray<T>::GetAt(size_type pos) noexcept
 {
     return (pos < mSize) ? mData + pos : nullptr;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::const_pointer FixedArray<T>::at(size_type pos) const noexcept
+[[nodiscard]] typename FixedArray<T>::const_pointer FixedArray<T>::GetAt(size_type pos) const noexcept
 {
     return (pos < mSize) ? mData + pos : nullptr;
 }
@@ -270,164 +266,140 @@ template<typename T>
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::pointer FixedArray<T>::front() noexcept
+[[nodiscard]] typename FixedArray<T>::pointer FixedArray<T>::GetFront() noexcept
 {
     return mSize > 0 ? mData : nullptr;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::const_pointer FixedArray<T>::front() const noexcept
+[[nodiscard]] typename FixedArray<T>::const_pointer FixedArray<T>::GetFront() const noexcept
 {
     return mSize > 0 ? mData : nullptr;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::pointer FixedArray<T>::back() noexcept
+[[nodiscard]] typename FixedArray<T>::pointer FixedArray<T>::GetBack() noexcept
 {
     return mSize > 0 ? mData + mSize - 1 : nullptr;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::const_pointer FixedArray<T>::back() const noexcept
+[[nodiscard]] typename FixedArray<T>::const_pointer FixedArray<T>::GetBack() const noexcept
 {
     return mSize > 0 ? mData + mSize - 1 : nullptr;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::pointer FixedArray<T>::data() noexcept
+[[nodiscard]] typename FixedArray<T>::pointer FixedArray<T>::GetData() noexcept
 {
     return mData;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::const_pointer FixedArray<T>::data() const noexcept
+[[nodiscard]] typename FixedArray<T>::const_pointer FixedArray<T>::GetData() const noexcept
 {
     return mData;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::iterator FixedArray<T>::begin() noexcept
+[[nodiscard]] typename FixedArray<T>::iterator FixedArray<T>::Begin() noexcept
 {
     return mData;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::const_iterator FixedArray<T>::begin() const noexcept
+[[nodiscard]] typename FixedArray<T>::const_iterator FixedArray<T>::Begin() const noexcept
 {
     return mData;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::const_iterator FixedArray<T>::cbegin() const noexcept
-{
-    return mData;
-}
-
-template<typename T>
-[[nodiscard]] typename FixedArray<T>::iterator FixedArray<T>::end() noexcept
+[[nodiscard]] typename FixedArray<T>::iterator FixedArray<T>::End() noexcept
 {
     return mData + mSize;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::const_iterator FixedArray<T>::end() const noexcept
+[[nodiscard]] typename FixedArray<T>::const_iterator FixedArray<T>::End() const noexcept
 {
     return mData + mSize;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::const_iterator FixedArray<T>::cend() const noexcept
+[[nodiscard]] typename FixedArray<T>::reverse_iterator FixedArray<T>::ReverseBegin() noexcept
 {
-    return mData + mSize;
+    return reverse_iterator(End());
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::reverse_iterator FixedArray<T>::rbegin() noexcept
+[[nodiscard]] typename FixedArray<T>::const_reverse_iterator FixedArray<T>::ReverseBegin() const noexcept
 {
-    return reverse_iterator(end());
+    return const_reverse_iterator(End());
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::const_reverse_iterator FixedArray<T>::rbegin() const noexcept
+[[nodiscard]] typename FixedArray<T>::reverse_iterator FixedArray<T>::ReverseEnd() noexcept
 {
-    return const_reverse_iterator(end());
+    return reverse_iterator(Begin());
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::const_reverse_iterator FixedArray<T>::crbegin() const noexcept
+[[nodiscard]] typename FixedArray<T>::const_reverse_iterator FixedArray<T>::ReverseEnd() const noexcept
 {
-    return const_reverse_iterator(end());
+    return const_reverse_iterator(Begin());
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::reverse_iterator FixedArray<T>::rend() noexcept
-{
-    return reverse_iterator(begin());
-}
-
-template<typename T>
-[[nodiscard]] typename FixedArray<T>::const_reverse_iterator FixedArray<T>::rend() const noexcept
-{
-    return const_reverse_iterator(begin());
-}
-
-template<typename T>
-[[nodiscard]] typename FixedArray<T>::const_reverse_iterator FixedArray<T>::crend() const noexcept
-{
-    return const_reverse_iterator(begin());
-}
-
-template<typename T>
-[[nodiscard]] bool FixedArray<T>::empty() const noexcept
+[[nodiscard]] bool FixedArray<T>::IsEmpty() const noexcept
 {
     return mSize == 0;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::size_type FixedArray<T>::size() const noexcept
+[[nodiscard]] typename FixedArray<T>::size_type FixedArray<T>::GetSize() const noexcept
 {
     return mSize;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::size_type FixedArray<T>::capacity() const noexcept
+[[nodiscard]] typename FixedArray<T>::size_type FixedArray<T>::GetCapacity() const noexcept
 {
     return mCapacity;
 }
 
 template<typename T>
-[[nodiscard]] typename FixedArray<T>::size_type FixedArray<T>::max_size() const noexcept
+[[nodiscard]] typename FixedArray<T>::size_type FixedArray<T>::GetMaxSize() const noexcept
 {
     return mCapacity;
 }
 
 template<typename T>
-void FixedArray<T>::clear() noexcept
+void FixedArray<T>::Clear() noexcept
 {
-    destroy_range(mData, mData + mSize);
+    DestroyRange(mData, mData + mSize);
     mSize = 0;
 }
 
 template<typename T>
-bool FixedArray<T>::push_back(const T& value) noexcept
+bool FixedArray<T>::PushBack(const T& value) noexcept
 {
-    return emplace_back(value) != nullptr;
+    return EmplaceBack(value) != nullptr;
 }
 
 template<typename T>
-bool FixedArray<T>::push_back(T&& value) noexcept
+bool FixedArray<T>::PushBack(T&& value) noexcept
 {
-    return emplace_back(std::move(value)) != nullptr;
+    return EmplaceBack(std::move(value)) != nullptr;
 }
 
 template<typename T>
 template<typename... Args>
-typename FixedArray<T>::pointer FixedArray<T>::emplace_back(Args&&... args) noexcept
+typename FixedArray<T>::pointer FixedArray<T>::EmplaceBack(Args&&... args) noexcept
 {
     if (mSize >= mCapacity) {
         return nullptr;
     }
-    pointer result = construct_at(mData + mSize, std::forward<Args>(args)...);
+    pointer result = ConstructAt(mData + mSize, std::forward<Args>(args)...);
     if (result) {
         ++mSize;
     }
@@ -435,34 +407,34 @@ typename FixedArray<T>::pointer FixedArray<T>::emplace_back(Args&&... args) noex
 }
 
 template<typename T>
-void FixedArray<T>::pop_back() noexcept
+void FixedArray<T>::PopBack() noexcept
 {
     if (mSize > 0) {
         --mSize;
-        destroy_at(mData + mSize);
+        DestroyAt(mData + mSize);
     }
 }
 
 template<typename T>
-bool FixedArray<T>::resize(size_type count) noexcept
+bool FixedArray<T>::Resize(size_type count) noexcept
 {
     if (count > mCapacity) {
         return false;
     }
 
     if (count < mSize) {
-        destroy_range(mData + count, mData + mSize);
+        DestroyRange(mData + count, mData + mSize);
         mSize = count;
         return true;
     }
     else if (count > mSize) {
-        size_type old_size = mSize;
+        size_type oldSize = mSize;
         mSize = count; // Optimistic, we go back to the old one if it fails
-        for (size_type i = old_size; i < count; ++i) {
-            if (!construct_at(mData + i)) {
+        for (size_type i = oldSize; i < count; ++i) {
+            if (!ConstructAt(mData + i)) {
                 // Failure, cleaning and return
-                destroy_range(mData + old_size, mData + i);
-                mSize = old_size;
+                DestroyRange(mData + oldSize, mData + i);
+                mSize = oldSize;
                 return false;
             }
         }
@@ -471,24 +443,24 @@ bool FixedArray<T>::resize(size_type count) noexcept
 }
 
 template<typename T>
-bool FixedArray<T>::resize(size_type count, const T& value) noexcept
+bool FixedArray<T>::Resize(size_type count, const T& value) noexcept
 {
     if (count > mCapacity) {
         return false;
     }
 
     if (count < mSize) {
-        destroy_range(mData + count, mData + mSize);
+        DestroyRange(mData + count, mData + mSize);
         mSize = count;
         return true;
     }
     else if (count > mSize) {
-        size_type old_size = mSize;
+        size_type oldSize = mSize;
         mSize = count;
-        for (size_type i = old_size; i < count; ++i) {
-            if (!construct_at(mData + i, value)) {
-                destroy_range(mData + old_size, mData + i);
-                mSize = old_size;
+        for (size_type i = oldSize; i < count; ++i) {
+            if (!ConstructAt(mData + i, value)) {
+                DestroyRange(mData + oldSize, mData + i);
+                mSize = oldSize;
                 return false;
             }
         }
@@ -497,7 +469,7 @@ bool FixedArray<T>::resize(size_type count, const T& value) noexcept
 }
 
 template<typename T>
-void FixedArray<T>::swap(FixedArray& other) noexcept
+void FixedArray<T>::Swap(FixedArray& other) noexcept
 {
     std::swap(mData, other.mData);
     std::swap(mSize, other.mSize);
@@ -505,7 +477,7 @@ void FixedArray<T>::swap(FixedArray& other) noexcept
 }
 
 template<typename T>
-bool FixedArray<T>::reset(size_t size) noexcept
+bool FixedArray<T>::Reset(size_t size) noexcept
 {
     SDL_assert(size > 0);
 
@@ -528,7 +500,7 @@ bool FixedArray<T>::reset(size_t size) noexcept
 
 template<typename T>
 template<typename... Args>
-[[nodiscard]] typename FixedArray<T>::pointer FixedArray<T>::construct_at(pointer p, Args&&... args) noexcept
+[[nodiscard]] typename FixedArray<T>::pointer FixedArray<T>::ConstructAt(pointer p, Args&&... args) noexcept
 {
     if constexpr (std::is_nothrow_constructible_v<T, Args...>) {
         new (p) T(std::forward<Args>(args)...);
@@ -545,16 +517,16 @@ template<typename... Args>
 }
 
 template<typename T>
-void FixedArray<T>::destroy_at(pointer p) noexcept
+void FixedArray<T>::DestroyAt(pointer p) noexcept
 {
     p->~T();
 }
 
 template<typename T>
-void FixedArray<T>::destroy_range(pointer first, pointer last) noexcept
+void FixedArray<T>::DestroyRange(pointer first, pointer last) noexcept
 {
     for (; first != last; ++first) {
-        destroy_at(first);
+        DestroyAt(first);
     }
 }
 
@@ -563,7 +535,7 @@ void FixedArray<T>::destroy_range(pointer first, pointer last) noexcept
 template<typename T>
 [[nodiscard]] bool operator==(const FixedArray<T>& lhs, const FixedArray<T>& rhs) noexcept
 {
-    return lhs.size() == rhs.size() && std::equal(lhs.begin(), lhs.end(), rhs.begin());
+    return lhs.GetSize() == rhs.GetSize() && std::equal(lhs.Begin(), lhs.End(), rhs.Begin());
 }
 
 template<typename T>
@@ -575,7 +547,7 @@ template<typename T>
 template<typename T>
 [[nodiscard]] bool operator<(const FixedArray<T>& lhs, const FixedArray<T>& rhs) noexcept
 {
-    return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+    return std::lexicographical_compare(lhs.Begin(), lhs.End(), rhs.Begin(), rhs.End());
 }
 
 template<typename T>
@@ -596,10 +568,82 @@ template<typename T>
     return !(lhs < rhs);
 }
 
+template <typename T>
+constexpr typename FixedArray<T>::iterator begin(FixedArray<T>& arr) noexcept
+{
+    return arr.Begin();
+}
+
+template <typename T>
+constexpr typename FixedArray<T>::const_iterator begin(const FixedArray<T>& arr) noexcept
+{
+    return arr.Begin();
+}
+
+template <typename T>
+constexpr typename FixedArray<T>::iterator end(FixedArray<T>& arr) noexcept
+{
+    return arr.End();
+}
+
+template <typename T>
+constexpr typename FixedArray<T>::const_iterator end(const FixedArray<T>& arr) noexcept
+{
+    return arr.End();
+}
+
+template <typename T>
+constexpr typename FixedArray<T>::reverse_iterator rbegin(FixedArray<T>& arr) noexcept
+{
+    return arr.ReverseBegin();
+}
+
+template <typename T>
+constexpr typename FixedArray<T>::const_reverse_iterator rbegin(const FixedArray<T>& arr) noexcept
+{
+    return arr.ReverseBegin();
+}
+
+template <typename T>
+constexpr typename FixedArray<T>::reverse_iterator rend(FixedArray<T>& arr) noexcept
+{
+    return arr.ReverseEnd();
+}
+
+template <typename T>
+constexpr typename FixedArray<T>::const_reverse_iterator rend(const FixedArray<T>& arr) noexcept
+{
+    return arr.ReverseEnd();
+}
+
+template <typename T>
+constexpr typename FixedArray<T>::const_iterator cbegin(const FixedArray<T>& arr) noexcept
+{
+    return arr.Begin();
+}
+
+template <typename T>
+constexpr typename FixedArray<T>::const_iterator cend(const FixedArray<T>& arr) noexcept
+{
+    return arr.End();
+}
+
+template <typename T>
+constexpr typename FixedArray<T>::const_reverse_iterator crbegin(const FixedArray<T>& arr) noexcept
+{
+    return arr.ReverseBegin();
+}
+
+template <typename T>
+constexpr typename FixedArray<T>::const_reverse_iterator crend(const FixedArray<T>& arr) noexcept
+{
+    return arr.ReverseEnd();
+}
+
 template<typename T>
 void swap(FixedArray<T>& lhs, FixedArray<T>& rhs) noexcept
 {
-    lhs.swap(rhs);
+    lhs.Swap(rhs);
 }
 
 } // namespace util

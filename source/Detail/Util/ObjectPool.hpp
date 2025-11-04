@@ -10,6 +10,7 @@
 #define NX_UTIL_OBJECT_POOL_HPP
 
 #include "Memory.hpp"
+
 #include <type_traits>
 #include <cstddef>
 #include <utility>
@@ -34,8 +35,8 @@ namespace util {
  * @note When creating an object, the class searches for the first pool with a free slot.
  * If all existing pools are full, a new pool is allocated.
  *
- * @note Pointers returned by create() remain valid as long as the object is not destroyed
- * using destroy() or clear(), even if new pools are allocated.
+ * @note Pointers returned by Create() remain valid as long as the object is not destroyed
+ * using Destroy() or Clear(), even if new pools are allocated.
  */
 template<typename T, std::size_t PoolSize>
 class ObjectPool {
@@ -56,20 +57,20 @@ public:
 
     /** Object management */
     template<typename... Args>
-    T* create(Args&&... args) noexcept;
-    bool destroy(T* ptr) noexcept;
-    void clear() noexcept;
+    T* Create(Args&&... args) noexcept;
+    bool Destroy(T* ptr) noexcept;
+    void Clear() noexcept;
 
     /** Accessors */
-    std::size_t size() const noexcept;
-    std::size_t poolCount() const noexcept;
-    bool empty() const noexcept;
+    std::size_t GetSize() const noexcept;
+    std::size_t GetPoolCount() const noexcept;
+    bool IsEmpty() const noexcept;
 
     /** Iterators */
-    Iterator begin() noexcept;
-    Iterator end() noexcept;
-    ReverseIterator rbegin() noexcept;
-    ReverseIterator rend() noexcept;
+    Iterator Begin() noexcept;
+    Iterator End() noexcept;
+    ReverseIterator ReverseBegin() noexcept;
+    ReverseIterator ReverseEnd() noexcept;
 
 private:
     struct Slot {
@@ -97,9 +98,9 @@ private:
     std::size_t mPoolCount = 0;
 
     // Private methods
-    Pool* allocateNewPool() noexcept;
-    PoolLocation findObjectLocation(T* ptr) const noexcept;
-    void destroyObjectNoexcept(T* obj) noexcept;
+    Pool* AllocateNewPool() noexcept;
+    PoolLocation FindObjectLocation(T* ptr) const noexcept;
+    void DestroyObject(T* obj) noexcept;
 };
 
 /* === Iterator Declaration === */
@@ -122,7 +123,7 @@ private:
     typename ObjectPool<T, PoolSize>::Pool* mCurrentPool = nullptr;
     std::size_t mCurrentIndex = 0;
 
-    void findNext() noexcept;
+    void FindNext() noexcept;
 };
 
 /* === ReverseIterator Declaration === */
@@ -146,7 +147,7 @@ private:
     typename ObjectPool<T, PoolSize>::Pool* mFirstPool = nullptr;
     std::size_t mCurrentIndex = PoolSize;
 
-    void findPrevious() noexcept;
+    void FindPrevious() noexcept;
 };
 
 /* === Public Implementation === */
@@ -158,7 +159,7 @@ template<typename T, std::size_t PoolSize>
 ObjectPool<T, PoolSize>& ObjectPool<T, PoolSize>::operator=(ObjectPool&& other) noexcept
 {
     if (this != &other) {
-        clear();
+        Clear();
         mFirstPool = std::move(other.mFirstPool);
         mLastPool = std::exchange(other.mLastPool, nullptr);
         mTotalCount = std::exchange(other.mTotalCount, 0);
@@ -169,7 +170,7 @@ ObjectPool<T, PoolSize>& ObjectPool<T, PoolSize>::operator=(ObjectPool&& other) 
 
 template<typename T, std::size_t PoolSize>
 template<typename... Args>
-T* ObjectPool<T, PoolSize>::create(Args&&... args) noexcept
+T* ObjectPool<T, PoolSize>::Create(Args&&... args) noexcept
 {
     // Find a pool with space
     Pool* targetPool = nullptr;
@@ -182,7 +183,7 @@ T* ObjectPool<T, PoolSize>::create(Args&&... args) noexcept
 
     // If no pool available, create a new one
     if (!targetPool) {
-        targetPool = allocateNewPool();
+        targetPool = AllocateNewPool();
         if (!targetPool) {
             return nullptr; // Allocation failure
         }
@@ -222,15 +223,15 @@ T* ObjectPool<T, PoolSize>::create(Args&&... args) noexcept
 }
 
 template<typename T, std::size_t PoolSize>
-bool ObjectPool<T, PoolSize>::destroy(T* ptr) noexcept
+bool ObjectPool<T, PoolSize>::Destroy(T* ptr) noexcept
 {
     if (!ptr) return false;
 
-    PoolLocation loc = findObjectLocation(ptr);
+    PoolLocation loc = FindObjectLocation(ptr);
     if (!loc.found) return false;
 
     // Destroys the object safely
-    destroyObjectNoexcept(ptr);
+    DestroyObject(ptr);
 
     // Marks the slot as free and adds it to the top of the free list
     Slot& slot = loc.pool->mSlots[loc.index];
@@ -244,13 +245,13 @@ bool ObjectPool<T, PoolSize>::destroy(T* ptr) noexcept
 }
 
 template<typename T, std::size_t PoolSize>
-void ObjectPool<T, PoolSize>::clear() noexcept
+void ObjectPool<T, PoolSize>::Clear() noexcept
 {
     for (Pool* pool = mFirstPool.get(); pool; pool = pool->mNext.get()) {
         for (std::size_t i = 0; i < PoolSize; ++i) {
             if (pool->mSlots[i].mOccupied) {
                 T* obj = reinterpret_cast<T*>(pool->mSlots[i].mStorage);
-                destroyObjectNoexcept(obj);
+                DestroyObject(obj);
                 pool->mSlots[i].mOccupied = false;
             }
             pool->mSlots[i].mNextFree = (i < PoolSize - 1) ? i + 1 : PoolSize;
@@ -262,43 +263,43 @@ void ObjectPool<T, PoolSize>::clear() noexcept
 }
 
 template<typename T, std::size_t PoolSize>
-std::size_t ObjectPool<T, PoolSize>::size() const noexcept
+std::size_t ObjectPool<T, PoolSize>::GetSize() const noexcept
 {
     return mTotalCount;
 }
 
 template<typename T, std::size_t PoolSize>
-std::size_t ObjectPool<T, PoolSize>::poolCount() const noexcept
+std::size_t ObjectPool<T, PoolSize>::GetPoolCount() const noexcept
 {
     return mPoolCount;
 }
 
 template<typename T, std::size_t PoolSize>
-bool ObjectPool<T, PoolSize>::empty() const noexcept
+bool ObjectPool<T, PoolSize>::IsEmpty() const noexcept
 {
     return mTotalCount == 0;
 }
 
 template<typename T, std::size_t PoolSize>
-typename ObjectPool<T, PoolSize>::Iterator ObjectPool<T, PoolSize>::begin() noexcept
+typename ObjectPool<T, PoolSize>::Iterator ObjectPool<T, PoolSize>::Begin() noexcept
 {
     return Iterator(mFirstPool.get(), 0);
 }
 
 template<typename T, std::size_t PoolSize>
-typename ObjectPool<T, PoolSize>::Iterator ObjectPool<T, PoolSize>::end() noexcept
+typename ObjectPool<T, PoolSize>::Iterator ObjectPool<T, PoolSize>::End() noexcept
 {
     return Iterator(nullptr, 0);
 }
 
 template<typename T, std::size_t PoolSize>
-typename ObjectPool<T, PoolSize>::ReverseIterator ObjectPool<T, PoolSize>::rbegin() noexcept
+typename ObjectPool<T, PoolSize>::ReverseIterator ObjectPool<T, PoolSize>::ReverseBegin() noexcept
 {
     return ReverseIterator(mLastPool, mFirstPool.get());
 }
 
 template<typename T, std::size_t PoolSize>
-typename ObjectPool<T, PoolSize>::ReverseIterator ObjectPool<T, PoolSize>::rend() noexcept
+typename ObjectPool<T, PoolSize>::ReverseIterator ObjectPool<T, PoolSize>::ReverseEnd() noexcept
 {
     return ReverseIterator(nullptr, mFirstPool.get());
 }
@@ -306,7 +307,7 @@ typename ObjectPool<T, PoolSize>::ReverseIterator ObjectPool<T, PoolSize>::rend(
 /* === Private Implementation === */
 
 template<typename T, std::size_t PoolSize>
-typename ObjectPool<T, PoolSize>::Pool* ObjectPool<T, PoolSize>::allocateNewPool() noexcept
+typename ObjectPool<T, PoolSize>::Pool* ObjectPool<T, PoolSize>::AllocateNewPool() noexcept
 {
     UniquePtr<Pool> newPool = MakeUnique<Pool>();
     if (!newPool) {
@@ -336,7 +337,7 @@ typename ObjectPool<T, PoolSize>::Pool* ObjectPool<T, PoolSize>::allocateNewPool
 }
 
 template<typename T, std::size_t PoolSize>
-typename ObjectPool<T, PoolSize>::PoolLocation ObjectPool<T, PoolSize>::findObjectLocation(T* ptr) const noexcept
+typename ObjectPool<T, PoolSize>::PoolLocation ObjectPool<T, PoolSize>::FindObjectLocation(T* ptr) const noexcept
 {
     for (Pool* pool = mFirstPool.get(); pool; pool = pool->mNext.get()) {
         char* poolStart = reinterpret_cast<char*>(pool->mSlots);
@@ -356,7 +357,7 @@ typename ObjectPool<T, PoolSize>::PoolLocation ObjectPool<T, PoolSize>::findObje
 }
 
 template<typename T, std::size_t PoolSize>
-void ObjectPool<T, PoolSize>::destroyObjectNoexcept(T* obj) noexcept
+void ObjectPool<T, PoolSize>::DestroyObject(T* obj) noexcept
 {
     if constexpr (std::is_nothrow_destructible_v<T>) {
         obj->~T();
@@ -380,11 +381,11 @@ template<typename T, std::size_t PoolSize>
 ObjectPool<T, PoolSize>::Iterator::Iterator(typename ObjectPool<T, PoolSize>::Pool* pool, std::size_t index) noexcept
     : mCurrentPool(pool), mCurrentIndex(index)
 {
-    findNext();
+    FindNext();
 }
 
 template<typename T, std::size_t PoolSize>
-void ObjectPool<T, PoolSize>::Iterator::findNext() noexcept
+void ObjectPool<T, PoolSize>::Iterator::FindNext() noexcept
 {
     while (mCurrentPool) {
         while (mCurrentIndex < PoolSize) {
@@ -414,7 +415,7 @@ template<typename T, std::size_t PoolSize>
 typename ObjectPool<T, PoolSize>::Iterator& ObjectPool<T, PoolSize>::Iterator::operator++() noexcept
 {
     ++mCurrentIndex;
-    findNext();
+    FindNext();
     return *this;
 }
 
@@ -447,12 +448,12 @@ ObjectPool<T, PoolSize>::ReverseIterator::ReverseIterator(
     : mCurrentPool(lastPool), mFirstPool(firstPool)
 {
     if (mCurrentPool) {
-        findPrevious();
+        FindPrevious();
     }
 }
 
 template<typename T, std::size_t PoolSize>
-void ObjectPool<T, PoolSize>::ReverseIterator::findPrevious() noexcept
+void ObjectPool<T, PoolSize>::ReverseIterator::FindPrevious() noexcept
 {
     while (mCurrentPool) {
         while (mCurrentIndex > 0) {
@@ -487,7 +488,7 @@ inline T* ObjectPool<T, PoolSize>::ReverseIterator::operator->() const noexcept
 template<typename T, std::size_t PoolSize>
 inline typename ObjectPool<T, PoolSize>::ReverseIterator& ObjectPool<T, PoolSize>::ReverseIterator::operator++() noexcept
 {
-    findPrevious();
+    FindPrevious();
     return *this;
 }
 
@@ -501,6 +502,32 @@ template<typename T, std::size_t PoolSize>
 inline bool ObjectPool<T, PoolSize>::ReverseIterator::operator!=(const ReverseIterator& other) const noexcept
 {
     return !(*this == other);
+}
+
+/* === Non-member functions === */
+
+template<typename T, std::size_t PoolSize>
+constexpr typename ObjectPool<T, PoolSize>::Iterator begin(ObjectPool<T, PoolSize>& arr) noexcept
+{
+    return arr.Begin();
+}
+
+template<typename T, std::size_t PoolSize>
+constexpr typename ObjectPool<T, PoolSize>::Iterator end(ObjectPool<T, PoolSize>& arr) noexcept
+{
+    return arr.End();
+}
+
+template<typename T, std::size_t PoolSize>
+constexpr typename ObjectPool<T, PoolSize>::ReverseIterator rbegin(ObjectPool<T, PoolSize>& arr) noexcept
+{
+    return arr.ReverseBegin();
+}
+
+template<typename T, std::size_t PoolSize>
+constexpr typename ObjectPool<T, PoolSize>::ReverseIterator rend(ObjectPool<T, PoolSize>& arr) noexcept
+{
+    return arr.ReverseEnd();
 }
 
 } // namespace util

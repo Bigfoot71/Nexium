@@ -226,8 +226,8 @@ void INX_Shader<Derived>::UpdateDynamicBuffer(size_t size, const void* data)
     }
 
     // Record this range for binding
-    mDynamicBuffer.currentRangeIndex = static_cast<int>(mDynamicBuffer.ranges.size());
-    mDynamicBuffer.ranges.emplace_back(alignedOffset, size);
+    mDynamicBuffer.currentRangeIndex = static_cast<int>(mDynamicBuffer.ranges.GetSize());
+    mDynamicBuffer.ranges.EmplaceBack(alignedOffset, size);
 
     mDynamicBuffer.buffer.Upload(alignedOffset, size, data);
     mDynamicBuffer.currentOffset = alignedOffset + size;
@@ -269,7 +269,7 @@ template <typename Derived>
 void INX_Shader<Derived>::ClearDynamicBuffer()
 {
     mDynamicBuffer.currentOffset = 0;
-    mDynamicBuffer.ranges.clear();
+    mDynamicBuffer.ranges.Clear();
 }
 
 template <typename Derived>
@@ -301,9 +301,9 @@ util::String INX_Shader<Derived>::ProcessUserCode(const char* userCode)
     {
         SDL_strlcpy(samplerStr, INX_ConcatCString("uniform sampler2D ", SamplerName[i]), sizeof(samplerStr));
 
-        if (size_t pos = code.find(samplerStr); pos != util::String::npos) {
+        if (size_t pos = code.Find(samplerStr); pos != util::String::npos) {
             const char* bindingStr = INX_FormatCString("layout(binding=%i)%s", SamplerBinding[i], samplerStr);
-            code.replace(pos, SDL_strlen(samplerStr), bindingStr);
+            code.Replace(pos, SDL_strlen(samplerStr), bindingStr);
             mSamplerExists[i] = true;
         }
     }
@@ -314,8 +314,8 @@ util::String INX_Shader<Derived>::ProcessUserCode(const char* userCode)
 template <typename Derived>
 void INX_Shader<Derived>::InsertUserCode(util::String& source, const char* marker, const char* userCode)
 {
-    if (size_t pos = source.find(marker); pos != util::String::npos) {
-        source.replace(pos, SDL_strlen(marker), userCode);
+    if (size_t pos = source.Find(marker); pos != util::String::npos) {
+        source.Replace(pos, SDL_strlen(marker), userCode);
     }
 }
 

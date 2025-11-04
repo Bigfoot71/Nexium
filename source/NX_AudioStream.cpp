@@ -214,9 +214,9 @@ void INX_StreamPlayer::addStream(NX_AudioStream* stream)
 {
     std::lock_guard<std::mutex> lock(streamMutex);
 
-    auto it = std::find(activeStreams.begin(), activeStreams.end(), stream);
-    if (it == activeStreams.end()) {
-        activeStreams.push_back(stream);
+    auto it = std::find(activeStreams.Begin(), activeStreams.End(), stream);
+    if (it == activeStreams.End()) {
+        activeStreams.PushBack(stream);
         cv.notify_one();
     }
 }
@@ -225,9 +225,9 @@ void INX_StreamPlayer::removeStream(NX_AudioStream* stream)
 {
     std::lock_guard<std::mutex> lock(streamMutex);
 
-    auto it = std::find(activeStreams.begin(), activeStreams.end(), stream);
-    if (it != activeStreams.end()) {
-        activeStreams.erase(it);
+    auto it = std::find(activeStreams.Begin(), activeStreams.End(), stream);
+    if (it != activeStreams.End()) {
+        activeStreams.Erase(it);
     }
 }
 
@@ -335,11 +335,11 @@ void INX_StreamPlayer::updateStreams()
 {
     std::lock_guard<std::mutex> lock(streamMutex);
 
-    for (size_t i = activeStreams.size(); i > 0; --i) {
+    for (size_t i = activeStreams.GetSize(); i > 0; --i) {
         size_t idx = i - 1;
         NX_AudioStream* stream = activeStreams[idx];
         if (stream && updateStream(stream)) {
-            activeStreams.erase(activeStreams.begin() + idx);
+            activeStreams.Erase(activeStreams.Begin() + idx);
         }
     }
 }
@@ -351,7 +351,7 @@ void INX_StreamPlayer::threadFunc()
         {
             std::unique_lock<std::mutex> lock(streamMutex);
             cv.wait(lock, [this]() { 
-                return !activeStreams.empty() || shouldStop.load(); 
+                return !activeStreams.IsEmpty() || shouldStop.load(); 
             });
 
             if (shouldStop) break;

@@ -50,28 +50,28 @@ NX_Shader2D::NX_Shader2D(const char* vert, const char* frag)
 
     /* --- Prepare base sources --- */
 
-    util::String vertCode = INX_ShaderDecoder(SHAPE_VERT, SHAPE_VERT_SIZE).code();
-    util::String fragCode = INX_ShaderDecoder(SHAPE_FRAG, SHAPE_FRAG_SIZE).code();
+    util::String vertCode = INX_ShaderDecoder(SHAPE_VERT, SHAPE_VERT_SIZE).GetCode();
+    util::String fragCode = INX_ShaderDecoder(SHAPE_FRAG, SHAPE_FRAG_SIZE).GetCode();
 
     /* --- Process and insert the user code --- */
 
     if (vert != nullptr) {
         util::String vertUser = ProcessUserCode(vert);
-        InsertUserCode(vertCode, vertMarker, vertUser.data());
+        InsertUserCode(vertCode, vertMarker, vertUser.GetCString());
     }
 
     if (frag != nullptr) {
         util::String fragUser = ProcessUserCode(frag);
-        InsertUserCode(fragCode, fragMarker, fragUser.data());
+        InsertUserCode(fragCode, fragMarker, fragUser.GetCString());
     }
 
     /* --- Compile shaders --- */
 
-    gpu::Shader vertShape(GL_VERTEX_SHADER, vertCode.data());
-    gpu::Shader fragShapeColor(GL_FRAGMENT_SHADER, fragCode.data(), {"SHAPE_COLOR"});
-    gpu::Shader fragShapeTexture(GL_FRAGMENT_SHADER, fragCode.data(), {"SHAPE_TEXTURE"});
-    gpu::Shader fragTextBitmap(GL_FRAGMENT_SHADER, fragCode.data(), {"TEXT_BITMAP"});
-    gpu::Shader fragTextSDF(GL_FRAGMENT_SHADER, fragCode.data(), {"TEXT_SDF"});
+    gpu::Shader vertShape(GL_VERTEX_SHADER, vertCode.GetCString());
+    gpu::Shader fragShapeColor(GL_FRAGMENT_SHADER, fragCode.GetCString(), {"SHAPE_COLOR"});
+    gpu::Shader fragShapeTexture(GL_FRAGMENT_SHADER, fragCode.GetCString(), {"SHAPE_TEXTURE"});
+    gpu::Shader fragTextBitmap(GL_FRAGMENT_SHADER, fragCode.GetCString(), {"TEXT_BITMAP"});
+    gpu::Shader fragTextSDF(GL_FRAGMENT_SHADER, fragCode.GetCString(), {"TEXT_SDF"});
 
     /* --- Link all programs --- */
 
@@ -105,7 +105,7 @@ NX_Shader2D::NX_Shader2D(const char* vert, const char* frag)
         int alignment = gpu::Pipeline::GetUniformBufferOffsetAlignment();
         int alignedSize = NX_ALIGN_UP(8 * bufferSize[DYNAMIC_UNIFORM], alignment);
         mDynamicBuffer.buffer = gpu::Buffer(GL_UNIFORM_BUFFER, alignedSize, nullptr, GL_DYNAMIC_DRAW);
-        if (!mDynamicBuffer.ranges.reserve(8)) {
+        if (!mDynamicBuffer.ranges.Reserve(8)) {
             NX_LOG(E, "RENDER: Dynamic uniform buffer range info reservation failed (requested: 8 entries)");
         }
     }

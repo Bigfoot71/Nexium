@@ -118,13 +118,13 @@ inline auto& INX_GlobalPool::Get()
 template<typename T, typename... Args>
 inline T* INX_GlobalPool::Create(Args&&... args)
 {
-    return Get<T>().create(std::forward<Args>(args)...);
+    return Get<T>().Create(std::forward<Args>(args)...);
 }
 
 template<typename T>
 inline void INX_GlobalPool::Destroy(T* object)
 {
-    Get<T>().destroy(object);
+    Get<T>().Destroy(object);
 }
 
 template<typename T, typename F>
@@ -138,25 +138,25 @@ inline void INX_GlobalPool::ForEach(F&& func)
 
 inline void INX_GlobalPool::UnloadAll()
 {
-    mShaders2D.clear();
-    mShaders3D.clear();
+    mShaders2D.Clear();
+    mShaders3D.Clear();
 
-    mLights.clear();
-    mModels.clear();
-    mMeshes.clear();
-    mAnimations.clear();
-    mDynamicMeshes.clear();
-    mInstanceBuffers.clear();
-    mVertexBuffers3D.clear();
+    mLights.Clear();
+    mModels.Clear();
+    mMeshes.Clear();
+    mAnimations.Clear();
+    mDynamicMeshes.Clear();
+    mInstanceBuffers.Clear();
+    mVertexBuffers3D.Clear();
 
-    mReflectionProbes.clear();
-    mRenderTextures.clear();
-    mCubemaps.clear();
-    mFonts.clear();
-    mTextures.clear();
+    mReflectionProbes.Clear();
+    mRenderTextures.Clear();
+    mCubemaps.Clear();
+    mFonts.Clear();
+    mTextures.Clear();
 
-    mAudioClips.clear();
-    mAudioStreams.clear();
+    mAudioClips.Clear();
+    mAudioStreams.Clear();
 }
 
 #endif // INX_GLOBAL_POOL_HPP

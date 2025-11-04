@@ -10,10 +10,10 @@
 #define NX_UTIL_BUCKET_ARRAY_HPP
 
 #include <NX/NX_Math.h>
-#include <SDL3/SDL_assert.h>
 
 #include "./DynamicArray.hpp"
 
+#include <SDL3/SDL_assert.h>
 #include <type_traits>
 #include <algorithm>
 #include <utility>
@@ -83,7 +83,7 @@ public:
         bool operator!=(const MultiCategoryIterator& other) const noexcept;
 
     private:
-        void findNextValidPosition() noexcept;
+        void FindNextValidPosition() noexcept;
 
     private:
         const BucketArray& mParent;
@@ -102,8 +102,11 @@ public:
         CategoryIterator begin() const noexcept;
         CategoryIterator end() const noexcept;
 
-        size_t size() const noexcept;
-        bool empty() const noexcept;
+        CategoryIterator Begin() const noexcept;
+        CategoryIterator End() const noexcept;
+
+        size_t GetSize() const noexcept;
+        bool IsEmpty() const noexcept;
 
         const T& operator[](size_t idx) const noexcept;
 
@@ -124,8 +127,11 @@ public:
         MultiCategoryIterator<CatCount> begin() const noexcept;
         MultiCategoryIterator<CatCount> end() const noexcept;
 
-        size_t size() const noexcept;
-        bool empty() const noexcept;
+        MultiCategoryIterator<CatCount> Begin() const noexcept;
+        MultiCategoryIterator<CatCount> End() const noexcept;
+
+        size_t GetSize() const noexcept;
+        bool IsEmpty() const noexcept;
 
     private:
         const BucketArray& mParent;
@@ -134,43 +140,43 @@ public:
 
     /* --- Main Operations --- */
 
-    void clear() noexcept;
-    bool reserve(size_t cap) noexcept;
-    size_t push(Category cat, const T& value) noexcept;
+    void Clear() noexcept;
+    bool Reserve(size_t cap) noexcept;
+    size_t Push(Category cat, const T& value) noexcept;
 
     template<typename... Args>
-    size_t emplace(Category cat, Args&&... args) noexcept;
+    size_t Emplace(Category cat, Args&&... args) noexcept;
 
     /** Sort elements within a category using custom comparator */
     template<typename Compare>
-    void sort(Category cat, Compare&& comp) noexcept;
+    void Sort(Category cat, Compare&& comp) noexcept;
 
     /** 
      * Removes all objects for which the given condition returns true.
      * Updates both the object storage and the category buckets.
      */
     template<typename Condition>
-    void remove_if(Condition&& cond) noexcept;
+    void RemoveIf(Condition&& cond) noexcept;
 
     /* --- Data Access --- */
 
     /** Get direct access to underlying data array */
-    const DynamicArray<T>& all() const noexcept;
+    const DynamicArray<T>& GetAll() const noexcept;
 
     /** Get view for iterating over single category */
-    CategoryView category(Category cat) const noexcept;
+    CategoryView GetCategory(Category cat) const noexcept;
 
     /** Get view for iterating over multiple categories in specified order */
     template<typename... Categories>
-    auto categories(Categories... cats) const noexcept -> MultiCategoryView<sizeof...(Categories)>;
+    auto GetCategories(Categories... cats) const noexcept -> MultiCategoryView<sizeof...(Categories)>;
 
     /* --- Size Information --- */
 
-    size_t size() const noexcept;
-    size_t size(Category cat) const noexcept;
+    size_t GetSize() const noexcept;
+    size_t GetSize(Category cat) const noexcept;
 
-    bool empty() const noexcept;
-    bool empty(Category cat) const noexcept;
+    bool IsEmpty() const noexcept;
+    bool IsEmpty(Category cat) const noexcept;
 
     /* --- Direct Element Access --- */
 
@@ -186,25 +192,25 @@ private:
 /* === Public Implementation === */
 
 template<typename T, typename Category, size_t N>
-void BucketArray<T, Category, N>::clear() noexcept
+void BucketArray<T, Category, N>::Clear() noexcept
 {
     for (auto& bucket : mBuckets) {
-        bucket.clear();
+        bucket.Clear();
     }
-    mObjectCategoryMap.clear();
-    mObjects.clear();
+    mObjectCategoryMap.Clear();
+    mObjects.Clear();
 }
 
 template<typename T, typename Category, size_t N>
-bool BucketArray<T, Category, N>::reserve(size_t cap) noexcept
+bool BucketArray<T, Category, N>::Reserve(size_t cap) noexcept
 {
-    if (!mObjects.reserve(cap) || !mObjectCategoryMap.reserve(cap)) {
+    if (!mObjects.Reserve(cap) || !mObjectCategoryMap.Reserve(cap)) {
         return false;
     }
 
     const size_t bucketCap = NX_DIV_CEIL(cap, N);
     for (auto& bucket : mBuckets) {
-        if (!bucket.reserve(bucketCap)) {
+        if (!bucket.Reserve(bucketCap)) {
             return false;
         }
     }
@@ -212,56 +218,56 @@ bool BucketArray<T, Category, N>::reserve(size_t cap) noexcept
 }
 
 template<typename T, typename Category, size_t N>
-size_t BucketArray<T, Category, N>::push(Category cat, const T& value) noexcept
+size_t BucketArray<T, Category, N>::Push(Category cat, const T& value) noexcept
 {
     SDL_assert(static_cast<size_t>(cat) < N);
 
     auto& bucket = mBuckets[static_cast<size_t>(cat)];
-    const size_t idx = mObjects.size();
+    const size_t idx = mObjects.GetSize();
 
-    mObjectCategoryMap.emplace_back(cat, bucket.size());
-    mObjects.push_back(value);
-    bucket.emplace_back(idx);
+    mObjectCategoryMap.EmplaceBack(cat, bucket.GetSize());
+    mObjects.PushBack(value);
+    bucket.EmplaceBack(idx);
 
     return idx;
 }
 
 template<typename T, typename Category, size_t N>
 template<typename... Args>
-size_t BucketArray<T, Category, N>::emplace(Category cat, Args&&... args) noexcept
+size_t BucketArray<T, Category, N>::Emplace(Category cat, Args&&... args) noexcept
 {
     SDL_assert(static_cast<size_t>(cat) < N);
 
     auto& bucket = mBuckets[static_cast<size_t>(cat)];
-    const size_t idx = mObjects.size();
+    const size_t idx = mObjects.GetSize();
 
-    mObjectCategoryMap.emplace_back(cat, bucket.size());
-    mObjects.emplace_back(std::forward<Args>(args)...);
-    bucket.emplace_back(idx);
+    mObjectCategoryMap.EmplaceBack(cat, bucket.GetSize());
+    mObjects.EmplaceBack(std::forward<Args>(args)...);
+    bucket.EmplaceBack(idx);
 
     return idx;
 }
 
 template<typename T, typename Category, size_t N>
 template<typename Compare>
-void BucketArray<T, Category, N>::sort(Category cat, Compare&& comp) noexcept
+void BucketArray<T, Category, N>::Sort(Category cat, Compare&& comp) noexcept
 {
     auto& bucket = mBuckets[static_cast<size_t>(cat)];
-    std::sort(bucket.begin(), bucket.end(), [this, &comp](size_t idx1, size_t idx2) {
+    std::sort(bucket.Begin(), bucket.End(), [this, &comp](size_t idx1, size_t idx2) {
         return comp(mObjects[idx1], mObjects[idx2]);
     });
 }
 
 template<typename T, typename Category, size_t N>
 template<typename Condition>
-void BucketArray<T, Category, N>::remove_if(Condition&& cond) noexcept
+void BucketArray<T, Category, N>::RemoveIf(Condition&& cond) noexcept
 {
-    for (int64_t idx = mObjects.size() - 1; idx >= 0; --idx)
+    for (int64_t idx = mObjects.GetSize() - 1; idx >= 0; --idx)
     {
         // Keep the elements that do NOT satisfy the condition
         if (!cond(mObjects[idx])) continue;
 
-        size_t lastIdx = mObjects.size() - 1;
+        size_t lastIdx = mObjects.GetSize() - 1;
         
         // Get category info BEFORE modifying anything
         auto [cat, pos] = mObjectCategoryMap[idx];
@@ -290,7 +296,7 @@ void BucketArray<T, Category, N>::remove_if(Condition&& cond) noexcept
 
         // Remove the object's index from its bucket
         // Use the bucket info we saved earlier
-        size_t lastBucketPos = bucket.size() - 1;
+        size_t lastBucketPos = bucket.GetSize() - 1;
         if (pos != lastBucketPos) {
             bucket[pos] = bucket[lastBucketPos];                    // move the last index of the bucket here
             mObjectCategoryMap[bucket[pos]].second = pos;           // update the index_in_bucket of the moved object
@@ -300,48 +306,48 @@ void BucketArray<T, Category, N>::remove_if(Condition&& cond) noexcept
 }
 
 template<typename T, typename Category, size_t N>
-const DynamicArray<T>& BucketArray<T, Category, N>::all() const noexcept
+const DynamicArray<T>& BucketArray<T, Category, N>::GetAll() const noexcept
 {
     return mObjects;
 }
 
 template<typename T, typename Category, size_t N>
 typename BucketArray<T, Category, N>::CategoryView 
-BucketArray<T, Category, N>::category(Category cat) const noexcept
+BucketArray<T, Category, N>::GetCategory(Category cat) const noexcept
 {
     return CategoryView(mObjects, mBuckets[static_cast<size_t>(cat)]);
 }
 
 template<typename T, typename Category, size_t N>
 template<typename... Categories>
-auto BucketArray<T, Category, N>::categories(Categories... cats) const noexcept -> MultiCategoryView<sizeof...(Categories)>
+auto BucketArray<T, Category, N>::GetCategories(Categories... cats) const noexcept -> MultiCategoryView<sizeof...(Categories)>
 {
     static_assert(sizeof...(Categories) > 0, "At least one category must be provided");
     return MultiCategoryView<sizeof...(Categories)>(*this, std::array<Category, sizeof...(Categories)>{cats...});
 }
 
 template<typename T, typename Category, size_t N>
-size_t BucketArray<T, Category, N>::size() const noexcept
+size_t BucketArray<T, Category, N>::GetSize() const noexcept
 {
-    return mObjects.size();
+    return mObjects.GetSize();
 }
 
 template<typename T, typename Category, size_t N>
-size_t BucketArray<T, Category, N>::size(Category cat) const noexcept
+size_t BucketArray<T, Category, N>::GetSize(Category cat) const noexcept
 {
-    return mBuckets[static_cast<size_t>(cat)].size();
+    return mBuckets[static_cast<size_t>(cat)].GetSize();
 }
 
 template<typename T, typename Category, size_t N>
-bool BucketArray<T, Category, N>::empty() const noexcept
+bool BucketArray<T, Category, N>::IsEmpty() const noexcept
 {
-    return mObjects.empty();
+    return mObjects.IsEmpty();
 }
 
 template<typename T, typename Category, size_t N>
-bool BucketArray<T, Category, N>::empty(Category cat) const noexcept
+bool BucketArray<T, Category, N>::IsEmpty(Category cat) const noexcept
 {
-    return mBuckets[static_cast<size_t>(cat)].empty();
+    return mBuckets[static_cast<size_t>(cat)].IsEmpty();
 }
 
 template<typename T, typename Category, size_t N>
@@ -414,15 +420,15 @@ BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::MultiCategoryItera
     size_t catIdx, size_t elemIdx) noexcept
     : mParent(parent), mCategories(std::move(categories)), mCatIdx(catIdx), mElemIdx(elemIdx)
 {
-    // Only search for valid position if we're not creating an end() iterator
+    // Only search for valid position if we're not creating an End() iterator
     if (mCatIdx < CatCount) {
-        findNextValidPosition();
+        FindNextValidPosition();
     }
 }
 
 template<typename T, typename Category, size_t N>
 template<size_t CatCount>
-void BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::findNextValidPosition() noexcept
+void BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::FindNextValidPosition() noexcept
 {
     while (mCatIdx < CatCount)
     {
@@ -438,7 +444,7 @@ void BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::findNextValid
         const auto& bucket = mParent.mBuckets[bucketIdx];
 
         // If we have a valid position in current bucket, stop here
-        if (mElemIdx < bucket.size()) {
+        if (mElemIdx < bucket.GetSize()) {
             return;
         }
 
@@ -475,7 +481,7 @@ BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::operator++() noexc
     }
 
     ++mElemIdx;
-    findNextValidPosition();
+    FindNextValidPosition();
 
     return *this;
 }
@@ -523,19 +529,33 @@ template<typename T, typename Category, size_t N>
 typename BucketArray<T, Category, N>::CategoryIterator 
 BucketArray<T, Category, N>::CategoryView::end() const noexcept
 {
-    return CategoryIterator(mObjects, mIndices, mIndices.size());
+    return CategoryIterator(mObjects, mIndices, mIndices.GetSize());
 }
 
 template<typename T, typename Category, size_t N>
-size_t BucketArray<T, Category, N>::CategoryView::size() const noexcept
+typename BucketArray<T, Category, N>::CategoryIterator 
+BucketArray<T, Category, N>::CategoryView::Begin() const noexcept
 {
-    return mIndices.size();
+    return this->begin();
 }
 
 template<typename T, typename Category, size_t N>
-bool BucketArray<T, Category, N>::CategoryView::empty() const noexcept
+typename BucketArray<T, Category, N>::CategoryIterator 
+BucketArray<T, Category, N>::CategoryView::End() const noexcept
 {
-    return mIndices.empty();
+    return this->end();
+}
+
+template<typename T, typename Category, size_t N>
+size_t BucketArray<T, Category, N>::CategoryView::GetSize() const noexcept
+{
+    return mIndices.GetSize();
+}
+
+template<typename T, typename Category, size_t N>
+bool BucketArray<T, Category, N>::CategoryView::IsEmpty() const noexcept
+{
+    return mIndices.IsEmpty();
 }
 
 template<typename T, typename Category, size_t N>
@@ -571,13 +591,29 @@ BucketArray<T, Category, N>::MultiCategoryView<CatCount>::end() const noexcept
 
 template<typename T, typename Category, size_t N>
 template<size_t CatCount>
-size_t BucketArray<T, Category, N>::MultiCategoryView<CatCount>::size() const noexcept
+typename BucketArray<T, Category, N>::template MultiCategoryIterator<CatCount> 
+BucketArray<T, Category, N>::MultiCategoryView<CatCount>::Begin() const noexcept
+{
+    return this->begin();
+}
+
+template<typename T, typename Category, size_t N>
+template<size_t CatCount>
+typename BucketArray<T, Category, N>::template MultiCategoryIterator<CatCount> 
+BucketArray<T, Category, N>::MultiCategoryView<CatCount>::End() const noexcept
+{
+    return this->end();
+}
+
+template<typename T, typename Category, size_t N>
+template<size_t CatCount>
+size_t BucketArray<T, Category, N>::MultiCategoryView<CatCount>::GetSize() const noexcept
 {
     size_t total = 0;
     for (const auto& cat : mCategories) {
         const size_t bucketIdx = static_cast<size_t>(cat);
         if (bucketIdx < N) {
-            total += mParent.mBuckets[bucketIdx].size();
+            total += mParent.mBuckets[bucketIdx].GetSize();
         }
     }
     return total;
@@ -585,11 +621,11 @@ size_t BucketArray<T, Category, N>::MultiCategoryView<CatCount>::size() const no
 
 template<typename T, typename Category, size_t N>
 template<size_t CatCount>
-bool BucketArray<T, Category, N>::MultiCategoryView<CatCount>::empty() const noexcept
+bool BucketArray<T, Category, N>::MultiCategoryView<CatCount>::IsEmpty() const noexcept
 {
     for (const auto& cat : mCategories) {
         const size_t bucketIdx = static_cast<size_t>(cat);
-        if (bucketIdx < N && !mParent.mBuckets[bucketIdx].empty()) {
+        if (bucketIdx < N && !mParent.mBuckets[bucketIdx].IsEmpty()) {
             return false;
         }
     }

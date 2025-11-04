@@ -169,19 +169,19 @@ inline Framebuffer::Framebuffer(std::initializer_list<const Texture*> colorAttac
 
     /* --- Push all color attachments --- */
 
-    if (!mColorAttachments.reset(colorAttachments.size())) {
+    if (!mColorAttachments.Reset(colorAttachments.size())) {
         NX_LOG(E, "GPU: Failed to allocate space to store color attachments IDs");
         return;
     }
 
     for (size_t i = 0; i < colorAttachments.size(); ++i) {
-        mColorAttachments.emplace_back(*colorAttachments.begin()[i]);
+        mColorAttachments.EmplaceBack(*colorAttachments.begin()[i]);
     }
 
     /* --- Create color targets array --- */
 
-    mColorTargets.reset(colorAttachments.size());
-    mColorTargets.resize(colorAttachments.size());
+    mColorTargets.Reset(colorAttachments.size());
+    mColorTargets.Resize(colorAttachments.size());
 
     /* --- Validate depth/stencil attachment if provided and keep its ID --- */
 
@@ -284,7 +284,7 @@ inline const TextureView& Framebuffer::GetDepthAttachment() const noexcept
 
 inline size_t Framebuffer::GetColorAttachmentCount() const noexcept
 {
-    return mColorAttachments.size();
+    return mColorAttachments.GetSize();
 }
 
 inline void Framebuffer::SetSampleCount(int sampleCount) noexcept
@@ -326,7 +326,7 @@ inline void Framebuffer::SetColorAttachmentTarget(int attachmentIndex, int layer
         return;
     }
 
-    SDL_assert(attachmentIndex >= 0 && attachmentIndex < static_cast<int>(mColorAttachments.size()));
+    SDL_assert(attachmentIndex >= 0 && attachmentIndex < static_cast<int>(mColorAttachments.GetSize()));
     const TextureView& texture = mColorAttachments[attachmentIndex];
 
     // Validate mipmap level
@@ -415,19 +415,19 @@ inline void Framebuffer::UpdateDepthTextureView(const gpu::Texture& texture) noe
 
 inline int Framebuffer::GetColorAttachmentLayer(int attachmentIndex) const noexcept
 {
-    SDL_assert(attachmentIndex >= 0 && attachmentIndex < static_cast<int>(mColorTargets.size()));
+    SDL_assert(attachmentIndex >= 0 && attachmentIndex < static_cast<int>(mColorTargets.GetSize()));
     return mColorTargets[attachmentIndex].layer;
 }
 
 inline int Framebuffer::GetColorAttachmentFace(int attachmentIndex) const noexcept
 {
-    SDL_assert(attachmentIndex >= 0 && attachmentIndex < static_cast<int>(mColorTargets.size()));
+    SDL_assert(attachmentIndex >= 0 && attachmentIndex < static_cast<int>(mColorTargets.GetSize()));
     return mColorTargets[attachmentIndex].face;
 }
 
 inline int Framebuffer::GetColorAttachmentLevel(int attachmentIndex) const noexcept
 {
-    SDL_assert(attachmentIndex >= 0 && attachmentIndex < static_cast<int>(mColorTargets.size()));
+    SDL_assert(attachmentIndex >= 0 && attachmentIndex < static_cast<int>(mColorTargets.GetSize()));
     return mColorTargets[attachmentIndex].level;
 }
 
@@ -494,9 +494,9 @@ inline void Framebuffer::CreateMultisampleFramebuffer() noexcept
 
 inline void Framebuffer::DestroyMultisampleFramebuffer() noexcept
 {
-    if (!mColorRenderbuffers.empty()) {
-        glDeleteRenderbuffers(static_cast<GLsizei>(mColorRenderbuffers.size()), mColorRenderbuffers.data());
-        mColorRenderbuffers.clear();
+    if (!mColorRenderbuffers.IsEmpty()) {
+        glDeleteRenderbuffers(static_cast<GLsizei>(mColorRenderbuffers.GetSize()), mColorRenderbuffers.GetData());
+        mColorRenderbuffers.Clear();
     }
     if (mDepthStencilRenderbuffer > 0) {
         glDeleteRenderbuffers(1, &mDepthStencilRenderbuffer);

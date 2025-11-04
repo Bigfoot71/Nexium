@@ -18,7 +18,7 @@ NX_DynamicMesh* NX_CreateDynamicMesh(size_t initialCapacity)
 {
     NX_DynamicMesh* dynMesh = INX_Pool.Create<NX_DynamicMesh>();
 
-    if (!dynMesh->vertices.reserve(initialCapacity)) {
+    if (!dynMesh->vertices.Reserve(initialCapacity)) {
         NX_LOG(E, "RENDER: Dynamic mesh vertex buffer memory reservation failed (requested: %zu vertices)", initialCapacity);
     }
 
@@ -52,7 +52,7 @@ void NX_DestroyDynamicMesh(NX_DynamicMesh* dynMesh)
 void NX_BeginDynamicMesh(NX_DynamicMesh* dynMesh, NX_PrimitiveType type)
 {
     dynMesh->primitiveType = type;
-    dynMesh->vertices.clear();
+    dynMesh->vertices.Clear();
     dynMesh->current = {
         .position = NX_VEC3_ZERO,
         .texcoord = NX_VEC2_ZERO,
@@ -66,8 +66,8 @@ void NX_BeginDynamicMesh(NX_DynamicMesh* dynMesh, NX_PrimitiveType type)
 
 void NX_EndDynamicMesh(NX_DynamicMesh* dynMesh)
 {
-    dynMesh->buffer->vbo.Reserve(dynMesh->vertices.size() * sizeof(NX_Vertex3D), false);
-    dynMesh->buffer->vbo.Upload(0, dynMesh->vertices.size() * sizeof(NX_Vertex3D), dynMesh->vertices.data());
+    dynMesh->buffer->vbo.Reserve(dynMesh->vertices.GetSize() * sizeof(NX_Vertex3D), false);
+    dynMesh->buffer->vbo.Upload(0, dynMesh->vertices.GetSize() * sizeof(NX_Vertex3D), dynMesh->vertices.GetData());
 
     dynMesh->aabb.min = NX_VEC3(+FLT_MAX, +FLT_MAX, +FLT_MAX);
     dynMesh->aabb.max = NX_VEC3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
@@ -101,7 +101,7 @@ void NX_SetDynamicMeshColor(NX_DynamicMesh* dynMesh, NX_Color color)
 void NX_AddDynamicMeshVertex(NX_DynamicMesh* dynMesh, NX_Vec3 position)
 {
     dynMesh->current.position = position;
-    dynMesh->vertices.push_back(dynMesh->current);
+    dynMesh->vertices.PushBack(dynMesh->current);
 }
 
 void NX_SetDynamicMeshShadowCastMode(NX_DynamicMesh* dynMesh, NX_ShadowCastMode mode)

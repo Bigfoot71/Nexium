@@ -142,7 +142,7 @@ bool INX_Render2DState_Init(NX_AppDesc* desc)
 
     /* --- Push first transform matrix --- */
 
-    INX_Render2D->matrixStack.push_back(NX_MAT3_IDENTITY);
+    INX_Render2D->matrixStack.PushBack(NX_MAT3_IDENTITY);
 
     /* --- Create the vertex buffer --- */
 
@@ -237,20 +237,20 @@ void INX_Render2DState_Quit()
 
 static void INX_Render2D_Flush()
 {
-    if (INX_Render2D->drawCalls.empty() || INX_Render2D->vertices.empty()) {
+    if (INX_Render2D->drawCalls.IsEmpty() || INX_Render2D->vertices.IsEmpty()) {
         return;
     }
 
     /* --- Upload to vertex buffer --- */
 
     INX_Render2D->vertexBuffer.vbo.Upload(
-        0, INX_Render2D->vertices.size() * sizeof(NX_Vertex2D),
-        INX_Render2D->vertices.data()
+        0, INX_Render2D->vertices.GetSize() * sizeof(NX_Vertex2D),
+        INX_Render2D->vertices.GetData()
     );
 
     INX_Render2D->vertexBuffer.ebo.Upload(
-        0, INX_Render2D->indices.size() * sizeof(uint16_t),
-        INX_Render2D->indices.data()
+        0, INX_Render2D->indices.GetSize() * sizeof(uint16_t),
+        INX_Render2D->indices.GetData()
     );
 
     /* --- Setup pipeline --- */
@@ -306,29 +306,29 @@ static void INX_Render2D_Flush()
 
     /* --- Reset --- */
 
-    INX_Render2D->drawCalls.clear();
-    INX_Render2D->vertices.clear();
-    INX_Render2D->indices.clear();
+    INX_Render2D->drawCalls.Clear();
+    INX_Render2D->vertices.Clear();
+    INX_Render2D->indices.Clear();
 }
 
 static void INX_Render2D_EnsureDrawCall(INX_DrawMode2D mode, int vertices, int indices)
 {
-    if (INX_Render2D->vertices.size() + vertices > INX_Render2DState::MaxVertices ||
-        INX_Render2D->indices.size() + indices > INX_Render2DState::MaxIndices) {
+    if (INX_Render2D->vertices.GetSize() + vertices > INX_Render2DState::MaxVertices ||
+        INX_Render2D->indices.GetSize() + indices > INX_Render2DState::MaxIndices) {
         INX_Render2D_Flush();
     }
 
-    if (INX_Render2D->drawCalls.empty()) {
+    if (INX_Render2D->drawCalls.IsEmpty()) {
         switch (mode) {
         case INX_DrawMode2D::SHAPE:
-            INX_Render2D->drawCalls.emplace_back(
+            INX_Render2D->drawCalls.EmplaceBack(
                 INX_Render2D->currentShader,
                 INX_Render2D->currentTexture,
                 0
             );
             break;
         case INX_DrawMode2D::TEXT:
-            INX_Render2D->drawCalls.emplace_back(
+            INX_Render2D->drawCalls.EmplaceBack(
                 INX_Render2D->currentShader,
                 INX_Render2D->currentFont,
                 0
@@ -338,7 +338,7 @@ static void INX_Render2D_EnsureDrawCall(INX_DrawMode2D mode, int vertices, int i
         return;
     }
 
-    INX_DrawCall2D& call = *INX_Render2D->drawCalls.back();
+    INX_DrawCall2D& call = *INX_Render2D->drawCalls.GetBack();
 
     if (call.count == 0) {
         call.shader = INX_Render2D->currentShader;
@@ -369,23 +369,23 @@ static void INX_Render2D_EnsureDrawCall(INX_DrawMode2D mode, int vertices, int i
         }
     }
 
-    if (INX_Render2D->drawCalls.size() == INX_Render2DState::MaxDrawCalls) {
+    if (INX_Render2D->drawCalls.GetSize() == INX_Render2DState::MaxDrawCalls) {
         INX_Render2D_Flush();
     }
 
     switch (mode) {
     case INX_DrawMode2D::SHAPE:
-        INX_Render2D->drawCalls.emplace_back(
+        INX_Render2D->drawCalls.EmplaceBack(
             INX_Render2D->currentShader,
             INX_Render2D->currentTexture,
-            INX_Render2D->indices.size()
+            INX_Render2D->indices.GetSize()
         );
         break;
     case INX_DrawMode2D::TEXT:
-        INX_Render2D->drawCalls.emplace_back(
+        INX_Render2D->drawCalls.EmplaceBack(
             INX_Render2D->currentShader,
             INX_Render2D->currentFont,
-            INX_Render2D->indices.size()
+            INX_Render2D->indices.GetSize()
         );
         break;
     }
@@ -414,40 +414,40 @@ static void INX_Render2D_Blit()
 
 static uint16_t INX_Render2D_NextVertexIndex()
 {
-    return static_cast<uint16_t>(INX_Render2D->vertices.size());
+    return static_cast<uint16_t>(INX_Render2D->vertices.GetSize());
 }
 
 static void INX_Render2D_AddVertex(float x, float y, float u, float v)
 {
-    SDL_assert(INX_Render2D->vertices.size() < INX_Render2DState::MaxVertices);
-    INX_Render2D->vertices.emplace_back(
-        NX_VEC2(x, y) * (*INX_Render2D->matrixStack.back()),
+    SDL_assert(INX_Render2D->vertices.GetSize() < INX_Render2DState::MaxVertices);
+    INX_Render2D->vertices.EmplaceBack(
+        NX_VEC2(x, y) * (*INX_Render2D->matrixStack.GetBack()),
         NX_VEC2(u, v), INX_Render2D->currentColor
     );
 }
 
 static void INX_Render2D_AddVertex(const NX_Vertex2D& vertex)
 {
-    SDL_assert(INX_Render2D->vertices.size() < INX_Render2DState::MaxVertices);
-    INX_Render2D->vertices.emplace_back(
-        vertex.position * (*INX_Render2D->matrixStack.back()),
+    SDL_assert(INX_Render2D->vertices.GetSize() < INX_Render2DState::MaxVertices);
+    INX_Render2D->vertices.EmplaceBack(
+        vertex.position * (*INX_Render2D->matrixStack.GetBack()),
         vertex.texcoord, vertex.color
     );
 }
 
 static void INX_Render2D_AddIndex(uint16_t index)
 {
-    SDL_assert(INX_Render2D->indices.size() < INX_Render2DState::MaxIndices);
-    INX_Render2D->indices.emplace_back(index);
-    INX_Render2D->drawCalls.back()->count++;
+    SDL_assert(INX_Render2D->indices.GetSize() < INX_Render2DState::MaxIndices);
+    INX_Render2D->indices.EmplaceBack(index);
+    INX_Render2D->drawCalls.GetBack()->count++;
 }
 
 static float INX_Render2D_ToPixelSize(float unit)
 {
-    if (!NX_IsMat3Identity(INX_Render2D->matrixStack.back())) {
-        const NX_Mat3& mat = *INX_Render2D->matrixStack.back();
-        float scaleX = sqrtf(mat.m00 * mat.m00 + mat.m01 * mat.m01);
-        float scaleY = sqrtf(mat.m10 * mat.m10 + mat.m11 * mat.m11);
+    if (!NX_IsMat3Identity(INX_Render2D->matrixStack.GetBack())) {
+        const NX_Mat3& mat = *INX_Render2D->matrixStack.GetBack();
+        float scaleX = std::sqrt(mat.m00 * mat.m00 + mat.m01 * mat.m01);
+        float scaleY = std::sqrt(mat.m10 * mat.m10 + mat.m11 * mat.m11);
         float avgScale = (scaleX + scaleY) * 0.5f;
         unit /= avgScale;
     }
@@ -508,33 +508,33 @@ void NX_SetShader2D(NX_Shader2D* shader)
 
 void NX_Push2D()
 {
-    if (!INX_Render2D->matrixStack.push_back(*INX_Render2D->matrixStack.back())) {
+    if (!INX_Render2D->matrixStack.PushBack(*INX_Render2D->matrixStack.GetBack())) {
         NX_LOG(W, "RENDER: Transformation 2D stack overflow");
     }
 }
 
 void NX_Pop2D()
 {
-    if (INX_Render2D->matrixStack.size() > 1) {
-        INX_Render2D->matrixStack.pop_back();
+    if (INX_Render2D->matrixStack.GetSize() > 1) {
+        INX_Render2D->matrixStack.PopBack();
     }
 }
 
 void NX_Translate2D(NX_Vec2 translation)
 {
-    NX_Mat3& mat = *INX_Render2D->matrixStack.back();
+    NX_Mat3& mat = *INX_Render2D->matrixStack.GetBack();
     mat = mat * NX_Mat3Translate2D(translation);
 }
 
 void NX_Rotate2D(float radians)
 {
-    NX_Mat3& mat = *INX_Render2D->matrixStack.back();
+    NX_Mat3& mat = *INX_Render2D->matrixStack.GetBack();
     mat = mat * NX_Mat3Rotate2D(radians);
 }
 
 void NX_Scale2D(NX_Vec2 scale)
 {
-    NX_Mat3& mat = *INX_Render2D->matrixStack.back();
+    NX_Mat3& mat = *INX_Render2D->matrixStack.GetBack();
     mat = mat * NX_Mat3Scale2D(scale);
 }
 
