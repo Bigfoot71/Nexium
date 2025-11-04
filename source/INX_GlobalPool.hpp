@@ -29,7 +29,7 @@
 // ASSETS POOL
 // ============================================================================
 
-extern class INX_GlobalPool {
+class INX_GlobalPool {
 public:
     /** Audio */
     using AudioStreams      = util::ObjectPool<NX_AudioStream, 128>;
@@ -91,7 +91,9 @@ private:
     Shaders3D        mShaders3D;
     Shaders2D        mShaders2D;
 
-} INX_Pool;
+};
+
+extern INX_GlobalPool INX_Pool;
 
 template<typename T>
 inline auto& INX_GlobalPool::Get()

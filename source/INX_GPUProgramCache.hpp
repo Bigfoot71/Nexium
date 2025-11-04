@@ -57,7 +57,7 @@ enum INX_ProgramID : uint16_t {
 // GPU PROGRAM CACHE
 // ============================================================================
 
-extern class INX_GPUProgramCache {
+class INX_GPUProgramCache {
 public:
     /** Cubemap generation */
     gpu::Program& GetCubemapFromEquirectangular();
@@ -96,6 +96,8 @@ private:
     gpu::Shader mVertexShaderScreen{};
     gpu::Shader mVertexShaderCube{};
 
-} INX_Programs;
+};
+
+extern INX_GPUProgramCache INX_Programs;
 
 #endif // NX_RENDER_PROGRAM_CACHE_HPP

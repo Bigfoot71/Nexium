@@ -47,7 +47,7 @@ enum class INX_FontAsset {
 // GLOBAL ASSETS
 // ============================================================================
 
-extern class INX_GlobalAssets {
+class INX_GlobalAssets {
 public:
     /** Getters */
     const NX_Shader3D* Get(INX_Shader3DAsset asset);
@@ -69,8 +69,9 @@ private:
     std::array<NX_Shader2D*, int(INX_Shader2DAsset::COUNT)> mShaders2D;
     std::array<NX_Texture*, int(INX_TextureAsset::COUNT)> mTextures;
     std::array<NX_Font*, int(INX_FontAsset::COUNT)> mFonts;
+};
 
-} INX_Assets;
+extern INX_GlobalAssets INX_Assets;
 
 inline const NX_Shader3D* INX_GlobalAssets::Select(const NX_Shader3D* shader, INX_Shader3DAsset asset)
 {
