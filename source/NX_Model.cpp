@@ -76,9 +76,7 @@ void NX_DestroyModel(NX_Model* model)
     NX_DestroySkeleton(model->skeleton);
 
     for (int i = 0; i < model->meshCount; i++) {
-        if (model->meshes[i] != nullptr) {
-            NX_DestroyMesh(model->meshes[i]);
-        }
+        NX_DestroyMesh(model->meshes[i]);
     }
 
     for (int i = 0; i < model->materialCount; i++) {

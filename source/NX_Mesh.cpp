@@ -79,8 +79,10 @@ NX_Mesh* NX_CreateMeshFrom(NX_PrimitiveType type, NX_Vertex3D* vertices, int ver
 
 void NX_DestroyMesh(NX_Mesh* mesh)
 {
-    INX_Pool.Destroy(mesh->buffer);
-    INX_Pool.Destroy(mesh);
+    if (mesh != nullptr) {
+        INX_Pool.Destroy(mesh->buffer);
+        INX_Pool.Destroy(mesh);
+    }
 }
 
 NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_IVec2 subDiv, NX_Vec3 normal)
