@@ -51,6 +51,9 @@
 #define NX_VEC4_ZERO        NX_VEC4( 0, 0, 0, 0)
 #define NX_VEC4_ONE         NX_VEC4( 1, 1, 1, 1)
 
+#define NX_QUAT_ZERO        NX_QUAT( 0, 0, 0, 0)
+#define NX_QUAT_IDENTITY    NX_QUAT( 1, 0, 0, 0)
+
 #define NX_BLANK            NX_COLOR(0.00f, 0.00f, 0.00f, 0.00f)
 #define NX_WHITE            NX_COLOR(1.00f, 1.00f, 1.00f, 1.00f)
 #define NX_BLACK            NX_COLOR(0.00f, 0.00f, 0.00f, 1.00f)
@@ -70,8 +73,6 @@
 #define NX_GOLD             NX_COLOR(0.83f, 0.69f, 0.22f, 1.00f)
 #define NX_SILVER           NX_COLOR(0.77f, 0.77f, 0.77f, 1.00f)
 #define NX_COPPER           NX_COLOR(0.78f, 0.51f, 0.27f, 1.00f)
-
-#define NX_QUAT_IDENTITY    NX_QUAT( 1, 0, 0, 0)
 
 #define NX_MAT3_IDENTITY        \
     NX_MAT3_T {                 \
@@ -460,13 +461,6 @@ typedef struct NX_Vec4 {
 } NX_Vec4;
 
 /**
- * @biref Floating-point RGBA color (r, g, b, a)
- */
-typedef struct NX_Color {
-    float r, g, b, a;
-} NX_Color;
-
-/**
  * @biref Quaternion (w, x, y, z)
  */
 typedef struct NX_Quat {
@@ -475,6 +469,13 @@ typedef struct NX_Quat {
         float v[4];
     };
 } NX_Quat;
+
+/**
+ * @biref Floating-point RGBA color (r, g, b, a)
+ */
+typedef struct NX_Color {
+    float r, g, b, a;
+} NX_Color;
 
 /**
  * @biref 3x3 Matrix (row-major)
@@ -2563,6 +2564,237 @@ static inline NX_Vec4 NX_Vec4TransformByMat4(NX_Vec4 v, const NX_Mat4* mat)
 
 /** @} */ // Vec4
 
+/* === Quaternion Functions === */
+
+/** @defgroup Quat Quaternion Functions
+ *  Functions for quaternion creation, manipulation and interpolation.
+ *  @{
+ */
+
+/**
+ * @brief Create a quaternion from an axis and an angle in radians.
+ */
+static inline NX_Quat NX_QuatFromAxisAngle(NX_Vec3 axis, float radians)
+{
+    NX_Quat result;
+
+    float half = radians * 0.5f;
+    float s = sinf(half);
+    float c = cosf(half);
+
+    result.w = c;
+    result.x = axis.x * s;
+    result.y = axis.y * s;
+    result.z = axis.z * s;
+
+    return result;
+}
+
+/**
+ * @brief Create a quaternion from Euler angles (pitch, yaw, roll).
+ */
+NXAPI NX_Quat NX_QuatFromEuler(NX_Vec3 v);
+
+/**
+ * @brief Convert a quaternion to Euler angles (pitch, yaw, roll).
+ */
+NXAPI NX_Vec3 NX_QuatToEuler(NX_Quat q);
+
+/**
+ * @brief Get the pitch (X-axis rotation) from a quaternion.
+ */
+static inline float NX_QuatPitch(NX_Quat q)
+{
+    float sinp = 2.0f * (q.w * q.x - q.y * q.z);
+    if (fabsf(sinp) >= 1.0f) {
+        return copysignf(NX_PI * 0.5f, sinp);
+    }
+    return asinf(sinp);
+}
+
+/**
+ * @brief Get the yaw (Y-axis rotation) from a quaternion.
+ */
+static inline float NX_QuatYaw(NX_Quat q)
+{
+    float qxx = q.x * q.x;
+    float qyy = q.y * q.y;
+    
+    float sinYcosP = 2.0f * (q.w * q.y + q.x * q.z);
+    float cosYcosP = 1.0f - 2.0f * (qxx + qyy);
+    return atan2f(sinYcosP, cosYcosP);
+}
+
+/**
+ * @brief Get the roll (Z-axis rotation) from a quaternion.
+ */
+static inline float NX_QuatRoll(NX_Quat q)
+{
+    float qxx = q.x * q.x;
+    float qzz = q.z * q.z;
+    
+    float sinRcosP = 2.0f * (q.w * q.z + q.x * q.y);
+    float cosRcosP = 1.0f - 2.0f * (qxx + qzz);
+    return atan2f(sinRcosP, cosRcosP);
+}
+
+/**
+ * @brief Create a quaternion from a 4x4 rotation matrix.
+ */
+NXAPI NX_Quat NX_QuatFromMat4(const NX_Mat4* m);
+
+/**
+ * @brief Convert a quaternion to a 4x4 rotation matrix.
+ */
+NXAPI NX_Mat4 NX_QuatToMat4(NX_Quat q);
+
+/**
+ * @brief Compute a quaternion that rotates the forward vector (-Z) to the given direction.
+ */
+NXAPI NX_Quat NX_QuatLookTo(NX_Vec3 direction, NX_Vec3 up);
+
+/**
+ * @brief Compute a quaternion that rotates from the world forward (-Z) to point from 'from' to 'to'.
+ */
+NXAPI NX_Quat NX_QuatLookAt(NX_Vec3 eye, NX_Vec3 target, NX_Vec3 up);
+
+/**
+ * @brief Returns the forward direction (-Z) of the quaternion
+ */
+static inline NX_Vec3 NX_QuatForward(NX_Quat q)
+{
+    return NX_Vec3Rotate(NX_VEC3(0, 0, -1), q);
+}
+
+/**
+ * @brief Returns the right direction (+X) of the quaternion
+ */
+static inline NX_Vec3 NX_QuatRight(NX_Quat q)
+{
+    return NX_Vec3Rotate(NX_VEC3(1, 0, 0), q);
+}
+
+/**
+ * @brief Returns the up direction (+Y) of the quaternion
+ */
+static inline NX_Vec3 NX_QuatUp(NX_Quat q)
+{
+    return NX_Vec3Rotate(NX_VEC3(0, 1, 0), q);
+}
+
+/**
+ * @brief Compute the length (magnitude) of a quaternion.
+ */
+static inline float NX_QuatLength(NX_Quat q)
+{
+    return sqrtf(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+}
+
+/**
+ * @brief Normalize a quaternion to unit length.
+ */
+static inline NX_Quat NX_QuatNormalize(NX_Quat q)
+{
+    float lenSq = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
+    if (lenSq < 1e-4f) return NX_QUAT_IDENTITY;
+
+    float inv_len = 1.0f / sqrtf(lenSq);
+    for (int i = 0; i < 4; ++i) {
+        q.v[i] *= inv_len;
+    }
+
+    return q;
+}
+
+/**
+ * @brief Conjugate of a quaternion.
+ * Equivalent to negating the vector part (x,y,z).
+ */
+static inline NX_Quat NX_QuatConjugate(NX_Quat q)
+{
+    return NX_QUAT(q.w, -q.x, -q.y, -q.z);
+}
+
+/**
+ * @brief Inverse of a quaternion.
+ */
+static inline NX_Quat NX_QuatInverse(NX_Quat q)
+{
+    float lenSq = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
+    if (lenSq < 1e-4f) {
+        return q;
+    }
+
+    float invLenSq = 1.0f / lenSq;
+
+    q.w = q.w * +invLenSq;
+    q.x = q.x * -invLenSq;
+    q.y = q.y * -invLenSq;
+    q.z = q.z * -invLenSq;
+
+    return q;
+}
+
+/**
+ * @brief Add two quaternions (component-wise).
+ */
+static inline NX_Quat NX_QuatAdd(NX_Quat q0, NX_Quat q1)
+{
+    q0.x += q1.x;
+    q0.y += q1.y;
+    q0.z += q1.z;
+    q0.w += q1.w;
+
+    return q0;
+}
+
+/**
+ * @brief Multiply two quaternions (Hamilton product).
+ */
+static inline NX_Quat NX_QuatMul(NX_Quat q0, NX_Quat q1)
+{
+    NX_Quat result;
+    result.w = q0.w * q1.w - q0.x * q1.x - q0.y * q1.y - q0.z * q1.z;
+    result.x = q0.w * q1.x + q0.x * q1.w + q0.y * q1.z - q0.z * q1.y;
+    result.y = q0.w * q1.y - q0.x * q1.z + q0.y * q1.w + q0.z * q1.x;
+    result.z = q0.w * q1.z + q0.x * q1.y - q0.y * q1.x + q0.z * q1.w;
+
+    return result;
+}
+
+/**
+ * @brief Multiply each component by scalar.
+ */
+static inline NX_Quat NX_QuatScale(NX_Quat q, float s)
+{
+    q.x *= s;
+    q.y *= s;
+    q.z *= s;
+    q.w *= s;
+
+    return q;
+}
+
+/**
+ * @brief Compute dot product two quaternions.
+ */
+static inline float NX_QuatDot(NX_Quat q0, NX_Quat q1)
+{
+    return q0.x * q1.x + q0.y * q1.y + q0.z * q1.z + q0.w * q1.w;
+}
+
+/**
+ * @brief Linear interpolation between two quaternions.
+ */
+NXAPI NX_Quat NX_QuatLerp(NX_Quat a, NX_Quat b, float t);
+
+/**
+ * @brief Spherical linear interpolation (slerp) between two quaternions.
+ */
+NXAPI NX_Quat NX_QuatSLerp(NX_Quat a, NX_Quat b, float t);
+
+/** @} */ // Quat
+
 /* === Color Functions === */
 
 /** @defgroup Color Color Functions
@@ -2983,203 +3215,6 @@ static inline NX_Color NX_ColorInvert(NX_Color color)
 
 /** @} */ // Color
 
-/* === Quaternion Functions === */
-
-/** @defgroup Quat Quaternion Functions
- *  Functions for quaternion creation, manipulation and interpolation.
- *  @{
- */
-
-/**
- * @brief Create a quaternion from an axis and an angle in radians.
- */
-static inline NX_Quat NX_QuatFromAxisAngle(NX_Vec3 axis, float radians)
-{
-    NX_Quat result;
-
-    float half = radians * 0.5f;
-    float s = sinf(half);
-    float c = cosf(half);
-
-    result.w = c;
-    result.x = axis.x * s;
-    result.y = axis.y * s;
-    result.z = axis.z * s;
-
-    return result;
-}
-
-/**
- * @brief Create a quaternion from Euler angles (pitch, yaw, roll).
- */
-NXAPI NX_Quat NX_QuatFromEuler(NX_Vec3 v);
-
-/**
- * @brief Convert a quaternion to Euler angles (pitch, yaw, roll).
- */
-NXAPI NX_Vec3 NX_QuatToEuler(NX_Quat q);
-
-/**
- * @brief Get the pitch (X-axis rotation) from a quaternion.
- */
-static inline float NX_QuatPitch(NX_Quat q)
-{
-    float sinp = 2.0f * (q.w * q.x - q.y * q.z);
-    if (fabsf(sinp) >= 1.0f) {
-        return copysignf(NX_PI * 0.5f, sinp);
-    }
-    return asinf(sinp);
-}
-
-/**
- * @brief Get the yaw (Y-axis rotation) from a quaternion.
- */
-static inline float NX_QuatYaw(NX_Quat q)
-{
-    float qxx = q.x * q.x;
-    float qyy = q.y * q.y;
-    
-    float sinYcosP = 2.0f * (q.w * q.y + q.x * q.z);
-    float cosYcosP = 1.0f - 2.0f * (qxx + qyy);
-    return atan2f(sinYcosP, cosYcosP);
-}
-
-/**
- * @brief Get the roll (Z-axis rotation) from a quaternion.
- */
-static inline float NX_QuatRoll(NX_Quat q)
-{
-    float qxx = q.x * q.x;
-    float qzz = q.z * q.z;
-    
-    float sinRcosP = 2.0f * (q.w * q.z + q.x * q.y);
-    float cosRcosP = 1.0f - 2.0f * (qxx + qzz);
-    return atan2f(sinRcosP, cosRcosP);
-}
-
-/**
- * @brief Create a quaternion from a 4x4 rotation matrix.
- */
-NXAPI NX_Quat NX_QuatFromMat4(const NX_Mat4* m);
-
-/**
- * @brief Convert a quaternion to a 4x4 rotation matrix.
- */
-NXAPI NX_Mat4 NX_QuatToMat4(NX_Quat q);
-
-/**
- * @brief Compute a quaternion that rotates the forward vector (-Z) to the given direction.
- */
-NXAPI NX_Quat NX_QuatLookTo(NX_Vec3 direction, NX_Vec3 up);
-
-/**
- * @brief Compute a quaternion that rotates from the world forward (-Z) to point from 'from' to 'to'.
- */
-NXAPI NX_Quat NX_QuatLookAt(NX_Vec3 eye, NX_Vec3 target, NX_Vec3 up);
-
-/**
- * @brief Returns the forward direction (-Z) of the quaternion
- */
-static inline NX_Vec3 NX_QuatForward(NX_Quat q)
-{
-    return NX_Vec3Rotate(NX_VEC3(0, 0, -1), q);
-}
-
-/**
- * @brief Returns the right direction (+X) of the quaternion
- */
-static inline NX_Vec3 NX_QuatRight(NX_Quat q)
-{
-    return NX_Vec3Rotate(NX_VEC3(1, 0, 0), q);
-}
-
-/**
- * @brief Returns the up direction (+Y) of the quaternion
- */
-static inline NX_Vec3 NX_QuatUp(NX_Quat q)
-{
-    return NX_Vec3Rotate(NX_VEC3(0, 1, 0), q);
-}
-
-/**
- * @brief Compute the length (magnitude) of a quaternion.
- */
-static inline float NX_QuatLength(NX_Quat q)
-{
-    return sqrtf(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
-}
-
-/**
- * @brief Normalize a quaternion to unit length.
- */
-static inline NX_Quat NX_QuatNormalize(NX_Quat q)
-{
-    float lenSq = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
-    if (lenSq < 1e-4f) return NX_QUAT_IDENTITY;
-
-    float inv_len = 1.0f / sqrtf(lenSq);
-    for (int i = 0; i < 4; ++i) {
-        q.v[i] *= inv_len;
-    }
-
-    return q;
-}
-
-/**
- * @brief Conjugate of a quaternion.
- * Equivalent to negating the vector part (x,y,z).
- */
-static inline NX_Quat NX_QuatConjugate(NX_Quat q)
-{
-    return NX_QUAT(q.w, -q.x, -q.y, -q.z);
-}
-
-/**
- * @brief Inverse of a quaternion.
- */
-static inline NX_Quat NX_QuatInverse(NX_Quat q)
-{
-    float lenSq = q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w;
-    if (lenSq < 1e-4f) {
-        return q;
-    }
-
-    float invLenSq = 1.0f / lenSq;
-
-    q.w = q.w * +invLenSq;
-    q.x = q.x * -invLenSq;
-    q.y = q.y * -invLenSq;
-    q.z = q.z * -invLenSq;
-
-    return q;
-}
-
-/**
- * @brief Multiply two quaternions (Hamilton product).
- */
-static inline NX_Quat NX_QuatMul(NX_Quat a, NX_Quat b)
-{
-    NX_Quat result;
-    result.w = a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z;
-    result.x = a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y;
-    result.y = a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x;
-    result.z = a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w;
-
-    return result;
-}
-
-/**
- * @brief Linear interpolation between two quaternions.
- */
-NXAPI NX_Quat NX_QuatLerp(NX_Quat a, NX_Quat b, float t);
-
-/**
- * @brief Spherical linear interpolation (slerp) between two quaternions.
- */
-NXAPI NX_Quat NX_QuatSLerp(NX_Quat a, NX_Quat b, float t);
-
-/** @} */ // Quat
-
 /* === Matrix 3x3 Functions === */
 
 /** @defgroup Mat3 Matrix 3x3 Functions
@@ -3475,6 +3510,7 @@ inline NX_IVec4 operator+(const NX_IVec4& lhs, const NX_IVec4& rhs) { return NX_
 inline NX_Vec2 operator+(const NX_Vec2& lhs, const NX_Vec2& rhs) { return NX_Vec2Add(lhs, rhs); }
 inline NX_Vec3 operator+(const NX_Vec3& lhs, const NX_Vec3& rhs) { return NX_Vec3Add(lhs, rhs); }
 inline NX_Vec4 operator+(const NX_Vec4& lhs, const NX_Vec4& rhs) { return NX_Vec4Add(lhs, rhs); }
+inline NX_Quat operator+(const NX_Quat& lhs, const NX_Quat& rhs) { return NX_QuatAdd(lhs, rhs); }
 inline NX_Color operator+(const NX_Color& lhs, const NX_Color& rhs) { return NX_ColorAdd(lhs, rhs); }
 inline NX_Mat3 operator+(const NX_Mat3& lhs, const NX_Mat3& rhs) { return NX_Mat3Add(&lhs, &rhs); }
 inline NX_Mat4 operator+(const NX_Mat4& lhs, const NX_Mat4& rhs) { return NX_Mat4Add(&lhs, &rhs); }
@@ -3504,6 +3540,7 @@ inline const NX_IVec4& operator+=(NX_IVec4& lhs, const NX_IVec4& rhs) { lhs = NX
 inline const NX_Vec2& operator+=(NX_Vec2& lhs, const NX_Vec2& rhs) { lhs = NX_Vec2Add(lhs, rhs); return lhs; }
 inline const NX_Vec3& operator+=(NX_Vec3& lhs, const NX_Vec3& rhs) { lhs = NX_Vec3Add(lhs, rhs); return lhs; }
 inline const NX_Vec4& operator+=(NX_Vec4& lhs, const NX_Vec4& rhs) { lhs = NX_Vec4Add(lhs, rhs); return lhs; }
+inline const NX_Quat& operator+=(NX_Quat& lhs, const NX_Quat& rhs) { lhs = NX_QuatAdd(lhs, rhs); return lhs; }
 inline const NX_Color& operator+=(NX_Color& lhs, const NX_Color& rhs) { lhs = NX_ColorAdd(lhs, rhs); return lhs; }
 inline const NX_Mat3& operator+=(NX_Mat3& lhs, const NX_Mat3& rhs) { lhs = NX_Mat3Add(&lhs, &rhs); return lhs; }
 inline const NX_Mat4& operator+=(NX_Mat4& lhs, const NX_Mat4& rhs) { lhs = NX_Mat4Add(&lhs, &rhs); return lhs; }
@@ -3576,6 +3613,16 @@ inline const NX_Color& operator-=(NX_Color& lhs, float rhs) { lhs = NX_ColorOffs
 
 /* === Multiplication Operators === */
 
+// Vector * Vector
+inline NX_IVec2 operator*(const NX_IVec2& lhs, const NX_IVec2& rhs) { return NX_IVec2Mul(lhs, rhs); }
+inline NX_IVec3 operator*(const NX_IVec3& lhs, const NX_IVec3& rhs) { return NX_IVec3Mul(lhs, rhs); }
+inline NX_IVec4 operator*(const NX_IVec4& lhs, const NX_IVec4& rhs) { return NX_IVec4Mul(lhs, rhs); }
+inline NX_Vec2 operator*(const NX_Vec2& lhs, const NX_Vec2& rhs) { return NX_Vec2Mul(lhs, rhs); }
+inline NX_Vec3 operator*(const NX_Vec3& lhs, const NX_Vec3& rhs) { return NX_Vec3Mul(lhs, rhs); }
+inline NX_Vec4 operator*(const NX_Vec4& lhs, const NX_Vec4& rhs) { return NX_Vec4Mul(lhs, rhs); }
+inline NX_Quat operator*(const NX_Quat& lhs, const NX_Quat& rhs) { return NX_QuatMul(lhs, rhs); }
+inline NX_Color operator*(const NX_Color& lhs, const NX_Color& rhs) { return NX_ColorMul(lhs, rhs); }
+
 // Vector * Scalar
 inline NX_IVec2 operator*(const NX_IVec2& lhs, int rhs) { return NX_IVec2Scale(lhs, rhs); }
 inline NX_IVec3 operator*(const NX_IVec3& lhs, int rhs) { return NX_IVec3Scale(lhs, rhs); }
@@ -3583,6 +3630,7 @@ inline NX_IVec4 operator*(const NX_IVec4& lhs, int rhs) { return NX_IVec4Scale(l
 inline NX_Vec2 operator*(const NX_Vec2& lhs, float rhs) { return NX_Vec2Scale(lhs, rhs); }
 inline NX_Vec3 operator*(const NX_Vec3& lhs, float rhs) { return NX_Vec3Scale(lhs, rhs); }
 inline NX_Vec4 operator*(const NX_Vec4& lhs, float rhs) { return NX_Vec4Scale(lhs, rhs); }
+inline NX_Quat operator*(const NX_Quat& lhs, float rhs) { return NX_QuatScale(lhs, rhs); }
 inline NX_Color operator*(const NX_Color& lhs, float rhs) { return NX_ColorScale(lhs, rhs); }
 
 // Scalar * Vector
@@ -3592,16 +3640,8 @@ inline NX_IVec4 operator*(int lhs, const NX_IVec4& rhs) { return NX_IVec4Scale(r
 inline NX_Vec2 operator*(float lhs, const NX_Vec2& rhs) { return NX_Vec2Scale(rhs, lhs); }
 inline NX_Vec3 operator*(float lhs, const NX_Vec3& rhs) { return NX_Vec3Scale(rhs, lhs); }
 inline NX_Vec4 operator*(float lhs, const NX_Vec4& rhs) { return NX_Vec4Scale(rhs, lhs); }
+inline NX_Quat operator*(float lhs, const NX_Quat& rhs) { return NX_QuatScale(rhs, lhs); }
 inline NX_Color operator*(float lhs, const NX_Color& rhs) { return NX_ColorScale(rhs, lhs); }
-
-// Vector * Vector (component-wise)
-inline NX_IVec2 operator*(const NX_IVec2& lhs, const NX_IVec2& rhs) { return NX_IVec2Mul(lhs, rhs); }
-inline NX_IVec3 operator*(const NX_IVec3& lhs, const NX_IVec3& rhs) { return NX_IVec3Mul(lhs, rhs); }
-inline NX_IVec4 operator*(const NX_IVec4& lhs, const NX_IVec4& rhs) { return NX_IVec4Mul(lhs, rhs); }
-inline NX_Vec2 operator*(const NX_Vec2& lhs, const NX_Vec2& rhs) { return NX_Vec2Mul(lhs, rhs); }
-inline NX_Vec3 operator*(const NX_Vec3& lhs, const NX_Vec3& rhs) { return NX_Vec3Mul(lhs, rhs); }
-inline NX_Vec4 operator*(const NX_Vec4& lhs, const NX_Vec4& rhs) { return NX_Vec4Mul(lhs, rhs); }
-inline NX_Color operator*(const NX_Color& lhs, const NX_Color& rhs) { return NX_ColorMul(lhs, rhs); }
 
 // Vector * Transform (transformation)
 inline NX_Vec3 operator*(const NX_Vec3& lhs, const NX_Transform& rhs) { return NX_Vec3Transform(lhs, &rhs); }
@@ -3622,8 +3662,15 @@ inline NX_Vec4 operator*(const NX_Vec4& lhs, const NX_Mat4& rhs) { return NX_Vec
 inline NX_Mat3 operator*(const NX_Mat3& lhs, const NX_Mat3& rhs) { return NX_Mat3Mul(&lhs, &rhs); }
 inline NX_Mat4 operator*(const NX_Mat4& lhs, const NX_Mat4& rhs) { return NX_Mat4Mul(&lhs, &rhs); }
 
-// Quaternion multiplication
-inline NX_Quat operator*(const NX_Quat& lhs, const NX_Quat& rhs) { return NX_QuatMul(lhs, rhs); }
+// Vector *= Vector
+inline const NX_IVec2& operator*=(NX_IVec2& lhs, const NX_IVec2& rhs) { lhs = NX_IVec2Mul(lhs, rhs); return lhs; }
+inline const NX_IVec3& operator*=(NX_IVec3& lhs, const NX_IVec3& rhs) { lhs = NX_IVec3Mul(lhs, rhs); return lhs; }
+inline const NX_IVec4& operator*=(NX_IVec4& lhs, const NX_IVec4& rhs) { lhs = NX_IVec4Mul(lhs, rhs); return lhs; }
+inline const NX_Vec2& operator*=(NX_Vec2& lhs, const NX_Vec2& rhs) { lhs = NX_Vec2Mul(lhs, rhs); return lhs; }
+inline const NX_Vec3& operator*=(NX_Vec3& lhs, const NX_Vec3& rhs) { lhs = NX_Vec3Mul(lhs, rhs); return lhs; }
+inline const NX_Vec4& operator*=(NX_Vec4& lhs, const NX_Vec4& rhs) { lhs = NX_Vec4Mul(lhs, rhs); return lhs; }
+inline const NX_Quat& operator*=(NX_Quat& lhs, const NX_Quat& rhs) { lhs = NX_QuatMul(lhs, rhs); return lhs; }
+inline const NX_Color& operator*=(NX_Color& lhs, const NX_Color& rhs) { lhs = NX_ColorMul(lhs, rhs); return lhs; }
 
 // Vector *= Scalar
 inline const NX_IVec2& operator*=(NX_IVec2& lhs, int rhs) { lhs = NX_IVec2Scale(lhs, rhs); return lhs; }
@@ -3632,16 +3679,8 @@ inline const NX_IVec4& operator*=(NX_IVec4& lhs, int rhs) { lhs = NX_IVec4Scale(
 inline const NX_Vec2& operator*=(NX_Vec2& lhs, float rhs) { lhs = NX_Vec2Scale(lhs, rhs); return lhs; }
 inline const NX_Vec3& operator*=(NX_Vec3& lhs, float rhs) { lhs = NX_Vec3Scale(lhs, rhs); return lhs; }
 inline const NX_Vec4& operator*=(NX_Vec4& lhs, float rhs) { lhs = NX_Vec4Scale(lhs, rhs); return lhs; }
+inline const NX_Quat& operator*=(NX_Quat& lhs, float rhs) { lhs = NX_QuatScale(lhs, rhs); return lhs; }
 inline const NX_Color& operator*=(NX_Color& lhs, float rhs) { lhs = NX_ColorScale(lhs, rhs); return lhs; }
-
-// Vector *= Vector (component-wise)
-inline const NX_IVec2& operator*=(NX_IVec2& lhs, const NX_IVec2& rhs) { lhs = NX_IVec2Mul(lhs, rhs); return lhs; }
-inline const NX_IVec3& operator*=(NX_IVec3& lhs, const NX_IVec3& rhs) { lhs = NX_IVec3Mul(lhs, rhs); return lhs; }
-inline const NX_IVec4& operator*=(NX_IVec4& lhs, const NX_IVec4& rhs) { lhs = NX_IVec4Mul(lhs, rhs); return lhs; }
-inline const NX_Vec2& operator*=(NX_Vec2& lhs, const NX_Vec2& rhs) { lhs = NX_Vec2Mul(lhs, rhs); return lhs; }
-inline const NX_Vec3& operator*=(NX_Vec3& lhs, const NX_Vec3& rhs) { lhs = NX_Vec3Mul(lhs, rhs); return lhs; }
-inline const NX_Vec4& operator*=(NX_Vec4& lhs, const NX_Vec4& rhs) { lhs = NX_Vec4Mul(lhs, rhs); return lhs; }
-inline const NX_Color& operator*=(NX_Color& lhs, const NX_Color& rhs) { lhs = NX_ColorMul(lhs, rhs); return lhs; }
 
 // Vector *= Transform (transformation)
 inline const NX_Vec3& operator*=(NX_Vec3& lhs, const NX_Transform& rhs) { lhs = NX_Vec3Transform(lhs, &rhs); return lhs; }
@@ -3661,7 +3700,6 @@ inline const NX_Vec4& operator*=(NX_Vec4& lhs, const NX_Mat4& rhs) { lhs = NX_Ve
 // Matrix *= Matrix
 inline const NX_Mat3& operator*=(NX_Mat3& lhs, const NX_Mat3& rhs) { lhs = NX_Mat3Mul(&lhs, &rhs); return lhs; }
 inline const NX_Mat4& operator*=(NX_Mat4& lhs, const NX_Mat4& rhs) { lhs = NX_Mat4Mul(&lhs, &rhs); return lhs; }
-inline const NX_Quat& operator*=(NX_Quat& lhs, const NX_Quat& rhs) { lhs = NX_QuatMul(lhs, rhs); return lhs; }
 
 /* === Division Operators === */
 
