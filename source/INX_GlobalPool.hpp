@@ -9,6 +9,8 @@
 #ifndef INX_GLOBAL_POOL_HPP
 #define INX_GLOBAL_POOL_HPP
 
+#include <NX/NX_Animation.h>
+#include <NX/NX_Skeleton.h>
 #include <NX/NX_Model.h>
 
 #include "./Detail/Util/ObjectPool.hpp"
@@ -40,8 +42,9 @@ public:
     using VertexBuffers3D   = util::ObjectPool<NX_VertexBuffer3D, 512>;
     using InstanceBuffers   = util::ObjectPool<NX_InstanceBuffer, 32>;
     using RenderTextures    = util::ObjectPool<NX_RenderTexture, 16>;
+    using AnimationLibs     = util::ObjectPool<NX_AnimationLib, 256>;
     using DynamicMeshes     = util::ObjectPool<NX_DynamicMesh, 32>;
-    using Animations        = util::ObjectPool<NX_Animation, 256>;
+    using Skeletons         = util::ObjectPool<NX_Skeleton, 128>;
     using Textures          = util::ObjectPool<NX_Texture, 1024>;
     using Cubemaps          = util::ObjectPool<NX_Cubemap, 32>;
     using Models            = util::ObjectPool<NX_Model, 128>;
@@ -78,8 +81,9 @@ private:
     VertexBuffers3D  mVertexBuffers3D;
     InstanceBuffers  mInstanceBuffers;
     RenderTextures   mRenderTextures;
+    AnimationLibs    mAnimationLibs;
     DynamicMeshes    mDynamicMeshes;
-    Animations       mAnimations;
+    Skeletons        mSkeletons;
     Textures         mTextures;
     Cubemaps         mCubemaps;
     Models           mModels;
@@ -104,8 +108,9 @@ inline auto& INX_GlobalPool::Get()
     else if constexpr (std::is_same_v<T, NX_VertexBuffer3D>)  return mVertexBuffers3D;
     else if constexpr (std::is_same_v<T, NX_InstanceBuffer>)  return mInstanceBuffers;
     else if constexpr (std::is_same_v<T, NX_RenderTexture>)   return mRenderTextures;
+    else if constexpr (std::is_same_v<T, NX_AnimationLib>)    return mAnimationLibs;
     else if constexpr (std::is_same_v<T, NX_DynamicMesh>)     return mDynamicMeshes;
-    else if constexpr (std::is_same_v<T, NX_Animation>)       return mAnimations;
+    else if constexpr (std::is_same_v<T, NX_Skeleton>)        return mSkeletons;
     else if constexpr (std::is_same_v<T, NX_Texture>)         return mTextures;
     else if constexpr (std::is_same_v<T, NX_Cubemap>)         return mCubemaps;
     else if constexpr (std::is_same_v<T, NX_Model>)           return mModels;
@@ -146,7 +151,8 @@ inline void INX_GlobalPool::UnloadAll()
     mLights.Clear();
     mModels.Clear();
     mMeshes.Clear();
-    mAnimations.Clear();
+    mSkeletons.Clear();
+    mAnimationLibs.Clear();
     mDynamicMeshes.Clear();
     mInstanceBuffers.Clear();
     mVertexBuffers3D.Clear();

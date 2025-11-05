@@ -16,22 +16,22 @@ public:
     AnimationImporter(const SceneImporter& importer);
 
     /** Loads all animations contained in the imported scene */
-    NX_Animation** loadAnimations(int* animCount, int targetFrameRate);
+    NX_AnimationLib* LoadAnimationLib(int targetFrameRate);
 
 private:
     /** Load an animation */
-    bool loadAnimation(NX_Animation* animation, const aiAnimation* aiAnim, int targetFrameRate);
+    bool LoadAnimation(NX_Animation* animation, const aiAnimation* aiAnim, int targetFrameRate);
 
     /** Calculate a pose recursively */
-    void getPoseRecursive(
+    void GetPoseRecursive(
         const aiNode* node, const aiAnimation* anim, float time, const NX_Mat4& parentMatrix,
         NX_Mat4* globalMatrices, NX_Transform* localTransforms,
         const NX_BoneInfo* bones, int totalBones);
 
     /** Interpolation */
-    bool getNodeTransformAtTime(NX_Transform* outTransform, const aiAnimation* anim, const char* nodeName, float time);
-    NX_Vec3 interpolateKeyFrames(const aiVectorKey* keys, uint32_t numKeys, float time);
-    NX_Quat interpolateKeyFrames(const aiQuatKey* keys, uint32_t numKeys, float time);
+    bool GetNodeTransformAtTime(NX_Transform* outTransform, const aiAnimation* anim, const char* nodeName, float time);
+    NX_Vec3 InterpolateKeyFrames(const aiVectorKey* keys, uint32_t numKeys, float time);
+    NX_Quat InterpolateKeyFrames(const aiQuatKey* keys, uint32_t numKeys, float time);
 
 private:
     const SceneImporter& mImporter;
@@ -45,19 +45,14 @@ inline AnimationImporter::AnimationImporter(const SceneImporter& importer)
     SDL_assert(importer.isValid());
 }
 
-inline NX_Animation** AnimationImporter::loadAnimations(int* animCount, int targetFrameRate)
+inline NX_AnimationLib* AnimationImporter::LoadAnimationLib(int targetFrameRate)
 {
-    *animCount = 0;
-
     if (mImporter.animationCount() == 0) {
         NX_LOG(E, "RENDER: No animations found");
         return nullptr;
     }
 
-    NX_Animation** animations = static_cast<NX_Animation**>(SDL_calloc(
-        mImporter.animationCount(), sizeof(NX_Animation*)
-    ));
-
+    NX_Animation* animations = NX_Calloc<NX_Animation>(mImporter.animationCount());
     if (animations == nullptr) {
         NX_LOG(E, "RENDER: Unable to allocate memory for animations");
         return nullptr;
@@ -65,9 +60,8 @@ inline NX_Animation** AnimationImporter::loadAnimations(int* animCount, int targ
 
     size_t successCount = 0;
     for (uint32_t i = 0; i < mImporter.animationCount(); i++) {
-        animations[successCount] = INX_Pool.Create<NX_Animation>();
         const aiAnimation* aiAnim = mImporter.animation(i);
-        if (loadAnimation(animations[successCount], aiAnim, targetFrameRate)) {
+        if (LoadAnimation(&animations[successCount], aiAnim, targetFrameRate)) {
             successCount++;
         }
         else {
@@ -77,24 +71,26 @@ inline NX_Animation** AnimationImporter::loadAnimations(int* animCount, int targ
 
     if (successCount == 0) {
         NX_LOG(E, "RENDER: No animations were successfully loaded");
-        SDL_free(animations);
+        NX_Free(animations);
         return nullptr;
     }
 
     if (successCount < mImporter.animationCount()) {
         NX_LOG(W, "RENDER: Only %d out of %d animations were successfully loaded", successCount, mImporter.animationCount());
-        NX_Animation** resizedAnims = static_cast<NX_Animation**>(SDL_realloc(animations, successCount * sizeof(NX_Animation*)));
+        NX_Animation* resizedAnims = NX_Realloc<NX_Animation>(animations, successCount);
         if (resizedAnims) animations = resizedAnims;
     }
 
-    *animCount = successCount;
+    NX_AnimationLib* animLib = INX_Pool.Create<NX_AnimationLib>();
+    animLib->animations = animations;
+    animLib->count = successCount;
 
-    return animations;
+    return animLib;
 }
 
 /* === Private Implementation === */
 
-inline bool AnimationImporter::loadAnimation(NX_Animation* animation, const aiAnimation* aiAnim, int targetFrameRate)
+inline bool AnimationImporter::LoadAnimation(NX_Animation* animation, const aiAnimation* aiAnim, int targetFrameRate)
 {
     /* --- Initialize animation name --- */
 
@@ -103,8 +99,8 @@ inline bool AnimationImporter::loadAnimation(NX_Animation* animation, const aiAn
     /* --- Compute frame count --- */
 
     float ticksPerSecond = aiAnim->mTicksPerSecond ? aiAnim->mTicksPerSecond : 25.0f;
-    float durationInSeconds = (float)aiAnim->mDuration / ticksPerSecond;
-    animation->frameCount = (int)(durationInSeconds * targetFrameRate + 0.5f);
+    float durationInSeconds = static_cast<float>(aiAnim->mDuration) / ticksPerSecond;
+    animation->frameCount = static_cast<int>(durationInSeconds * targetFrameRate + 0.5f);
 
     /* --- Count unique bones --- */
 
@@ -140,15 +136,15 @@ inline bool AnimationImporter::loadAnimation(NX_Animation* animation, const aiAn
 
     /* --- Allocate storage --- */
 
-    animation->bones = static_cast<NX_BoneInfo*>(SDL_calloc(animation->boneCount, sizeof(NX_BoneInfo)));
-    animation->frameGlobalPoses = static_cast<NX_Mat4**>(SDL_calloc(animation->frameCount, sizeof(NX_Mat4*)));
-    animation->frameLocalPoses = static_cast<NX_Transform**>(SDL_calloc(animation->frameCount, sizeof(NX_Transform*)));
+    animation->bones = NX_Calloc<NX_BoneInfo>(animation->boneCount);
+    animation->frameGlobalPoses = NX_Calloc<NX_Mat4*>(animation->frameCount);
+    animation->frameLocalPoses = NX_Calloc<NX_Transform*>(animation->frameCount);
 
     if (!animation->bones || !animation->frameGlobalPoses || !animation->frameLocalPoses) {
         NX_LOG(E, "RENDER: Allocation failed");
-        SDL_free(animation->bones);
-        SDL_free(animation->frameGlobalPoses);
-        SDL_free(animation->frameLocalPoses);
+        NX_Free(animation->bones);
+        NX_Free(animation->frameGlobalPoses);
+        NX_Free(animation->frameLocalPoses);
         return false;
     }
 
@@ -174,17 +170,17 @@ inline bool AnimationImporter::loadAnimation(NX_Animation* animation, const aiAn
     /* --- Allocate per-frame storage --- */
 
     for (int f = 0; f < animation->frameCount; f++) {
-        animation->frameGlobalPoses[f] = static_cast<NX_Mat4*>(SDL_calloc(animation->boneCount, sizeof(NX_Mat4)));
-        animation->frameLocalPoses[f] = static_cast<NX_Transform*>(SDL_calloc(animation->boneCount, sizeof(NX_Transform)));
+        animation->frameGlobalPoses[f] = NX_Calloc<NX_Mat4>(animation->boneCount);
+        animation->frameLocalPoses[f] = NX_Calloc<NX_Transform>(animation->boneCount);
         if (!animation->frameGlobalPoses[f] || !animation->frameLocalPoses[f]) {
             NX_LOG(E, "RENDER: Failed to allocate frame %d", f);
             for (int i = 0; i <= f; i++) {
-                SDL_free(animation->frameGlobalPoses[i]);
-                SDL_free(animation->frameLocalPoses[i]);
+                NX_Free(animation->frameGlobalPoses[i]);
+                NX_Free(animation->frameLocalPoses[i]);
             }
-            SDL_free(animation->frameGlobalPoses);
-            SDL_free(animation->frameLocalPoses);
-            SDL_free(animation->bones);
+            NX_Free(animation->frameGlobalPoses);
+            NX_Free(animation->frameLocalPoses);
+            NX_Free(animation->bones);
             return false;
         }
     }
@@ -200,7 +196,7 @@ inline bool AnimationImporter::loadAnimation(NX_Animation* animation, const aiAn
             animation->frameLocalPoses[f][b] = NX_TRANSFORM_IDENTITY;
         }
 
-        getPoseRecursive(
+        GetPoseRecursive(
             mImporter.rootNode(), aiAnim, timeInTicks,
             NX_MAT4_IDENTITY,
             animation->frameGlobalPoses[f],
@@ -212,7 +208,7 @@ inline bool AnimationImporter::loadAnimation(NX_Animation* animation, const aiAn
     return true;
 }
 
-inline void AnimationImporter::getPoseRecursive(
+inline void AnimationImporter::GetPoseRecursive(
     const aiNode* node, const aiAnimation* anim, float time, const NX_Mat4& parentMatrix,
     NX_Mat4* globalMatrices, NX_Transform* localTransforms,
     const NX_BoneInfo* bones, int totalBones)
@@ -232,7 +228,7 @@ inline void AnimationImporter::getPoseRecursive(
 
     /* --- Get the node's local transform at the specified time from the animation --- */
 
-    if (getNodeTransformAtTime(&transform, anim, node->mName.data, time)) {
+    if (GetNodeTransformAtTime(&transform, anim, node->mName.data, time)) {
         matrix = NX_TransformToMat4(&transform);
     }
     else {
@@ -255,14 +251,14 @@ inline void AnimationImporter::getPoseRecursive(
     /* --- Recursively process all child nodes to propagate transforms through hierarchy --- */
 
     for (uint32_t i = 0; i < node->mNumChildren; i++) {
-        getPoseRecursive(
+        GetPoseRecursive(
             node->mChildren[i], anim, time, matrix,
             globalMatrices, localTransforms, bones, totalBones
         );
     }
 }
 
-inline bool AnimationImporter::getNodeTransformAtTime(NX_Transform* outTransform, const aiAnimation* anim, const char* nodeName, float time)
+inline bool AnimationImporter::GetNodeTransformAtTime(NX_Transform* outTransform, const aiAnimation* anim, const char* nodeName, float time)
 {
     SDL_assert(outTransform && anim && nodeName);
 
@@ -272,13 +268,13 @@ inline bool AnimationImporter::getNodeTransformAtTime(NX_Transform* outTransform
         const aiNodeAnim* nodeAnim = anim->mChannels[i];
         if (SDL_strcmp(nodeAnim->mNodeName.data, nodeName) == 0)
         {
-            outTransform->translation = interpolateKeyFrames(
+            outTransform->translation = InterpolateKeyFrames(
                 nodeAnim->mPositionKeys, nodeAnim->mNumPositionKeys, time
             );
-            outTransform->rotation = interpolateKeyFrames(
+            outTransform->rotation = InterpolateKeyFrames(
                 nodeAnim->mRotationKeys, nodeAnim->mNumRotationKeys, time
             );
-            outTransform->scale = interpolateKeyFrames(
+            outTransform->scale = InterpolateKeyFrames(
                 nodeAnim->mScalingKeys, nodeAnim->mNumScalingKeys, time
             );
             return true;
@@ -290,7 +286,7 @@ inline bool AnimationImporter::getNodeTransformAtTime(NX_Transform* outTransform
     return false;
 }
 
-inline NX_Vec3 AnimationImporter::interpolateKeyFrames(const aiVectorKey* keys, uint32_t numKeys, float time)
+inline NX_Vec3 AnimationImporter::InterpolateKeyFrames(const aiVectorKey* keys, uint32_t numKeys, float time)
 {
     /* --- Case where there is only one key --- */
 
@@ -325,7 +321,7 @@ inline NX_Vec3 AnimationImporter::interpolateKeyFrames(const aiVectorKey* keys, 
     return AssimpCast<NX_Vec3>(result);
 }
 
-inline NX_Quat AnimationImporter::interpolateKeyFrames(const aiQuatKey* keys, uint32_t numKeys, float time)
+inline NX_Quat AnimationImporter::InterpolateKeyFrames(const aiQuatKey* keys, uint32_t numKeys, float time)
 {
     /* --- Case where there is only one key --- */
 

@@ -10,14 +10,15 @@
 
 #include "./Importer/AnimationImporter.hpp"
 #include "./Importer/MaterialImporter.hpp"
+#include "./Importer/SkeletonImporter.hpp"
 #include "./Importer/SceneImporter.hpp"
 #include "./Importer/MeshImporter.hpp"
-#include "./Importer/BoneImporter.hpp"
 #include "./INX_Utils.hpp"
 
 #include "./INX_GlobalPool.hpp"
 #include <NX/NX_Filesystem.h>
 #include <NX/NX_Material.h>
+#include <NX/NX_Skeleton.h>
 #include <NX/NX_Memory.h>
 #include <NX/NX_Log.h>
 
@@ -63,10 +64,7 @@ NX_Model* NX_LoadModelFromData(const void* data, size_t size, const char* hint)
         return nullptr;
     }
 
-    if (!import::BoneImporter(importer).processBones(model)) {
-        NX_DestroyModel(model);
-        return nullptr;
-    }
+    model->skeleton = import::SkeletonImporter(importer).ProcessSkeleton();
 
     return model;
 }
@@ -74,6 +72,8 @@ NX_Model* NX_LoadModelFromData(const void* data, size_t size, const char* hint)
 void NX_DestroyModel(NX_Model* model)
 {
     if (model == nullptr) return;
+
+    NX_DestroySkeleton(model->skeleton);
 
     for (int i = 0; i < model->meshCount; i++) {
         if (model->meshes[i] != nullptr) {
@@ -86,10 +86,8 @@ void NX_DestroyModel(NX_Model* model)
     }
 
     NX_Free(model->meshes);
-    NX_Free(model->meshMaterials);
     NX_Free(model->materials);
-    NX_Free(model->bones);
-    NX_Free(model->boneOffsets);
+    NX_Free(model->meshMaterials);
 
     INX_Pool.Destroy(model);
 }
@@ -127,52 +125,4 @@ void NX_ScaleModelAABB(NX_Model* model, float scale, bool scaleMeshAABBs)
 
     model->aabb.min *= scale;
     model->aabb.max *= scale;
-}
-
-NX_Animation** NX_LoadAnimations(const char* filePath, int* animCount, int targetFrameRate)
-{
-    size_t fileSize = 0;
-    void* fileData = NX_LoadFile(filePath, &fileSize);
-
-    NX_Animation** animations = NX_LoadAnimationFromData(
-        fileData, fileSize, INX_GetFileExt(filePath),
-        animCount, targetFrameRate
-    );
-
-    NX_Free(fileData);
-
-    return animations;
-}
-
-NX_Animation** NX_LoadAnimationFromData(const void* data, unsigned int size, const char* hint, int* animCount, int targetFrameRate)
-{
-    // TODO: Review how animations are loaded. I was thinking of creating a separate 'PoolAnimation'
-    //       and introducing a new type 'NX_AnimationLibrary' instead of returning arrays of pointers.
-
-    import::SceneImporter importer(data, size, hint);
-    if (!importer.isValid()) {
-        return nullptr;
-    }
-
-    return import::AnimationImporter(importer).loadAnimations(animCount, targetFrameRate);
-}
-
-void NX_DestroyAnimations(NX_Animation** animations, int animCount)
-{
-    if (animations != nullptr) {
-        for (int i = 0; i < animCount; i++) {
-            INX_Pool.Destroy(animations[i]);
-        }
-        NX_Free(animations);
-    }
-}
-
-NX_Animation* NX_GetAnimation(NX_Animation** animations, int animCount, const char* name)
-{
-    for (int i = 0; i < animCount; i++) {
-        if (SDL_strcmp(animations[i]->name, name) == 0) {
-            return animations[i];
-        }
-    }
-    return nullptr;
 }

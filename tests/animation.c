@@ -18,10 +18,9 @@ int main(void)
 
     NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(100.0f), NX_IVEC2_ONE, NX_VEC3_UP);
 
-    int animCount = 0;
-    NX_Animation** anims = NX_LoadAnimations("models/CesiumMan.glb", &animCount, 30);
+    NX_AnimationLib* animLib = NX_LoadAnimationLib("models/CesiumMan.glb", 30);
     NX_Model* model = NX_LoadModel("models/CesiumMan.glb");
-    model->anim = anims[0];
+    model->anim = &animLib->animations[0];
 
     NX_InstanceBuffer* instances = NX_CreateInstanceBuffer(NX_INSTANCE_POSITION, MAX_INSTANCE);
     NX_Vec3* iPositions = NX_MapInstanceBuffer(instances, NX_INSTANCE_POSITION);
@@ -66,8 +65,8 @@ int main(void)
         NX_End2D();
     }
 
-    NX_DestroyAnimations(anims, animCount);
     NX_DestroyInstanceBuffer(instances);
+    NX_DestroyAnimationLib(animLib);
     NX_DestroyMesh(ground);
     NX_DestroyModel(model);
 

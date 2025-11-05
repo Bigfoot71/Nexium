@@ -570,11 +570,11 @@ static INX_DrawType INX_GetDrawType(const NX_Material& material)
 
 static int INX_ComputeBoneMatrices(const NX_Model& model)
 {
-    int boneMatrixOffset = -1;
+    const NX_Skeleton& skeleton = *model.skeleton;
 
-    const NX_Mat4* boneMatrices = model.boneBindPose;
+    const NX_Mat4* boneMatrices = skeleton.boneBindPose;
     if (model.animMode == NX_ANIM_INTERNAL && model.anim != nullptr) {
-        if (model.boneCount != model.anim->boneCount) {
+        if (skeleton.boneCount != model.anim->boneCount) {
             NX_LOG(W, "RENDER: Model and animation bone counts differ");
         }
         float frame = NX_Wrap(model.animFrame, 0.0f, model.anim->frameCount - 1.0f);
@@ -584,8 +584,9 @@ static int INX_ComputeBoneMatrices(const NX_Model& model)
         boneMatrices = model.boneOverride;
     }
 
-    NX_Mat4* bones = INX_Render3D->drawCalls.boneBuffer.StageMap(model.boneCount, &boneMatrixOffset);
-    NX_Mat4MulBatch(bones, model.boneOffsets, boneMatrices, model.boneCount);
+    int boneMatrixOffset = -1;
+    NX_Mat4* bones = INX_Render3D->drawCalls.boneBuffer.StageMap(skeleton.boneCount, &boneMatrixOffset);
+    NX_Mat4MulBatch(bones, skeleton.boneOffsets, boneMatrices, skeleton.boneCount);
 
     return boneMatrixOffset;
 }
@@ -637,8 +638,7 @@ static void INX_PushDrawCall(
     /* --- If the model is rigged we process the bone matrices --- */
 
     int boneMatrixOffset = -1;
-
-    if (model.boneCount > 0) {
+    if (model.skeleton != nullptr) {
         boneMatrixOffset = INX_ComputeBoneMatrices(model);
     }
 

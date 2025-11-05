@@ -29,9 +29,8 @@ int main(void)
     NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_IVEC2_ONE, NX_VEC3_UP);
     NX_Model* model = NX_LoadModel("models/CesiumMan.glb");
 
-    int animCount = 0;
-    NX_Animation** anim = NX_LoadAnimations("models/CesiumMan.glb", &animCount, 30);
-    model->anim = anim[0];
+    NX_AnimationLib* animLib = NX_LoadAnimationLib("models/CesiumMan.glb", 30);
+    model->anim = &animLib->animations[0];
 
     NX_Light* light = NX_CreateLight(NX_LIGHT_DIR);
     NX_SetLightDirection(light, NX_VEC3(-1, -1, -1));
