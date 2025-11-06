@@ -2708,7 +2708,6 @@ static inline NX_Quat NX_QuatNormalize(NX_Quat q)
 
 /**
  * @brief Conjugate of a quaternion.
- * Equivalent to negating the vector part (x,y,z).
  */
 static inline NX_Quat NX_QuatConjugate(NX_Quat q)
 {
@@ -2727,12 +2726,20 @@ static inline NX_Quat NX_QuatInverse(NX_Quat q)
 
     float invLenSq = 1.0f / lenSq;
 
-    q.w = q.w * +invLenSq;
+    q.w = q.w *  invLenSq;
     q.x = q.x * -invLenSq;
     q.y = q.y * -invLenSq;
     q.z = q.z * -invLenSq;
 
     return q;
+}
+
+/**
+ * @brief Negate of a quaternion.
+ */
+static inline NX_Quat NX_QuatNeg(NX_Quat q)
+{
+    return NX_QUAT(-q.w, -q.x, -q.y, -q.z);
 }
 
 /**
@@ -3585,12 +3592,13 @@ inline NX_Vec4 operator-(float lhs, const NX_Vec4& rhs) { return NX_Vec4Sub(NX_V
 inline NX_Color operator-(float lhs, const NX_Color& rhs) { return NX_ColorSub(NX_COLOR_1(lhs), rhs); }
 
 // Unary minus (negation)
-inline NX_IVec2 operator-(const NX_IVec2& vec) { return NX_IVec2Neg(vec); }
-inline NX_IVec3 operator-(const NX_IVec3& vec) { return NX_IVec3Neg(vec); }
-inline NX_IVec4 operator-(const NX_IVec4& vec) { return NX_IVec4Neg(vec); }
-inline NX_Vec2 operator-(const NX_Vec2& vec) { return NX_Vec2Neg(vec); }
-inline NX_Vec3 operator-(const NX_Vec3& vec) { return NX_Vec3Neg(vec); }
-inline NX_Vec4 operator-(const NX_Vec4& vec) { return NX_Vec4Neg(vec); }
+inline NX_IVec2 operator-(const NX_IVec2& v) { return NX_IVec2Neg(v); }
+inline NX_IVec3 operator-(const NX_IVec3& v) { return NX_IVec3Neg(v); }
+inline NX_IVec4 operator-(const NX_IVec4& v) { return NX_IVec4Neg(v); }
+inline NX_Vec2 operator-(const NX_Vec2& v) { return NX_Vec2Neg(v); }
+inline NX_Vec3 operator-(const NX_Vec3& v) { return NX_Vec3Neg(v); }
+inline NX_Vec4 operator-(const NX_Vec4& v) { return NX_Vec4Neg(v); }
+inline NX_Quat operator-(const NX_Quat& q) { return NX_QuatNeg(q); }
 
 // Subtraction assignment operators
 inline const NX_IVec2& operator-=(NX_IVec2& lhs, const NX_IVec2& rhs) { lhs = NX_IVec2Sub(lhs, rhs); return lhs; }
