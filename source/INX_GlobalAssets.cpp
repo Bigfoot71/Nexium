@@ -208,6 +208,16 @@ const NX_Font* INX_GlobalAssets::Get(INX_FontAsset asset)
 
 void INX_GlobalAssets::UnloadAll()
 {
+    for (NX_Shader3D* shader : mShaders3D) {
+        NX_DestroyShader3D(shader);
+        shader = nullptr;
+    }
+
+    for (NX_Shader2D* shader : mShaders2D) {
+        NX_DestroyShader2D(shader);
+        shader = nullptr;
+    }
+
     for (NX_Texture* texture : mTextures) {
         NX_DestroyTexture(texture);
         texture = nullptr;

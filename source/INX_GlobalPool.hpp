@@ -149,27 +149,95 @@ inline void INX_GlobalPool::ForEach(F&& func)
 
 inline void INX_GlobalPool::UnloadAll()
 {
-    mShaders2D.Clear();
-    mShaders3D.Clear();
+    if (!mShaders2D.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_Shader2D objects were not freed! Possible memory leak", mShaders2D.GetSize());
+        mShaders2D.Clear();
+    }
 
-    mLights.Clear();
-    mModels.Clear();
-    mMeshes.Clear();
-    mSkeletons.Clear();
-    mAnimationPlayers.Clear();
-    mAnimationLibs.Clear();
-    mDynamicMeshes.Clear();
-    mInstanceBuffers.Clear();
-    mVertexBuffers3D.Clear();
+    if (!mShaders3D.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_Shader3D objects were not freed! Possible memory leak", mShaders3D.GetSize());
+        mShaders3D.Clear();
+    }
 
-    mReflectionProbes.Clear();
-    mRenderTextures.Clear();
-    mCubemaps.Clear();
-    mFonts.Clear();
-    mTextures.Clear();
+    if (!mLights.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_Light objects were not freed! Possible memory leak", mLights.GetSize());
+        mLights.Clear();
+    }
 
-    mAudioClips.Clear();
-    mAudioStreams.Clear();
+    if (!mModels.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_Model objects were not freed! Possible memory leak", mModels.GetSize());
+        mModels.Clear();
+    }
+
+    if (!mMeshes.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_Mesh objects were not freed! Possible memory leak", mMeshes.GetSize());
+        mMeshes.Clear();
+    }
+
+    if (!mSkeletons.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_Skeleton objects were not freed! Possible memory leak", mSkeletons.GetSize());
+        mSkeletons.Clear();
+    }
+
+    if (!mAnimationPlayers.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_AnimationPlayer objects were not freed! Possible memory leak", mAnimationPlayers.GetSize());
+        mAnimationPlayers.Clear();
+    }
+
+    if (!mAnimationLibs.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_AnimationLib objects were not freed! Possible memory leak", mAnimationLibs.GetSize());
+        mAnimationLibs.Clear();
+    }
+
+    if (!mDynamicMeshes.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_DynamicMesh objects were not freed! Possible memory leak", mDynamicMeshes.GetSize());
+        mDynamicMeshes.Clear();
+    }
+
+    if (!mInstanceBuffers.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_InstanceBuffer objects were not freed! Possible memory leak", mInstanceBuffers.GetSize());
+        mInstanceBuffers.Clear();
+    }
+
+    if (!mVertexBuffers3D.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_VertexBuffer3D objects were not freed! Possible memory leak", mVertexBuffers3D.GetSize());
+        mVertexBuffers3D.Clear();
+    }
+
+    if (!mReflectionProbes.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_ReflectionProbe objects were not freed! Possible memory leak", mReflectionProbes.GetSize());
+        mReflectionProbes.Clear();
+    }
+
+    if (!mRenderTextures.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_RenderTexture objects were not freed! Possible memory leak", mRenderTextures.GetSize());
+        mRenderTextures.Clear();
+    }
+
+    if (!mCubemaps.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_Cubemap objects were not freed! Possible memory leak", mCubemaps.GetSize());
+        mCubemaps.Clear();
+    }
+
+    if (!mFonts.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_Font objects were not freed! Possible memory leak", mFonts.GetSize());
+        mFonts.Clear();
+    }
+
+    if (!mTextures.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_Texture objects were not freed! Possible memory leak", mTextures.GetSize());
+        mTextures.Clear();
+    }
+
+    if (!mAudioClips.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_AudioClip objects were not freed! Possible memory leak", mAudioClips.GetSize());
+        mAudioClips.Clear();
+    }
+
+    if (!mAudioStreams.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_AudioStream objects were not freed! Possible memory leak", mAudioStreams.GetSize());
+        mAudioStreams.Clear();
+    }
 }
 
 #endif // INX_GLOBAL_POOL_HPP

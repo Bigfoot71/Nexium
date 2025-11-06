@@ -10,7 +10,6 @@
 
 #include "./INX_GlobalPool.hpp"
 #include "./NX_Vertex.hpp"
-#include "NX/NX_Shape.h"
 
 #include <SDL3/SDL_stdinc.h>
 #include <NX/NX_Memory.h>
