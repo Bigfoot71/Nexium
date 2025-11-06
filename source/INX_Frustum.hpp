@@ -161,9 +161,9 @@ inline bool INX_Frustum::ContainsObb(const INX_OrientedBoundingBox3D& obb) const
         float centerDistance = DistanceToPlane(plane, obb.center);
 
         float projectedRadius =
-            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obb.axes[0])) * obb.extents.x +
-            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obb.axes[1])) * obb.extents.y +
-            fabsf(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obb.axes[2])) * obb.extents.z;
+            std::abs(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obb.axes[0])) * obb.extents.x +
+            std::abs(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obb.axes[1])) * obb.extents.y +
+            std::abs(NX_Vec3Dot(NX_VEC3(plane.x, plane.y, plane.z), obb.axes[2])) * obb.extents.z;
 
         if (centerDistance + projectedRadius < -1e-6f) {
             return false;

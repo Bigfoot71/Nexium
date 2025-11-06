@@ -29,7 +29,7 @@ static void INX_UpdateDirectionalLight_ViewProj(NX_Light* light, const INX_ViewF
 
     /* --- Calcuate view matrix --- */
 
-    NX_Vec3 up = (fabsf(NX_Vec3Dot(lightDir, NX_VEC3_UP)) > 0.99f) ? NX_VEC3_BACK : NX_VEC3_UP;
+    NX_Vec3 up = (std::abs(NX_Vec3Dot(lightDir, NX_VEC3_UP)) > 0.99f) ? NX_VEC3_BACK : NX_VEC3_UP;
     NX_Mat4 view = NX_Mat4LookTo(cameraPos, lightDir, up);
 
     /* --- Calculate projection matrix --- */
@@ -39,9 +39,9 @@ static void INX_UpdateDirectionalLight_ViewProj(NX_Light* light, const INX_ViewF
     NX_Vec3 forwLS  = NX_VEC3(view.m02, view.m12, view.m22);
 
     NX_Vec3 extentLS = NX_VEC3(
-        fabsf(rightLS.x) + fabsf(upLS.x) + fabsf(forwLS.x),
-        fabsf(rightLS.y) + fabsf(upLS.y) + fabsf(forwLS.y),
-        fabsf(rightLS.z) + fabsf(upLS.z) + fabsf(forwLS.z)
+        std::abs(rightLS.x) + std::abs(upLS.x) + std::abs(forwLS.x),
+        std::abs(rightLS.y) + std::abs(upLS.y) + std::abs(forwLS.y),
+        std::abs(rightLS.z) + std::abs(upLS.z) + std::abs(forwLS.z)
     ) * dirLight.shadowRadius;
 
     NX_Mat4 proj = NX_Mat4Ortho(
