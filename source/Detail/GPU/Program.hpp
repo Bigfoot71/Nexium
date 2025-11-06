@@ -465,7 +465,7 @@ template<typename... Shaders>
 inline bool Program::ValidateShaderStages(const Shaders&... shaders) noexcept
 {
     constexpr size_t count = sizeof...(Shaders);
-    std::array<GLenum, count> stages = {shaders.stage()...};
+    std::array<GLenum, count> stages = {shaders.GetStage()...};
 
     // Compute pipeline: only one compute shader
     if (std::find(stages.begin(), stages.end(), GL_COMPUTE_SHADER) != stages.end()) {
