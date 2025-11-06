@@ -54,12 +54,12 @@ NX_Model* NX_LoadModelFromData(const void* data, size_t size, const char* hint)
         return nullptr;
     }
 
-    if (!import::MeshImporter(importer).loadMeshes(model)) {
+    if (!import::MeshImporter(importer).LoadMeshes(model)) {
         NX_DestroyModel(model);
         return nullptr;
     }
 
-    if (!import::MaterialImporter(importer).loadMaterials(model)) {
+    if (!import::MaterialImporter(importer).LoadMaterials(model)) {
         NX_DestroyModel(model);
         return nullptr;
     }

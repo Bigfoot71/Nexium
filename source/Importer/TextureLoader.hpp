@@ -34,7 +34,7 @@ public:
 
 public:
     TextureLoader(const SceneImporter& importer);
-    NX_Texture* get(int materialIndex, Map map);
+    NX_Texture* Get(int materialIndex, Map map);
 
 private:
     /** Temporary image data */
@@ -50,17 +50,17 @@ private:
 
 private:
     /** Base loading function */
-    bool loadImage(Image* image, const aiMaterial* material, aiTextureType type, uint32_t index, bool asData);
-    bool loadImage(Image* image, const aiMaterial* material, Map map);
+    bool LoadImage(Image* image, const aiMaterial* material, aiTextureType type, uint32_t index, bool asData);
+    bool LoadImage(Image* image, const aiMaterial* material, Map map);
 
     /** Loading functions */
-    bool loadImageAlbedo(Image* image, const aiMaterial* material);
-    bool loadImageEmission(Image* image, const aiMaterial* material);
-    bool loadImageORM(Image* image, const aiMaterial* material);
-    bool loadImageNormal(Image* image, const aiMaterial* material);
+    bool LoadImageAlbedo(Image* image, const aiMaterial* material);
+    bool LoadImageEmission(Image* image, const aiMaterial* material);
+    bool LoadImageORM(Image* image, const aiMaterial* material);
+    bool LoadImageNormal(Image* image, const aiMaterial* material);
 
     /** Helpers */
-    static NX_TextureWrap getWrapMode(aiTextureMapMode wrap);
+    static NX_TextureWrap GetWrapMode(aiTextureMapMode wrap);
 
 private:
     util::DynamicArray<MaterialTextures> mTextures;
@@ -113,7 +113,7 @@ inline TextureLoader::TextureLoader(const SceneImporter& importer)
                 int i = jobIndex / MAP_COUNT;
                 int j = jobIndex % MAP_COUNT;
 
-                loadImage(&images[i][j], importer.GetMaterial(i), Map(j));
+                LoadImage(&images[i][j], importer.GetMaterial(i), Map(j));
 
                 // Indicate that the image is ready for upload
                 {
@@ -144,7 +144,7 @@ inline TextureLoader::TextureLoader(const SceneImporter& importer)
 
         if (img.image.pixels) {
             mTextures[i][j] = NX_CreateTextureFromImageEx(
-                &img.image, getWrapMode(img.wrap[0]),
+                &img.image, GetWrapMode(img.wrap[0]),
                 NX_GetDefaultTextureFilter()
             );
             if (img.owned) {
@@ -167,14 +167,14 @@ inline TextureLoader::TextureLoader(const SceneImporter& importer)
     }
 }
 
-inline NX_Texture* TextureLoader::get(int materialIndex, Map map)
+inline NX_Texture* TextureLoader::Get(int materialIndex, Map map)
 {
     return mTextures[materialIndex][map];
 }
 
 /* === Private Implementation === */
 
-inline bool TextureLoader::loadImage(Image* image, const aiMaterial* material, aiTextureType type, uint32_t index, bool asData)
+inline bool TextureLoader::LoadImage(Image* image, const aiMaterial* material, aiTextureType type, uint32_t index, bool asData)
 {
     aiString path{};
     if (material->GetTexture(type, index, &path, nullptr, nullptr, nullptr, nullptr, image->wrap) != AI_SUCCESS) {
@@ -220,17 +220,17 @@ inline bool TextureLoader::loadImage(Image* image, const aiMaterial* material, a
     return true;
 }
 
-inline bool TextureLoader::loadImage(Image* image, const aiMaterial* material, Map map)
+inline bool TextureLoader::LoadImage(Image* image, const aiMaterial* material, Map map)
 {
     switch (map) {
     case MAP_ALBEDO:
-        return loadImageAlbedo(image, material);
+        return LoadImageAlbedo(image, material);
     case MAP_EMISSION:
-        return loadImageEmission(image, material);
+        return LoadImageEmission(image, material);
     case MAP_ORM:
-        return loadImageORM(image, material);
+        return LoadImageORM(image, material);
     case MAP_NORMAL:
-        return loadImageNormal(image, material);
+        return LoadImageNormal(image, material);
     case MAP_COUNT:
         NX_UNREACHABLE();
         break;
@@ -238,21 +238,21 @@ inline bool TextureLoader::loadImage(Image* image, const aiMaterial* material, M
     return false;
 }
 
-inline bool TextureLoader::loadImageAlbedo(Image* image, const aiMaterial* material)
+inline bool TextureLoader::LoadImageAlbedo(Image* image, const aiMaterial* material)
 {
-    bool valid = loadImage(image, material, aiTextureType_BASE_COLOR, 0, false);
+    bool valid = LoadImage(image, material, aiTextureType_BASE_COLOR, 0, false);
     if (!valid) {
-        valid = loadImage(image, material, aiTextureType_DIFFUSE, 0, false);
+        valid = LoadImage(image, material, aiTextureType_DIFFUSE, 0, false);
     }
     return valid;
 }
 
-inline bool TextureLoader::loadImageEmission(Image* image, const aiMaterial* material)
+inline bool TextureLoader::LoadImageEmission(Image* image, const aiMaterial* material)
 {
-    return loadImage(image, material, aiTextureType_EMISSIVE, 0, false);
+    return LoadImage(image, material, aiTextureType_EMISSIVE, 0, false);
 }
 
-inline bool TextureLoader::loadImageORM(Image* image, const aiMaterial* material)
+inline bool TextureLoader::LoadImageORM(Image* image, const aiMaterial* material)
 {
     Image imOcclusion{};
     Image imRoughness{};
@@ -260,16 +260,16 @@ inline bool TextureLoader::loadImageORM(Image* image, const aiMaterial* material
 
     /* --- Load occlusion map --- */
 
-    bool retOcclusion = loadImage(&imOcclusion, material, aiTextureType_AMBIENT_OCCLUSION, 0, true);
+    bool retOcclusion = LoadImage(&imOcclusion, material, aiTextureType_AMBIENT_OCCLUSION, 0, true);
     if (!retOcclusion) {
-        retOcclusion = loadImage(&imOcclusion, material, aiTextureType_LIGHTMAP, 0, true);
+        retOcclusion = LoadImage(&imOcclusion, material, aiTextureType_LIGHTMAP, 0, true);
     }
 
     /* --- Load roughness map --- */
 
-    bool retRoughness = loadImage(&imRoughness, material, aiTextureType_DIFFUSE_ROUGHNESS, 0, true);
+    bool retRoughness = LoadImage(&imRoughness, material, aiTextureType_DIFFUSE_ROUGHNESS, 0, true);
     if (!retRoughness) {
-        retRoughness = loadImage(&imOcclusion, material, aiTextureType_SHININESS, 0, true);
+        retRoughness = LoadImage(&imOcclusion, material, aiTextureType_SHININESS, 0, true);
         if (retRoughness) {
             NX_InvertImage(&imRoughness.image);
         }
@@ -277,9 +277,9 @@ inline bool TextureLoader::loadImageORM(Image* image, const aiMaterial* material
 
     /* --- Load metalness map --- */
 
-    bool retMetalness = loadImage(&imMetalness, material, aiTextureType_METALNESS, 0, true);
+    bool retMetalness = LoadImage(&imMetalness, material, aiTextureType_METALNESS, 0, true);
     if (!retMetalness && !retRoughness) {
-        retRoughness = loadImage(
+        retRoughness = LoadImage(
             &imRoughness, material,
             AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, true
         );
@@ -336,12 +336,12 @@ inline bool TextureLoader::loadImageORM(Image* image, const aiMaterial* material
     return true;
 }
 
-inline bool TextureLoader::loadImageNormal(Image* image, const aiMaterial* material)
+inline bool TextureLoader::LoadImageNormal(Image* image, const aiMaterial* material)
 {
-    return loadImage(image, material, aiTextureType_NORMALS, 0, true);
+    return LoadImage(image, material, aiTextureType_NORMALS, 0, true);
 }
 
-inline NX_TextureWrap TextureLoader::getWrapMode(aiTextureMapMode wrap)
+inline NX_TextureWrap TextureLoader::GetWrapMode(aiTextureMapMode wrap)
 {
     NX_TextureWrap hpWrap = NX_TEXTURE_WRAP_CLAMP;
 

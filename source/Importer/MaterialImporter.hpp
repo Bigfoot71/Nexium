@@ -22,11 +22,11 @@ public:
     MaterialImporter(const SceneImporter& importer);
 
     /** Loads the materials and stores them in the specified model */
-    bool loadMaterials(NX_Model* model);
+    bool LoadMaterials(NX_Model* model);
 
 private:
     /** Loads a material into memory */
-    void loadMaterial(NX_Material* material, int index);
+    void LoadMaterial(NX_Material* material, int index);
 
 private:
     const SceneImporter& mImporter;
@@ -41,7 +41,7 @@ inline MaterialImporter::MaterialImporter(const SceneImporter& importer)
     SDL_assert(importer.IsValid());
 }
 
-inline bool MaterialImporter::loadMaterials(NX_Model* model)
+inline bool MaterialImporter::LoadMaterials(NX_Model* model)
 {
     model->materialCount = mImporter.GetMaterialCount();
     model->materials = NX_Malloc<NX_Material>(model->materialCount);
@@ -51,7 +51,7 @@ inline bool MaterialImporter::loadMaterials(NX_Model* model)
     }
 
     for (size_t i = 0; i < model->materialCount; i++) {
-        loadMaterial(&model->materials[i], i);
+        LoadMaterial(&model->materials[i], i);
     }
 
     return true;
@@ -59,7 +59,7 @@ inline bool MaterialImporter::loadMaterials(NX_Model* model)
 
 /* === Private Material === */
 
-inline void MaterialImporter::loadMaterial(NX_Material* material, int index)
+inline void MaterialImporter::LoadMaterial(NX_Material* material, int index)
 {
     const aiMaterial* aiMat = mImporter.GetMaterial(index);
 
@@ -69,7 +69,7 @@ inline void MaterialImporter::loadMaterial(NX_Material* material, int index)
 
     /* --- Load albedo map --- */
 
-    material->albedo.texture = mTextureLoader.get(index, TextureLoader::MAP_ALBEDO);
+    material->albedo.texture = mTextureLoader.Get(index, TextureLoader::MAP_ALBEDO);
 
     aiColor4D color;
     if (aiMat->Get(AI_MATKEY_BASE_COLOR, color) == AI_SUCCESS) {
@@ -97,7 +97,7 @@ inline void MaterialImporter::loadMaterial(NX_Material* material, int index)
 
     /* --- Load emission map --- */
 
-    material->emission.texture = mTextureLoader.get(index, TextureLoader::MAP_EMISSION);
+    material->emission.texture = mTextureLoader.Get(index, TextureLoader::MAP_EMISSION);
     if (material->emission.texture != nullptr) {
         material->emission.energy = 1.0f;
     }
@@ -110,7 +110,7 @@ inline void MaterialImporter::loadMaterial(NX_Material* material, int index)
 
     /* --- Load ORM map --- */
 
-    material->orm.texture = mTextureLoader.get(index, TextureLoader::MAP_ORM);
+    material->orm.texture = mTextureLoader.Get(index, TextureLoader::MAP_ORM);
 
     float roughness;
     if (aiMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == AI_SUCCESS) {
@@ -124,7 +124,7 @@ inline void MaterialImporter::loadMaterial(NX_Material* material, int index)
 
     /* --- Load normal map --- */
 
-    material->normal.texture = mTextureLoader.get(index, TextureLoader::MAP_NORMAL);
+    material->normal.texture = mTextureLoader.Get(index, TextureLoader::MAP_NORMAL);
     if (material->normal.texture != nullptr) {
         float normalScale;
         if (aiMat->Get(AI_MATKEY_BUMPSCALING, normalScale) == AI_SUCCESS) {

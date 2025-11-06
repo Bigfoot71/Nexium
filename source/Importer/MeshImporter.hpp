@@ -21,15 +21,15 @@ public:
     MeshImporter(const SceneImporter& importer);
 
     /** Loads the meshes and stores them in the specified model */
-    bool loadMeshes(NX_Model* model);
+    bool LoadMeshes(NX_Model* model);
 
 private:
     /** Iterate through all nodes to load meshes */
-    bool loadRecursive(NX_Model* model, const aiNode* node, const NX_Mat4& parentTransform);
+    bool LoadRecursive(NX_Model* model, const aiNode* node, const NX_Mat4& parentTransform);
 
     /** Loads a mesh into memory */
     template <bool HasBones>
-    NX_Mesh* loadMesh(const aiMesh* mesh, const NX_Mat4& transform);
+    NX_Mesh* LoadMesh(const aiMesh* mesh, const NX_Mat4& transform);
 
 private:
     const SceneImporter& mImporter;
@@ -43,7 +43,7 @@ inline MeshImporter::MeshImporter(const SceneImporter& importer)
     SDL_assert(importer.IsValid());
 }
 
-inline bool MeshImporter::loadMeshes(NX_Model* model)
+inline bool MeshImporter::LoadMeshes(NX_Model* model)
 {
     model->meshCount = mImporter.GetScene()->mNumMeshes;
 
@@ -60,7 +60,7 @@ inline bool MeshImporter::loadMeshes(NX_Model* model)
         return false;
     }
 
-    if (!loadRecursive(model, mImporter.GetRootNode(), NX_MAT4_IDENTITY)) {
+    if (!LoadRecursive(model, mImporter.GetRootNode(), NX_MAT4_IDENTITY)) {
         for (int i = 0; i < model->meshCount; i++) {
             NX_DestroyMesh(model->meshes[i]);
         }
@@ -82,7 +82,7 @@ inline bool MeshImporter::loadMeshes(NX_Model* model)
 
 /* === Private Implementation === */
 
-inline bool MeshImporter::loadRecursive(NX_Model* model, const aiNode* node, const NX_Mat4& parentTransform)
+inline bool MeshImporter::LoadRecursive(NX_Model* model, const aiNode* node, const NX_Mat4& parentTransform)
 {
     NX_Mat4 localTransform = AssimpCast<NX_Mat4>(node->mTransformation);
     NX_Mat4 globalTransform = NX_Mat4Mul(&localTransform, &parentTransform);
@@ -95,10 +95,10 @@ inline bool MeshImporter::loadRecursive(NX_Model* model, const aiNode* node, con
         model->meshMaterials[meshIndex] = mesh->mMaterialIndex;
 
         if (mesh->mNumBones) {
-            model->meshes[meshIndex] = loadMesh<true>(mesh, globalTransform);
+            model->meshes[meshIndex] = LoadMesh<true>(mesh, globalTransform);
         }
         else {
-            model->meshes[meshIndex] = loadMesh<false>(mesh, globalTransform);
+            model->meshes[meshIndex] = LoadMesh<false>(mesh, globalTransform);
         }
 
         if (model->meshes[meshIndex] == nullptr) {
@@ -108,7 +108,7 @@ inline bool MeshImporter::loadRecursive(NX_Model* model, const aiNode* node, con
     }
 
     for (uint32_t i = 0; i < node->mNumChildren; i++) {
-        if(!loadRecursive(model, node->mChildren[i], globalTransform)) {
+        if(!LoadRecursive(model, node->mChildren[i], globalTransform)) {
             return false;
         }
     }
@@ -117,7 +117,7 @@ inline bool MeshImporter::loadRecursive(NX_Model* model, const aiNode* node, con
 }
 
 template <bool HasBones>
-NX_Mesh* MeshImporter::loadMesh(const aiMesh* mesh, const NX_Mat4& transform)
+NX_Mesh* MeshImporter::LoadMesh(const aiMesh* mesh, const NX_Mat4& transform)
 {
     /* --- Validate input parameters --- */
 
