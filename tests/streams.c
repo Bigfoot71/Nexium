@@ -1,6 +1,5 @@
 #include <NX/Nexium.h>
 #include "./common.h"
-#include "NX/NX_AudioStream.h"
 
 enum AudioFormat {
     WAV, FLAC, MP3, OGG, COUNT

@@ -1,12 +1,26 @@
+/* shadows.c -- Test shadows for directional, spot, and omni lights
+ *
+ * Copyright (c) 2025 Le Juez Victor
+ *
+ * This software is provided 'as-is', without any express or implied warranty.
+ * For conditions of distribution and use, see accompanying LICENSE file.
+ */
+
 #include <NX/Nexium.h>
 #include "./common.h"
 
 int main(void)
 {
+    /* --- Initialize engine --- */
+
     NX_Init("Nexium - Shadows", 800, 450, NX_FLAG_VSYNC_HINT);
 
+    /* --- Create meshes --- */
+
     NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_IVEC2_ONE, NX_VEC3_UP);
-    NX_Mesh* cube = NX_GenMeshCube(NX_VEC3_1(0.5f), NX_IVEC3_ONE);
+    NX_Mesh* cube   = NX_GenMeshCube(NX_VEC3_1(0.5f), NX_IVEC3_ONE);
+
+    /* --- Setup directional light --- */
 
     NX_Light* dirLight = NX_CreateLight(NX_LIGHT_DIR);
     NX_SetLightDirection(dirLight, NX_VEC3(-1, -1, 0));
@@ -14,6 +28,8 @@ int main(void)
     NX_SetLightRange(dirLight, 16.0f);
     NX_SetShadowActive(dirLight, true);
     NX_SetLightActive(dirLight, true);
+
+    /* --- Setup spot light --- */
 
     NX_Light* spotLight = NX_CreateLight(NX_LIGHT_SPOT);
     NX_SetLightPosition(spotLight, NX_VEC3(0, 5, -10));
@@ -23,6 +39,8 @@ int main(void)
     NX_SetShadowActive(spotLight, true);
     NX_SetLightActive(spotLight, true);
 
+    /* --- Setup omni light --- */
+
     NX_Light* omniLight = NX_CreateLight(NX_LIGHT_OMNI);
     NX_SetLightPosition(omniLight, NX_VEC3(0, 5, 10));
     NX_SetLightColor(omniLight, NX_BLUE);
@@ -30,46 +48,54 @@ int main(void)
     NX_SetShadowActive(omniLight, true);
     NX_SetLightActive(omniLight, true);
 
+    /* --- Setup environment --- */
+
     NX_Environment env = NX_GetDefaultEnvironment();
     env.background = NX_BLACK;
     env.ambient = NX_BLACK;
 
     NX_Camera camera = NX_GetDefaultCamera();
 
+    /* --- Main loop --- */
+
     while (NX_FrameStep())
     {
         CMN_UpdateCamera(&camera, NX_VEC3(0, 0, 0), 8.0f, 4.0f);
 
         NX_Begin3D(&camera, &env, NULL);
-        {
-            NX_DrawMesh3D(ground, NULL, NULL);
 
-            NX_Transform transform = NX_TRANSFORM_IDENTITY;
+        NX_DrawMesh3D(ground, NULL, NULL);
 
-            for (float z = -4.0f; z <= 4.0f; z += 2.0f) {
-                for (float x = -4.0f; x <= 4.0f; x += 2.0f) {
-                    transform.translation = NX_VEC3(x, 0.25f, z);
-                    NX_DrawMesh3D(cube, NULL, &transform);
-                }
+        NX_Transform transform = NX_TRANSFORM_IDENTITY;
+        for (float z = -4.0f; z <= 4.0f; z += 2.0f) {
+            for (float x = -4.0f; x <= 4.0f; x += 2.0f) {
+                transform.translation = NX_VEC3(x, 0.25f, z);
+                NX_DrawMesh3D(cube, NULL, &transform);
             }
-
-            /* --- Draw spot/omni lights --- */
-
-            NX_Material mat = NX_GetDefaultMaterial();
-            mat.shading = NX_SHADING_UNLIT;
-
-            transform.scale = NX_VEC3_1(0.25f);
-
-            mat.albedo.color = NX_GetLightColor(spotLight);
-            transform.translation = NX_GetLightPosition(spotLight);
-            NX_DrawMesh3D(cube, &mat, &transform);
-
-            mat.albedo.color = NX_GetLightColor(omniLight);
-            transform.translation = NX_GetLightPosition(omniLight);
-            NX_DrawMesh3D(cube, &mat, &transform);
         }
+
+        NX_Material mat = NX_GetDefaultMaterial();
+        mat.shading = NX_SHADING_UNLIT;
+        transform.scale = NX_VEC3_1(0.25f);
+
+        mat.albedo.color = NX_GetLightColor(spotLight);
+        transform.translation = NX_GetLightPosition(spotLight);
+        NX_DrawMesh3D(cube, &mat, &transform);
+
+        mat.albedo.color = NX_GetLightColor(omniLight);
+        transform.translation = NX_GetLightPosition(omniLight);
+        NX_DrawMesh3D(cube, &mat, &transform);
+
         NX_End3D();
     }
+
+    /* --- Cleanup --- */
+
+    NX_DestroyMesh(ground);
+    NX_DestroyMesh(cube);
+    NX_DestroyLight(dirLight);
+    NX_DestroyLight(spotLight);
+    NX_DestroyLight(omniLight);
 
     NX_Quit();
 

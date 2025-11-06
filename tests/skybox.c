@@ -89,6 +89,7 @@ int main(void)
     NX_DestroyReflectionProbe(env[1].sky.probe);
     NX_DestroyCubemap(env[0].sky.cubemap);
     NX_DestroyCubemap(env[1].sky.cubemap);
+    NX_DestroyMesh(sphere);
 
     NX_Quit();
 
