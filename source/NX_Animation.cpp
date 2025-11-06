@@ -34,11 +34,11 @@ NX_AnimationLib* NX_LoadAnimationLib(const char* filePath, int targetFrameRate)
 NX_AnimationLib* NX_LoadAnimationLibFromData(const void* data, unsigned int size, const char* hint, int targetFrameRate)
 {
     import::SceneImporter importer(data, size, hint);
-    if (!importer.isValid()) {
+    if (!importer.IsValid()) {
         return nullptr;
     }
 
-    return import::AnimationImporter(importer).LoadAnimationLib(targetFrameRate);
+    return import::AnimationImporter(importer).LoadAnimationLib();
 }
 
 void NX_DestroyAnimationLib(NX_AnimationLib* animLib)
@@ -49,24 +49,32 @@ void NX_DestroyAnimationLib(NX_AnimationLib* animLib)
 
     for (int i = 0; i < animLib->count; i++) {
         NX_Animation& anim = animLib->animations[i];
-        for (int j = 0; j < anim.frameCount; j++) {
-            NX_Free(anim.frameGlobalPoses[j]);
-            NX_Free(anim.frameLocalPoses[j]);
+        for (int j = 0; j < anim.channelCount; j++) {
+            NX_AnimationChannel& channel = anim.channels[j];
+            NX_Free(channel.positionKeys);
+            NX_Free(channel.rotationKeys);
+            NX_Free(channel.scaleKeys);
         }
-        NX_Free(anim.frameGlobalPoses);
-        NX_Free(anim.frameLocalPoses);
-        NX_Free(anim.bones);
+        NX_Free(anim.channels);
     }
 
     INX_Pool.Destroy(animLib);
 }
 
-NX_Animation* NX_GetAnimation(const NX_AnimationLib* animLib, const char* name)
+int NX_GetAnimationIndex(const NX_AnimationLib* animLib, const char* name)
 {
     for (int i = 0; i < animLib->count; i++) {
         if (SDL_strcmp(animLib->animations[i].name, name) == 0) {
-            return &animLib->animations[i];
+            return i;
         }
     }
-    return nullptr;
+    return -1;
+}
+
+NX_Animation* NX_GetAnimation(const NX_AnimationLib* animLib, const char* name)
+{
+    int index = NX_GetAnimationIndex(animLib, name);
+    if (index < 0) return nullptr;
+
+    return &animLib->animations[index];
 }

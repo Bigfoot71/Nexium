@@ -9,6 +9,7 @@
 #ifndef INX_GLOBAL_POOL_HPP
 #define INX_GLOBAL_POOL_HPP
 
+#include <NX/NX_AnimationPlayer.h>
 #include <NX/NX_Animation.h>
 #include <NX/NX_Skeleton.h>
 #include <NX/NX_Model.h>
@@ -38,6 +39,7 @@ public:
     using AudioClips        = util::ObjectPool<NX_AudioClip, 128>;
 
     /** Render */
+    using AnimationPlayers  = util::ObjectPool<NX_AnimationPlayer, 128>;
     using ReflectionProbes  = util::ObjectPool<NX_ReflectionProbe, 32>;
     using VertexBuffers3D   = util::ObjectPool<NX_VertexBuffer3D, 512>;
     using InstanceBuffers   = util::ObjectPool<NX_InstanceBuffer, 32>;
@@ -77,6 +79,7 @@ private:
     AudioClips       mAudioClips;
 
     /** Render */
+    AnimationPlayers mAnimationPlayers;
     ReflectionProbes mReflectionProbes;
     VertexBuffers3D  mVertexBuffers3D;
     InstanceBuffers  mInstanceBuffers;
@@ -104,6 +107,7 @@ inline auto& INX_GlobalPool::Get()
 {
     if constexpr (std::is_same_v<T, NX_AudioStream>)          return mAudioStreams;
     else if constexpr (std::is_same_v<T, NX_AudioClip>)       return mAudioClips;
+    else if constexpr (std::is_same_v<T, NX_AnimationPlayer>) return mAnimationPlayers;
     else if constexpr (std::is_same_v<T, NX_ReflectionProbe>) return mReflectionProbes;
     else if constexpr (std::is_same_v<T, NX_VertexBuffer3D>)  return mVertexBuffers3D;
     else if constexpr (std::is_same_v<T, NX_InstanceBuffer>)  return mInstanceBuffers;
@@ -152,6 +156,7 @@ inline void INX_GlobalPool::UnloadAll()
     mModels.Clear();
     mMeshes.Clear();
     mSkeletons.Clear();
+    mAnimationPlayers.Clear();
     mAnimationLibs.Clear();
     mDynamicMeshes.Clear();
     mInstanceBuffers.Clear();

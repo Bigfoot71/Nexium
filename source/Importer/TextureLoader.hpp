@@ -77,7 +77,7 @@ inline TextureLoader::TextureLoader(const SceneImporter& importer)
     //         the same texture, that texture will be loaded twice. I haven't
     //         encountered a model where this happens yet, but it is possible!
 
-    const int matCount = importer.materialCount();
+    const int matCount = importer.GetMaterialCount();
     mTextures.Resize(matCount);
 
     /* --- Temporary storage of images --- */
@@ -113,7 +113,7 @@ inline TextureLoader::TextureLoader(const SceneImporter& importer)
                 int i = jobIndex / MAP_COUNT;
                 int j = jobIndex % MAP_COUNT;
 
-                loadImage(&images[i][j], importer.material(i), Map(j));
+                loadImage(&images[i][j], importer.GetMaterial(i), Map(j));
 
                 // Indicate that the image is ready for upload
                 {
@@ -184,7 +184,7 @@ inline bool TextureLoader::loadImage(Image* image, const aiMaterial* material, a
     if (path.data[0] == '*')
     {
         int textureIndex = atoi(&path.data[1]);
-        const aiTexture* aiTex = mImporter.texture(textureIndex);
+        const aiTexture* aiTex = mImporter.GetTexture(textureIndex);
 
         if (aiTex->mHeight == 0) {
             if (asData) {

@@ -34,7 +34,7 @@ NX_Skeleton* NX_LoadSkeleton(const char* filePath)
 NX_Skeleton* NX_LoadSkeletonFromData(const void* data, unsigned int size, const char* hint)
 {
     import::SceneImporter importer(data, size, hint);
-    if (!importer.isValid()) {
+    if (!importer.IsValid()) {
         return nullptr;
     }
 
@@ -47,9 +47,10 @@ void NX_DestroySkeleton(NX_Skeleton* skeleton)
         return;
     }
 
-    NX_Free(skeleton->bones);
     NX_Free(skeleton->boneOffsets);
-    NX_Free(skeleton->boneBindPose);
+    NX_Free(skeleton->bindLocal);
+    NX_Free(skeleton->bindPose);
+    NX_Free(skeleton->bones);
 
     INX_Pool.Destroy(skeleton);
 }

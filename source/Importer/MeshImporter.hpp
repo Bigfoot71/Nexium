@@ -40,12 +40,12 @@ private:
 inline MeshImporter::MeshImporter(const SceneImporter& importer)
     : mImporter(importer)
 {
-    SDL_assert(importer.isValid());
+    SDL_assert(importer.IsValid());
 }
 
 inline bool MeshImporter::loadMeshes(NX_Model* model)
 {
-    model->meshCount = mImporter.scene()->mNumMeshes;
+    model->meshCount = mImporter.GetScene()->mNumMeshes;
 
     model->meshes = static_cast<NX_Mesh**>(SDL_calloc(model->meshCount, sizeof(NX_Mesh*)));
     if (model->meshes == nullptr) {
@@ -60,7 +60,7 @@ inline bool MeshImporter::loadMeshes(NX_Model* model)
         return false;
     }
 
-    if (!loadRecursive(model, mImporter.rootNode(), NX_MAT4_IDENTITY)) {
+    if (!loadRecursive(model, mImporter.GetRootNode(), NX_MAT4_IDENTITY)) {
         for (int i = 0; i < model->meshCount; i++) {
             NX_DestroyMesh(model->meshes[i]);
         }
@@ -90,7 +90,7 @@ inline bool MeshImporter::loadRecursive(NX_Model* model, const aiNode* node, con
     for (uint32_t i = 0; i < node->mNumMeshes; i++)
     {
         uint32_t meshIndex = node->mMeshes[i];
-        const aiMesh* mesh = mImporter.mesh(meshIndex);
+        const aiMesh* mesh = mImporter.GetMesh(meshIndex);
 
         model->meshMaterials[meshIndex] = mesh->mMaterialIndex;
 

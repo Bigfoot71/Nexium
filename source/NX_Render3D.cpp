@@ -572,21 +572,12 @@ static int INX_ComputeBoneMatrices(const NX_Model& model)
 {
     const NX_Skeleton& skeleton = *model.skeleton;
 
-    const NX_Mat4* boneMatrices = skeleton.boneBindPose;
-    if (model.animMode == NX_ANIM_INTERNAL && model.anim != nullptr) {
-        if (skeleton.boneCount != model.anim->boneCount) {
-            NX_LOG(W, "RENDER: Model and animation bone counts differ");
-        }
-        float frame = NX_Wrap(model.animFrame, 0.0f, model.anim->frameCount - 1.0f);
-        boneMatrices = model.anim->frameGlobalPoses[static_cast<int>(frame + 0.5f)];
-    }
-    else if (model.animMode == NX_ANIM_CUSTOM && model.boneOverride != nullptr) {
-        boneMatrices = model.boneOverride;
-    }
+    const NX_Mat4* currentPose = (model.player != nullptr)
+        ? model.player->currentPose : skeleton.bindPose;
 
     int boneMatrixOffset = -1;
     NX_Mat4* bones = INX_Render3D->drawCalls.boneBuffer.StageMap(skeleton.boneCount, &boneMatrixOffset);
-    NX_Mat4MulBatch(bones, skeleton.boneOffsets, boneMatrices, skeleton.boneCount);
+    NX_Mat4MulBatch(bones, skeleton.boneOffsets, currentPose, skeleton.boneCount);
 
     return boneMatrixOffset;
 }

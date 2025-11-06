@@ -10,7 +10,6 @@
 
 #include <SDL3/SDL_assert.h>
 #include <assimp/mesh.h>
-#include <float.h>
 
 namespace import {
 
@@ -18,20 +17,26 @@ namespace import {
 
 class SkeletonImporter {
 public:
-    /** Constructors */
     SkeletonImporter(const SceneImporter& importer);
-
-    /** Loads the bones and stores them in the specified skeleton */
     NX_Skeleton* ProcessSkeleton();
 
 private:
-    static int FindBoneIndex(const char* name, NX_BoneInfo* bones, int count);
-    static aiMatrix4x4 GetGlobalNodeTransform(const aiNode* node, const aiNode* rootNode);
-    static const aiNode* FindNodeByName(const aiNode* node, const char* name);
-    static void BuildHierarchyRecursive(const aiNode* node, NX_BoneInfo* bones, int boneCount, int parentIndex);
+    void BuildSkeletonRecursive(
+        const aiNode* node, int parentIndex,
+        const NX_Mat4& parentTransform);
 
 private:
     const SceneImporter& mImporter;
+
+private:
+    /**
+     * Owned by the resulting NX_Skeleton, do not free here.
+     * Stored as members to share with BuildSkeletonRecursive.
+     */
+    NX_BoneInfo* mBones{nullptr};
+    NX_Mat4* mBoneOffsets{nullptr};
+    NX_Mat4* mBindLocal{nullptr};
+    NX_Mat4* mBindPose{nullptr};
 };
 
 /* === Public Implementation === */
@@ -39,144 +44,89 @@ private:
 inline SkeletonImporter::SkeletonImporter(const SceneImporter& importer)
     : mImporter(importer)
 {
-    SDL_assert(importer.isValid());
+    SDL_assert(importer.IsValid());
 }
 
 inline NX_Skeleton* SkeletonImporter::ProcessSkeleton()
 {
-    /* --- Count maximum possible bones across all meshes --- */
-
-    int maxPossibleBones = 0;
-    for (uint32_t i = 0; i < mImporter.meshCount(); i++) {
-        maxPossibleBones += mImporter.mesh(i)->mNumBones;
-    }
-
-    /* --- Early exit if no bones found --- */
-
-    if (maxPossibleBones == 0) {
+    int boneCount = mImporter.GetBoneCount();
+    if (boneCount == 0) {
         return nullptr;
     }
 
     /* --- Allocate bone arrays --- */
 
-    NX_BoneInfo* bones = NX_Malloc<NX_BoneInfo>(maxPossibleBones);
-    NX_Mat4* boneOffsets = NX_Malloc<NX_Mat4>(maxPossibleBones);
-    NX_Mat4* boneBindPose = NX_Malloc<NX_Mat4>(maxPossibleBones);
+    mBones = NX_Malloc<NX_BoneInfo>(boneCount);
+    mBoneOffsets = NX_Malloc<NX_Mat4>(boneCount);
+    mBindLocal = NX_Malloc<NX_Mat4>(boneCount);
+    mBindPose = NX_Malloc<NX_Mat4>(boneCount);
 
-    if (!bones || !boneOffsets || !boneBindPose) {
+    if (!mBones || !mBoneOffsets || !mBindLocal || !mBindPose) {
         NX_LOG(E, "RENDER: Failed to allocate memory for skeleton bones");
-        NX_Free(boneBindPose);
-        NX_Free(boneOffsets);
-        NX_Free(bones);
+        NX_Free(mBoneOffsets);
+        NX_Free(mBindLocal);
+        NX_Free(mBindPose);
+        NX_Free(mBones);
         return nullptr;
     }
 
-    /* --- Collect unique bones with offset and bind pose matrices --- */
+    /* --- Initialize parent indices --- */
 
-    int uniqueBoneCount = 0;
-    for (uint32_t m = 0; m < mImporter.meshCount(); m++) {
-        const aiMesh* mesh = mImporter.mesh(m);
+    for (int i = 0; i < boneCount; i++) {
+        mBones[i].parent = -1;
+    }
+
+    /* --- Fill bone offsets from meshes --- */
+
+    for (uint32_t m = 0; m < mImporter.GetMeshCount(); m++) {
+        const aiMesh* mesh = mImporter.GetMesh(m);
         for (uint32_t b = 0; b < mesh->mNumBones; b++) {
             const aiBone* bone = mesh->mBones[b];
-            if (FindBoneIndex(bone->mName.data, bones, uniqueBoneCount) == -1)
-            {
-                SDL_strlcpy(bones[uniqueBoneCount].name, bone->mName.data, sizeof(bones[uniqueBoneCount].name));
-                bones[uniqueBoneCount].parent = -1;
-
-                boneOffsets[uniqueBoneCount] = AssimpCast<NX_Mat4>(bone->mOffsetMatrix);
-
-                const aiNode* boneNode = FindNodeByName(mImporter.rootNode(), bone->mName.data);
-                if (boneNode) {
-                    aiMatrix4x4 globalTransform = GetGlobalNodeTransform(boneNode, mImporter.rootNode());
-                    boneBindPose[uniqueBoneCount] = AssimpCast<NX_Mat4>(globalTransform);
-                }
-                else {
-                    aiMatrix4x4 bindPoseMatrix = bone->mOffsetMatrix;
-                    boneBindPose[uniqueBoneCount] = AssimpCast<NX_Mat4>(bindPoseMatrix.Inverse());
-                }
-
-                uniqueBoneCount++;
+            int boneIdx = mImporter.GetBoneIndex(bone->mName.data);
+            if (boneIdx >= 0) {
+                mBoneOffsets[boneIdx] = AssimpCast<NX_Mat4>(bone->mOffsetMatrix);
             }
         }
     }
 
-    /* --- Shrink arrays to actual bone count --- */
+    /* --- Build hierarchy and bind poses in single traversal --- */
 
-    if (uniqueBoneCount < maxPossibleBones)
-    {
-        NX_BoneInfo* resizedBones = NX_Realloc<NX_BoneInfo>(bones, uniqueBoneCount);
-        if (resizedBones) bones = resizedBones;
+    BuildSkeletonRecursive(mImporter.GetRootNode(), -1, NX_MAT4_IDENTITY);
 
-        NX_Mat4* resizedBoneOffsets = NX_Realloc<NX_Mat4>(boneOffsets, uniqueBoneCount);
-        if (resizedBoneOffsets) boneOffsets = resizedBoneOffsets;
-
-        NX_Mat4* resizedBoneBindPose = NX_Realloc<NX_Mat4>(boneBindPose, uniqueBoneCount);
-        if (resizedBoneBindPose) boneBindPose = resizedBoneBindPose;
-    }
-
-    /* --- Build bone hierarchy from scene graph --- */
-
-    BuildHierarchyRecursive(mImporter.rootNode(), bones, uniqueBoneCount, -1);
-
-    /* --- Create and return the skeleton --- */
+    /* --- Create skeleton --- */
 
     NX_Skeleton* skeleton = INX_Pool.Create<NX_Skeleton>();
 
-    skeleton->bones = bones;
-    skeleton->boneCount = uniqueBoneCount;
-
-    skeleton->boneOffsets = boneOffsets;
-    skeleton->boneBindPose = boneBindPose;
+    skeleton->bones = mBones;
+    skeleton->boneCount = boneCount;
+    skeleton->boneOffsets = mBoneOffsets;
+    skeleton->bindLocal = mBindLocal;
+    skeleton->bindPose = mBindPose;
 
     return skeleton;
 }
 
 /* === Private Implementation === */
 
-inline int SkeletonImporter::FindBoneIndex(const char* name, NX_BoneInfo* bones, int count)
+inline void SkeletonImporter::BuildSkeletonRecursive(
+    const aiNode* node, int parentIndex,
+    const NX_Mat4& parentTransform)
 {
-    for (int i = 0; i < count; i++) {
-        if (SDL_strcmp(name, bones[i].name) == 0) return i;
-    }
-    return -1;
-}
+    if (!node) return;
 
-inline aiMatrix4x4 SkeletonImporter::GetGlobalNodeTransform(const aiNode* node, const aiNode* rootNode)
-{
-    aiMatrix4x4 globalTransform;
-    const aiNode* current = node;
+    NX_Mat4 globalTransform = AssimpCast<NX_Mat4>(node->mTransformation) * parentTransform;
 
-    while (current && current != rootNode->mParent) {
-        globalTransform = current->mTransformation * globalTransform;
-        current = current->mParent;
-    }
-
-    return globalTransform;
-}
-
-inline const aiNode* SkeletonImporter::FindNodeByName(const aiNode* node, const char* name)
-{
-    if (SDL_strcmp(node->mName.data, name) == 0) return node;
-
-    for (uint32_t i = 0; i < node->mNumChildren; i++) {
-        const aiNode* found = FindNodeByName(node->mChildren[i], name);
-        if (found) return found;
-    }
-
-    return nullptr;
-}
-
-inline void SkeletonImporter::BuildHierarchyRecursive(const aiNode* node, NX_BoneInfo* bones, int boneCount, int parentIndex)
-{
-    int currentIndex = FindBoneIndex(node->mName.data, bones, boneCount);
-
-    if (currentIndex != -1) {
-        bones[currentIndex].parent = parentIndex;
+    int currentIndex = mImporter.GetBoneIndex(node->mName.data);
+    if (currentIndex >= 0) {
+        mBindPose[currentIndex] = globalTransform;
+        mBindLocal[currentIndex] = AssimpCast<NX_Mat4>(node->mTransformation);
+        SDL_strlcpy(mBones[currentIndex].name, node->mName.data, sizeof(mBones[currentIndex].name));
+        mBones[currentIndex].parent = parentIndex;
         parentIndex = currentIndex;
     }
 
     for (uint32_t i = 0; i < node->mNumChildren; i++) {
-        BuildHierarchyRecursive(node->mChildren[i], bones, boneCount, parentIndex);
+        BuildSkeletonRecursive(node->mChildren[i], parentIndex, globalTransform);
     }
 }
 

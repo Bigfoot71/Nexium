@@ -20,7 +20,11 @@ int main(void)
 
     NX_AnimationLib* animLib = NX_LoadAnimationLib("models/CesiumMan.glb", 30);
     NX_Model* model = NX_LoadModel("models/CesiumMan.glb");
-    model->anim = &animLib->animations[0];
+
+    NX_AnimationPlayer* animPlayer = NX_CreateAnimationPlayer(model->skeleton, animLib);
+    animPlayer->states[0].weight = 1.0f;
+    animPlayer->states[0].loop = true;
+    model->player = animPlayer;
 
     NX_InstanceBuffer* instances = NX_CreateInstanceBuffer(NX_INSTANCE_POSITION, MAX_INSTANCE);
     NX_Vec3* iPositions = NX_MapInstanceBuffer(instances, NX_INSTANCE_POSITION);
@@ -47,7 +51,7 @@ int main(void)
     {
         CMN_UpdateCamera(&camera, NX_VEC3(0, 1, 0), 2.0f, 1.0f);
         instanceCount = NX_CLAMP(instanceCount + NX_GetMouseWheel().y, 1, MAX_INSTANCE);
-        model->animFrame += 40 * NX_GetDeltaTime();
+        NX_UpdateAnimationPlayer(animPlayer, NX_GetDeltaTime());
 
         NX_Begin3D(&camera, NULL, NULL);
         {

@@ -9,10 +9,12 @@ int main(void)
     NX_RenderTexture* target = NX_CreateRenderTexture(1920, 1080);
 
     NX_Mesh* ground = NX_GenMeshQuad(NX_VEC2_1(10.0f), NX_IVEC2_ONE, NX_VEC3_UP);
-    NX_Model* model = NX_LoadModel("models/CesiumMan.glb");
 
     NX_AnimationLib* animLib = NX_LoadAnimationLib("models/CesiumMan.glb", 30);
-    model->anim = &animLib->animations[0];
+    NX_Model* model = NX_LoadModel("models/CesiumMan.glb");
+
+    NX_AnimationPlayer* animPlayer = NX_CreateAnimationPlayer(model->skeleton, animLib);
+    model->player = animPlayer;
 
     NX_Light* light = NX_CreateLight(NX_LIGHT_DIR);
     NX_SetLightDirection(light, NX_VEC3(-1, -1, -1));
@@ -24,7 +26,7 @@ int main(void)
     while (NX_FrameStep())
     {
         CMN_UpdateCamera(&camera, NX_VEC3(0, 1, 0), 2.0f, 1.0f);
-        model->animFrame += 40 * NX_GetDeltaTime();
+        NX_UpdateAnimationPlayer(animPlayer, NX_GetDeltaTime());
 
         NX_Begin3D(&camera, NULL, target);
         NX_DrawMesh3D(ground, NULL, NULL);

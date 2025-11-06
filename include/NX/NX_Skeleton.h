@@ -29,17 +29,18 @@ typedef struct NX_BoneInfo {
 /**
  * @brief Represents a skeletal hierarchy used for skinning.
  *
- * Defines the bone structure and reference poses of a model.
- * The skeleton provides the hierarchical bone layout, the bind pose,
- * and the inverse bind matrices required for vertex skinning and animation playback.
+ * Defines the bone structure, reference poses, and inverse bind matrices
+ * required for skeletal animation. The skeleton provides both local and
+ * global bind poses used during skinning and animation playback.
  */
 typedef struct NX_Skeleton {
 
-    NX_BoneInfo* bones;                 ///< Bones information (skeleton). Defines the hierarchy and names of bones.
-    int boneCount;                      ///< Number of bones.
+    NX_BoneInfo* bones;       ///< Array of bone descriptors defining the hierarchy and names.
+    int boneCount;            ///< Total number of bones in the skeleton.
 
-    NX_Mat4* boneBindPose;              ///< Array of matrices representing the bind pose of the model, this is the pose used by default for non-animated skinned models.
-    NX_Mat4* boneOffsets;               ///< Array of offset (inverse bind) matrices, one per bone. Transforms mesh-space vertices to bone space. Used in skinning.
+    NX_Mat4* boneOffsets;     ///< Inverse bind matrices, one per bone. Transform vertices from mesh space to bone space (used in skinning).
+    NX_Mat4* bindLocal;       ///< Bind pose transforms in local bone space (relative to parent).
+    NX_Mat4* bindPose;        ///< Bind pose transforms in model space (global). Used as the default pose when not animated.
 
 } NX_Skeleton;
 

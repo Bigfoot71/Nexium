@@ -38,12 +38,12 @@ private:
 inline MaterialImporter::MaterialImporter(const SceneImporter& importer)
     : mImporter(importer), mTextureLoader(importer)
 {
-    SDL_assert(importer.isValid());
+    SDL_assert(importer.IsValid());
 }
 
 inline bool MaterialImporter::loadMaterials(NX_Model* model)
 {
-    model->materialCount = mImporter.materialCount();
+    model->materialCount = mImporter.GetMaterialCount();
     model->materials = NX_Malloc<NX_Material>(model->materialCount);
     if (model->materials == nullptr) {
         NX_LOG(E, "RENDER: Unable to allocate memory for materials; The model will be invalid");
@@ -61,7 +61,7 @@ inline bool MaterialImporter::loadMaterials(NX_Model* model)
 
 inline void MaterialImporter::loadMaterial(NX_Material* material, int index)
 {
-    const aiMaterial* aiMat = mImporter.material(index);
+    const aiMaterial* aiMat = mImporter.GetMaterial(index);
 
     /* --- Initialize material defaults --- */
 

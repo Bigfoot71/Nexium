@@ -9,7 +9,7 @@
 #ifndef NX_MODEL_H
 #define NX_MODEL_H
 
-#include "./NX_Animation.h"
+#include "./NX_AnimationPlayer.h"
 #include "./NX_Material.h"
 #include "./NX_Skeleton.h"
 #include "./NX_Mesh.h"
@@ -17,16 +17,6 @@
 // ============================================================================
 // TYPES DEFINITIONS
 // ============================================================================
-
-/**
- * @brief Animation Update modes.
- *
- * Controls wether to allow external animation matrices
- */
-typedef enum NX_AnimMode {
-    NX_ANIM_INTERNAL,           ///< Default animation solution
-    NX_ANIM_CUSTOM,             ///< User supplied matrices
-} NX_AnimMode;
 
 /**
  * @brief Represents a complete 3D model with meshes and materials.
@@ -45,10 +35,7 @@ typedef struct NX_Model {
     NX_BoundingBox3D aabb;              ///< Axis-Aligned Bounding Box encompassing the whole model.
     NX_Skeleton* skeleton;              ///< Skeleton hierarchy and bind pose used for skinning (NULL if non-skinned).
 
-    const NX_Animation* anim;           ///< Pointer to the currently assigned animation for this model (optional).
-    NX_Mat4* boneOverride;              ///< Array of matrices we'll use if we have it instead of internal calculations, Used in skinning.
-    NX_AnimMode animMode;               ///< Animation mode for the model; specifies whether to use the model’s animation and frame or the boneOverride.
-    float animFrame;                    ///< Current animation frame index. Used for sampling bone poses from the animation.
+    NX_AnimationPlayer* player;         ///< Animation player controlling the skeleton. If NULL the model uses its bind pose.
 
 } NX_Model;
 

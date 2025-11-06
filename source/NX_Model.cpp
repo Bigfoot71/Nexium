@@ -44,7 +44,7 @@ NX_Model* NX_LoadModel(const char* filePath)
 NX_Model* NX_LoadModelFromData(const void* data, size_t size, const char* hint)
 {
     import::SceneImporter importer(data, size, hint);
-    if (!importer.isValid()) {
+    if (!importer.IsValid()) {
         return nullptr;
     }
 
