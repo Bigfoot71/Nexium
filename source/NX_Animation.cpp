@@ -17,13 +17,13 @@
 // PUBLIC API
 // ============================================================================
 
-NX_AnimationLib* NX_LoadAnimationLib(const char* filePath, int targetFrameRate)
+NX_AnimationLib* NX_LoadAnimationLib(const char* filePath)
 {
     size_t fileSize = 0;
     void* fileData = NX_LoadFile(filePath, &fileSize);
 
     NX_AnimationLib* animLib = NX_LoadAnimationLibFromData(
-        fileData, fileSize, INX_GetFileExt(filePath), targetFrameRate
+        fileData, fileSize, INX_GetFileExt(filePath)
     );
 
     NX_Free(fileData);
@@ -31,7 +31,7 @@ NX_AnimationLib* NX_LoadAnimationLib(const char* filePath, int targetFrameRate)
     return animLib;
 }
 
-NX_AnimationLib* NX_LoadAnimationLibFromData(const void* data, unsigned int size, const char* hint, int targetFrameRate)
+NX_AnimationLib* NX_LoadAnimationLibFromData(const void* data, unsigned int size, const char* hint)
 {
     import::SceneImporter importer(data, size, hint);
     if (!importer.IsValid()) {

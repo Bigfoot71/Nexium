@@ -98,7 +98,7 @@ extern "C" {
  * @return Pointer to an array of NX_Animation, or NULL on failure.
  * @note Free the returned array using NX_DestroyAnimationLib().
  */
-NXAPI NX_AnimationLib* NX_LoadAnimationLib(const char* filePath, int targetFrameRate);
+NXAPI NX_AnimationLib* NX_LoadAnimationLib(const char* filePath);
 
 /**
  * @brief Loads animations from memory data.
@@ -109,7 +109,7 @@ NXAPI NX_AnimationLib* NX_LoadAnimationLib(const char* filePath, int targetFrame
  * @return Pointer to an array of NX_Animation, or NULL on failure.
  * @note Free the returned array using NX_DestroyAnimationLib().
  */
-NXAPI NX_AnimationLib* NX_LoadAnimationLibFromData(const void* data, unsigned int size, const char* hint, int targetFrameRate);
+NXAPI NX_AnimationLib* NX_LoadAnimationLibFromData(const void* data, unsigned int size, const char* hint);
 
 /**
  * @brief Frees memory allocated for model animations.

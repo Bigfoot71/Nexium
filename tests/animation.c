@@ -24,7 +24,7 @@ int main(void)
 
     /* --- Load model and animation --- */
 
-    NX_AnimationLib* animLib = NX_LoadAnimationLib("models/CesiumMan.glb", 30);
+    NX_AnimationLib* animLib = NX_LoadAnimationLib("models/CesiumMan.glb");
     NX_Model* model = NX_LoadModel("models/CesiumMan.glb");
 
     /* --- Create and assign animation player --- */
