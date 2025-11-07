@@ -20,35 +20,9 @@
 // PUBLIC API
 // ============================================================================
 
-NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_Vertex3D* vertices, int vertexCount, const uint32_t* indices, int indexCount, const NX_BoundingBox3D* aabb)
+NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_MeshData* meshData, const NX_BoundingBox3D* aabb)
 {
-    if (vertices == nullptr || vertexCount == 0) {
-        NX_LOG(E, "RENDER: Failed to create mesh; Vertices and their count cannot be null");
-        return nullptr;
-    }
-
-    NX_Vertex3D* vCopy = NX_Malloc<NX_Vertex3D>(vertexCount);
-    SDL_memcpy(vCopy, vertices, vertexCount * sizeof(NX_Vertex3D));
-
-    uint32_t* iCopy = nullptr;
-    if (indices != nullptr && indexCount > 0) {
-        iCopy = NX_Malloc<uint32_t>(indexCount);
-        SDL_memcpy(iCopy, indices, indexCount * sizeof(uint32_t));
-    }
-
-    NX_Mesh* mesh = NX_CreateMeshFrom(type, vCopy, vertexCount, iCopy, indexCount, aabb);
-    if (mesh == nullptr) {
-        NX_Free(vCopy);
-        NX_Free(iCopy);
-        return nullptr;
-    }
-
-    return mesh;
-}
-
-NX_Mesh* NX_CreateMeshFrom(NX_PrimitiveType type, NX_Vertex3D* vertices, int vertexCount, uint32_t* indices, int indexCount, const NX_BoundingBox3D* aabb)
-{
-    if (vertices == nullptr || vertexCount == 0) {
+    if (meshData == nullptr || meshData->vertices == nullptr || meshData->vertexCount == 0) {
         NX_LOG(E, "RENDER: Failed to vertex mesh; Vertices and their count cannot be null");
         return nullptr;
     }
@@ -58,20 +32,20 @@ NX_Mesh* NX_CreateMeshFrom(NX_PrimitiveType type, NX_Vertex3D* vertices, int ver
         return nullptr;
     }
 
-    mesh->buffer = INX_Pool.Create<NX_VertexBuffer3D>(vertices, vertexCount, indices, indexCount);
-    mesh->vertices = vertices;
-    mesh->indices = indices;
+    mesh->buffer = INX_Pool.Create<NX_VertexBuffer3D>(
+        meshData->vertices, meshData->vertexCount,
+        meshData->indices, meshData->indexCount
+    );
 
-    mesh->vertexCount = vertexCount;
-    mesh->indexCount = indexCount;
     mesh->primitiveType = type;
-
     mesh->shadowCastMode = NX_SHADOW_CAST_ENABLED;
     mesh->shadowFaceMode = NX_SHADOW_FACE_AUTO;
     mesh->layerMask = NX_LAYER_01;
 
     if (aabb != nullptr) mesh->aabb = *aabb;
-    else NX_UpdateMeshAABB(mesh);
+    else {
+        mesh->aabb = NX_CalculateMeshDataBounds(meshData);
+    }
 
     return mesh;
 }
@@ -107,12 +81,9 @@ NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_IVec2 subDiv, NX_Vec3 normal)
     int vertexCount = (segX + 1) * (segY + 1);
     int indexCount = segX * segY * 6;
 
-    NX_Vertex3D* vertices = NX_Malloc<NX_Vertex3D>(vertexCount);
-    uint32_t* indices = NX_Malloc<uint32_t>(indexCount);
-
-    if (!vertices || !indices) {
-        NX_Free(vertices);
-        NX_Free(indices);
+    NX_MeshData data = NX_CreateMeshData(vertexCount, indexCount);
+    if (!data.vertices || !data.vertices) {
+        NX_DestroyMeshData(&data);
         return nullptr;
     }
 
@@ -140,7 +111,7 @@ NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_IVec2 subDiv, NX_Vec3 normal)
     int vertexIndex = 0;
     for (int y = 0; y <= segY; y++) {
         for (int x = 0; x <= segX; x++) {
-            NX_Vertex3D& vertex = vertices[vertexIndex++];
+            NX_Vertex3D& vertex = data.vertices[vertexIndex++];
 
             float u = ((float)x / segX) - 0.5f;
             float v = ((float)y / segY) - 0.5f;
@@ -169,19 +140,21 @@ NX_Mesh* NX_GenMeshQuad(NX_Vec2 size, NX_IVec2 subDiv, NX_Vec3 normal)
             uint32_t i2 = (y + 1) * (segX + 1) + (x + 1);
             uint32_t i3 = (y + 1) * (segX + 1) + x;
 
-            indices[indexIndex++] = i0;
-            indices[indexIndex++] = i1;
-            indices[indexIndex++] = i2;
+            data.indices[indexIndex++] = i0;
+            data.indices[indexIndex++] = i1;
+            data.indices[indexIndex++] = i2;
 
-            indices[indexIndex++] = i0;
-            indices[indexIndex++] = i2;
-            indices[indexIndex++] = i3;
+            data.indices[indexIndex++] = i0;
+            data.indices[indexIndex++] = i2;
+            data.indices[indexIndex++] = i3;
         }
     }
 
     /* --- Create and return the mesh --- */
 
-    return NX_CreateMeshFrom(NX_PRIMITIVE_TRIANGLES, vertices, vertexCount, indices, indexCount, nullptr);
+    NX_Mesh* mesh = NX_CreateMesh(NX_PRIMITIVE_TRIANGLES, &data, nullptr);
+    NX_DestroyMeshData(&data);
+    return mesh;
 }
 
 NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_IVec3 subDiv)
@@ -204,12 +177,9 @@ NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_IVec3 subDiv)
     int indicesTopBottom = segX * segZ * 6;
     int indexCount = 2 * (indicesFrontBack + indicesLeftRight + indicesTopBottom);
 
-    NX_Vertex3D* vertices = NX_Malloc<NX_Vertex3D>(vertexCount);
-    uint32_t* indices = NX_Malloc<uint32_t>(indexCount);
-
-    if (!vertices || !indices) {
-        NX_Free(vertices);
-        NX_Free(indices);
+    NX_MeshData data = NX_CreateMeshData(vertexCount, indexCount);
+    if (!data.vertices || !data.vertices) {
+        NX_DestroyMeshData(&data);
         return nullptr;
     }
 
@@ -242,7 +212,7 @@ NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_IVec3 subDiv)
 
         for (int v = 0; v <= fp.segsV; v++) {
             for (int u = 0; u <= fp.segsU; u++) {
-                NX_Vertex3D& vertex = vertices[vertexIndex++];
+                NX_Vertex3D& vertex = data.vertices[vertexIndex++];
 
                 float uNorm = (float)u / fp.segsU;
                 float vNorm = (float)v / fp.segsV;
@@ -296,20 +266,22 @@ NX_Mesh* NX_GenMeshCube(NX_Vec3 size, NX_IVec3 subDiv)
                 uint32_t i2 = baseVertex + (v + 1) * (fp.segsU + 1) + (u + 1);
                 uint32_t i3 = baseVertex + (v + 1) * (fp.segsU + 1) + u;
 
-                indices[indexIndex++] = i0;
-                indices[indexIndex++] = i1;
-                indices[indexIndex++] = i2;
+                data.indices[indexIndex++] = i0;
+                data.indices[indexIndex++] = i1;
+                data.indices[indexIndex++] = i2;
 
-                indices[indexIndex++] = i0;
-                indices[indexIndex++] = i2;
-                indices[indexIndex++] = i3;
+                data.indices[indexIndex++] = i0;
+                data.indices[indexIndex++] = i2;
+                data.indices[indexIndex++] = i3;
             }
         }
     }
 
     /* --- Create and return the mesh --- */
 
-    return NX_CreateMeshFrom(NX_PRIMITIVE_TRIANGLES, vertices, vertexCount, indices, indexCount, nullptr);
+    NX_Mesh* mesh = NX_CreateMesh(NX_PRIMITIVE_TRIANGLES, &data, nullptr);
+    NX_DestroyMeshData(&data);
+    return mesh;
 }
 
 NX_Mesh* NX_GenMeshSphere(float radius, int slices, int rings)
@@ -325,12 +297,9 @@ NX_Mesh* NX_GenMeshSphere(float radius, int slices, int rings)
     int vertexCount = (rings + 1) * (slices + 1);
     int indexCount = rings * slices * 6;
 
-    NX_Vertex3D* vertices = NX_Malloc<NX_Vertex3D>(vertexCount);
-    uint32_t* indices = NX_Malloc<uint32_t>(indexCount);
-
-    if (!vertices || !indices) {
-        NX_Free(vertices);
-        NX_Free(indices);
+    NX_MeshData data = NX_CreateMeshData(vertexCount, indexCount);
+    if (!data.vertices || !data.vertices) {
+        NX_DestroyMeshData(&data);
         return nullptr;
     }
 
@@ -353,7 +322,7 @@ NX_Mesh* NX_GenMeshSphere(float radius, int slices, int rings)
             float sinTheta = std::sin(theta);
             float cosTheta = std::cos(theta);
 
-            NX_Vertex3D& vertex = vertices[vertexIndex++];
+            NX_Vertex3D& vertex = data.vertices[vertexIndex++];
 
             vertex.position.x = ringRadius * cosTheta;
             vertex.position.y = y;
@@ -384,19 +353,21 @@ NX_Mesh* NX_GenMeshSphere(float radius, int slices, int rings)
             uint32_t i2 = next + 1;
             uint32_t i3 = next;
 
-            indices[indexIndex++] = i0;
-            indices[indexIndex++] = i1;
-            indices[indexIndex++] = i2;
+            data.indices[indexIndex++] = i0;
+            data.indices[indexIndex++] = i1;
+            data.indices[indexIndex++] = i2;
 
-            indices[indexIndex++] = i0;
-            indices[indexIndex++] = i2;
-            indices[indexIndex++] = i3;
+            data.indices[indexIndex++] = i0;
+            data.indices[indexIndex++] = i2;
+            data.indices[indexIndex++] = i3;
         }
     }
 
     /* --- Create and return the mesh --- */
 
-    return NX_CreateMeshFrom(NX_PRIMITIVE_TRIANGLES, vertices, vertexCount, indices, indexCount, nullptr);
+    NX_Mesh* mesh = NX_CreateMesh(NX_PRIMITIVE_TRIANGLES, &data, nullptr);
+    NX_DestroyMeshData(&data);
+    return mesh;
 }
 
 NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, int slices, int rings, bool topCap, bool bottomCap)
@@ -425,12 +396,9 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
     int bottomCapIndices = (bottomCap && bottomRadius > 0.0f) ? slices * 3 : 0;
     int indexCount = sideIndices + topCapIndices + bottomCapIndices;
 
-    NX_Vertex3D* vertices = NX_Malloc<NX_Vertex3D>(vertexCount);
-    uint32_t* indices = NX_Malloc<uint32_t>(indexCount);
-
-    if (!vertices || !indices) {
-        NX_Free(vertices);
-        NX_Free(indices);
+    NX_MeshData data = NX_CreateMeshData(vertexCount, indexCount);
+    if (!data.vertices || !data.vertices) {
+        NX_DestroyMeshData(&data);
         return nullptr;
     }
 
@@ -465,7 +433,7 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
             float cosAngle = std::cos(angle);
             float sinAngle = std::sin(angle);
 
-            NX_Vertex3D& vertex = vertices[vertexIndex++];
+            NX_Vertex3D& vertex = data.vertices[vertexIndex++];
 
             vertex.position.x = currentRadius * cosAngle;
             vertex.position.y = y;
@@ -489,13 +457,13 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
             uint32_t i2 = sideBaseVertex + (ring + 1) * (slices + 1) + (slice + 1);
             uint32_t i3 = sideBaseVertex + (ring + 1) * (slices + 1) + slice;
 
-            indices[indexIndex++] = i0;
-            indices[indexIndex++] = i2;
-            indices[indexIndex++] = i1;
+            data.indices[indexIndex++] = i0;
+            data.indices[indexIndex++] = i2;
+            data.indices[indexIndex++] = i1;
 
-            indices[indexIndex++] = i0;
-            indices[indexIndex++] = i3;
-            indices[indexIndex++] = i2;
+            data.indices[indexIndex++] = i0;
+            data.indices[indexIndex++] = i3;
+            data.indices[indexIndex++] = i2;
         }
     }
 
@@ -504,7 +472,7 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
     if (topCap && topRadius > 0.0f) {
         uint32_t topCapBaseVertex = vertexIndex;
 
-        NX_Vertex3D& centerVertex = vertices[vertexIndex++];
+        NX_Vertex3D& centerVertex = data.vertices[vertexIndex++];
         centerVertex.position = NX_VEC3(0.0f, halfHeight, 0.0f);
         centerVertex.normal = NX_VEC3(0.0f, 1.0f, 0.0f);
         centerVertex.texcoord = NX_VEC2(0.5f, 0.5f);
@@ -516,7 +484,7 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
             float cosAngle = std::cos(angle);
             float sinAngle = std::sin(angle);
 
-            NX_Vertex3D& vertex = vertices[vertexIndex++];
+            NX_Vertex3D& vertex = data.vertices[vertexIndex++];
 
             vertex.position.x = topRadius * cosAngle;
             vertex.position.y = halfHeight;
@@ -529,9 +497,9 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
         }
 
         for (int slice = 0; slice < slices; slice++) {
-            indices[indexIndex++] = topCapBaseVertex;
-            indices[indexIndex++] = topCapBaseVertex + 1 + (slice + 1);
-            indices[indexIndex++] = topCapBaseVertex + 1 + slice;
+            data.indices[indexIndex++] = topCapBaseVertex;
+            data.indices[indexIndex++] = topCapBaseVertex + 1 + (slice + 1);
+            data.indices[indexIndex++] = topCapBaseVertex + 1 + slice;
         }
     }
 
@@ -540,7 +508,7 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
     if (bottomCap && bottomRadius > 0.0f) {
         uint32_t bottomCapBaseVertex = vertexIndex;
 
-        NX_Vertex3D& centerVertex = vertices[vertexIndex++];
+        NX_Vertex3D& centerVertex = data.vertices[vertexIndex++];
         centerVertex.position = NX_VEC3(0.0f, -halfHeight, 0.0f);
         centerVertex.normal = NX_VEC3(0.0f, -1.0f, 0.0f);
         centerVertex.texcoord = NX_VEC2(0.5f, 0.5f);
@@ -552,7 +520,7 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
             float cosAngle = std::cos(angle);
             float sinAngle = std::sin(angle);
 
-            NX_Vertex3D& vertex = vertices[vertexIndex++];
+            NX_Vertex3D& vertex = data.vertices[vertexIndex++];
 
             vertex.position.x = bottomRadius * cosAngle;
             vertex.position.y = -halfHeight;
@@ -565,15 +533,17 @@ NX_Mesh* NX_GenMeshCylinder(float topRadius, float bottomRadius, float height, i
         }
 
         for (int slice = 0; slice < slices; slice++) {
-            indices[indexIndex++] = bottomCapBaseVertex;
-            indices[indexIndex++] = bottomCapBaseVertex + 1 + slice;
-            indices[indexIndex++] = bottomCapBaseVertex + 1 + (slice + 1);
+            data.indices[indexIndex++] = bottomCapBaseVertex;
+            data.indices[indexIndex++] = bottomCapBaseVertex + 1 + slice;
+            data.indices[indexIndex++] = bottomCapBaseVertex + 1 + (slice + 1);
         }
     }
 
     /* --- Create and return the mesh --- */
 
-    return NX_CreateMeshFrom(NX_PRIMITIVE_TRIANGLES, vertices, vertexCount, indices, indexCount, nullptr);
+    NX_Mesh* mesh = NX_CreateMesh(NX_PRIMITIVE_TRIANGLES, &data, nullptr);
+    NX_DestroyMeshData(&data);
+    return mesh;
 }
 
 NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
@@ -603,12 +573,9 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
     int hemisphereIndices = hemisphereRings * slices * 6;
     int indexCount = cylinderIndices + 2 * hemisphereIndices;
 
-    NX_Vertex3D* vertices = NX_Malloc<NX_Vertex3D>(vertexCount);
-    uint32_t* indices = NX_Malloc<uint32_t>(indexCount);
-
-    if (!vertices || !indices) {
-        NX_Free(vertices);
-        NX_Free(indices);
+    NX_MeshData data = NX_CreateMeshData(vertexCount, indexCount);
+    if (!data.vertices || !data.vertices) {
+        NX_DestroyMeshData(&data);
         return nullptr;
     }
 
@@ -636,7 +603,7 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
             float sinTheta = std::sin(theta);
             float cosTheta = std::cos(theta);
 
-            NX_Vertex3D& vertex = vertices[vertexIndex++];
+            NX_Vertex3D& vertex = data.vertices[vertexIndex++];
 
             vertex.position.x = ringRadius * cosTheta;
             vertex.position.y = y;
@@ -660,13 +627,13 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
             uint32_t i2 = topHemisphereBaseVertex + (ring + 1) * (slices + 1) + (slice + 1);
             uint32_t i3 = topHemisphereBaseVertex + (ring + 1) * (slices + 1) + slice;
 
-            indices[indexIndex++] = i0;
-            indices[indexIndex++] = i1;
-            indices[indexIndex++] = i2;
+            data.indices[indexIndex++] = i0;
+            data.indices[indexIndex++] = i1;
+            data.indices[indexIndex++] = i2;
 
-            indices[indexIndex++] = i0;
-            indices[indexIndex++] = i2;
-            indices[indexIndex++] = i3;
+            data.indices[indexIndex++] = i0;
+            data.indices[indexIndex++] = i2;
+            data.indices[indexIndex++] = i3;
         }
     }
 
@@ -680,7 +647,7 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
             float sinTheta = std::sin(theta);
             float cosTheta = std::cos(theta);
 
-            NX_Vertex3D& topVertex = vertices[vertexIndex++];
+            NX_Vertex3D& topVertex = data.vertices[vertexIndex++];
             topVertex.position.x = radius * cosTheta;
             topVertex.position.y = halfHeight;
             topVertex.position.z = radius * sinTheta;
@@ -698,7 +665,7 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
             float sinTheta = std::sin(theta);
             float cosTheta = std::cos(theta);
 
-            NX_Vertex3D& bottomVertex = vertices[vertexIndex++];
+            NX_Vertex3D& bottomVertex = data.vertices[vertexIndex++];
             bottomVertex.position.x = radius * cosTheta;
             bottomVertex.position.y = -halfHeight;
             bottomVertex.position.z = radius * sinTheta;
@@ -717,13 +684,13 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
             uint32_t i2 = cylinderBaseVertex + (slices + 1) + (slice + 1);
             uint32_t i3 = cylinderBaseVertex + (slices + 1) + slice;
 
-            indices[indexIndex++] = i0;
-            indices[indexIndex++] = i1;
-            indices[indexIndex++] = i2;
+            data.indices[indexIndex++] = i0;
+            data.indices[indexIndex++] = i1;
+            data.indices[indexIndex++] = i2;
 
-            indices[indexIndex++] = i0;
-            indices[indexIndex++] = i2;
-            indices[indexIndex++] = i3;
+            data.indices[indexIndex++] = i0;
+            data.indices[indexIndex++] = i2;
+            data.indices[indexIndex++] = i3;
         }
     }
 
@@ -744,7 +711,7 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
             float sinTheta = std::sin(theta);
             float cosTheta = std::cos(theta);
 
-            NX_Vertex3D& vertex = vertices[vertexIndex++];
+            NX_Vertex3D& vertex = data.vertices[vertexIndex++];
 
             vertex.position.x = ringRadius * cosTheta;
             vertex.position.y = y;
@@ -769,59 +736,38 @@ NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rings)
             uint32_t i2 = bottomHemisphereBaseVertex + (ring + 1) * (slices + 1) + (slice + 1);
             uint32_t i3 = bottomHemisphereBaseVertex + (ring + 1) * (slices + 1) + slice;
 
-            indices[indexIndex++] = i0;
-            indices[indexIndex++] = i1;
-            indices[indexIndex++] = i2;
+            data.indices[indexIndex++] = i0;
+            data.indices[indexIndex++] = i1;
+            data.indices[indexIndex++] = i2;
 
-            indices[indexIndex++] = i0;
-            indices[indexIndex++] = i2;
-            indices[indexIndex++] = i3;
+            data.indices[indexIndex++] = i0;
+            data.indices[indexIndex++] = i2;
+            data.indices[indexIndex++] = i3;
         }
     }
 
     /* --- Create and return the mesh --- */
 
-    return NX_CreateMeshFrom(NX_PRIMITIVE_TRIANGLES, vertices, vertexCount, indices, indexCount, nullptr);
+    NX_Mesh* mesh = NX_CreateMesh(NX_PRIMITIVE_TRIANGLES, &data, nullptr);
+    NX_DestroyMeshData(&data);
+    return mesh;
 }
 
-void NX_UpdateMeshBuffer(NX_Mesh* mesh)
+void NX_UpdateMeshBuffer(NX_Mesh* mesh, const NX_MeshData* meshData)
 {
     if (mesh->buffer == nullptr) {
-        mesh->buffer = INX_Pool.Create<NX_VertexBuffer3D>(mesh->vertices, mesh->vertexCount, mesh->indices, mesh->indexCount);
+        mesh->buffer = INX_Pool.Create<NX_VertexBuffer3D>(
+            meshData->vertices, meshData->vertexCount,
+            meshData->indices, meshData->indexCount
+        );
         if (mesh->buffer == nullptr) {
             NX_LOG(E, "RENDER: Failed to upload mesh; Object pool issue when creating vertex buffer");
         }
         return;
     }
 
-    mesh->buffer->vbo.Upload(0, mesh->vertexCount * sizeof(NX_Vertex3D), mesh->vertices);
-    mesh->buffer->ebo.Upload(0, mesh->indexCount * sizeof(uint32_t), mesh->indices);
-}
-
-void NX_UpdateMeshAABB(NX_Mesh* mesh)
-{
-    if (!mesh || mesh->vertexCount == 0) {
-        return;
-    }
-
-    const NX_Vertex3D* vertices = mesh->vertices;
-    const uint32_t* indices = mesh->indices;
-
-    mesh->aabb.min = NX_VEC3(+FLT_MAX, +FLT_MAX, +FLT_MAX);
-    mesh->aabb.max = NX_VEC3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-
-    if (indices) {
-        for (int i = 0; i < mesh->indexCount; i++) {
-            const NX_Vec3& pos = vertices[indices[i]].position;
-            mesh->aabb.min = NX_Vec3Min(mesh->aabb.min, pos);
-            mesh->aabb.max = NX_Vec3Max(mesh->aabb.max, pos);
-        }
-    }
-    else {
-        for (int i = 0; i < mesh->vertexCount; i++) {
-            const NX_Vec3& pos = vertices[i].position;
-            mesh->aabb.min = NX_Vec3Min(mesh->aabb.min, pos);
-            mesh->aabb.max = NX_Vec3Max(mesh->aabb.max, pos);
-        }
-    }
+    mesh->buffer->Update(
+        meshData->vertices, meshData->vertexCount,
+        meshData->indices, meshData->indexCount
+    );
 }

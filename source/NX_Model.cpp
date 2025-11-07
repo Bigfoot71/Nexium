@@ -90,20 +90,17 @@ void NX_DestroyModel(NX_Model* model)
     INX_Pool.Destroy(model);
 }
 
-void NX_UpdateModelAABB(NX_Model* model, bool updateMeshAABBs)
+void NX_UpdateModelAABB(NX_Model* model)
 {
     if (!model || !model->meshes) {
         return;
     }
 
-    NX_Vec3 min = { +FLT_MAX, +FLT_MAX, +FLT_MAX };
-    NX_Vec3 max = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+    NX_Vec3 min = NX_VEC3(+FLT_MAX, +FLT_MAX, +FLT_MAX);
+    NX_Vec3 max = NX_VEC3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
     for (uint32_t i = 0; i < model->meshCount; i++) {
         NX_Mesh* mesh = model->meshes[i];
-        if (updateMeshAABBs) {
-            NX_UpdateMeshAABB(mesh);
-        }
         min = NX_Vec3Min(min, mesh->aabb.min);
         max = NX_Vec3Max(max, mesh->aabb.max);
     }

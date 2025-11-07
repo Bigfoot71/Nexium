@@ -303,6 +303,7 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/NX_Render2D.cpp"
     "${NX_ROOT_PATH}/source/NX_Keyboard.cpp"
     "${NX_ROOT_PATH}/source/NX_Skeleton.cpp"
+    "${NX_ROOT_PATH}/source/NX_MeshData.cpp"
     "${NX_ROOT_PATH}/source/NX_Display.cpp"
     "${NX_ROOT_PATH}/source/NX_Cubemap.cpp"
     "${NX_ROOT_PATH}/source/NX_Texture.cpp"

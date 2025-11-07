@@ -6,6 +6,7 @@
 #include "./SceneImporter.hpp"
 #include "./AssimpHelper.hpp"
 #include "NX/NX_Mesh.h"
+#include "NX/NX_MeshData.h"
 
 #include <SDL3/SDL_assert.h>
 #include <assimp/mesh.h>
@@ -138,16 +139,9 @@ NX_Mesh* MeshImporter::LoadMesh(const aiMesh* mesh, const NX_Mat4& transform)
     int vertexCount = mesh->mNumVertices;
     int indexCount = 3 * mesh->mNumFaces;
 
-    NX_Vertex3D* vertices = static_cast<NX_Vertex3D*>(SDL_calloc(vertexCount, sizeof(NX_Vertex3D)));
-    if (!vertices) {
-        NX_LOG(E, "RENDER: Unable to allocate memory for vertices");
-        return nullptr;
-    }
-
-    uint32_t* indices = static_cast<uint32_t*>(SDL_calloc(indexCount, sizeof(uint32_t)));
-    if (!indices) {
-        NX_LOG(E, "RENDER: Unable to allocate memory for indices");
-        SDL_free(vertices);
+    NX_MeshData data = NX_CreateMeshData(vertexCount, indexCount);
+    if (!data.vertices || !data.indices) {
+        NX_LOG(E, "RENDER: Failed to load mesh; Unable to allocate mesh data");
         return nullptr;
     }
 
@@ -168,7 +162,7 @@ NX_Mesh* MeshImporter::LoadMesh(const aiMesh* mesh, const NX_Mat4& transform)
 
     for (size_t i = 0; i < vertexCount; i++)
     {
-        NX_Vertex3D& vertex = vertices[i];
+        NX_Vertex3D& vertex = data.vertices[i];
 
         /* --- Position --- */
 
@@ -270,7 +264,7 @@ NX_Mesh* MeshImporter::LoadMesh(const aiMesh* mesh, const NX_Mat4& transform)
                 }
 
                 // Find an empty slot in the vertex bone data (max 4 bones per vertex)
-                NX_Vertex3D& vertex = vertices[vertexId];
+                NX_Vertex3D& vertex = data.vertices[vertexId];
                 bool slotFound = false;
 
                 for (int slot = 0; slot < 4; slot++) {
@@ -302,7 +296,7 @@ NX_Mesh* MeshImporter::LoadMesh(const aiMesh* mesh, const NX_Mat4& transform)
         /* --- Normalize bone weights for each vertex --- */
 
         for (size_t i = 0; i < vertexCount; i++) {
-            NX_Vertex3D& boneVertex = vertices[i];
+            NX_Vertex3D& boneVertex = data.vertices[i];
             float totalWeight = 0.0f;
             // Calculate total weight
             for (int j = 0; j < 4; j++) {
@@ -324,8 +318,8 @@ NX_Mesh* MeshImporter::LoadMesh(const aiMesh* mesh, const NX_Mat4& transform)
     else {
         // No bones found for this mesh
         for (size_t i = 0; i < vertexCount; i++) {
-            vertices[i].weights.v[0] = 1.0f;
-            vertices[i].boneIds.v[0] = 0;
+            data.vertices[i].weights.v[0] = 1.0f;
+            data.vertices[i].boneIds.v[0] = 0;
         }
     }
 
@@ -336,41 +330,33 @@ NX_Mesh* MeshImporter::LoadMesh(const aiMesh* mesh, const NX_Mat4& transform)
         const aiFace* face = &mesh->mFaces[i];
         if (face->mNumIndices != 3) {
             NX_LOG(E, "RENDER: Non-triangular face detected (indices: %u)", face->mNumIndices);
-            SDL_free(vertices);
-            SDL_free(indices);
+            NX_DestroyMeshData(&data);
             return nullptr;
         }
         for (uint32_t j = 0; j < 3; j++) {
             if (face->mIndices[j] >= mesh->mNumVertices) {
                 NX_LOG(E, "RENDER: Invalid vertex index (%u >= %u)", face->mIndices[j], mesh->mNumVertices);
-                SDL_free(vertices);
-                SDL_free(indices);
+                NX_DestroyMeshData(&data);
                 return nullptr;
             }
         }
-        indices[indexOffset++] = face->mIndices[0];
-        indices[indexOffset++] = face->mIndices[1];
-        indices[indexOffset++] = face->mIndices[2];
+        data.indices[indexOffset++] = face->mIndices[0];
+        data.indices[indexOffset++] = face->mIndices[1];
+        data.indices[indexOffset++] = face->mIndices[2];
     }
 
     /* --- Final validation: index count consistency --- */
 
     if (indexOffset != indexCount) {
         NX_LOG(E, "RENDER: Inconsistency in the number of indices (%zu != %zu)", indexOffset, indexCount);
-        SDL_free(vertices);
-        SDL_free(indices);
+        NX_DestroyMeshData(&data);
         return nullptr;
     }
 
     /* --- Create the mesh in the pool and return it --- */
 
-    NX_Mesh* modelMesh = NX_CreateMeshFrom(NX_PRIMITIVE_TRIANGLES, vertices, vertexCount, indices, indexCount, &aabb);
-    if (mesh == nullptr) {
-        SDL_free(vertices);
-        SDL_free(indices);
-        return nullptr;
-    }
-
+    NX_Mesh* modelMesh = NX_CreateMesh(NX_PRIMITIVE_TRIANGLES, &data, &aabb);
+    NX_DestroyMeshData(&data);
     return modelMesh;
 }
 

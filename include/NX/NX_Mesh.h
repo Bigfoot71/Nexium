@@ -9,6 +9,7 @@
 #ifndef NX_MESH_H
 #define NX_MESH_H
 
+#include "./NX_MeshData.h"
 #include "./NX_Camera.h"
 #include "./NX_Vertex.h"
 #include "./NX_Shape.h"
@@ -25,20 +26,12 @@
  * Can represent a static or skinned mesh.
  */
 typedef struct NX_Mesh {
-
     NX_VertexBuffer3D* buffer;          ///< GPU vertex buffer for rendering.
-    NX_Vertex3D* vertices;              ///< Pointer to vertex data in CPU memory.
-    uint32_t* indices;                  ///< Pointer to index data in CPU memory.
-
-    int vertexCount;                    ///< Number of vertices.
-    int indexCount;                     ///< Number of indices.
-
     NX_ShadowCastMode shadowCastMode;   ///< Shadow casting mode for the mesh.
     NX_ShadowFaceMode shadowFaceMode;   ///< Which faces are rendered into the shadow map.
     NX_PrimitiveType primitiveType;     ///< Type of primitive that constitutes the vertices.
-    NX_BoundingBox3D aabb;                ///< Axis-Aligned Bounding Box in local space.
+    NX_BoundingBox3D aabb;              ///< Axis-Aligned Bounding Box in local space.
     NX_Layer layerMask;                 ///< Bitfield indicating the rendering layer(s) of this mesh.
-
 } NX_Mesh;
 
 // ============================================================================
@@ -50,35 +43,14 @@ extern "C" {
 #endif
 
 /**
- * @brief Creates a 3D mesh by copying vertex and index data.
- * @param type Type of primitive that constitutes the vertices.
- * @param vertices Pointer to the vertex array (cannot be NULL).
- * @param vertexCount Number of vertices.
- * @param indices Pointer to the index array (can be NULL).
- * @param indexCount Number of indices.
- * @param aabb Pointer to the bounding box used for frustum culling (can be NULL; computed automatically if NULL).
+ * @brief Creates a 3D mesh from CPU-side mesh data.
+ * @param type Primitive type used to interpret vertex data.
+ * @param meshData Pointer to the NX_MeshData containing vertices and indices (cannot be NULL).
+ * @param aabb Optional pointer to a bounding box. If NULL, it will be computed automatically.
  * @return Pointer to a newly created NX_Mesh.
- * @note The function copies the data into internal buffers.
+ * @note The function copies all vertex and index data into GPU buffers.
  */
-NXAPI NX_Mesh* NX_CreateMesh(
-    NX_PrimitiveType type, const NX_Vertex3D* vertices, int vertexCount,
-    const uint32_t* indices, int indexCount, const NX_BoundingBox3D* aabb);
-
-/**
- * @brief Creates a 3D mesh by taking ownership of pre-allocated vertex and index arrays.
- * @param type Type of primitive that constitutes the vertices.
- * @param vertices Pointer to a pre-allocated vertex array (cannot be NULL).
- * @param vertexCount Number of vertices in the array.
- * @param indices Pointer to a pre-allocated index array (can be NULL).
- * @param indexCount Number of indices in the array.
- * @param aabb Pointer to the bounding box used for frustum culling (can be NULL; computed automatically if NULL).
- * @return Pointer to a newly created NX_Mesh.
- * @note The caller **must not free** the arrays after passing them to this function.
- *       Use NX_CreateMesh() if you prefer the mesh to copy the data instead.
- */
-NXAPI NX_Mesh* NX_CreateMeshFrom(
-    NX_PrimitiveType type, NX_Vertex3D* vertices, int vertexCount,
-    uint32_t* indices, int indexCount, const NX_BoundingBox3D* aabb);
+NXAPI NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_MeshData* meshData, const NX_BoundingBox3D* aabb);
 
 /**
  * @brief Destroys a 3D mesh and frees its resources.
@@ -141,13 +113,6 @@ NXAPI NX_Mesh* NX_GenMeshCapsule(float radius, float height, int slices, int rin
  * @note Useful after modifying vertices or indices to update the GPU buffers.
  */
 NXAPI void NX_UpdateMeshBuffer(NX_Mesh* mesh);
-
-/**
- * @brief Recalculates the Axis-Aligned Bounding Box (AABB) of the mesh.
- * @param mesh Pointer to the NX_Mesh to update.
- * @note Should be called after modifying vertices or transformations.
- */
-NXAPI void NX_UpdateMeshAABB(NX_Mesh* mesh);
 
 #if defined(__cplusplus)
 } // extern "C"

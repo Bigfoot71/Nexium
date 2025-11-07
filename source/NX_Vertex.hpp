@@ -13,7 +13,7 @@
 
 struct NX_VertexBuffer3D {
     /** Constructors */
-    NX_VertexBuffer3D(const NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount);
+    NX_VertexBuffer3D(const NX_Vertex3D* vertices, int vertexCount, uint32_t* indices, int indexCount);
 
     /** Delete copy */
     NX_VertexBuffer3D(const NX_VertexBuffer3D&) = delete;
@@ -23,6 +23,9 @@ struct NX_VertexBuffer3D {
     NX_VertexBuffer3D(NX_VertexBuffer3D&& other) noexcept;
     NX_VertexBuffer3D& operator=(NX_VertexBuffer3D&& other) noexcept;
 
+    /** Update methods */
+    void Update(const NX_Vertex3D* vertices, int vertexCount, uint32_t* indices, int indexCount);
+
     /** Instance buffers */
     void BindInstances(const NX_InstanceBuffer& instances);
     void UnbindInstances();
@@ -31,16 +34,19 @@ struct NX_VertexBuffer3D {
     gpu::VertexArray vao{};
     gpu::Buffer vbo{};
     gpu::Buffer ebo{};
+    int vertexCount{};
+    int indexCount{};
 };
 
-inline NX_VertexBuffer3D::NX_VertexBuffer3D(const NX_Vertex3D* vertices, int vCount, uint32_t* indices, int iCount)
+inline NX_VertexBuffer3D::NX_VertexBuffer3D(const NX_Vertex3D* vertices, int vertexCount, uint32_t* indices, int indexCount)
+    : vertexCount(vertexCount), indexCount(indexCount)
 {
     /* --- Create main buffers --- */
 
-    vbo = gpu::Buffer(GL_ARRAY_BUFFER, sizeof(NX_Vertex3D) * vCount, vertices, GL_STATIC_DRAW);
+    vbo = gpu::Buffer(GL_ARRAY_BUFFER, sizeof(NX_Vertex3D) * vertexCount, vertices, GL_STATIC_DRAW);
 
     if (indices != nullptr) {
-        ebo = gpu::Buffer(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * iCount, indices, GL_STATIC_DRAW);
+        ebo = gpu::Buffer(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indexCount, indices, GL_STATIC_DRAW);
     }
 
     /* --- Define main attributes --- */
@@ -251,6 +257,27 @@ inline NX_VertexBuffer3D& NX_VertexBuffer3D::operator=(NX_VertexBuffer3D&& other
         ebo = std::move(other.ebo);
     }
     return *this;
+}
+
+inline void NX_VertexBuffer3D::Update(const NX_Vertex3D* vertices, int vertexCount, uint32_t* indices, int indexCount)
+{
+    if (vertexCount == 0) {
+        NX_LOG(W, "RENDER: Failed to update vertex buffer; The vertex count is zero");
+        return;
+    }
+
+    this->vertexCount = vertexCount;
+    this->indexCount = indexCount;
+
+    int vertexSize = vertexCount * sizeof(NX_Vertex3D);
+    this->vbo.Reserve(vertexSize, false);
+    this->vbo.Upload(0, vertexSize, vertices);
+
+    if (indexCount > 0) {
+        int indexSize = indexCount * sizeof(uint32_t);
+        this->ebo.Reserve(indexSize, false);
+        this->ebo.Upload(0, indexSize, indices);
+    }
 }
 
 inline void NX_VertexBuffer3D::BindInstances(const NX_InstanceBuffer& instances)

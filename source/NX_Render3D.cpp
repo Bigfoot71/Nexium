@@ -845,16 +845,12 @@ static void INX_Draw3D(const gpu::Pipeline& pipeline, const INX_DrawUnique& uniq
 
     NX_PrimitiveType primitiveType = NX_PRIMITIVE_TRIANGLES;
     NX_VertexBuffer3D* buffer = nullptr;
-    size_t vertexCount = 0;
-    size_t indexCount = 0;
 
     switch (vMesh.GetTypeIndex()) {
     case 0: [[likely]]
         {
             const NX_Mesh* mesh = vMesh.Get<0>();
             primitiveType = mesh->primitiveType;
-            vertexCount = mesh->vertexCount;
-            indexCount = mesh->indexCount;
             buffer = mesh->buffer;
         }
         break;
@@ -862,7 +858,6 @@ static void INX_Draw3D(const gpu::Pipeline& pipeline, const INX_DrawUnique& uniq
         {
             const NX_DynamicMesh* mesh = vMesh.Get<1>();
             primitiveType = mesh->primitiveType;
-            vertexCount = mesh->vertices.GetSize();
             buffer = mesh->buffer;
         }
         break;
@@ -874,22 +869,22 @@ static void INX_Draw3D(const gpu::Pipeline& pipeline, const INX_DrawUnique& uniq
     /* --- Draws the mesh according to its parameters --- */
 
     GLenum primitive = INX_GPU_GetPrimitiveType(primitiveType);
+    bool isIndexed = (buffer->ebo.IsValid() && buffer->indexCount > 0);
     bool useInstancing = (shared.instances && shared.instanceCount > 0);
-    bool hasEBO = buffer->ebo.IsValid();
 
     pipeline.BindVertexArray(buffer->vao);
     if (useInstancing) [[unlikely]] {
         buffer->BindInstances(*shared.instances);
     }
 
-    if (hasEBO) [[likely]] {
+    if (isIndexed) [[likely]] {
         useInstancing ? 
-            pipeline.DrawElementsInstanced(primitive, GL_UNSIGNED_INT, indexCount, shared.instanceCount) :
-            pipeline.DrawElements(primitive, GL_UNSIGNED_INT, indexCount);
+            pipeline.DrawElementsInstanced(primitive, GL_UNSIGNED_INT, buffer->indexCount, shared.instanceCount) :
+            pipeline.DrawElements(primitive, GL_UNSIGNED_INT, buffer->indexCount);
     } else {
         useInstancing ?
-            pipeline.DrawInstanced(primitive, vertexCount, shared.instanceCount) :
-            pipeline.Draw(primitive, vertexCount);
+            pipeline.DrawInstanced(primitive, buffer->vertexCount, shared.instanceCount) :
+            pipeline.Draw(primitive, buffer->vertexCount);
     }
 }
 

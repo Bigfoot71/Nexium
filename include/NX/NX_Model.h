@@ -71,10 +71,14 @@ NXAPI void NX_DestroyModel(NX_Model* model);
 
 /**
  * @brief Updates the axis-aligned bounding box (AABB) of a model.
- * @param model Pointer to the NX_Model to update.
- * @param updateMeshAABBs If true, also updates each mesh's bounding box before updating the model AABB.
+ *
+ * Recalculates the model's bounding box by combining the AABBs
+ * of all meshes it contains. This function does not modify
+ * individual mesh bounding boxes.
+ *
+ * @param model Pointer to the NX_Model whose bounding box will be updated.
  */
-NXAPI void NX_UpdateModelAABB(NX_Model* model, bool updateMeshAABBs);
+NXAPI void NX_UpdateModelAABB(NX_Model* model);
 
 /**
  * @brief Scales the axis-aligned bounding box (AABB) of a model by a given factor.

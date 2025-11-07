@@ -6,7 +6,7 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#include <NX/NX_DynamicMesh.h>
+#include "./NX_DynamicMesh.hpp"
 
 #include "./Detail/Util/Ranges.hpp"
 #include "./INX_GlobalPool.hpp"
@@ -68,8 +68,11 @@ void NX_BeginDynamicMesh(NX_DynamicMesh* dynMesh, NX_PrimitiveType type)
 
 void NX_EndDynamicMesh(NX_DynamicMesh* dynMesh)
 {
-    dynMesh->buffer->vbo.Reserve(dynMesh->vertices.GetSize() * sizeof(NX_Vertex3D), false);
-    dynMesh->buffer->vbo.Upload(0, dynMesh->vertices.GetSize() * sizeof(NX_Vertex3D), dynMesh->vertices.GetData());
+    dynMesh->buffer->Update(
+        dynMesh->vertices.GetData(),
+        dynMesh->vertices.GetSize(),
+        nullptr, 0
+    );
 
     dynMesh->aabb.min = NX_VEC3(+FLT_MAX, +FLT_MAX, +FLT_MAX);
     dynMesh->aabb.max = NX_VEC3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
