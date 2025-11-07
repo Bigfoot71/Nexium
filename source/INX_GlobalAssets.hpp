@@ -65,10 +65,10 @@ public:
     void UnloadAll();
 
 private:
-    std::array<NX_Shader3D*, int(INX_Shader3DAsset::COUNT)> mShaders3D;
-    std::array<NX_Shader2D*, int(INX_Shader2DAsset::COUNT)> mShaders2D;
-    std::array<NX_Texture*, int(INX_TextureAsset::COUNT)> mTextures;
-    std::array<NX_Font*, int(INX_FontAsset::COUNT)> mFonts;
+    std::array<NX_Shader3D*, int(INX_Shader3DAsset::COUNT)> mShaders3D{};
+    std::array<NX_Shader2D*, int(INX_Shader2DAsset::COUNT)> mShaders2D{};
+    std::array<NX_Texture*, int(INX_TextureAsset::COUNT)> mTextures{};
+    std::array<NX_Font*, int(INX_FontAsset::COUNT)> mFonts{};
 };
 
 extern INX_GlobalAssets INX_Assets;
