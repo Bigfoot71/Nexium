@@ -189,8 +189,8 @@ void NX_GenMeshDataUVsSpherical(NX_MeshData* meshData)
 
     for (int i = 0; i < meshData->vertexCount; i++) {
         NX_Vec3 pos = NX_Vec3Normalize(meshData->vertices[i].position);
-        float u = 0.5f + std::atan2(pos.z, pos.x) / (2.0f * M_PI);
-        float v = 0.5f - std::asin(pos.y) / M_PI;
+        float u = 0.5f + std::atan2(pos.z, pos.x) / (2.0f * NX_PI);
+        float v = 0.5f - std::asin(pos.y) / NX_PI;
         meshData->vertices[i].texcoord = NX_VEC2(u, v);
     }
 }
@@ -201,7 +201,7 @@ void NX_GenMeshDataUVsCylindrical(NX_MeshData* meshData)
 
     for (int i = 0; i < meshData->vertexCount; i++) {
         NX_Vec3 pos = meshData->vertices[i].position;
-        float u = 0.5f + std::atan2(pos.z, pos.x) / (2.0f * M_PI);
+        float u = 0.5f + std::atan2(pos.z, pos.x) / (2.0f * NX_PI);
         float v = pos.y;
         meshData->vertices[i].texcoord = NX_VEC2(u, v);
     }
