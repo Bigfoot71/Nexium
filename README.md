@@ -22,7 +22,7 @@
 
 * **Meshes**: cube, sphere, cylinder, cone, capsule
 * **Import**: Assimp for 3D model and material loading
-* **Animations**: rigged models, custom pose arrays for blending
+* **Animations**: rigged models, with animation blending support
 
 ### 2D Rendering
 
