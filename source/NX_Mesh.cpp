@@ -44,7 +44,7 @@ NX_Mesh* NX_CreateMesh(NX_PrimitiveType type, const NX_MeshData* meshData, const
 
     if (aabb != nullptr) mesh->aabb = *aabb;
     else {
-        mesh->aabb = NX_CalculateMeshDataBounds(meshData);
+        mesh->aabb = NX_CalculateMeshDataAABB(meshData);
     }
 
     return mesh;

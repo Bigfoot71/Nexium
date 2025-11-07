@@ -18,6 +18,17 @@
 // ============================================================================
 
 /**
+ * @brief Flags controlling automatic attribute generation for dynamic meshes.
+ *
+ * These flags define which additional vertex attributes are automatically
+ * generated when finalizing a dynamic mesh.
+ */
+typedef uint32_t NX_DynamicMeshFlags;
+
+#define NX_DYNAMIC_MESH_GEN_NORMALS     (1 << 0)    ///< Automatically generate vertex normals.
+#define NX_DYNAMIC_MESH_GEN_TANGENTS    (1 << 1)    ///< Automatically generate vertex tangents.
+
+/**
  * @brief Opaque handle to a GPU dynamic mesh.
  *
  * Represents a mesh whose vertex data can be modified or rebuilt each frame.
@@ -55,12 +66,15 @@ NXAPI void NX_DestroyDynamicMesh(NX_DynamicMesh* dynMesh);
 /**
  * @brief Begins recording geometry for a dynamic mesh.
  *
- * All previous geometry is overridden. The primitive type can change between frames.
+ * Initializes a new immediate-mode geometry build for the given dynamic mesh.
+ * Any previously recorded geometry is discarded. The primitive type and
+ * optional generation flags can change between frames.
  *
  * @param dynMesh Pointer to the dynamic mesh (cannot be NULL).
  * @param type Primitive type to use for the new geometry.
+ * @param flags Combination of NX_DynamicMeshFlags controlling automatic attribute generation.
  */
-NXAPI void NX_BeginDynamicMesh(NX_DynamicMesh* dynMesh, NX_PrimitiveType type);
+NXAPI void NX_BeginDynamicMesh(NX_DynamicMesh* dynMesh, NX_PrimitiveType type, NX_DynamicMeshFlags flags);
 
 /**
  * @brief Ends recording and uploads geometry to the GPU.

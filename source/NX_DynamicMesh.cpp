@@ -51,10 +51,11 @@ void NX_DestroyDynamicMesh(NX_DynamicMesh* dynMesh)
     INX_Pool.Destroy(dynMesh);
 }
 
-void NX_BeginDynamicMesh(NX_DynamicMesh* dynMesh, NX_PrimitiveType type)
+void NX_BeginDynamicMesh(NX_DynamicMesh* dynMesh, NX_PrimitiveType type, NX_DynamicMeshFlags flags)
 {
     dynMesh->primitiveType = type;
     dynMesh->vertices.Clear();
+    dynMesh->flags = flags;
     dynMesh->current = {
         .position = NX_VEC3_ZERO,
         .texcoord = NX_VEC2_ZERO,
@@ -68,9 +69,21 @@ void NX_BeginDynamicMesh(NX_DynamicMesh* dynMesh, NX_PrimitiveType type)
 
 void NX_EndDynamicMesh(NX_DynamicMesh* dynMesh)
 {
+    NX_MeshData data{};
+    data.vertices = dynMesh->vertices.GetData();
+    data.vertexCount = dynMesh->vertices.GetSize();
+
+    if (dynMesh->flags & NX_DYNAMIC_MESH_GEN_NORMALS) {
+        NX_GenMeshDataNormals(&data);
+    }
+
+    if (dynMesh->flags & NX_DYNAMIC_MESH_GEN_TANGENTS) {
+        NX_GenMeshDataTangents(&data);
+    }
+
     dynMesh->buffer->Update(
-        dynMesh->vertices.GetData(),
-        dynMesh->vertices.GetSize(),
+        data.vertices,
+        data.vertexCount,
         nullptr, 0
     );
 

@@ -12,7 +12,8 @@ static void BuildWavePlane(NX_DynamicMesh* mesh, float t)
     const float speedX = 1.5f;
     const float speedY = 1.0f;
 
-    NX_BeginDynamicMesh(mesh, NX_PRIMITIVE_TRIANGLES);
+    const NX_DynamicMeshFlags flags = NX_DYNAMIC_MESH_GEN_NORMALS | NX_DYNAMIC_MESH_GEN_TANGENTS;
+    NX_BeginDynamicMesh(mesh, NX_PRIMITIVE_TRIANGLES, flags);
 
     for (int y = 0; y < resY; ++y)
     {
@@ -43,15 +44,6 @@ static void BuildWavePlane(NX_DynamicMesh* mesh, float t)
             NX_Vec3 p10 = NX_VEC3(px1, z10, py0);
             NX_Vec3 p11 = NX_VEC3(px1, z11, py1);
 
-            NX_Vec3 n1 = NX_Vec3Normalize(NX_Vec3Cross(NX_Vec3Sub(p11, p00), NX_Vec3Sub(p10, p00)));
-            NX_Vec3 n2 = NX_Vec3Normalize(NX_Vec3Cross(NX_Vec3Sub(p01, p00), NX_Vec3Sub(p11, p00)));
-
-            NX_Vec3 edge1 = NX_Vec3Sub(p10, p00);
-            NX_Vec3 edge2 = NX_Vec3Sub(p01, p00);
-
-            NX_Vec3 t1 = NX_Vec3Normalize(edge1);
-            NX_Vec3 t2 = NX_Vec3Normalize(edge2);
-
             float c00 = 1.0f + z00 * 2.0f;
             float c01 = 1.0f + z01 * 2.0f;
             float c10 = 1.0f + z10 * 2.0f;
@@ -62,14 +54,10 @@ static void BuildWavePlane(NX_DynamicMesh* mesh, float t)
             NX_Color col10 = NX_COLOR(0.0f, 0.3f * c10, 0.7f * c10, 1.0f);
             NX_Color col11 = NX_COLOR(0.0f, 0.3f * c11, 0.7f * c11, 1.0f);
 
-            NX_SetDynamicMeshNormal(mesh, n1);
-            NX_SetDynamicMeshTangent(mesh, NX_VEC4(t1.x, t1.y, t1.z, 1.0f));
             NX_SetDynamicMeshColor(mesh, col00); NX_AddDynamicMeshVertex(mesh, p00);
             NX_SetDynamicMeshColor(mesh, col10); NX_AddDynamicMeshVertex(mesh, p11);
             NX_SetDynamicMeshColor(mesh, col11); NX_AddDynamicMeshVertex(mesh, p10);
 
-            NX_SetDynamicMeshNormal(mesh, n2);
-            NX_SetDynamicMeshTangent(mesh, NX_VEC4(t2.x, t2.y, t2.z, 1.0f));
             NX_SetDynamicMeshColor(mesh, col00); NX_AddDynamicMeshVertex(mesh, p00);
             NX_SetDynamicMeshColor(mesh, col11); NX_AddDynamicMeshVertex(mesh, p01);
             NX_SetDynamicMeshColor(mesh, col01); NX_AddDynamicMeshVertex(mesh, p11);

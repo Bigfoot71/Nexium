@@ -23,6 +23,7 @@ struct NX_DynamicMesh {
     /** Buffers and current state */
     util::DynamicArray<NX_Vertex3D> vertices{};
     NX_VertexBuffer3D* buffer{};
+    NX_DynamicMeshFlags flags{};
     NX_Vertex3D current{};
 
     /** Draw parameters */
