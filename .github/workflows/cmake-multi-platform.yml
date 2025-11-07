@@ -31,8 +31,8 @@ jobs:
             generator: "Visual Studio 17 2022"
             build_type: Release
           - os: windows-latest
-            c_compiler: clang
-            cpp_compiler: clang++
+            c_compiler: clang-cl
+            cpp_compiler: clang-cl
             generator: "Ninja"
             build_type: Release
           - os: ubuntu-latest
