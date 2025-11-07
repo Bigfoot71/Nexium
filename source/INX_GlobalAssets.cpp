@@ -24,6 +24,16 @@
 // ASSETS LOADERS
 // ============================================================================
 
+static NX_Shader3D* INX_LoadShader3DDefault(void)
+{
+    return NX_CreateShader3D(nullptr, nullptr);
+}
+
+static NX_Shader2D* INX_LoadShader2DDefault(void)
+{
+    return NX_CreateShader2D(nullptr, nullptr);
+}
+
 static NX_Texture* INX_LoadTextureSsaoKernel(void)
 {
     constexpr int size = 32;
@@ -144,8 +154,8 @@ INX_GlobalAssets INX_Assets;
 
 const NX_Shader3D* INX_GlobalAssets::Get(INX_Shader3DAsset asset)
 {
-    constexpr auto loaders = std::to_array<>({
-        []() { return NX_CreateShader3D(nullptr, nullptr); }
+    constexpr auto loaders = std::to_array<NX_Shader3D*(*)()>({
+        INX_LoadShader3DDefault
     });
 
     auto& shader = mShaders3D[int(asset)];
@@ -159,8 +169,8 @@ const NX_Shader3D* INX_GlobalAssets::Get(INX_Shader3DAsset asset)
 
 const NX_Shader2D* INX_GlobalAssets::Get(INX_Shader2DAsset asset)
 {
-    constexpr auto loaders = std::to_array<>({
-        []() { return NX_CreateShader2D(nullptr, nullptr); }
+    constexpr auto loaders = std::to_array<NX_Shader2D*(*)()>({
+        INX_LoadShader2DDefault
     });
 
     auto& shader = mShaders2D[int(asset)];
