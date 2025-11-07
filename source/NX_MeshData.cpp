@@ -265,104 +265,97 @@ void NX_GenMeshDataTangents(NX_MeshData* meshData)
     NX_Vec3* bitangents = NX_Calloc<NX_Vec3>(meshData->vertexCount);
 
     if (tangents == nullptr || bitangents == nullptr) {
-        NX_Free(tangents);
-        NX_Free(bitangents);
         NX_LOG(E, "RENDER: Failed to allocate memory for tangent calculation");
+        NX_Free(bitangents);
+        NX_Free(tangents);
         return;
     }
 
+    auto processTriangle = [&](uint32_t i0, uint32_t i1, uint32_t i2)
+    {
+        const NX_Vec3& v0 = meshData->vertices[i0].position;
+        const NX_Vec3& v1 = meshData->vertices[i1].position;
+        const NX_Vec3& v2 = meshData->vertices[i2].position;
+
+        const NX_Vec2& uv0 = meshData->vertices[i0].texcoord;
+        const NX_Vec2& uv1 = meshData->vertices[i1].texcoord;
+        const NX_Vec2& uv2 = meshData->vertices[i2].texcoord;
+
+        NX_Vec3 edge1 = v1 - v0;
+        NX_Vec3 edge2 = v2 - v0;
+
+        NX_Vec2 deltaUV1 = uv1 - uv0;
+        NX_Vec2 deltaUV2 = uv2 - uv0;
+
+        float det = deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y;
+
+        // Skip the degenerate cases (collinear UVs)
+        if (fabs(det) < 1e-6f) {
+            return;
+        }
+
+        float invDet = 1.0f / det;
+
+        NX_Vec3 tangent = {
+            invDet * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x),
+            invDet * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y),
+            invDet * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z)
+        };
+
+        NX_Vec3 bitangent = {
+            invDet * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x),
+            invDet * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y),
+            invDet * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z)
+        };
+
+        tangents[i0] += tangent;
+        tangents[i1] += tangent;
+        tangents[i2] += tangent;
+
+        bitangents[i0] += bitangent;
+        bitangents[i1] += bitangent;
+        bitangents[i2] += bitangent;
+    };
+
     if (meshData->indexCount > 0 && meshData->indices != nullptr) {
-        for (int i = 0; i < meshData->indexCount; i += 3)
-        {
-            uint32_t i0 = meshData->indices[i];
-            uint32_t i1 = meshData->indices[i + 1];
-            uint32_t i2 = meshData->indices[i + 2];
-
-            NX_Vec3 v0 = meshData->vertices[i0].position;
-            NX_Vec3 v1 = meshData->vertices[i1].position;
-            NX_Vec3 v2 = meshData->vertices[i2].position;
-
-            NX_Vec2 uv0 = meshData->vertices[i0].texcoord;
-            NX_Vec2 uv1 = meshData->vertices[i1].texcoord;
-            NX_Vec2 uv2 = meshData->vertices[i2].texcoord;
-
-            NX_Vec3 edge1 = v1 - v0;
-            NX_Vec3 edge2 = v2 - v0;
-
-            NX_Vec2 deltaUV1 = uv1 - uv0;
-            NX_Vec2 deltaUV2 = uv2 - uv0;
-
-            float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
-
-            NX_Vec3 tangent;
-            tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-            tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-            tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-
-            NX_Vec3 bitangent;
-            bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
-            bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
-            bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
-
-            tangents[i0] += tangent;
-            tangents[i1] += tangent;
-            tangents[i2] += tangent;
-
-            bitangents[i0] += bitangent;
-            bitangents[i1] += bitangent;
-            bitangents[i2] += bitangent;
+        for (int i = 0; i < meshData->indexCount; i += 3) {
+            processTriangle(
+                meshData->indices[i],
+                meshData->indices[i + 1],
+                meshData->indices[i + 2]
+            );
         }
     }
     else {
-        for (int i = 0; i < meshData->vertexCount; i += 3)
-        {
-            NX_Vec3 v0 = meshData->vertices[i].position;
-            NX_Vec3 v1 = meshData->vertices[i + 1].position;
-            NX_Vec3 v2 = meshData->vertices[i + 2].position;
-
-            NX_Vec2 uv0 = meshData->vertices[i].texcoord;
-            NX_Vec2 uv1 = meshData->vertices[i + 1].texcoord;
-            NX_Vec2 uv2 = meshData->vertices[i + 2].texcoord;
-
-            NX_Vec3 edge1 = v1 - v0;
-            NX_Vec3 edge2 = v2 - v0;
-
-            NX_Vec2 deltaUV1 = uv1 - uv0;
-            NX_Vec2 deltaUV2 = uv2 - uv0;
-
-            float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
-
-            NX_Vec3 tangent;
-            tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
-            tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
-            tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
-
-            NX_Vec3 bitangent;
-            bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
-            bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
-            bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
-
-            tangents[i] += tangent;
-            tangents[i + 1] += tangent;
-            tangents[i + 2] += tangent;
-
-            bitangents[i] += bitangent;
-            bitangents[i + 1] += bitangent;
-            bitangents[i + 2] += bitangent;
+        for (int i = 0; i < meshData->vertexCount; i += 3) {
+            processTriangle(i, i + 1, i + 2);
         }
     }
 
-    // Orthogonalize and normalize (Gram-Schmidt method)
-    for (int i = 0; i < meshData->vertexCount; i++) {
-        NX_Vec3 n = meshData->vertices[i].normal;
-        NX_Vec3 t = tangents[i];
-        t = NX_Vec3Normalize(t - n * NX_Vec3Dot(n, t));
+    // Orthogonalization (Gram-Schmidt) and handedness calculation
+    for (int i = 0; i < meshData->vertexCount; i++)
+    {
+        const NX_Vec3& n = meshData->vertices[i].normal;
+        NX_Vec3& t = tangents[i];
+
+        t = t - n * NX_Vec3Dot(n, t);
+
+        float tLength = NX_Vec3Length(t);
+        if (tLength > 1e-6f) {
+            t = t * (1.0f / tLength);
+        }
+        else {
+            // Fallback: generate an arbitrary tangent perpendicular to the normal
+            t = fabs(n.x) < 0.9f ? NX_Vec3{1.0f, 0.0f, 0.0f} : NX_Vec3{0.0f, 1.0f, 0.0f};
+            t = NX_Vec3Normalize(t - n * NX_Vec3Dot(n, t));
+        }
+
         float handedness = (NX_Vec3Dot(NX_Vec3Cross(n, t), bitangents[i]) < 0.0f) ? -1.0f : 1.0f;
         meshData->vertices[i].tangent = NX_VEC4(t.x, t.y, t.z, handedness);
     }
 
-    NX_Free(tangents);
     NX_Free(bitangents);
+    NX_Free(tangents);
 }
 
 NX_BoundingBox3D NX_CalculateMeshDataAABB(const NX_MeshData* meshData)
