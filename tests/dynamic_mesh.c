@@ -96,6 +96,9 @@ int main(void)
         NX_End3D();
     }
 
+    NX_DestroyDynamicMesh(dynMesh);
+    NX_DestroyLight(light);
+
     NX_Quit();
 
     return 0;
