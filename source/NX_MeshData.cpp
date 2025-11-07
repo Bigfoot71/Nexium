@@ -261,14 +261,14 @@ void NX_GenMeshDataTangents(NX_MeshData* meshData)
 {
     if (meshData == nullptr || meshData->vertices == nullptr) return;
 
-    NX_Vec3* tangents = NX_Calloc<NX_Vec3>(meshData->vertexCount);
     NX_Vec3* bitangents = NX_Calloc<NX_Vec3>(meshData->vertexCount);
-
-    if (tangents == nullptr || bitangents == nullptr) {
+    if (bitangents == nullptr) {
         NX_LOG(E, "RENDER: Failed to allocate memory for tangent calculation");
-        NX_Free(bitangents);
-        NX_Free(tangents);
         return;
+    }
+
+    for (int i = 0; i < meshData->vertexCount; i++) {
+        meshData->vertices[i].tangent = NX_VEC4(0.0f, 0.0f, 0.0f, 0.0f);
     }
 
     auto processTriangle = [&](uint32_t i0, uint32_t i1, uint32_t i2)
@@ -290,7 +290,7 @@ void NX_GenMeshDataTangents(NX_MeshData* meshData)
         float det = deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y;
 
         // Skip the degenerate cases (collinear UVs)
-        if (fabs(det) < 1e-6f) {
+        if (std::abs(det) < 1e-6f) {
             return;
         }
 
@@ -308,9 +308,17 @@ void NX_GenMeshDataTangents(NX_MeshData* meshData)
             invDet * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z)
         };
 
-        tangents[i0] += tangent;
-        tangents[i1] += tangent;
-        tangents[i2] += tangent;
+        meshData->vertices[i0].tangent.x += tangent.x;
+        meshData->vertices[i0].tangent.y += tangent.y;
+        meshData->vertices[i0].tangent.z += tangent.z;
+
+        meshData->vertices[i1].tangent.x += tangent.x;
+        meshData->vertices[i1].tangent.y += tangent.y;
+        meshData->vertices[i1].tangent.z += tangent.z;
+
+        meshData->vertices[i2].tangent.x += tangent.x;
+        meshData->vertices[i2].tangent.y += tangent.y;
+        meshData->vertices[i2].tangent.z += tangent.z;
 
         bitangents[i0] += bitangent;
         bitangents[i1] += bitangent;
@@ -336,8 +344,13 @@ void NX_GenMeshDataTangents(NX_MeshData* meshData)
     for (int i = 0; i < meshData->vertexCount; i++)
     {
         const NX_Vec3& n = meshData->vertices[i].normal;
-        NX_Vec3& t = tangents[i];
+        NX_Vec3 t = {
+            meshData->vertices[i].tangent.x,
+            meshData->vertices[i].tangent.y,
+            meshData->vertices[i].tangent.z
+        };
 
+        // Gram-Schmidt orthogonalization
         t = t - n * NX_Vec3Dot(n, t);
 
         float tLength = NX_Vec3Length(t);
@@ -346,7 +359,7 @@ void NX_GenMeshDataTangents(NX_MeshData* meshData)
         }
         else {
             // Fallback: generate an arbitrary tangent perpendicular to the normal
-            t = fabs(n.x) < 0.9f ? NX_Vec3{1.0f, 0.0f, 0.0f} : NX_Vec3{0.0f, 1.0f, 0.0f};
+            t = std::abs(n.x) < 0.9f ? NX_VEC3_RIGHT : NX_VEC3_UP;
             t = NX_Vec3Normalize(t - n * NX_Vec3Dot(n, t));
         }
 
@@ -355,7 +368,6 @@ void NX_GenMeshDataTangents(NX_MeshData* meshData)
     }
 
     NX_Free(bitangents);
-    NX_Free(tangents);
 }
 
 NX_BoundingBox3D NX_CalculateMeshDataAABB(const NX_MeshData* meshData)
