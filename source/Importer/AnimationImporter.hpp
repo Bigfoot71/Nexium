@@ -54,7 +54,8 @@ inline NX_AnimationLib* AnimationImporter::LoadAnimationLib()
     for (uint32_t i = 0; i < mImporter.GetAnimationCount(); i++) {
         if (LoadAnimation(&animations[successCount], mImporter.GetAnimation(i))) {
             successCount++;
-        } else {
+        }
+        else {
             NX_LOG(E, "RENDER: Failed to process animation %d", i);
         }
     }
@@ -126,7 +127,8 @@ inline bool AnimationImporter::LoadAnimation(NX_Animation* animation, const aiAn
     for (uint32_t i = 0; i < aiAnim->mNumChannels; i++) {
         if (LoadChannel(&animation->channels[successChannels], aiAnim->mChannels[i])) {
             successChannels++;
-        } else {
+        }
+        else {
             NX_LOG(W, "RENDER: Failed to load channel %u", i);
         }
     }
