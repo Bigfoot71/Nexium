@@ -28,7 +28,6 @@
 #include <SDL3/SDL_log.h>
 #include <glad/gles2.h>
 #include <physfs.h>
-#include <alc.h>
 
 // ============================================================================
 // PHYSFS COMPATIBILITY
@@ -45,7 +44,7 @@ static void* INX_PhysFS_realloc(void* ptr, PHYSFS_uint64 size)
 }
 
 // ============================================================================
-// LOCAL FUNCTIONS
+// LOCAL INIT FUNCTIONS
 // ============================================================================
 
 static bool INX_SDL_Init(const NX_AppDesc& desc)
@@ -72,6 +71,10 @@ static bool INX_SDL_Init(const NX_AppDesc& desc)
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
         NX_LogF("CORE: Failed to init video subsystem; ", SDL_GetError());
         return false;
+    }
+
+    if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD)) {
+        NX_LogW("CORE: Failed to init gamepad subsystem; ", SDL_GetError());
     }
 
 #ifndef NDEBUG
@@ -240,29 +243,46 @@ static bool INX_DisplayState_Init(const char* title, int w, int h, const NX_AppD
     return true;
 }
 
-static bool INX_KeyboardState_Init()
-{
-    SDL_memset(&INX_Keyboard, 0, sizeof(INX_Keyboard));
-
-    return true;
-}
-
-static bool INX_MouseState_Init()
-{
-    SDL_memset(&INX_Mouse, 0, sizeof(INX_Mouse));
-
-    return true;
-}
-
 static bool INX_FrameState_Init(const NX_AppDesc& desc)
 {
-    SDL_memset(&INX_Frame, 0, sizeof(INX_Frame));
-
     INX_Frame.targetDeltaTime = (desc.targetFPS > 0) ? 1.0f / desc.targetFPS : 0.0f;
     INX_Frame.perfFrequency = SDL_GetPerformanceFrequency();
     INX_Frame.ticksLast = SDL_GetPerformanceCounter();
 
     return true;
+}
+
+// ============================================================================
+// LOCAL QUIT FUNCTIONS
+// ============================================================================
+
+static void INX_DisplayState_Quit()
+{
+    SDL_GL_DestroyContext(INX_Display.glContext);
+    INX_Display.glContext = nullptr;
+
+    SDL_DestroyWindow(INX_Display.window);
+    INX_Display.window = nullptr;
+}
+
+static void INX_KeyboardState_Quit()
+{
+    INX_Keyboard = INX_KeyboardState {};
+}
+
+static void INX_MouseState_Quit()
+{
+    INX_Mouse = INX_MouseState {};
+}
+
+static void INX_GamepadState_Quit()
+{
+    INX_Gamepad = INX_GamepadState {};
+}
+
+static void INX_FrameState_Quit()
+{
+    INX_Frame = INX_FrameState {};
 }
 
 // ============================================================================
@@ -319,14 +339,6 @@ bool NX_InitEx(const char* title, int w, int h, NX_AppDesc* desc)
         return false;
     }
 
-    if (!INX_KeyboardState_Init()) {
-        return false;
-    }
-
-    if (!INX_MouseState_Init()) {
-        return false;
-    }
-
     if (!INX_FrameState_Init(*desc)) {
         return false;
     }
@@ -344,13 +356,13 @@ void NX_Quit()
 
     INX_Render3DState_Quit();
     INX_Render2DState_Quit();
+    INX_DisplayState_Quit();
     INX_AudioState_Quit();
 
-    SDL_GL_DestroyContext(INX_Display.glContext);
-    INX_Display.glContext = nullptr;
-
-    SDL_DestroyWindow(INX_Display.window);
-    INX_Display.window = nullptr;
+    INX_KeyboardState_Quit();
+    INX_MouseState_Quit();
+    INX_GamepadState_Quit();
+    INX_FrameState_Quit();
 
     SDL_Quit();
 }

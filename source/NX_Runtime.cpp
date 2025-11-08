@@ -8,11 +8,12 @@
 
 #include <NX/NX_Runtime.h>
 
+#include "./INX_GlobalState.hpp"
+
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_time.h>
-#include "./INX_GlobalState.hpp"
 
 // ============================================================================
 // PUBLIC API
@@ -61,11 +62,21 @@ bool NX_FrameStep(void)
 
     /* --- Update input state --- */
 
-    // Shift current >> previous state
-    for (int i = 0; i < SDL_SCANCODE_COUNT; i++) {
-        INX_Keyboard.keys[i] = (INX_Keyboard.keys[i] & 0xF0) | (INX_Keyboard.keys[i] >> 4);
+    // Shift current >> previous key state
+    for (Uint8& key : INX_Keyboard.keys) {
+        key = (key & 0xF0) | (key >> 4);
     }
 
+    // Shift current >> previous gamepad button state
+    for (INX_GamepadState::Device& device : INX_Gamepad.devices) {
+        if (device.gamepad != nullptr) {
+            for (Uint8& button : device.buttons) {
+                button = (button & 0xF0) | (button >> 4);
+            }
+        }
+    }
+
+    // Moves current to previous button mouse state
     INX_Mouse.buttons[1] = INX_Mouse.buttons[0];
     INX_Mouse.delta = NX_VEC2_ZERO;
     INX_Mouse.wheel = NX_VEC2_ZERO;
@@ -101,6 +112,42 @@ bool NX_FrameStep(void)
         case SDL_EVENT_MOUSE_WHEEL:
             INX_Mouse.wheel.x = ev.wheel.x;
             INX_Mouse.wheel.y = ev.wheel.y;
+            break;
+        case SDL_EVENT_GAMEPAD_ADDED:
+            for (INX_GamepadState::Device& device : INX_Gamepad.devices) {
+                if (device.gamepad == nullptr) {
+                    device.gamepad = SDL_OpenGamepad(ev.gdevice.which);
+                    device.id = ev.gdevice.which;
+                    break;
+                }
+            }
+            break;
+        case SDL_EVENT_GAMEPAD_REMOVED:
+            for (INX_GamepadState::Device& device : INX_Gamepad.devices) {
+                if (device.id == ev.gdevice.which) {
+                    SDL_CloseGamepad(device.gamepad);
+                    device.buttons.fill(0);
+                    device.gamepad = nullptr;
+                    device.id = 0;
+                    break;
+                }
+            }
+            break;
+        case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+            for (INX_GamepadState::Device& device : INX_Gamepad.devices) {
+                if (device.id == ev.gbutton.which) {
+                    device.buttons[ev.gbutton.button] |= 0xF0;
+                    break;
+                }
+            }
+            break;
+        case SDL_EVENT_GAMEPAD_BUTTON_UP:
+            for (INX_GamepadState::Device& device : INX_Gamepad.devices) {
+                if (device.id == ev.gbutton.which) {
+                    device.buttons[ev.gbutton.button] &= 0x0F;
+                    break;
+                }
+            }
             break;
         default:
             break;

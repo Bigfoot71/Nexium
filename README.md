@@ -62,7 +62,7 @@ Here’s a checklist of the major features that are still missing:
 - [x] Custom post-processing shaders
 - [x] Custom material shaders
 - [x] More flexible 2D rendering
-- [ ] Gamepad support
+- [x] Gamepad support
 - [ ] Audio spatialization
 
 ## Getting Started
