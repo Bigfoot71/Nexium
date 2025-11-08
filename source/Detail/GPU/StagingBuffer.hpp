@@ -10,14 +10,13 @@
 #define NX_GPU_STAGING_BUFFER_HPP
 
 #include "../Util/DynamicArray.hpp"
-#include "../Util/ObjectRing.hpp"
 #include "./Buffer.hpp"
 
 namespace gpu {
 
 /* === Declaration === */
 
-template <typename T, int BufferCount>
+template <typename T>
 class StagingBuffer {
 public:
     /** Constructors */
@@ -33,14 +32,14 @@ public:
     const gpu::Buffer& GetBuffer() const noexcept;
 
 private:
-    util::ObjectRing<gpu::Buffer, BufferCount> mBuffer{};
     util::DynamicArray<T> mStagingBuffer{};
+    gpu::Buffer mBuffer{};
 };
 
 /* === Public Implementation === */
 
-template <typename T, int BufferCount>
-StagingBuffer<T, BufferCount>::StagingBuffer(GLenum target, int initialCapacity) noexcept
+template <typename T>
+StagingBuffer<T>::StagingBuffer(GLenum target, int initialCapacity) noexcept
     : mBuffer(target, initialCapacity * sizeof(T), nullptr, GL_STATIC_DRAW)
 {
     if (!mStagingBuffer.Reserve(initialCapacity)) {
@@ -48,38 +47,25 @@ StagingBuffer<T, BufferCount>::StagingBuffer(GLenum target, int initialCapacity)
     }
 }
 
-template <typename T, int BufferCount>
-T* StagingBuffer<T, BufferCount>::StageMap(int count, int* index) noexcept
+template <typename T>
+T* StagingBuffer<T>::StageMap(int count, int* index) noexcept
 {
     SDL_assert(index != nullptr);
-
     *index = static_cast<int>(mStagingBuffer.GetSize());
-
-    if constexpr (BufferCount > 1) {
-        if (index == 0) mBuffer.Rotate();
-    }
-
     mStagingBuffer.Resize(*index + count);
-
     return &mStagingBuffer[*index];
 }
 
-template <typename T, int BufferCount>
-int StagingBuffer<T, BufferCount>::Stage(const T& data) noexcept
+template <typename T>
+int StagingBuffer<T>::Stage(const T& data) noexcept
 {
     int index = static_cast<int>(mStagingBuffer.GetSize());
-
-    if constexpr (BufferCount > 1) {
-        if (index == 0) mBuffer.Rotate();
-    }
-
     mStagingBuffer.PushBack(data);
-
     return index;
 }
 
-template <typename T, int BufferCount>
-void StagingBuffer<T, BufferCount>::Upload() noexcept
+template <typename T>
+void StagingBuffer<T>::Upload() noexcept
 {
     if (mStagingBuffer.IsEmpty()) {
         return;
@@ -87,16 +73,16 @@ void StagingBuffer<T, BufferCount>::Upload() noexcept
 
     size_t size = mStagingBuffer.GetSize() * sizeof(T);
 
-    mBuffer->Reserve(size, false);
-    mBuffer->Upload(0, size, mStagingBuffer.GetData());
+    mBuffer.Reserve(size, false);
+    mBuffer.Upload(0, size, mStagingBuffer.GetData());
 
     mStagingBuffer.Clear();
 }
 
-template <typename T, int BufferCount>
-const gpu::Buffer& StagingBuffer<T, BufferCount>::GetBuffer() const noexcept
+template <typename T>
+const gpu::Buffer& StagingBuffer<T>::GetBuffer() const noexcept
 {
-    return *mBuffer;
+    return mBuffer;
 }
 
 } // namespace gpu

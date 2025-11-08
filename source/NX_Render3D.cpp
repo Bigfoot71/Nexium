@@ -202,92 +202,83 @@ struct INX_ActiveShadow {
 // LOCAL STATE
 // ============================================================================
 
-struct INX_Render3DState {
+struct INX_LightingState {
+    /** Aliases */
+    using ActiveLights = util::DynamicArray<INX_ActiveLight>;
+    using ActiveShadows = util::BucketArray<INX_ActiveShadow, NX_LightType, NX_LIGHT_TYPE_COUNT>;
+    using ShadowsNeedingUpdate = util::BucketArray<uint32_t, NX_LightType, NX_LIGHT_TYPE_COUNT>; 
 
+    /** Constants */
+    static constexpr float SlicesPerDepthOctave = 3.0f;     ///< Number of depth slices per depth octave
+    static constexpr uint32_t MaxLightsPerCluster = 32;     ///< Maximum number of lights in a single cluster
+
+    /** Shadow framebuffers and targets (one per light type) */
+    std::array<gpu::Framebuffer, NX_LIGHT_TYPE_COUNT> framebufferShadow{};  ///< Contains framebuffers per light type
+    std::array<gpu::Texture, NX_LIGHT_TYPE_COUNT> targetShadow{};           ///< Contains textures arrays per light type (cubemap for omni-lights)
+    gpu::Texture targetShadowDepth{};                                       ///< Common depth buffer for depth testing (TODO: Make it a renderbuffer)
+
+    /** Storage buffers */
+    gpu::Buffer storageLights{};                    ///< Active lights (sorted DIR -> SPOT -> OMNI)
+    gpu::Buffer storageShadow{};                    ///< Per-light shadow data
+    gpu::Buffer storageClusters{};                  ///< Per-cluster light counts (numDir, numSpot, numOmni)
+    gpu::Buffer storageIndices{};                   ///< Per-cluster light indices (grouped by type)
+    gpu::Buffer storageClusterAABB{};               ///< Per-cluster AABBs (computed during culling)
+
+    /** Uniform buffers */
+    gpu::Buffer frameShadowUniform;                 ///< Triple-buffered uniform data for shadow rendering
+
+    /** Per-frame caches */
+    ActiveLights activeLights{};                    ///< Active lights (pointers + shadow indices), same order as storageLights
+    ActiveShadows activeShadows{};                  ///< Active shadow-casting lights, bucketed by type, same order as storageShadow
+    ShadowsNeedingUpdate shadowNeedingUpdate{};     ///< Indices of lights needing shadow updates, bucketed by type
+
+    /** Additionnal Data */
+    NX_IVec3 clusterCount{};                        ///< Number of clusters X/Y/Z
+    NX_IVec2 clusterSize{};                         ///< Size of a cluster X/Y
+    float clusterSliceScale{};
+    float clusterSliceBias{};
+};
+
+struct INX_DrawCallState {
+    /** Draw call data stored in RAM */
+    util::DynamicArray<INX_DrawShared> sharedData{};
+    util::DynamicArray<INX_DrawUnique> uniqueData{};
+
+    /** Sorted draw call array */
+    util::BucketArray<int, INX_DrawType, DRAW_TYPE_COUNT> uniqueVisible{};
+
+    /** Sorting cache */
+    util::DynamicArray<float> sortDistances{};
+
+    /** Draw call data stored in VRAM */
+    gpu::StagingBuffer<NX_Mat4> boneBuffer{};
+    gpu::Buffer sharedBuffer{};
+    gpu::Buffer uniqueBuffer{};
+};
+
+struct INX_Render3DState {
     /** Scene data */
     INX_ProcessedEnv environment{};
     INX_ViewFrustum viewFrustum{};
-
-    /** Lighting management */
-    struct Lighting {
-    
-        /** Aliases */
-        using ActiveLights = util::DynamicArray<INX_ActiveLight>;
-        using ActiveShadows = util::BucketArray<INX_ActiveShadow, NX_LightType, NX_LIGHT_TYPE_COUNT>;
-        using ShadowsNeedingUpdate = util::BucketArray<uint32_t, NX_LightType, NX_LIGHT_TYPE_COUNT>; 
-
-        /** Constants */
-        static constexpr float SlicesPerDepthOctave = 3.0f;     ///< Number of depth slices per depth octave
-        static constexpr uint32_t MaxLightsPerCluster = 32;     ///< Maximum number of lights in a single cluster
-
-        /** Shadow framebuffers and targets (one per light type) */
-        std::array<gpu::Framebuffer, NX_LIGHT_TYPE_COUNT> framebufferShadow{};  ///< Contains framebuffers per light type
-        std::array<gpu::Texture, NX_LIGHT_TYPE_COUNT> targetShadow{};           ///< Contains textures arrays per light type (cubemap for omni-lights)
-        gpu::Texture targetShadowDepth{};                                       ///< Common depth buffer for depth testing (TODO: Make it a renderbuffer)
-
-        /** Storage buffers */
-        gpu::Buffer storageLights{};           ///< Active lights (sorted DIR -> SPOT -> OMNI)
-        gpu::Buffer storageShadow{};           ///< Per-light shadow data
-        gpu::Buffer storageClusters{};         ///< Per-cluster light counts (numDir, numSpot, numOmni)
-        gpu::Buffer storageIndices{};          ///< Per-cluster light indices (grouped by type)
-        gpu::Buffer storageClusterAABB{};      ///< Per-cluster AABBs (computed during culling)
-
-        /** Uniform buffers */
-        util::ObjectRing<gpu::Buffer, 3> frameShadowUniform;    ///< Triple-buffered uniform data for shadow rendering
-
-        /** Per-frame caches */
-        ActiveLights activeLights{};                           ///< Active lights (pointers + shadow indices), same order as storageLights
-        ActiveShadows activeShadows{};                         ///< Active shadow-casting lights, bucketed by type, same order as storageShadow
-        ShadowsNeedingUpdate shadowNeedingUpdate{};            ///< Indices of lights needing shadow updates, bucketed by type
-
-        /** Additionnal Data */
-        NX_IVec3 clusterCount{};        ///< Number of clusters X/Y/Z
-        NX_IVec2 clusterSize{};         ///< Size of a cluster X/Y
-        float clusterSliceScale{};
-        float clusterSliceBias{};
-
-    } lighting;
-
-    /** Draw call management */
-    struct DrawCalls {
-
-        /** Draw call data stored in RAM */
-        util::DynamicArray<INX_DrawShared> sharedData{};
-        util::DynamicArray<INX_DrawUnique> uniqueData{};
-
-        /** Sorted draw call array */
-        util::BucketArray<int, INX_DrawType, DRAW_TYPE_COUNT> uniqueVisible{};
-
-        /** Sorting cache */
-        util::DynamicArray<float> sortKeysCenterDist{};
-        util::DynamicArray<float> sortKeysFarthestDist{};
-
-        /** Draw call data stored in VRAM */
-        gpu::StagingBuffer<NX_Mat4, 1> boneBuffer{};
-        gpu::Buffer sharedBuffer{};
-        gpu::Buffer uniqueBuffer{};
-
-    } drawCalls;
+    INX_DrawCallState drawCalls{};
+    INX_LightingState lighting{};
 
     /** Scene render targets */
-    gpu::Texture targetSceneColor{};       //< RGBA16F
-    gpu::Texture targetSceneNormal{};      //< RGB8
-    gpu::Texture targetSceneDepth{};       //< D24
+    gpu::Texture targetSceneColor{};        //< RGBA16F
+    gpu::Texture targetSceneNormal{};       //< RGB8
+    gpu::Texture targetSceneDepth{};        //< D24
     gpu::Framebuffer framebufferScene{};
 
-    /** Mip chain */
-    gpu::MipBuffer mipChain{};
-
-    /** Swap buffers */
-    gpu::SwapBuffer swapPostProcess{};     //< Ping-pong buffer used during scene post process
-    gpu::SwapBuffer swapAuxiliary{};       //< Secondary ping-pong buffer in half resolution
+    /** Additionnal framebuffers */
+    gpu::SwapBuffer swapPostProcess{};      //< Ping-pong buffer used during scene post process
+    gpu::SwapBuffer swapAuxiliary{};        //< Secondary ping-pong buffer in half resolution
+    gpu::MipBuffer mipChain{};              //< Mipchain, primarily used for down/up sampling the bloom
 
     /** Uniform buffers */
     gpu::Buffer frameUniform{};
 
     /** State infos */
     INX_RenderTargetInfo renderTarget{};
-
 };
 
 static util::UniquePtr<INX_Render3DState> INX_Render3D{};
@@ -324,13 +315,13 @@ bool INX_Render3DState_Init(NX_AppDesc* desc)
 
     /* --- Init draw call manager --- */
 
-    INX_Render3DState::DrawCalls& drawCalls = INX_Render3D->drawCalls;
+    INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
 
     constexpr int drawCallReserveCount = 1024;
 
     drawCalls.sharedBuffer = gpu::Buffer(GL_SHADER_STORAGE_BUFFER, drawCallReserveCount * sizeof(INX_GPUDrawShared));
     drawCalls.uniqueBuffer = gpu::Buffer(GL_SHADER_STORAGE_BUFFER, drawCallReserveCount * sizeof(INX_GPUDrawUnique));
-    drawCalls.boneBuffer = gpu::StagingBuffer<NX_Mat4, 1>(GL_SHADER_STORAGE_BUFFER, 1024);
+    drawCalls.boneBuffer = gpu::StagingBuffer<NX_Mat4>(GL_SHADER_STORAGE_BUFFER, 1024);
 
     if (!drawCalls.sharedData.Reserve(drawCallReserveCount)) {
         NX_LOG(E, "RENDER: Shared draw call data array pre-allocation failed (requested: %i entries)", drawCallReserveCount);
@@ -346,10 +337,11 @@ bool INX_Render3DState_Init(NX_AppDesc* desc)
 
     /* --- Init lighting manager --- */
 
-    INX_Render3DState::Lighting& lighting = INX_Render3D->lighting;
+    INX_LightingState& lighting = INX_Render3D->lighting;
 
-    lighting.frameShadowUniform = util::ObjectRing<gpu::Buffer, 3>(
-        GL_UNIFORM_BUFFER, sizeof(INX_FrameUniformShadow), nullptr, GL_DYNAMIC_DRAW
+    lighting.frameShadowUniform = gpu::Buffer(
+        GL_UNIFORM_BUFFER, sizeof(INX_FrameUniformShadow),
+        nullptr, GL_DYNAMIC_DRAW
     );
 
     /* --- Calculating the size and number of clusters for lighting --- */
@@ -586,7 +578,7 @@ static void INX_PushDrawCall(
     const INX_VariantMesh& mesh, const NX_InstanceBuffer* instances, int instanceCount,
     const NX_Material& material, const NX_Transform& transform)
 {
-    INX_Render3DState::DrawCalls& state = INX_Render3D->drawCalls;
+    INX_DrawCallState& state = INX_Render3D->drawCalls;
 
     int sharedIndex = state.sharedData.GetSize();
     int uniqueIndex = state.uniqueData.GetSize();
@@ -624,7 +616,7 @@ static void INX_PushDrawCall(
     const NX_Model& model, const NX_InstanceBuffer* instances,
     int instanceCount, const NX_Transform& transform)
 {
-    INX_Render3DState::DrawCalls& state = INX_Render3D->drawCalls;
+    INX_DrawCallState& state = INX_Render3D->drawCalls;
 
     /* --- If the model is rigged we process the bone matrices --- */
 
@@ -678,7 +670,7 @@ inline void INX_ClearDrawCalls()
 
 static void INX_UploadDrawCalls()
 {
-    INX_Render3DState::DrawCalls& state = INX_Render3D->drawCalls;
+    INX_DrawCallState& state = INX_Render3D->drawCalls;
 
     state.boneBuffer.Upload();
 
@@ -691,13 +683,11 @@ static void INX_UploadDrawCalls()
     state.uniqueBuffer.Reserve(uniqueBytes, false);
 
     INX_GPUDrawShared* sharedBuffer = state.sharedBuffer.MapRange<INX_GPUDrawShared>(
-        0, sharedBytes,
-        GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
+        0, sharedBytes, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
     );
 
     INX_GPUDrawUnique* uniqueBuffer = state.uniqueBuffer.MapRange<INX_GPUDrawUnique>(
-        0, uniqueBytes,
-        GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
+        0, uniqueBytes, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT
     );
 
     for (size_t i = 0; i < sharedCount; i++)
@@ -746,7 +736,7 @@ static void INX_UploadDrawCalls()
 
 static void INX_CullDrawCalls(const INX_Frustum& frustum, NX_Layer frustumCullMask)
 {
-    INX_Render3DState::DrawCalls& state = INX_Render3D->drawCalls;
+    INX_DrawCallState& state = INX_Render3D->drawCalls;
 
     state.uniqueVisible.Clear();
 
@@ -784,8 +774,9 @@ static void INX_CullDrawCalls(const INX_Frustum& frustum, NX_Layer frustumCullMa
 
 static void INX_SortDrawCalls()
 {
-    INX_Render3DState::DrawCalls& state = INX_Render3D->drawCalls;
+    INX_DrawCallState& state = INX_Render3D->drawCalls;
     const INX_ProcessedEnv& env = INX_Render3D->environment;
+    util::DynamicArray<float>& sortDistances = state.sortDistances;
 
     const bool needsOpaque = NX_FLAG_CHECK(env.flags, NX_ENV_SORT_OPAQUE);
     const bool needsPrepass = NX_FLAG_CHECK(env.flags, NX_ENV_SORT_PREPASS);
@@ -794,25 +785,25 @@ static void INX_SortDrawCalls()
     if (needsOpaque || needsPrepass)
     {
         const size_t count = state.uniqueData.GetSize();
-        state.sortKeysCenterDist.Resize(count);
+        sortDistances.Resize(count);
 
         for (size_t i = 0; i < count; ++i) {
             const INX_DrawUnique& unique = state.uniqueData[i];
             const INX_DrawShared& shared = state.sharedData[unique.sharedDataIndex];
-            state.sortKeysCenterDist[i] = INX_Render3D->viewFrustum.GetDistanceSqToCenter(
+            sortDistances[i] = INX_Render3D->viewFrustum.GetDistanceSqToCenter(
                 unique.mesh.GetAABB(), shared.transform
             );
         }
 
         if (needsOpaque) {
-            state.uniqueVisible.Sort(DRAW_OPAQUE, [&state](int a, int b) {
-                return state.sortKeysCenterDist[a] < state.sortKeysCenterDist[b];
+            state.uniqueVisible.Sort(DRAW_OPAQUE, [&sortDistances](int a, int b) {
+                return sortDistances[a] < sortDistances[b];
             });
         }
 
         if (needsPrepass) {
-            state.uniqueVisible.Sort(DRAW_PREPASS, [&state](int a, int b) {
-                return state.sortKeysCenterDist[a] < state.sortKeysCenterDist[b];
+            state.uniqueVisible.Sort(DRAW_PREPASS, [&sortDistances](int a, int b) {
+                return sortDistances[a] < sortDistances[b];
             });
         }
     }
@@ -820,18 +811,18 @@ static void INX_SortDrawCalls()
     if (needsTransparent)
     {
         const size_t count = state.uniqueData.GetSize();
-        state.sortKeysFarthestDist.Resize(count);
+        sortDistances.Resize(count);
 
         for (size_t i = 0; i < count; ++i) {
             const INX_DrawUnique& unique = state.uniqueData[i];
             const INX_DrawShared& shared = state.sharedData[unique.sharedDataIndex];
-            state.sortKeysFarthestDist[i] = INX_Render3D->viewFrustum.GetDistanceSqToFarthestCorner(
+            sortDistances[i] = INX_Render3D->viewFrustum.GetDistanceSqToFarthestCorner(
                 unique.mesh.GetAABB(), shared.transform
             );
         }
 
-        state.uniqueVisible.Sort(DRAW_TRANSPARENT, [&state](int a, int b) {
-            return state.sortKeysFarthestDist[a] > state.sortKeysFarthestDist[b];
+        state.uniqueVisible.Sort(DRAW_TRANSPARENT, [&sortDistances](int a, int b) {
+            return sortDistances[a] > sortDistances[b];
         });
     }
 }
@@ -881,7 +872,8 @@ static void INX_Draw3D(const gpu::Pipeline& pipeline, const INX_DrawUnique& uniq
         useInstancing ? 
             pipeline.DrawElementsInstanced(primitive, GL_UNSIGNED_INT, buffer->indexCount, shared.instanceCount) :
             pipeline.DrawElements(primitive, GL_UNSIGNED_INT, buffer->indexCount);
-    } else {
+    }
+    else {
         useInstancing ?
             pipeline.DrawInstanced(primitive, buffer->vertexCount, shared.instanceCount) :
             pipeline.Draw(primitive, buffer->vertexCount);
@@ -993,7 +985,7 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
 
 static void INX_UpdateLights()
 {
-    INX_Render3DState::Lighting& state = INX_Render3D->lighting;
+    INX_LightingState& state = INX_Render3D->lighting;
 
     /* --- Clear the previous state --- */
 
@@ -1050,7 +1042,7 @@ static void INX_UpdateLights()
 
 static void INX_UploadLightData()
 {
-    INX_Render3DState::Lighting& state = INX_Render3D->lighting;
+    INX_LightingState& state = INX_Render3D->lighting;
 
     if (state.activeLights.IsEmpty()) {
         return;
@@ -1072,7 +1064,7 @@ static void INX_UploadLightData()
 
 static void INX_UploadShadowData()
 {
-    INX_Render3DState::Lighting& state = INX_Render3D->lighting;
+    INX_LightingState& state = INX_Render3D->lighting;
 
     if (state.activeShadows.IsEmpty()) {
         return;
@@ -1094,7 +1086,7 @@ static void INX_UploadShadowData()
 
 static void INX_ComputeClusters()
 {
-    INX_Render3DState::Lighting& state = INX_Render3D->lighting;
+    INX_LightingState& state = INX_Render3D->lighting;
 
     /* --- Early exit if no active light --- */
 
@@ -1149,43 +1141,46 @@ static void INX_ComputeClusters()
 
 static void INX_RenderShadowMaps()
 {
-    INX_Render3DState::DrawCalls& drawCalls = INX_Render3D->drawCalls;
-    INX_Render3DState::Lighting& state = INX_Render3D->lighting;
-
-    /* --- Early exit if no shadows to render --- */
+    INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
+    INX_LightingState& state = INX_Render3D->lighting;
 
     if (state.shadowNeedingUpdate.IsEmpty()) {
         return;
     }
 
-    /* --- Ensures that there are enough shadow maps in each texture array --- */
+    /* --- Ensure shadow map capacity --- */
 
-    for (int i = 0; i < state.targetShadow.size(); i++) {
-        size_t activeCount = state.activeShadows.GetSize(static_cast<NX_LightType>(i));
+    for (int i = 0; i < state.targetShadow.size(); i++) 
+    {
+        NX_LightType type = static_cast<NX_LightType>(i);
+        const size_t activeCount = state.activeShadows.GetSize(type);
+
         if (activeCount > state.targetShadow[i].GetDepth()) {
-            state.targetShadow[i].Realloc(state.targetShadow[i].GetWidth(), state.targetShadow[i].GetHeight(), activeCount);
+            const uint32_t width = state.targetShadow[i].GetWidth();
+            const uint32_t height = state.targetShadow[i].GetHeight();
+            state.targetShadow[i].Realloc(width, height, activeCount);
             state.framebufferShadow[i].UpdateColorTextureView(0, state.targetShadow[i]);
         }
     }
 
-    /* --- Setup pipeline --- */
+    /* --- Setup common pipeline state --- */
 
     gpu::Pipeline pipeline;
-
     pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
 
-    pipeline.BindStorage(0, INX_Render3D->drawCalls.sharedBuffer);
-    pipeline.BindStorage(1, INX_Render3D->drawCalls.uniqueBuffer);
-    pipeline.BindStorage(2, INX_Render3D->drawCalls.boneBuffer.GetBuffer());
+    pipeline.BindStorage(0, drawCalls.sharedBuffer);
+    pipeline.BindStorage(1, drawCalls.uniqueBuffer);
+    pipeline.BindStorage(2, drawCalls.boneBuffer.GetBuffer());
 
+    pipeline.BindUniform(0, state.frameShadowUniform);
     pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
     pipeline.BindUniform(2, INX_Render3D->environment.buffer);
 
-    /* --- Render shadows for each lights --- */
+    /* --- Render shadow maps --- */
 
     for (int i = 0; i < state.framebufferShadow.size(); ++i)
     {
-        NX_LightType lightType = static_cast<NX_LightType>(i);
+        const NX_LightType lightType = static_cast<NX_LightType>(i);
         if (state.shadowNeedingUpdate.IsEmpty(lightType)) continue;
 
         pipeline.BindFramebuffer(state.framebufferShadow[lightType]);
@@ -1193,24 +1188,27 @@ static void INX_RenderShadowMaps()
 
         for (uint32_t shadowIndex : state.shadowNeedingUpdate.GetCategory(lightType))
         {
-            const INX_ActiveShadow& data = state.activeShadows[shadowIndex];
-            const NX_Light& light = *data.light;
+            const INX_ActiveShadow& shadow = state.activeShadows[shadowIndex];
+            const NX_Light& light = *shadow.light;
 
-            for (int face = 0; face < ((lightType == NX_LIGHT_OMNI) ? 6 : 1); ++face)
+            const int faceCount = (lightType == NX_LIGHT_OMNI) ? 6 : 1;
+
+            for (int face = 0; face < faceCount; ++face)
             {
-                state.framebufferShadow[lightType].SetColorAttachmentTarget(0, data.mapIndex, face);
+                /* --- Setup shadow map face --- */
+
+                state.framebufferShadow[lightType].SetColorAttachmentTarget(0, shadow.mapIndex, face);
                 pipeline.Clear(state.framebufferShadow[lightType], NX_COLOR_1(NX_GetLightRange(&light)));
 
-                // REVIEW: We could use a better method for per-frame data...
-                state.frameShadowUniform->UploadObject(INX_FrameUniformShadow {
+                state.frameShadowUniform.UploadObject(INX_FrameUniformShadow {
                     .lightViewProj = INX_GetLightViewProj(light, face),
                     .lightPosition = NX_GetLightPosition(&light),
                     .lightRange = NX_GetLightRange(&light),
                     .lightType = light.type,
                     .elapsedTime = static_cast<float>(NX_GetElapsedTime())
                 });
-                pipeline.BindUniform(0, *state.frameShadowUniform);
-                state.frameShadowUniform.Rotate();
+
+                /* --- Cull and render shadow casters --- */
 
                 INX_CullDrawCalls(INX_GetLightFrustum(light, face), light.shadow.cullMask);
 
@@ -1231,7 +1229,7 @@ static void INX_RenderShadowMaps()
                         INX_TextureAsset::WHITE
                     );
 
-                    pipeline.BindTexture(0,  texAlbedo->gpu);
+                    pipeline.BindTexture(0, texAlbedo->gpu);
                     pipeline.SetUniformUint1(0, unique.sharedDataIndex);
                     pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
 
@@ -1272,7 +1270,7 @@ static void INX_RenderBackground(const gpu::Pipeline& pipeline)
 
 static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
 {
-    INX_Render3DState::DrawCalls& drawCalls = INX_Render3D->drawCalls;
+    INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
 
     if (drawCalls.uniqueVisible.GetCategory(DRAW_PREPASS).IsEmpty()) {
         return;
@@ -1319,8 +1317,8 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
 
 static void INX_RenderScene(const gpu::Pipeline& pipeline)
 {
-    INX_Render3DState::DrawCalls& drawCalls = INX_Render3D->drawCalls;
-    INX_Render3DState::Lighting& lighting = INX_Render3D->lighting;
+    INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
+    INX_LightingState& lighting = INX_Render3D->lighting;
 
     pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.SetColorWrite(gpu::ColorWrite::RGBA);
