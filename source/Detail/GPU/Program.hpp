@@ -341,10 +341,9 @@ inline void Program::SetFloat4(int location, const NX_Quat& value) const noexcep
     SDL_assert(mUniformCache.GetCapacity() > 0);
     SDL_assert(location < mUniformCache.GetSize());
 
-    NX_Vec4 quat = { value.x, value.y, value.z, value.w };
-    if (std::memcmp(mUniformCache[location].data(), &quat, sizeof(quat)) != 0) {
-        std::memcpy(mUniformCache[location].data(), &quat, sizeof(quat));
-        glUniform4fv(location, 1, reinterpret_cast<const float*>(&quat));
+    if (std::memcmp(mUniformCache[location].data(), &value, sizeof(value)) != 0) {
+        std::memcpy(mUniformCache[location].data(), &value, sizeof(value));
+        glUniform4fv(location, 1, reinterpret_cast<const float*>(&value));
     }
 }
 

@@ -2049,7 +2049,7 @@ static inline NX_Vec3 NX_Vec3Normalize(NX_Vec3 v)
  */
 static inline NX_Vec3 NX_Vec3Rotate(NX_Vec3 v, NX_Quat q)
 {
-    NX_Vec3 qv = { q.x, q.y, q.z };
+    NX_Vec3 qv = NX_VEC3(q.x, q.y, q.z);
 
     NX_Vec3 t;
     t.x = 2.0f * (qv.y * v.z - qv.z * v.y);
@@ -2582,10 +2582,10 @@ static inline NX_Quat NX_QuatFromAxisAngle(NX_Vec3 axis, float radians)
     float s = sinf(half);
     float c = cosf(half);
 
-    result.w = c;
     result.x = axis.x * s;
     result.y = axis.y * s;
     result.z = axis.z * s;
+    result.w = c;
 
     return result;
 }
@@ -2698,10 +2698,12 @@ static inline NX_Quat NX_QuatNormalize(NX_Quat q)
     float lenSq = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
     if (lenSq < 1e-4f) return NX_QUAT_IDENTITY;
 
-    float inv_len = 1.0f / sqrtf(lenSq);
-    for (int i = 0; i < 4; ++i) {
-        q.v[i] *= inv_len;
-    }
+    float invLen = 1.0f / sqrtf(lenSq);
+
+    q.x *= invLen;
+    q.y *= invLen;
+    q.z *= invLen;
+    q.w *= invLen;
 
     return q;
 }
@@ -2726,10 +2728,10 @@ static inline NX_Quat NX_QuatInverse(NX_Quat q)
 
     float invLenSq = 1.0f / lenSq;
 
-    q.w = q.w *  invLenSq;
     q.x = q.x * -invLenSq;
     q.y = q.y * -invLenSq;
     q.z = q.z * -invLenSq;
+    q.w = q.w *  invLenSq;
 
     return q;
 }

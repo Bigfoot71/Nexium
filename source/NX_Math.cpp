@@ -38,8 +38,7 @@ NX_Quat NX_QuatFromEuler(NX_Vec3 v)
 
     float lenSq = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
     if (lenSq < 1e-6f) {
-        NX_Quat identity = { 0.0f, 0.0f, 0.0f, 1.0f };
-        return identity;
+        return NX_QUAT_IDENTITY;
     }
 
     float invLen = 1.0f / std::sqrt(lenSq);

@@ -45,7 +45,7 @@ constexpr NX_Vec3 AssimpCast<NX_Vec3, aiVector3D>(const aiVector3D& src)
 template<>
 constexpr NX_Quat AssimpCast<NX_Quat, aiQuaternion>(const aiQuaternion& src)
 {
-    return NX_QUAT(src.w, src.x, src.y, src.z);
+    return NX_QUAT(src.x, src.y, src.z, src.w);
 }
 
 template<>
