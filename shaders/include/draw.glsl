@@ -6,7 +6,7 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-struct ModelData {
+struct DrawShared {
     mat4 matModel;
     mat4 matNormal;
     int boneOffset;
@@ -14,7 +14,7 @@ struct ModelData {
     bool skinning;
 };
 
-struct MeshData {
+struct DrawUnique {
     vec4 albedoColor;
     vec3 emissionColor;
     float emissionEnergy;

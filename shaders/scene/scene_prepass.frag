@@ -32,8 +32,8 @@ layout(location = 10) in VaryUser {
 
 /* === Storage Buffers === */
 
-layout(std430, binding = 1) buffer S_PerMeshBuffer {
-    MeshData sMeshData[];
+layout(std430, binding = 1) buffer S_DrawUniqueBuffer {
+    DrawUnique sDrawUnique[];
 };
 
 /* === Samplers === */
@@ -42,12 +42,12 @@ layout(binding = 0) uniform sampler2D uTexAlbedo;
 
 /* === Uniforms === */
 
-layout(location = 1) uniform uint uMeshDataIndex;
+layout(location = 1) uniform uint uDrawUniqueIndex;
 
 /* === Program === */
 
 void main()
 {
     float alpha = vInt.color.a * texture(uTexAlbedo, vInt.texCoord).a;
-    if (alpha < sMeshData[uMeshDataIndex].alphaCutOff) discard;
+    if (alpha < sDrawUnique[uDrawUniqueIndex].alphaCutOff) discard;
 }

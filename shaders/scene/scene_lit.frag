@@ -85,12 +85,12 @@ layout(location = 10) in VaryUser {
 /* === Storage Buffers === */
 
 /** 
- * sMeshData[] : per-draw-call data
+ * sDrawUnique[] : per-draw-call data
  *   - Contains unique draw-call parameters
  *   - One entry per rendered object
  */
-layout(std430, binding = 1) buffer S_PerMeshBuffer {
-    MeshData sMeshData[];
+layout(std430, binding = 1) buffer S_DrawUniqueBuffer {
+    DrawUnique sDrawUnique[];
 };
 
 /** 
@@ -159,7 +159,7 @@ layout(std140, binding = 2) uniform U_Environment {
 
 /* === Uniforms === */
 
-layout(location = 1) uniform uint uMeshDataIndex;
+layout(location = 1) uniform uint uDrawUniqueIndex;
 
 /* === Fragments === */
 
@@ -207,7 +207,7 @@ void LightDir(uint lightIndex, const in LightParams params, inout vec3 diffuse, 
 {
     /* --- Checking the layer mask for lighting --- */
 
-    if ((sLights[lightIndex].cullMask & sMeshData[uMeshDataIndex].layerMask) == 0u) {
+    if ((sLights[lightIndex].cullMask & sDrawUnique[uDrawUniqueIndex].layerMask) == 0u) {
         return;
     }
 
@@ -277,7 +277,7 @@ void LightSpot(uint lightIndex, const in LightParams params, inout vec3 diffuse,
 {
     /* --- Checking the layer mask for lighting --- */
 
-    if ((sLights[lightIndex].cullMask & sMeshData[uMeshDataIndex].layerMask) == 0u) {
+    if ((sLights[lightIndex].cullMask & sDrawUnique[uDrawUniqueIndex].layerMask) == 0u) {
         return;
     }
 
@@ -362,7 +362,7 @@ void LightOmni(uint lightIndex, const in LightParams params, inout vec3 diffuse,
 {
     /* --- Checking the layer mask for lighting --- */
 
-    if ((sLights[lightIndex].cullMask & sMeshData[uMeshDataIndex].layerMask) == 0u) {
+    if ((sLights[lightIndex].cullMask & sDrawUnique[uDrawUniqueIndex].layerMask) == 0u) {
         return;
     }
 

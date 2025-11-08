@@ -41,8 +41,8 @@ layout(location = 10) in VaryUser {
 
 /* === Storage Buffers === */
 
-layout(std430, binding = 1) buffer S_PerMeshBuffer {
-    MeshData sMeshData[];
+layout(std430, binding = 1) buffer S_DrawUniqueBuffer {
+    DrawUnique sDrawUnique[];
 };
 
 /* === Samplers === */
@@ -57,7 +57,7 @@ layout(std140, binding = 0) uniform U_Frame {
 
 /* === Uniforms === */
 
-layout(location = 1) uniform uint uMeshDataIndex;
+layout(location = 1) uniform uint uDrawUniqueIndex;
 
 /* === Fragments === */
 
@@ -68,7 +68,7 @@ layout(location = 0) out vec4 FragDistance;
 void main()
 {
     float alpha = vInt.color.a * texture(uTexAlbedo, vInt.texCoord).a;
-    if (alpha < sMeshData[uMeshDataIndex].alphaCutOff) discard;
+    if (alpha < sDrawUnique[uDrawUniqueIndex].alphaCutOff) discard;
 
     float depth = gl_FragCoord.z;
     if (uFrame.lightType != LIGHT_DIR) {

@@ -38,12 +38,12 @@ layout(location = 11) in vec4 iCustom;
 
 /* === Storage Buffers === */
 
-layout(std430, binding = 0) buffer S_PerModelBuffer {
-    ModelData sModelData[];
+layout(std430, binding = 0) buffer S_DrawSharedBuffer {
+    DrawShared sDrawShared[];
 };
 
-layout(std430, binding = 1) buffer S_PerMeshBuffer {
-    MeshData sMeshData[];
+layout(std430, binding = 1) buffer S_DrawUniqueBuffer {
+    DrawUnique sDrawUnique[];
 };
 
 layout(std430, binding = 2) buffer S_BoneBuffer {
@@ -66,8 +66,8 @@ layout(std140, binding = 2) uniform U_Environment {
 
 /* === Uniforms === */
 
-layout(location = 0) uniform uint uModelDataIndex;
-layout(location = 1) uniform uint uMeshDataIndex;
+layout(location = 0) uniform uint uDrawSharedIndex;
+layout(location = 1) uniform uint uDrawUniqueIndex;
 
 /* === Varyings === */
 
@@ -103,24 +103,24 @@ void main()
 {
     /* --- Calculation of matrices --- */
 
-    ModelData modelData = sModelData[uModelDataIndex];
+    DrawShared drawShared = sDrawShared[uDrawSharedIndex];
 
-    mat4 matModel = modelData.matModel;
-    mat3 matNormal = mat3(modelData.matNormal);
+    mat4 matModel = drawShared.matModel;
+    mat3 matNormal = mat3(drawShared.matNormal);
 
-    if (modelData.skinning) {
-        mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, modelData.boneOffset);
+    if (drawShared.skinning) {
+        mat4 sMatModel = SkinMatrix(aBoneIDs, aWeights, drawShared.boneOffset);
         matModel = matModel * sMatModel;
         matNormal = matNormal * mat3(transpose(inverse(sMatModel)));
     }
 
-    if (modelData.instancing) {
+    if (drawShared.instancing) {
         mat4 iMatModel = M_TransformToMat4(iPosition, iRotation, iScale);
         matModel = iMatModel * matModel;
         matNormal = mat3(transpose(inverse(iMatModel))) * matNormal;
     }
 
-    switch(sMeshData[uMeshDataIndex].billboard) {
+    switch(sDrawUnique[uDrawUniqueIndex].billboard) {
     case BILLBOARD_NONE:
         break;
     case BILLBOARD_FRONT:
@@ -152,8 +152,8 @@ void main()
 
     /* --- Apply depth offset --- */
 
-    float dOffset = sMeshData[uMeshDataIndex].depthOffset;
-    float dScale = sMeshData[uMeshDataIndex].depthScale;
+    float dOffset = sDrawUnique[uDrawUniqueIndex].depthOffset;
+    float dScale = sDrawUnique[uDrawUniqueIndex].depthScale;
 
     gl_Position.z = dOffset * gl_Position.w + (gl_Position.z * dScale);
 }

@@ -36,8 +36,8 @@ layout(location = 10) in VaryUser {
 
 /* === Storage Buffers === */
 
-layout(std430, binding = 1) buffer S_PerMeshBuffer {
-    MeshData sMeshData[];
+layout(std430, binding = 1) buffer S_DrawUniqueBuffer {
+    DrawUnique sDrawUnique[];
 };
 
 /* === Samplers === */
@@ -63,7 +63,7 @@ layout(std140, binding = 2) uniform U_Environment {
 
 /* === Uniforms === */
 
-layout(location = 1) uniform uint uMeshDataIndex;
+layout(location = 1) uniform uint uDrawUniqueIndex;
 
 /* === Fragments === */
 

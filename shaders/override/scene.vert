@@ -31,10 +31,10 @@ vec4 TANGENT    = vec4(0.0, 0.0, 0.0, 1.0);
 
 void VertexOverride()
 {
-    MeshData meshData = sMeshData[uMeshDataIndex];
+    DrawUnique drawUnique = sDrawUnique[uDrawUniqueIndex];
 
     POSITION = aPosition;
-    TEXCOORD = meshData.texOffset + aTexCoord * meshData.texScale;
+    TEXCOORD = drawUnique.texOffset + aTexCoord * drawUnique.texScale;
     COLOR = aColor * iColor;
     NORMAL = aNormal;
     TANGENT = aTangent;
