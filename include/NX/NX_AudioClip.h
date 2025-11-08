@@ -10,6 +10,7 @@
 #define NX_AUDIO_CLIP_H
 
 #include "./NX_API.h"
+#include <stdbool.h>
 
 // ============================================================================
 // TYPES DEFINITIONS

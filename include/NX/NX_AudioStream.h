@@ -10,6 +10,7 @@
 #define NX_AUDIO_STREAM_H
 
 #include "./NX_API.h"
+#include <stdbool.h>
 
 // ============================================================================
 // TYPES DEFINITIONS
