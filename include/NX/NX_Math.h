@@ -52,7 +52,7 @@
 #define NX_VEC4_ONE         NX_VEC4( 1, 1, 1, 1)
 
 #define NX_QUAT_ZERO        NX_QUAT( 0, 0, 0, 0)
-#define NX_QUAT_IDENTITY    NX_QUAT( 1, 0, 0, 0)
+#define NX_QUAT_IDENTITY    NX_QUAT( 0, 0, 0, 1)
 
 #define NX_BLANK            NX_COLOR(0.00f, 0.00f, 0.00f, 0.00f)
 #define NX_WHITE            NX_COLOR(1.00f, 1.00f, 1.00f, 1.00f)
@@ -263,14 +263,14 @@
     )
 
 /**
- * @biref Create Quaternion from w, x, y, z values
+ * @biref Create Quaternion from x, y, z, w values
  */
-#define NX_QUAT(w, x, y, z)     \
+#define NX_QUAT(x, y, z, w)     \
     NX_STRUCT_LITERAL(NX_Quat,  \
-        NX_CAST(float, (w)),    \
         NX_CAST(float, (x)),    \
         NX_CAST(float, (y)),    \
-        NX_CAST(float, (z))     \
+        NX_CAST(float, (z)),    \
+        NX_CAST(float, (w))     \
     )
 
 /**
@@ -461,11 +461,11 @@ typedef struct NX_Vec4 {
 } NX_Vec4;
 
 /**
- * @biref Quaternion (w, x, y, z)
+ * @biref Quaternion (x, y, z, w)
  */
 typedef struct NX_Quat {
     union {
-        struct { float w, x, y, z; };
+        struct { float x, y, z, w; };
         float v[4];
     };
 } NX_Quat;
@@ -2711,7 +2711,7 @@ static inline NX_Quat NX_QuatNormalize(NX_Quat q)
  */
 static inline NX_Quat NX_QuatConjugate(NX_Quat q)
 {
-    return NX_QUAT(q.w, -q.x, -q.y, -q.z);
+    return NX_QUAT(-q.x, -q.y, -q.z, q.w);
 }
 
 /**
@@ -2739,7 +2739,7 @@ static inline NX_Quat NX_QuatInverse(NX_Quat q)
  */
 static inline NX_Quat NX_QuatNeg(NX_Quat q)
 {
-    return NX_QUAT(-q.w, -q.x, -q.y, -q.z);
+    return NX_QUAT(-q.x, -q.y, -q.z, -q.w);
 }
 
 /**
