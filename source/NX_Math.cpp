@@ -1150,7 +1150,7 @@ NX_Mat4 NX_Mat4Transpose(const NX_Mat4* mat)
 
 NX_Mat4 NX_Mat4Inverse(const NX_Mat4* mat)
 {
-    NX_Mat4 result = { 0 };
+    NX_Mat4 result;
 
     float a00 = mat->m00, a01 = mat->m01, a02 = mat->m02, a03 = mat->m03;
     float a10 = mat->m10, a11 = mat->m11, a12 = mat->m12, a13 = mat->m13;
