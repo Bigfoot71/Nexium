@@ -1,3 +1,11 @@
+/* NX_AnimationPlayer.h -- API declaration for Nexium's animation player module
+ *
+ * Copyright (c) 2025 Le Juez Victor
+ *
+ * This software is provided 'as-is', without any express or implied warranty.
+ * For conditions of distribution and use, see accompanying LICENSE file.
+ */
+
 #ifndef NX_ANIMATION_PLAYER_H
 #define NX_ANIMATION_PLAYER_H
 

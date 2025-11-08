@@ -1,3 +1,11 @@
+/* NX_Shader2D.h -- API declaration for Nexium's 2D shader module
+ *
+ * Copyright (c) 2025 Le Juez Victor
+ *
+ * This software is provided 'as-is', without any express or implied warranty.
+ * For conditions of distribution and use, see accompanying LICENSE file.
+ */
+
 #ifndef NX_SHADER_2D_H
 #define NX_SHADER_2D_H
 
