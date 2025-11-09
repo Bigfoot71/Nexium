@@ -196,19 +196,19 @@ vec3 Specular(vec3 F0, float cLdotH, float cNdotH, float cNdotV, float cNdotL, f
 /* === Light Functions === */
 
 struct LightParams {
-    vec3  F0, N, V;
+    vec3 N, V, F0;
+    vec3 diffuse;
     float cNdotV;
     float alphaGGX;
-    float dielectric;
     mat2  diskRotation;
 };
 
-void LightDir(uint lightIndex, const in LightParams params, inout vec3 diffuse, inout vec3 specular)
+vec3 LightDir(uint lightIndex, const in LightParams params)
 {
     /* --- Checking the layer mask for lighting --- */
 
     if ((sLights[lightIndex].cullMask & sDrawUnique[uDrawUniqueIndex].layerMask) == 0u) {
-        return;
+        return vec3(0.0);
     }
 
     Light light = sLights[lightIndex];
@@ -218,21 +218,20 @@ void LightDir(uint lightIndex, const in LightParams params, inout vec3 diffuse, 
     vec3 L = -light.direction;
 
     float NdotL = dot(params.N, L);
-    if (NdotL <= 0.0) return;
+    if (NdotL <= 0.0) return vec3(0.0);
 
     vec3 H = normalize(params.V + L);
     float NdotH = max(dot(params.N, H), 0.0);
     float LdotH = max(dot(L, H), 0.0);
 
-    /* --- Compute diffuse and specular contribution --- */
+    /* --- Compute light contribution --- */
 
-    vec3 lightColE = light.color * light.energy;
-    vec3 diff = Diffuse(LdotH, params.cNdotV, NdotL, ROUGHNESS) * lightColE * params.dielectric;
-    vec3 spec = Specular(params.F0, LdotH, NdotH, params.cNdotV, NdotL, params.alphaGGX) * lightColE * light.specular;
+    vec3 diff = params.diffuse * Diffuse(LdotH, params.cNdotV, NdotL, ROUGHNESS);
+    vec3 spec = Specular(params.F0, LdotH, NdotH, params.cNdotV, NdotL, params.alphaGGX);
+
+    vec3 Lo = (diff + spec) * light.color * light.energy;
 
     /* --- Compute shadow attenuation --- */
-
-    float attenuation = 1.0;
 
     if (light.shadowIndex >= 0)
     {
@@ -264,21 +263,20 @@ void LightDir(uint lightIndex, const in LightParams params, inout vec3 diffuse, 
         vec3 distToBorder = min(projCoords, 1.0 - projCoords);
         float edgeFade = smoothstep(0.0, 0.15, min(distToBorder.x, min(distToBorder.y, distToBorder.z)));
 
-        attenuation = mix(1.0, shadowAtten, edgeFade);
+        Lo *= mix(1.0, shadowAtten, edgeFade);
     }
 
-    /* --- Add final contribution --- */
+    /* --- Return final contribution --- */
 
-    diffuse += diff * attenuation;
-    specular += spec * attenuation;
+    return Lo;
 }
 
-void LightSpot(uint lightIndex, const in LightParams params, inout vec3 diffuse, inout vec3 specular)
+vec3 LightSpot(uint lightIndex, const in LightParams params)
 {
     /* --- Checking the layer mask for lighting --- */
 
     if ((sLights[lightIndex].cullMask & sDrawUnique[uDrawUniqueIndex].layerMask) == 0u) {
-        return;
+        return vec3(0.0);
     }
 
     Light light = sLights[lightIndex];
@@ -289,14 +287,14 @@ void LightSpot(uint lightIndex, const in LightParams params, inout vec3 diffuse,
     float toLightDist = length(toLight);
 
     float toLightDist01 = toLightDist / light.range;
-    if (toLightDist01 > 1.0) return;
+    if (toLightDist01 > 1.0) return vec3(0.0);
 
     /* --- Compute light and halfway vectors --- */
 
     vec3 L = toLight / toLightDist; // normalize
 
     float NdotL = dot(params.N, L);
-    if (NdotL <= 0.0) return;
+    if (NdotL <= 0.0) return vec3(0.0);
 
     vec3 H = normalize(params.V + L);
     float NdotH = max(dot(params.N, H), 0.0);
@@ -304,9 +302,10 @@ void LightSpot(uint lightIndex, const in LightParams params, inout vec3 diffuse,
 
     /* --- Compute diffuse and specular contribution --- */
 
-    vec3 lightColE = light.color * light.energy;
-    vec3 diff = Diffuse(LdotH, params.cNdotV, NdotL, ROUGHNESS) * lightColE * params.dielectric;
-    vec3 spec = Specular(params.F0, LdotH, NdotH, params.cNdotV, NdotL, params.alphaGGX) * lightColE * light.specular;
+    vec3 diff = params.diffuse * Diffuse(LdotH, params.cNdotV, NdotL, ROUGHNESS);
+    vec3 spec = Specular(params.F0, LdotH, NdotH, params.cNdotV, NdotL, params.alphaGGX);
+
+    vec3 Lo = (diff + spec) * light.color * light.energy;
 
     /* --- Compute distance and spotlight attenuation --- */
 
@@ -352,18 +351,17 @@ void LightSpot(uint lightIndex, const in LightParams params, inout vec3 diffuse,
         attenuation *= mix(shadowAtten, 1.0, float(outOfBounds));
     }
 
-    /* --- Add final contribution --- */
+    /* --- Return final contribution --- */
 
-    diffuse += diff * attenuation;
-    specular += spec * attenuation;
+    return Lo * attenuation;
 }
 
-void LightOmni(uint lightIndex, const in LightParams params, inout vec3 diffuse, inout vec3 specular)
+vec3 LightOmni(uint lightIndex, const in LightParams params)
 {
     /* --- Checking the layer mask for lighting --- */
 
     if ((sLights[lightIndex].cullMask & sDrawUnique[uDrawUniqueIndex].layerMask) == 0u) {
-        return;
+        return vec3(0.0);
     }
 
     Light light = sLights[lightIndex];
@@ -374,14 +372,14 @@ void LightOmni(uint lightIndex, const in LightParams params, inout vec3 diffuse,
     float toLightDist = length(toLight);
 
     float toLightDist01 = toLightDist / light.range;
-    if (toLightDist01 > 1.0) return;
+    if (toLightDist01 > 1.0) return vec3(0.0);
 
     /* --- Compute light and halfway vectors --- */
 
     vec3 L = toLight / toLightDist; // normalize
 
     float NdotL = dot(params.N, L);
-    if (NdotL <= 0.0) return;
+    if (NdotL <= 0.0) return vec3(0.0);
 
     vec3 H = normalize(params.V + L);
     float NdotH = max(dot(params.N, H), 0.0);
@@ -389,9 +387,10 @@ void LightOmni(uint lightIndex, const in LightParams params, inout vec3 diffuse,
 
     /* --- Compute diffuse and specular contribution --- */
 
-    vec3 lightColE = light.color * light.energy;
-    vec3 diff = Diffuse(LdotH, params.cNdotV, NdotL, ROUGHNESS) * lightColE * params.dielectric;
-    vec3 spec = Specular(params.F0, LdotH, NdotH, params.cNdotV, NdotL, params.alphaGGX) * lightColE * light.specular;
+    vec3 diff = params.diffuse * Diffuse(LdotH, params.cNdotV, NdotL, ROUGHNESS);
+    vec3 spec = Specular(params.F0, LdotH, NdotH, params.cNdotV, NdotL, params.alphaGGX);
+
+    vec3 Lo = (diff + spec) * light.color * light.energy;
 
     /* --- Compute distance attenuation --- */
 
@@ -426,19 +425,12 @@ void LightOmni(uint lightIndex, const in LightParams params, inout vec3 diffuse,
         attenuation *= shadowAtten / float(SHADOW_SAMPLES);
     }
 
-    /* --- Add final contribution --- */
+    /* --- Return final contribution --- */
 
-    diffuse += diff * attenuation;
-    specular += spec * attenuation;
+    return Lo * attenuation;
 }
 
 /* === IBL Functions === */
-
-vec3 IBL_FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
-{
-    // TODO: See approximations, but this version seems to introduce less bias for grazing angles
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
-}
 
 float IBL_GetSpecularOcclusion(float NdotV, float ao, float roughness)
 {
@@ -446,35 +438,31 @@ float IBL_GetSpecularOcclusion(float NdotV, float ao, float roughness)
     return clamp(pow(NdotV + ao, exp2(-16.0 * roughness - 1.0)) - 1.0 + ao, 0.0, 1.0);
 }
 
-vec3 IBL_GetMultiScatterBRDF(float NdotV, float roughness, vec3 F0, float metalness)
+vec3 IBL_SampleIrradiance(samplerCube irradiance, vec3 N, vec4 rotation)
 {
-    // Adapted from: https://blog.selfshadow.com/publications/turquin/ms_comp_final.pdf
-    // TODO: Maybe need a review
+    return texture(irradiance, M_Rotate3D(N, rotation)).rgb;
+}
 
-    vec2 brdf = texture(uTexBrdfLut, vec2(NdotV, roughness)).rg;
+vec3 IBL_SamplePrefilter(samplerCube prefilter, vec3 V, vec3 N, vec4 rotation, float roughness)
+{
+    float mipLevel = roughness * (float(textureQueryLevels(prefilter)) - 1.0);
+    return textureLod(prefilter, M_Rotate3D(reflect(-V, N), rotation), mipLevel).rgb;
+}
 
-    // Energy compensation for multiple scattering
-    vec3 FssEss = F0 * brdf.x + brdf.y;
-    float Ess = brdf.x + brdf.y;
-    float Ems = 1.0 - Ess;
+vec3 IBL_MultiScattering(vec3 irradiance, vec3 radiance, vec3 diffuse, vec3 F0, vec2 brdf, float NdotV, float roughness)
+{
+    // Roughness dependent fresnel, from Fdez-Aguera
+    vec3 Fr = max(vec3(1.0 - roughness), F0) - F0;
+    vec3 kS = F0 + Fr * pow(1.0 - NdotV, 5.0);
+    vec3 FssEss = kS * brdf.x + brdf.y;
 
-    // Calculation of Favg adapted to metalness
-    // For dielectrics: classical approximation
-    // For metals: direct use of F0
-    vec3 Favg = mix(
-        F0 + (1.0 - F0) / 21.0,  // Dielectric: approximation of the Fresnel integral
-        F0,                      // Metal: F0 already colored and raised
-        metalness
-    );
+    // Multiple scattering, from Fdez-Aguera
+    float Ems = (1.0 - (brdf.x + brdf.y));
+    vec3 Favg = F0 + (1.0 - F0) / 21.0;
+    vec3 FmsEms = Ems * FssEss * Favg / (1.0 - Favg * Ems);
+    vec3 kD = diffuse * (1.0 - FssEss - FmsEms);
 
-    // Adapted energy compensation
-    vec3 Fms = FssEss * Favg / (1.0 - Favg * Ems + 1e-5); // +epsilon to avoid division by 0
-
-    // For metals, slightly reduce the multiple scattering
-    // effect as they absorb more energy with each bounce
-    float msStrength = mix(1.0, 0.8, metalness);
-
-    return FssEss + Fms * Ems * msStrength;
+    return irradiance * (FmsEms + kD) + radiance * FssEss;
 }
 
 /* === Helper functions === */
@@ -494,18 +482,16 @@ void main()
 
     FragmentOverride();
 
-    /* --- Pre-calculation of ORM related data --- */ 
+    /* --- Compute base material properties --- */ 
 
-    float alphaGGX = max(ROUGHNESS * ROUGHNESS, 1e-6);
-    float dielectric = 1.0 - METALNESS;
+    const float SPECULAR = 0.5;
+    float dielectric = 0.16 * SPECULAR * SPECULAR;
+    vec3 F0 = mix(vec3(dielectric), ALBEDO.rgb, vec3(METALNESS));
+    vec3 diffuse = ALBEDO.rgb * (1.0 - dielectric) * (1.0 - METALNESS);
 
     /* --- Calculation of the distance from the fragment to the camera in scene units --- */
 
     float zLinear = F_LinearizeDepth(gl_FragCoord.z, uFrustum.near, uFrustum.far);
-
-    /* --- Compute F0 (reflectance at normal incidence) based on the metallic factor --- */
-
-    vec3 F0 = PBR_ComputeF0(METALNESS, 0.5, ALBEDO.rgb);
 
     /* --- Sample normal and compute view direction vector --- */
 
@@ -521,12 +507,16 @@ void main()
 
     /* --- Accumulation of direct lighting --- */
 
-    vec3 diffuse = vec3(0.0);
-    vec3 specular = vec3(0.0);
+    vec3 Lo = vec3(0.0);
 
     if (uFrame.hasActiveLights)
     {
-        /* --- Calculate the shadow sampling disk rotation --- */
+        /* --- Pre calculate some values --- */
+
+        float alphaGGX = max(ROUGHNESS * ROUGHNESS, 1e-6);
+        float aoLight = mix(1.0, OCCLUSION, AO_LIGHT_AFFECT);
+
+        /* --- Compute the shadow sampling disk rotation --- */
 
         float r = M_TAU * M_HashIGN(gl_FragCoord.xy);
         float sr = sin(r), cr = cos(r);
@@ -536,8 +526,9 @@ void main()
         /* --- Create commong light parameters struct --- */
 
         LightParams lightParams = LightParams(
-            F0, N, V, cNdotV, alphaGGX,
-            dielectric, diskRotation
+            N, V, F0, diffuse * aoLight,
+            cNdotV, alphaGGX,
+            diskRotation
         );
 
         /* --- Getting the cluster index and the number of lights in the cluster --- */
@@ -554,58 +545,47 @@ void main()
         uint offset = 0u; // dir
         for (uint i = 0u; i < lightCounts.x; i++) {
             uint lightIndex = sIndices[baseIndex + offset + i];
-            LightDir(lightIndex, lightParams, diffuse, specular);
+            Lo += LightDir(lightIndex, lightParams);
         }
 
         offset += lightCounts.x; // spot
         for (uint i = 0u; i < lightCounts.y; i++) {
             uint lightIndex = sIndices[baseIndex + offset + i];
-            LightSpot(lightIndex, lightParams, diffuse, specular);
+            Lo += LightSpot(lightIndex, lightParams);
         }
 
         offset += lightCounts.y; // omni
         for (uint i = 0u; i < lightCounts.z; i++) {
             uint lightIndex = sIndices[baseIndex + offset + i];
-            LightOmni(lightIndex, lightParams, diffuse, specular);
+            Lo += LightOmni(lightIndex, lightParams);
         }
-
-        /* --- Compute AO light affect --- */
-
-        diffuse *= mix(1.0, OCCLUSION, AO_LIGHT_AFFECT);
     }
 
-    /* --- Ambient diffuse from sky --- */
+    /* --- Compute IBL contribution  --- */
 
-    vec3 skyDiffuse = uEnv.ambientColor;
+    if (uFrame.hasProbe)
+    {
+        vec2 brdf = texture(uTexBrdfLut, vec2(NdotV, ROUGHNESS)).xy;
 
-    if (uFrame.hasProbe) {
-        vec3 Nr = M_Rotate3D(N, uEnv.skyRotation);
-        skyDiffuse = texture(uTexProbeIrradiance, Nr).rgb;
+        vec3 irradiance = IBL_SampleIrradiance(uTexProbeIrradiance, N, uEnv.skyRotation);
+        irradiance *= uEnv.skyDiffuse;
+        irradiance *= OCCLUSION;
+
+        vec3 radiance = IBL_SamplePrefilter(uTexProbePrefilter, V, N, uEnv.skyRotation, ROUGHNESS);
+        radiance *= IBL_GetSpecularOcclusion(NdotV, OCCLUSION, ROUGHNESS);
+        radiance *= uEnv.skySpecular;
+
+        Lo += IBL_MultiScattering(irradiance, radiance, diffuse, F0, brdf, NdotV, ROUGHNESS);
+    }
+    else
+    {
+        Lo += diffuse * uEnv.ambientColor;
     }
 
-    vec3 kS = IBL_FresnelSchlickRoughness(cNdotV, F0, ROUGHNESS);
-    vec3 kD = (1.0 - kS) * dielectric;
+    // Applies fog according to skyAffect to the radiance
+    //skyIrradiance = mix(skyIrradiance, uEnv.fogColor, uEnv.fogSkyAffect);
 
-    skyDiffuse *= kD * uEnv.skyDiffuse * OCCLUSION;
-
-    /* --- Ambient specular from sky --- */
-
-    vec3 skySpecular = uEnv.ambientColor;
-
-    if (uFrame.hasProbe) {
-        vec3 R = M_Rotate3D(reflect(-V, N), uEnv.skyRotation);
-        float mipLevel = ROUGHNESS * (float(textureQueryLevels(uTexProbePrefilter)) - 1.0);
-        skySpecular = textureLod(uTexProbePrefilter, R, mipLevel).rgb;
-    }
-
-    // Applies fog according to skyAffect to the source prefilter or ambient color
-    skySpecular = mix(skySpecular, uEnv.fogColor, uEnv.fogSkyAffect);
-
-    float specOcclusion = IBL_GetSpecularOcclusion(cNdotV, OCCLUSION, ROUGHNESS);
-    vec3 specBRDF = IBL_GetMultiScatterBRDF(cNdotV, ROUGHNESS, F0, METALNESS);
-    skySpecular *= specBRDF * uEnv.skySpecular * specOcclusion;
-
-    /* --- Calculate and apply fog factor --- */
+    /* --- Compute the fog factor --- */
 
     float fogFactor = 1.0;
 
@@ -623,13 +603,9 @@ void main()
         break;
     }
 
-    /* --- Compute the final fragment color by combining albedo, lighting contributions and fog --- */
+    /* --- Output the final lighting contribution with emission and fog --- */
 
-    vec3 litColor = ALBEDO.rgb * (skyDiffuse + diffuse);
-    litColor += skySpecular + specular;
-    litColor += EMISSION;
-
-    FragColor.rgb = mix(uEnv.fogColor, litColor, fogFactor);
+    FragColor.rgb = mix(uEnv.fogColor, Lo + EMISSION, fogFactor);
     FragColor.a   = ALBEDO.a;
 
     /* --- Store normals --- */

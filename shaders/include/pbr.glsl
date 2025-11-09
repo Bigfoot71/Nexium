@@ -34,6 +34,8 @@ float PBR_SchlickFresnel(float u)
     return m2 * m2 * m; // pow(m,5)
 }
 
+/*
+// NOTE: Used in 'scene_lit.frag' but hardcoded
 vec3 PBR_ComputeF0(float metallic, float specular, vec3 albedo)
 {
     float dielectric = 0.16 * specular * specular;
@@ -41,3 +43,4 @@ vec3 PBR_ComputeF0(float metallic, float specular, vec3 albedo)
     // SEE: https://google.github.io/filament/Filament.md.html
     return mix(vec3(dielectric), albedo, vec3(metallic));
 }
+*/
