@@ -19,17 +19,8 @@
 // ============================================================================
 
 struct NX_ReflectionProbe {
-
-    struct {
-        gpu::Texture gpu;
-        gpu::Framebuffer framebuffer;
-    } irradiance;
-
-    struct {
-        gpu::Texture gpu;
-        gpu::Framebuffer framebuffer;
-    } prefilter;
-
+    gpu::Texture irradiance;
+    gpu::Texture prefilter;
 };
 
 #endif // NX_REFLECTION_PROBE_HPP

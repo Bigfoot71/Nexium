@@ -98,6 +98,7 @@ public:
     void BindFramebuffer(const Framebuffer& framebuffer) const noexcept;
     void BindVertexArray(const VertexArray& vertexArray) const noexcept;
     void BindTexture(int slot, const Texture& texture) const noexcept;
+    void BindImageTexture(int slot, const Texture& texture, int level, int layer, GLenum access) const noexcept;
     void BindStorage(int slot, const Buffer& storage) const noexcept;
     void BindStorage(int slot, const Buffer& storage, size_t offset, size_t size) const noexcept;
     void BindUniform(int slot, const Buffer& uniform) const noexcept;
@@ -209,6 +210,20 @@ private:
     void SetCullMode_Internal(CullMode mode) const noexcept;
 
 private:
+    struct ImageTexture {
+        GLuint id;
+        GLint level;
+        GLint layer;
+        ImageTexture() : id(0), level(0), layer(0) {}
+        ImageTexture(GLuint i, GLint lv, GLint la) : id(i), level(lv), layer(la) {}
+        bool operator==(const ImageTexture& other) const noexcept {
+            return (id == other.id && level == other.level && layer == other.layer);
+        }
+        bool operator!=(const ImageTexture& other) const noexcept {
+            return (id != other.id || level != other.level || layer != other.layer);
+        }
+    };
+
     struct BufferRange {
         size_t offset, size;
         BufferRange() : offset(0), size(0) {}
@@ -240,6 +255,7 @@ private:
     static inline const Framebuffer* sBindFramebuffer = nullptr;
     static inline const VertexArray* sBindVertexArray = nullptr;
     static inline std::array<const Texture*, 32> sBindTexture{};
+    static inline std::array<ImageTexture, 8> sBindImageTexture{};
     static inline std::array<const Buffer*, 8> sBindStorage{};
     static inline std::array<BufferRange, 8> sStorageRange{};
     static inline std::array<const Buffer*, 16> sBindUniform{};
@@ -421,6 +437,38 @@ inline void Pipeline::BindTexture(int slot, const Texture& texture) const noexce
 
     glBindTexture(texture.GetTarget(), texture.GetID());
     sBindTexture[slot] = &texture;
+}
+
+inline void Pipeline::BindImageTexture(int slot, const Texture& texture, int level, int layer, GLenum access) const noexcept
+{
+    SDL_assert(slot < sBindImageTexture.size());
+
+    ImageTexture imageTexture(texture.GetID(), level, layer);
+
+    if (imageTexture != sBindImageTexture[slot])
+    {
+        sBindImageTexture[slot] = imageTexture;
+
+        GLboolean layered = (layer < 0) ? GL_TRUE : GL_FALSE;
+        GLint actualLayer = (layer < 0) ? 0 : layer;
+
+        glBindImageTexture(
+            slot, 
+            texture.GetID(), 
+            level,
+            layered,
+            actualLayer,
+            access, 
+            texture.GetInternalFormat()
+        );
+
+        GLenum err = glGetError();
+        if (err != GL_NO_ERROR) {
+            NX_LOG(E, "glBindImageTexture error: 0x%x (slot=%d, tex=%u, level=%d, layer=%d, layered=%d, format=0x%4x)",
+                err, slot, texture.GetID(), level, actualLayer, layered, texture.GetInternalFormat()
+            );
+        }
+    }
 }
 
 inline void Pipeline::BindStorage(int slot, const Buffer& storage) const noexcept

@@ -9,10 +9,12 @@
 #include "./NX_ReflectionProbe.hpp"
 #include "./NX_Cubemap.hpp"
 
-#include "./Detail/GPU/Pipeline.hpp"
 #include "./INX_GPUProgramCache.hpp"
 #include "./INX_RenderUtils.hpp"
 #include "./INX_GlobalPool.hpp"
+
+#include "./Detail/GPU/Pipeline.hpp"
+#include "./Detail/GPU/Texture.hpp"
 
 // ============================================================================
 // PUBLIC API
@@ -24,11 +26,11 @@ NX_ReflectionProbe* NX_CreateReflectionProbe(const NX_Cubemap* cubemap)
 
     /* --- Create textures --- */
 
-    probe->irradiance.gpu = gpu::Texture(
+    probe->irradiance = gpu::Texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = GL_RGB16F,
+            .internalFormat = GL_RGBA16F,
             .data = nullptr,
             .width = 32,
             .height = 32,
@@ -45,11 +47,11 @@ NX_ReflectionProbe* NX_CreateReflectionProbe(const NX_Cubemap* cubemap)
         }
     );
 
-    probe->prefilter.gpu = gpu::Texture(
+    probe->prefilter = gpu::Texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = GL_RGB16F,
+            .internalFormat = GL_RGBA16F,
             .data = nullptr,
             .width = 128,
             .height = 128,
@@ -65,11 +67,6 @@ NX_ReflectionProbe* NX_CreateReflectionProbe(const NX_Cubemap* cubemap)
             .rWrap = GL_CLAMP_TO_EDGE
         }
     );
-
-    /* --- Create framebuffers --- */
-
-    probe->irradiance.framebuffer = gpu::Framebuffer({&probe->irradiance.gpu});
-    probe->prefilter.framebuffer = gpu::Framebuffer({&probe->prefilter.gpu});
 
     /* --- Generate maps if cubemap is provided --- */
 
@@ -98,44 +95,41 @@ void NX_DestroyReflectionProbe(NX_ReflectionProbe* probe)
 
 void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap* cubemap)
 {
-    /* --- Setup common pipeline states --- */
-
     gpu::Pipeline pipeline;
-
     pipeline.BindTexture(0, cubemap->gpu);
 
     /* --- Generate irradiance --- */
 
-    pipeline.BindFramebuffer(probe->irradiance.framebuffer);
-    pipeline.SetViewport(probe->irradiance.framebuffer);
-
     pipeline.UseProgram(INX_Programs.GetCubemapIrradiance());
+    pipeline.BindImageTexture(1, probe->irradiance, 0, -1, GL_WRITE_ONLY);
 
-    for (int i = 0; i < 6; i++) {
-        probe->irradiance.framebuffer.SetColorAttachmentTarget(0, 0, i);
-        pipeline.SetUniformMat4(0, INX_GetCubeView(i) * INX_GetCubeProj());
-        pipeline.Draw(GL_TRIANGLES, 36);
-    }
+    int irradianceSize = probe->irradiance.GetWidth();
+    int groupsX = NX_DIV_CEIL(irradianceSize, 8);
+    int groupsY = NX_DIV_CEIL(irradianceSize, 8);
+    int groupsZ = 1;
+
+    pipeline.DispatchCompute(groupsX, groupsY, groupsZ);
 
     /* --- Generate prefilter --- */
 
-    pipeline.BindFramebuffer(probe->prefilter.framebuffer);
-    pipeline.SetViewport(probe->prefilter.framebuffer);
-
     pipeline.UseProgram(INX_Programs.GetCubemapPrefilter());
-
     pipeline.SetUniformFloat1(1, cubemap->gpu.GetDimensions().x);
     pipeline.SetUniformInt1(2, cubemap->gpu.GetNumLevels());
 
-    int baseSize = probe->prefilter.gpu.GetWidth();
-    for (int mip = 0; mip < probe->prefilter.gpu.GetNumLevels(); mip++) {
+    int baseSize = probe->prefilter.GetWidth();
+    for (int mip = 0; mip < probe->prefilter.GetNumLevels(); mip++)
+    {
+        pipeline.BindImageTexture(1, probe->prefilter, mip, -1, GL_WRITE_ONLY);
+
+        float roughness = static_cast<float>(mip) / (probe->prefilter.GetNumLevels() - 1);
+        pipeline.SetUniformFloat1(3, roughness);
+        pipeline.SetUniformFloat1(4, static_cast<float>(mip));
+
         int mipSize = std::max(1, baseSize >> mip);
-        pipeline.SetViewport(0, 0, mipSize, mipSize);
-        pipeline.SetUniformFloat1(3, static_cast<float>(mip) / (probe->prefilter.gpu.GetNumLevels() - 1));
-        for (int i = 0; i < 6; i++) {
-            probe->prefilter.framebuffer.SetColorAttachmentTarget(0, 0, i, mip);
-            pipeline.SetUniformMat4(0, INX_GetCubeView(i) * INX_GetCubeProj());
-            pipeline.Draw(GL_TRIANGLES, 36);
-        }
+        int groupsX = NX_DIV_CEIL(mipSize, 8);
+        int groupsY = NX_DIV_CEIL(mipSize, 8);
+        groupsZ = 1;
+
+        pipeline.DispatchCompute(groupsX, groupsY, groupsZ);
     }
 }

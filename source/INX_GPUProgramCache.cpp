@@ -10,13 +10,14 @@
 #include "./INX_AssetDecoder.hpp"
 
 #include "./Detail/GPU/Program.hpp"
+#include "./Detail/GPU/Shader.hpp"
 
 #include <shaders/screen.vert.h>
 #include <shaders/cube.vert.h>
 
 #include <shaders/cubemap_from_equirectangular.frag.h>
-#include <shaders/cubemap_irradiance.frag.h>
-#include <shaders/cubemap_prefilter.frag.h>
+#include <shaders/cubemap_irradiance.comp.h>
+#include <shaders/cubemap_prefilter.comp.h>
 #include <shaders/cubemap_skybox.frag.h>
 
 #include <shaders/light_culling.comp.h>
@@ -75,12 +76,11 @@ gpu::Program& INX_GPUProgramCache::GetCubemapIrradiance()
     }
 
     program = gpu::Program(
-        GetVertexShaderCube(),
         gpu::Shader(
-            GL_FRAGMENT_SHADER,
+            GL_COMPUTE_SHADER,
             INX_ShaderDecoder(
-                CUBEMAP_IRRADIANCE_FRAG,
-                CUBEMAP_IRRADIANCE_FRAG_SIZE
+                CUBEMAP_IRRADIANCE_COMP,
+                CUBEMAP_IRRADIANCE_COMP_SIZE
             )
         )
     );
@@ -97,12 +97,11 @@ gpu::Program& INX_GPUProgramCache::GetCubemapPrefilter()
     }
 
     program = gpu::Program(
-        GetVertexShaderCube(),
         gpu::Shader(
-            GL_FRAGMENT_SHADER,
+            GL_COMPUTE_SHADER,
             INX_ShaderDecoder(
-                CUBEMAP_PREFILTER_FRAG,
-                CUBEMAP_PREFILTER_FRAG_SIZE
+                CUBEMAP_PREFILTER_COMP,
+                CUBEMAP_PREFILTER_COMP_SIZE
             )
         )
     );

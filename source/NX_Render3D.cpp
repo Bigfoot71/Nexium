@@ -1341,12 +1341,13 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
     pipeline.BindUniform(2, INX_Render3D->environment.buffer);
 
     if (INX_Render3D->environment.skyProbe != nullptr) {
-        pipeline.BindTexture(5, INX_Render3D->environment.skyProbe->irradiance.gpu);
-        pipeline.BindTexture(6, INX_Render3D->environment.skyProbe->prefilter.gpu);
+        pipeline.BindTexture(5, INX_Render3D->environment.skyProbe->irradiance);
+        pipeline.BindTexture(6, INX_Render3D->environment.skyProbe->prefilter);
     }
 
-    // Ensures SSBOs are ready (especially clusters)
-    pipeline.MemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    // Ensures that the SSBOs are ready (especially clusters)
+    // Ensures that the generated images are ready (especially reflection probes)
+    pipeline.MemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     for (int uniqueIndex : drawCalls.uniqueVisible.GetCategories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
     {
