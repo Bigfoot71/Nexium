@@ -107,8 +107,6 @@ public:
     void UnbindFramebuffer() const noexcept;
     void UnbindVertexArray() const noexcept;
     void UnbindTexture(int slot) const noexcept;
-    void UnbindStorage(int slot) const noexcept;
-    void UnbindUniform(int slot) const noexcept;
 
     void UseProgram(const Program& program) const noexcept;
 
@@ -336,20 +334,6 @@ inline Pipeline::~Pipeline() noexcept
             sBindTexture[slot] = nullptr;
         }
     }
-    for (int slot = 0; slot < sBindStorage.size(); ++slot) {
-        if (sBindStorage[slot] != nullptr) {
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, slot, 0);
-            sStorageRange[slot] = BufferRange();
-            sBindStorage[slot] = nullptr;
-        }
-    }
-    for (int slot = 0; slot < sBindUniform.size(); ++slot) {
-        if (sBindUniform[slot] != nullptr) {
-            glBindBufferBase(GL_UNIFORM_BUFFER, slot, 0);
-            sUniformRange[slot] = BufferRange();
-            sBindUniform[slot] = nullptr;
-        }
-    }
     if (sBindFramebuffer != nullptr) {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         sBindFramebuffer = nullptr;
@@ -557,24 +541,6 @@ inline void Pipeline::UnbindTexture(int slot) const noexcept
         glActiveTexture(GL_TEXTURE0 + slot);
         glBindTexture(sBindTexture[slot]->GetTarget(), 0);
         sBindTexture[slot] = nullptr;
-    }
-}
-
-inline void Pipeline::UnbindStorage(int slot) const noexcept
-{
-    if (sBindStorage[slot] != nullptr) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, slot, 0);
-        sStorageRange[slot] = BufferRange();
-        sBindStorage[slot] = nullptr;
-    }
-}
-
-inline void Pipeline::UnbindUniform(int slot) const noexcept
-{
-    if (sBindUniform[slot] != nullptr) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, slot, 0);
-        sUniformRange[slot] = BufferRange();
-        sBindUniform[slot] = nullptr;
     }
 }
 
