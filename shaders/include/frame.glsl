@@ -13,6 +13,7 @@
  */
 struct Frame {
     mat4 lightViewProj;
+    mat4 cameraInvView;
     vec3 lightPosition;
     float lightRange;
     int lightType;

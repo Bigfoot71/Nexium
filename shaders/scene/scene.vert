@@ -120,10 +120,18 @@ void main()
     case BILLBOARD_NONE:
         break;
     case BILLBOARD_FRONT:
+    #if defined(SHADOW)
+        BillboardFront(matModel, matNormal, uFrame.cameraInvView);
+    #else
         BillboardFront(matModel, matNormal, uFrustum.invView);
+    #endif
         break;
     case BILLBOARD_Y_AXIS:
+    #if defined(SHADOW)
+        BillboardYAxis(matModel, matNormal, uFrame.cameraInvView);
+    #else
         BillboardYAxis(matModel, matNormal, uFrustum.invView);
+    #endif
         break;
     }
 

@@ -24,6 +24,7 @@
 #include "./NX_Shader3D.hpp"
 #include "./NX_Texture.hpp"
 #include "./NX_Light.hpp"
+#include "./NX_Shape.hpp"
 
 #include "./Detail/Util/DynamicArray.hpp"
 #include "./Detail/Util/BucketArray.hpp"
@@ -34,13 +35,14 @@
 #include "./Detail/GPU/SwapBuffer.hpp"
 #include "./Detail/GPU/MipBuffer.hpp"
 #include "./Detail/GPU/Texture.hpp"
+#include "./Detail/GPU/Buffer.hpp"
 
 #include "./INX_GPUProgramCache.hpp"
 #include "./INX_GlobalAssets.hpp"
 #include "./INX_VariantMesh.hpp"
-#include "./INX_ViewFrustum.hpp"
 #include "./INX_GlobalPool.hpp"
 #include "./INX_GPUBridge.hpp"
+#include "./INX_Frustum.hpp"
 
 #include <numeric>
 
@@ -65,6 +67,20 @@ enum INX_DrawType : uint8_t {
 // ============================================================================
 // INTERNAL STRUCTS
 // ============================================================================
+
+/** Main scene view frustum data */
+struct INX_ViewFrustum : public INX_Frustum {
+    NX_Mat4 viewProj;
+    NX_Mat4 view;
+    NX_Mat4 proj;
+    NX_Mat4 invViewProj;
+    NX_Mat4 invView;
+    NX_Mat4 invProj;
+    NX_Vec3 position;
+    NX_Layer cullMask;
+    float near;
+    float far;
+};
 
 /** Shared CPU data per draw call */
 struct INX_DrawShared {
@@ -107,6 +123,19 @@ struct INX_ActiveLight {
 // INTERNAL GPU STRUCTS
 // ============================================================================
 
+/** Uniform frustum data */
+struct INX_GPUFrustum {
+    alignas(16) NX_Mat4 viewProj;
+    alignas(16) NX_Mat4 view;
+    alignas(16) NX_Mat4 proj;
+    alignas(16) NX_Mat4 invViewProj;
+    alignas(16) NX_Mat4 invView;
+    alignas(16) NX_Mat4 invProj;
+    alignas(16) NX_Vec3 position;
+    alignas(4) float near;
+    alignas(4) float far;
+};
+
 /** Per-frame data for scene rendering */
 struct INX_GPUSceneFrame {
     alignas(8) NX_IVec2 screenSize;
@@ -122,6 +151,7 @@ struct INX_GPUSceneFrame {
 /** Per-frame data for shadow maps rendering */
 struct INX_GPUShadowFrame {
     alignas(16) NX_Mat4 lightViewProj;
+    alignas(16) NX_Mat4 cameraInvView;
     alignas(16) NX_Vec3 lightPosition;
     alignas(4) float lightRange;
     alignas(4) int32_t lightType;
@@ -192,9 +222,12 @@ struct INX_GPUDrawUnique {
 
 struct INX_SceneState {
     /** Environment */
-    NX_Color background;
-    NX_Cubemap* skyCubemap;
-    NX_ReflectionProbe* skyProbe;
+    NX_Color background{};
+    NX_Cubemap* skyCubemap{};
+    NX_ReflectionProbe* skyProbe{};
+
+    /** Frustum data */
+    INX_ViewFrustum viewFrustum{};
 
     /** Scene render targets */
     gpu::Texture targetSceneColor{};        //< RGBA16F
@@ -208,12 +241,13 @@ struct INX_SceneState {
     gpu::MipBuffer mipChain{};              //< Mipchain, primarily used for down/up sampling the bloom
 
     /** Post processing data */
-    util::DynamicArray<float> bloomLevels;
-    NX_Tonemap tonemapMode;
-    NX_Bloom bloomMode;
-    bool ssaoEnabled;
+    util::DynamicArray<float> bloomLevels{};
+    NX_Tonemap tonemapMode{};
+    NX_Bloom bloomMode{};
+    bool ssaoEnabled{};
 
     /** Uniform buffers */
+    gpu::Buffer frustumUniform{};
     gpu::Buffer frameUniform{};
     gpu::Buffer envUniform{};
 
@@ -285,7 +319,6 @@ struct INX_DrawCallState {
 
 struct INX_Render3DState {
     /** Scene state */
-    INX_ViewFrustum viewFrustum{};
     INX_SceneState scene{};
 
     /** Lighting state */
@@ -401,6 +434,11 @@ static void INX_InitSceneState(INX_SceneState* scene, const NX_AppDesc* desc)
     );
 
     /* --- Create uniform buffers --- */
+
+    scene->frustumUniform = gpu::Buffer(
+        GL_UNIFORM_BUFFER, sizeof(INX_GPUFrustum),
+        nullptr, GL_DYNAMIC_DRAW
+    );
 
     scene->frameUniform = gpu::Buffer(
         GL_UNIFORM_BUFFER, sizeof(INX_GPUSceneFrame),
@@ -896,7 +934,7 @@ static void INX_CullDrawCalls(const INX_Frustum& frustum, NX_Layer frustumCullMa
     }
 }
 
-static void INX_SortDrawCalls()
+static void INX_SortDrawCalls(const NX_Vec3& viewPosition)
 {
     INX_DrawCallState& state = INX_Render3D->drawCalls;
     util::DynamicArray<float>& sortDistances = state.sortDistances;
@@ -910,12 +948,20 @@ static void INX_SortDrawCalls()
         const size_t count = state.uniqueData.GetSize();
         sortDistances.Resize(count);
 
-        for (size_t i = 0; i < count; ++i) {
+        for (size_t i = 0; i < count; ++i)
+        {
             const INX_DrawUnique& unique = state.uniqueData[i];
             const INX_DrawShared& shared = state.sharedData[unique.sharedDataIndex];
-            sortDistances[i] = INX_Render3D->viewFrustum.GetDistanceSqToCenter(
-                unique.mesh.GetAABB(), shared.transform
-            );
+
+            const NX_BoundingBox3D& box = unique.mesh.GetAABB();
+            const NX_Transform& transform = shared.transform;
+
+            // Distance from view position to the AABB's center
+
+            NX_Vec3 local = (box.min + box.max) * 0.5f;
+            NX_Vec3 world = local * transform;
+
+            sortDistances[i] = NX_Vec3DistanceSq(viewPosition, world);
         }
 
         if (needsOpaque) {
@@ -936,12 +982,34 @@ static void INX_SortDrawCalls()
         const size_t count = state.uniqueData.GetSize();
         sortDistances.Resize(count);
 
-        for (size_t i = 0; i < count; ++i) {
+        for (size_t i = 0; i < count; ++i)
+        {
             const INX_DrawUnique& unique = state.uniqueData[i];
             const INX_DrawShared& shared = state.sharedData[unique.sharedDataIndex];
-            sortDistances[i] = INX_Render3D->viewFrustum.GetDistanceSqToFarthestCorner(
-                unique.mesh.GetAABB(), shared.transform
-            );
+
+            const NX_BoundingBox3D& box = unique.mesh.GetAABB();
+            const NX_Transform& transform = shared.transform;
+
+            // Distance from view position to the AABB's farthest corner
+
+            const NX_Vec3 corners[8] = {
+                NX_VEC3(box.min.x, box.min.y, box.min.z) * transform,
+                NX_VEC3(box.max.x, box.min.y, box.min.z) * transform,
+                NX_VEC3(box.min.x, box.max.y, box.min.z) * transform,
+                NX_VEC3(box.max.x, box.max.y, box.min.z) * transform,
+                NX_VEC3(box.min.x, box.min.y, box.max.z) * transform,
+                NX_VEC3(box.max.x, box.min.y, box.max.z) * transform,
+                NX_VEC3(box.min.x, box.max.y, box.max.z) * transform,
+                NX_VEC3(box.max.x, box.max.y, box.max.z) * transform
+            };
+
+            float maxDistSq = NX_Vec3DistanceSq(viewPosition, corners[0]);
+            for (int i = 1; i < 8; ++i) {
+                float distSq = NX_Vec3DistanceSq(viewPosition, corners[i]);
+                if (distSq > maxDistSq) maxDistSq = distSq;
+            }
+
+            sortDistances[i] = maxDistSq;
         }
 
         state.uniqueVisible.Sort(DRAW_TRANSPARENT, [&sortDistances](int a, int b) {
@@ -1019,6 +1087,39 @@ static NX_Vec4 INX_GetBloomPrefilter(float threshold, float softThreshold)
     prefilter.w = 0.25f / (knee + 1e-6f);
 
     return prefilter;
+}
+
+static void INX_ProcessFrustum(const NX_Camera& camera, float aspect)
+{
+    INX_SceneState& scene = INX_Render3D->scene;
+    INX_ViewFrustum& frustum = scene.viewFrustum;
+
+    frustum.cullMask = camera.cullMask;
+    frustum.position = camera.position;
+    frustum.near = camera.nearPlane;
+    frustum.far = camera.farPlane;
+
+    frustum.view = NX_GetCameraViewMatrix(&camera);
+    frustum.proj = NX_GetCameraProjectionMatrix(&camera, aspect);
+    frustum.viewProj = frustum.view * frustum.proj;
+
+    frustum.invView = NX_Mat4Inverse(&frustum.view);
+    frustum.invProj = NX_Mat4Inverse(&frustum.proj);
+    frustum.invViewProj = NX_Mat4Inverse(&frustum.viewProj);
+
+    frustum.Update(frustum.viewProj);
+
+    scene.frustumUniform.UploadObject(INX_GPUFrustum {
+        .viewProj = frustum.viewProj,
+        .view = frustum.view,
+        .proj = frustum.proj,
+        .invViewProj = frustum.invViewProj,
+        .invView = frustum.invView,
+        .invProj = frustum.invProj,
+        .position = frustum.position,
+        .near = frustum.near,
+        .far = frustum.far
+    });
 }
 
 static void INX_ProcessEnvironment(const NX_Environment& env)
@@ -1110,7 +1211,6 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
 static void INX_CollectActiveLights()
 {
     INX_LightingState& state = INX_Render3D->lighting;
-    const INX_ViewFrustum& frustum = INX_Render3D->viewFrustum;
 
     /* --- Clear the previous state --- */
 
@@ -1119,9 +1219,11 @@ static void INX_CollectActiveLights()
 
     /* --- Count each active and visible light per type --- */
 
+    NX_Layer viewCullMask = INX_Render3D->scene.viewFrustum.cullMask;
+
     std::array<size_t, NX_LIGHT_TYPE_COUNT> counts{};
     for (const NX_Light& light : INX_Pool.Get<NX_Light>()) {
-        if (light.active && (frustum.GetCullMask() & light.layerMask) != 0) {
+        if (light.active && (viewCullMask & light.layerMask) != 0) {
             ++counts[light.type];
         }
     }
@@ -1144,7 +1246,7 @@ static void INX_CollectActiveLights()
 
     for (NX_Light& light : INX_Pool.Get<NX_Light>())
     {
-        if (!light.active || (frustum.GetCullMask() & light.layerMask) == 0) {
+        if (!light.active || (viewCullMask & light.layerMask) == 0) {
             continue;
         }
 
@@ -1206,6 +1308,7 @@ static void INX_UploadShadowData()
 static void INX_ComputeClusters()
 {
     INX_LightingState& state = INX_Render3D->lighting;
+    INX_SceneState& scene = INX_Render3D->scene;
 
     /* --- Early exit if no active light --- */
 
@@ -1219,8 +1322,8 @@ static void INX_ComputeClusters()
     // allocated per doubling of distance from the near plane. Higher values increase
     // cluster resolution near the camera, improving light culling precision.
 
-    float near = INX_Render3D->viewFrustum.GetNear();
-    float far = INX_Render3D->viewFrustum.GetFar();
+    float near = scene.viewFrustum.near;
+    float far = scene.viewFrustum.far;
 
     state.clusterCount.z = std::clamp(int(std::log2(far / near) * state.SlicesPerDepthOctave), 16, 64);
     int clusterTotal = state.clusterCount.x * state.clusterCount.y * state.clusterCount.z;
@@ -1239,7 +1342,7 @@ static void INX_ComputeClusters()
     gpu::Pipeline pipeline;
     pipeline.UseProgram(INX_Programs.GetLightCulling());
 
-    pipeline.BindUniform(0, INX_Render3D->viewFrustum.GetBuffer());
+    pipeline.BindUniform(0, scene.frustumUniform);
     pipeline.BindStorage(0, state.storageLights);
     pipeline.BindStorage(1, state.storageClusters);
     pipeline.BindStorage(2, state.storageIndices);
@@ -1276,7 +1379,7 @@ static void INX_RenderBackground(const gpu::Pipeline& pipeline)
 
     scene.framebufferScene.SetDrawBuffers({0});
 
-    pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
+    pipeline.BindUniform(1, scene.frustumUniform);
     pipeline.BindUniform(2, scene.envUniform);
 
     pipeline.SetDepthMode(gpu::DepthMode::Disabled);
@@ -1305,7 +1408,7 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
     pipeline.BindStorage(2, drawCalls.boneBuffer.GetBuffer());
 
     pipeline.BindUniform(0, scene.frameUniform);
-    pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
+    pipeline.BindUniform(1, scene.frustumUniform);
     pipeline.BindUniform(2, scene.envUniform);
 
     for (int uniqueIndex : drawCalls.uniqueVisible.GetCategory(DRAW_PREPASS))
@@ -1361,7 +1464,7 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
     pipeline.BindTexture(9, shadowing.target[NX_LIGHT_OMNI]);
 
     pipeline.BindUniform(0, scene.frameUniform);
-    pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
+    pipeline.BindUniform(1, scene.frustumUniform);
     pipeline.BindUniform(2, scene.envUniform);
 
     if (scene.skyProbe != nullptr) {
@@ -1417,7 +1520,7 @@ static const gpu::Texture& INX_PostSSAO(const gpu::Texture& source)
 
     /* --- Bind common stuff --- */
 
-    pipeline.BindUniform(0, INX_Render3D->viewFrustum.GetBuffer());
+    pipeline.BindUniform(0, scene.frustumUniform);
     pipeline.BindUniform(1, scene.envUniform);
 
     /* --- Generate ambient occlusion --- */
@@ -1572,7 +1675,7 @@ void NX_BeginEx3D(const NX_Camera* camera, const NX_Environment* env, const NX_R
     scene.targetResolution = (target) ? NX_GetRenderTextureSize(target) : NX_GetWindowSize();
     scene.targetAspect = static_cast<float>(scene.targetResolution.x) / scene.targetResolution.y;
 
-    INX_Render3D->viewFrustum.Update(camera ? *camera : NX_GetDefaultCamera(), scene.targetAspect);
+    INX_ProcessFrustum(camera ? *camera : NX_GetDefaultCamera(), scene.targetAspect);
     INX_ProcessEnvironment(env ? *env : NX_GetDefaultEnvironment());
 }
 
@@ -1611,13 +1714,13 @@ void NX_End3D()
     /* --- View layer/furstum culling and sorting --- */
 
     if (INX_Render3D->renderFlags & NX_RENDER_FRUSTUM_CULLING) {
-        INX_CullDrawCalls<true>(INX_Render3D->viewFrustum, INX_Render3D->viewFrustum.GetCullMask());
+        INX_CullDrawCalls<true>(scene.viewFrustum, scene.viewFrustum.cullMask);
     }
     else {
-        INX_CullDrawCalls<false>(INX_Render3D->viewFrustum, INX_Render3D->viewFrustum.GetCullMask());
+        INX_CullDrawCalls<false>(scene.viewFrustum, scene.viewFrustum.cullMask);
     }
 
-    INX_SortDrawCalls();
+    INX_SortDrawCalls(scene.viewFrustum.position);
 
     /* --- Render scene --- */
 
@@ -1695,7 +1798,6 @@ void NX_EndShadow3D()
     pipeline.BindStorage(2, drawCalls.boneBuffer.GetBuffer());
 
     pipeline.BindUniform(0, shadowing.frameUniform);
-    pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
 
     /* --- Render shadow maps --- */
 
@@ -1733,6 +1835,19 @@ void NX_EndShadow3D()
             break;
         }
 
+        /* --- Upload frame uniform --- */
+
+        NX_Mat4 camView = NX_GetCameraViewMatrix(&shadowing.mainCamera);
+
+        shadowing.frameUniform.UploadObject(INX_GPUShadowFrame {
+            .lightViewProj = viewProj,
+            .cameraInvView = NX_Mat4Inverse(&camView),
+            .lightPosition = position,
+            .lightRange = range,
+            .lightType = light->type,
+            .elapsedTime = static_cast<float>(NX_GetElapsedTime())
+        });
+
         /* --- Setup shadow map face --- */
 
         shadowing.framebuffer[light->type].SetColorAttachmentTarget(
@@ -1743,14 +1858,6 @@ void NX_EndShadow3D()
             shadowing.framebuffer[light->type],
             NX_COLOR_1(NX_GetLightRange(light))
         );
-
-        shadowing.frameUniform.UploadObject(INX_GPUShadowFrame {
-            .lightViewProj = viewProj,
-            .lightPosition = position,
-            .lightRange = range,
-            .lightType = light->type,
-            .elapsedTime = static_cast<float>(NX_GetElapsedTime())
-        });
 
         /* --- Cull and render shadow casters --- */
 

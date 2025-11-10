@@ -11,11 +11,9 @@
 
 #include <NX/NX_Light.h>
 
-#include "./INX_ViewFrustum.hpp"
-#include "./INX_Frustum.hpp"
-
 #include <NX/NX_Macros.h>
 #include <NX/NX_Math.h>
+#include <NX/NX_Log.h>
 
 #include <SDL3/SDL_assert.h>
 #include <variant>
