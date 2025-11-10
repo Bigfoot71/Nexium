@@ -121,11 +121,42 @@ NX_Transform NX_GetCameraTransform(const NX_Camera* camera)
 
 NX_Mat4 NX_GetCameraViewMatrix(const NX_Camera* camera)
 {
-    NX_Mat4 T = NX_Mat4Translate(-camera->position);
-    NX_Mat4 R = NX_QuatToMat4(camera->rotation);
-    R = NX_Mat4Transpose(&R);
+    // Equivalent to:
+    //  translate(-position) * transpose(mat4(rotation))
 
-    return NX_Mat4Mul(&T, &R);
+    float a2 = camera->rotation.x * camera->rotation.x;
+    float b2 = camera->rotation.y * camera->rotation.y;
+    float c2 = camera->rotation.z * camera->rotation.z;
+    float ac = camera->rotation.x * camera->rotation.z;
+    float ab = camera->rotation.x * camera->rotation.y;
+    float bc = camera->rotation.y * camera->rotation.z;
+    float ad = camera->rotation.w * camera->rotation.x;
+    float bd = camera->rotation.w * camera->rotation.y;
+    float cd = camera->rotation.w * camera->rotation.z;
+
+    NX_Mat4 view;
+
+    view.m00 = 1 - 2 * (b2 + c2);
+    view.m01 = 2 * (ab - cd);
+    view.m02 = 2 * (ac + bd);
+    view.m03 = 0.0f;
+
+    view.m10 = 2 * (ab + cd);
+    view.m11 = 1 - 2 * (a2 + c2);
+    view.m12 = 2 * (bc - ad);
+    view.m13 = 0.0f;
+
+    view.m20 = 2 * (ac - bd);
+    view.m21 = 2 * (bc + ad);
+    view.m22 = 1 - 2 * (a2 + b2);
+    view.m23 = 0.0f;
+
+    view.m30 = -(view.m00 * camera->position.x + view.m10 * camera->position.y + view.m20 * camera->position.z);
+    view.m31 = -(view.m01 * camera->position.x + view.m11 * camera->position.y + view.m21 * camera->position.z);
+    view.m32 = -(view.m02 * camera->position.x + view.m12 * camera->position.y + view.m22 * camera->position.z);
+    view.m33 = 1.0f;
+
+    return view;
 }
 
 NX_Mat4 NX_GetCameraProjectionMatrix(const NX_Camera* camera, float aspect)
