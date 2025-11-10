@@ -42,6 +42,8 @@
 #include "./INX_GlobalPool.hpp"
 #include "./INX_GPUBridge.hpp"
 
+#include <numeric>
+
 // ============================================================================
 // INTERNAL TYPES
 // ============================================================================
@@ -1097,28 +1099,29 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
 static void INX_CollectActiveLights()
 {
     INX_LightingState& state = INX_Render3D->lighting;
+    const INX_ViewFrustum& frustum = INX_Render3D->viewFrustum;
 
     /* --- Clear the previous state --- */
 
     state.activeLights.Clear();
     state.activeShadows.Clear();
 
-    /* --- Count each active light type --- */
+    /* --- Count each active and visible light per type --- */
 
     std::array<size_t, NX_LIGHT_TYPE_COUNT> counts{};
     for (const NX_Light& light : INX_Pool.Get<NX_Light>()) {
-        if (light.active) {
+        if (light.active && (frustum.GetCullMask() & light.layerMask) != 0) {
             ++counts[light.type];
         }
     }
 
-    state.activeLights.Resize(
-        counts[NX_LIGHT_DIR] +
-        counts[NX_LIGHT_SPOT] +
-        counts[NX_LIGHT_OMNI]
-    );
+    size_t totalLights = std::accumulate(counts.begin(), counts.end(), 0);
 
-    /* --- Prepare offsets for each type --- */
+    if (!state.activeLights.Resize(totalLights)) {
+        NX_LOG(W, "RENDER: Failed to reserve space for %d active lights", totalLights);
+    }
+
+    /* --- Prepare offsets for each light type --- */
 
     std::array<size_t, NX_LIGHT_TYPE_COUNT> offsets{};
 
@@ -1127,8 +1130,6 @@ static void INX_CollectActiveLights()
     offsets[NX_LIGHT_OMNI] = counts[NX_LIGHT_DIR] + counts[NX_LIGHT_SPOT];
 
     /* --- Collect all active and visible lights --- */
-
-    const INX_ViewFrustum& frustum = INX_Render3D->viewFrustum;
 
     for (NX_Light& light : INX_Pool.Get<NX_Light>())
     {
