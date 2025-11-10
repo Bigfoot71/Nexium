@@ -89,7 +89,7 @@ int main(void)
         CMN_UpdateCamera(&cam, NX_VEC3(0, 0, 0), 4.0f, 2.0f);
         BuildWavePlane(dynMesh, NX_GetElapsedTime());
 
-        NX_Begin3D(&cam, NULL, NULL);
+        NX_Begin3D(&cam, NULL, 0);
         NX_DrawDynamicMesh3D(dynMesh, NULL, NULL);
         NX_End3D();
     }

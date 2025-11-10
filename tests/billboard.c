@@ -72,7 +72,7 @@ int main(void)
 
         NX_Transform transform = NX_TRANSFORM_IDENTITY;
 
-        NX_BeginShadow3D(light, &camera);
+        NX_BeginShadow3D(light, &camera, 0);
         {
             transform.translation.y = -0.5f;
             NX_DrawMesh3D(ground, NULL, &transform);
@@ -82,7 +82,7 @@ int main(void)
         }
         NX_EndShadow3D();
 
-        NX_Begin3D(&camera, NULL, NULL);
+        NX_Begin3D(&camera, NULL, 0);
         {
             transform.translation.y = -0.5f;
             NX_DrawMesh3D(ground, NULL, &transform);

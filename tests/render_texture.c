@@ -43,14 +43,14 @@ int main(void)
 
         /* --- Render 3D scene to target --- */
 
-        NX_BeginShadow3D(light, &camera);
+        NX_BeginShadow3D(light, &camera, 0);
         {
             NX_DrawMesh3D(ground, NULL, NULL);
             NX_DrawModel3D(model, NULL);
         }
         NX_EndShadow3D();
 
-        NX_Begin3D(&camera, NULL, target);
+        NX_BeginEx3D(&camera, NULL, target, 0);
         {
             NX_DrawMesh3D(ground, NULL, NULL);
             NX_DrawModel3D(model, NULL);

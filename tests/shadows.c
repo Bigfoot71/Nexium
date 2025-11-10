@@ -83,12 +83,12 @@ int main(void)
         CMN_UpdateCamera(&camera, NX_VEC3(0, 0, 0), 8.0f, 4.0f);
 
         for (int i = 0; i < NX_LIGHT_TYPE_COUNT; i++) {
-            NX_BeginShadow3D(lights[i], &camera);
+            NX_BeginShadow3D(lights[i], &camera, 0);
             DrawScene(ground, cube);
             NX_EndShadow3D();
         }
 
-        NX_Begin3D(&camera, &env, NULL);
+        NX_Begin3D(&camera, &env, 0);
         {
             DrawScene(ground, cube);
 

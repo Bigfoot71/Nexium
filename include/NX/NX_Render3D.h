@@ -21,6 +21,24 @@
 #include "./NX_API.h"
 
 // ============================================================================
+// TYPES DEFINITIONS
+// ============================================================================
+
+/**
+ * @brief Bitfield flags controlling optional per-pass rendering behaviors.
+ *
+ * These flags allow enabling or disabling automatic operations such as 
+ * frustum culling and draw call sorting for specific rendering passes.
+ */
+typedef uint32_t NX_RenderFlags;
+
+#define NX_RENDER_FRUSTUM_CULLING          (1 << 0)     ///< Enables naive frustum culling over all draw calls
+
+#define NX_RENDER_SORT_OPAQUE              (1 << 1)     ///< Sort opaque objects front-to-back
+#define NX_RENDER_SORT_PREPASS             (1 << 2)     ///< Sort pre-pass objects front-to-back
+#define NX_RENDER_SORT_TRANSPARENT         (1 << 3)     ///< Sort transparent objects back-to-front
+
+// ============================================================================
 // FUNCTIONS DECLARATIONS
 // ============================================================================
 
@@ -30,14 +48,37 @@ extern "C" {
 
 /**
  * @brief Begins a 3D scene rendering pass.
+ *
+ * Starts rendering for the main 3D scene using the given camera and environment.
+ * This function uses the default render target (backbuffer) and default render options.
+ *
  * @param camera Pointer to the camera to use (can be NULL to use the default camera).
  * @param env Pointer to the environment to use (can be NULL to use the default environment).
- * @param target Optional render target to draw into (can be NULL to render to the backbuffer).
+ * @param flags Render flags controlling optional per-pass behaviors (e.g. frustum culling, sorting).
  *
- * @note The rendering pass is explicit; you must call NX_End3D() to finalize the scene.
+ * @note This function automatically renders to the backbuffer.
+ *       For custom render targets, use NX_BeginEx3D().
+ * @note The rendering pass is explicit; you must call NX_End3D() to finalize it.
  * @note Ensure no other render pass is active when calling this function.
  */
-NXAPI void NX_Begin3D(const NX_Camera* camera, const NX_Environment* env, const NX_RenderTexture* target);
+NXAPI void NX_Begin3D(const NX_Camera* camera, const NX_Environment* env, NX_RenderFlags flags);
+
+/**
+ * @brief Begins an extended 3D scene rendering pass.
+ *
+ * Starts rendering for the main 3D scene using the given camera, environment,
+ * and a custom render target. This version provides full control over render flags
+ * and output destination.
+ *
+ * @param camera Pointer to the camera to use (can be NULL to use the default camera).
+ * @param env Pointer to the environment to use (can be NULL to use the default environment).
+ * @param target Render texture to draw into (can be NULL to render to the backbuffer).
+ * @param flags Render flags controlling optional per-pass behaviors (e.g. frustum culling, sorting).
+ *
+ * @note The rendering pass is explicit; you must call NX_End3D() to finalize it.
+ * @note Ensure no other render pass is active when calling this function.
+ */
+NXAPI void NX_BeginEx3D(const NX_Camera* camera, const NX_Environment* env, const NX_RenderTexture* target, NX_RenderFlags flags);
 
 /**
  * @brief Ends the current 3D scene rendering pass.
@@ -52,14 +93,20 @@ NXAPI void NX_End3D(void);
 
 /**
  * @brief Begins shadow map rendering for a specific light.
+ *
+ * Starts rendering into the shadow map associated with the given light.
+ *
  * @param light Pointer to the light whose shadow map will be rendered. Must have shadows enabled.
  * @param camera Optional pointer to a camera to use for the shadow rendering frustum 
- *               (used mainly for directional lights; can be NULL for default handling).
+ *               (mainly used for directional lights; can be NULL for default handling).
+ * @param flags Render flags controlling optional per-pass behaviors 
+ *              (currently only affects frustum culling; sorting flags are ignored).
  *
- * @note The shadow rendering pass is now explicit; you must call NX_EndShadow3D() after this.
+ * @note You must call NX_EndShadow3D() to finalize the shadow rendering pass.
  * @note Ensure no other render pass is active when calling this function.
+ * @note A warning will be logged if the light has no valid shadow map assigned.
  */
-NXAPI void NX_BeginShadow3D(NX_Light* light, const NX_Camera* camera);
+NXAPI void NX_BeginShadow3D(NX_Light* light, const NX_Camera* camera, NX_RenderFlags flags);
 
 /**
  * @brief Ends the current shadow map rendering pass.

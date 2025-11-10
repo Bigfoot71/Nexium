@@ -79,17 +79,6 @@
 // ============================================================================
 
 /**
- * @brief Extra flags for NX_Environment specifying rendering behaviors.
- *
- * These flags control optional rendering features that Nexium can enable per-environment.
- */
-typedef uint32_t NX_EnvironmentFlag;
-
-#define NX_ENV_SORT_OPAQUE              (1 << 0)    ///< Sort opaque objects front-to-back
-#define NX_ENV_SORT_PREPASS             (1 << 1)    ///< Sort pre-pass objects front-to-back
-#define NX_ENV_SORT_TRANSPARENT         (1 << 2)    ///< Sort transparent objects back-to-front
-
-/**
  * @brief Modes for applying bloom effect.
  *
  * Determines how the bloom effect is blended with the scene.
@@ -185,8 +174,6 @@ typedef struct NX_Environment {
         float exposure;             ///< Exposure compensation.
         float white;                ///< White point reference (unused with AGX).
     } tonemap;
-
-    NX_EnvironmentFlag flags;       ///< Extra flags about rendering behavior.
 
 } NX_Environment;
 

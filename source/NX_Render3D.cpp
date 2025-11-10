@@ -105,7 +105,6 @@ struct INX_ProcessedEnv {
     NX_ReflectionProbe* skyProbe;
 
     /** Scene data */
-    NX_EnvironmentFlag flags;
     NX_Color background;
 
     /** Post processing data */
@@ -214,19 +213,19 @@ struct INX_LightingState {
     static constexpr uint32_t MaxLightsPerCluster = 32;     ///< Maximum number of lights in a single cluster
 
     /** Storage buffers */
-    gpu::Buffer storageLights{};                    ///< Active lights (sorted DIR -> SPOT -> OMNI)
-    gpu::Buffer storageShadow{};                    ///< Per-light shadow data
-    gpu::Buffer storageClusters{};                  ///< Per-cluster light counts (numDir, numSpot, numOmni)
-    gpu::Buffer storageIndices{};                   ///< Per-cluster light indices (grouped by type)
-    gpu::Buffer storageClusterAABB{};               ///< Per-cluster AABBs (computed during culling)
+    gpu::Buffer storageLights{};        ///< Active lights (sorted DIR -> SPOT -> OMNI)
+    gpu::Buffer storageShadow{};        ///< Per-light shadow data
+    gpu::Buffer storageClusters{};      ///< Per-cluster light counts (numDir, numSpot, numOmni)
+    gpu::Buffer storageIndices{};       ///< Per-cluster light indices (grouped by type)
+    gpu::Buffer storageClusterAABB{};   ///< Per-cluster AABBs (computed during culling)
 
     /** Per-frame caches */
-    ActiveLights activeLights{};                    ///< Active lights (pointers + shadow indices), same order as storageLights
-    ActiveShadows activeShadows{};                  ///< Active shadow-casting lights, bucketed by type, same order as storageShadow
+    ActiveLights activeLights{};        ///< Active lights (pointers + shadow indices), same order as storageLights
+    ActiveShadows activeShadows{};      ///< Active shadow-casting lights, bucketed by type, same order as storageShadow
 
     /** Additionnal Data */
-    NX_IVec3 clusterCount{};                        ///< Number of clusters X/Y/Z
-    NX_IVec2 clusterSize{};                         ///< Size of a cluster X/Y
+    NX_IVec3 clusterCount{};            ///< Number of clusters X/Y/Z
+    NX_IVec2 clusterSize{};             ///< Size of a cluster X/Y
     float clusterSliceScale{};
     float clusterSliceBias{};
 };
@@ -287,6 +286,7 @@ struct INX_Render3DState {
 
     /** State infos */
     INX_RenderTargetInfo renderTarget{};
+    NX_RenderFlags renderFlags{};
     INX_RenderPass renderPass{};
 };
 
@@ -634,6 +634,42 @@ void INX_Render3DState_ReleaseShadowMap(NX_LightType type, int mapIndex)
 // LOCAL FUNCTIONS
 // ============================================================================
 
+static bool INX_BeginRenderPass(INX_RenderPass pass, NX_RenderFlags flags)
+{
+    if (INX_Render3D->renderPass != INX_RenderPass::RENDER_NONE) {
+        const char* request = INX_GetRenderPassName(pass);
+        const char* current = INX_GetRenderPassName(INX_Render3D->renderPass);
+        NX_LOG(W,"RENDER: Cannot begin render pass (%s); Another render pass is already active (%s)", request, current);
+        return false;
+    }
+
+    INX_Render3D->renderFlags = flags;
+    INX_Render3D->renderPass = pass;
+
+    return true;
+}
+
+static bool INX_CheckRenderPass(INX_RenderPass pass)
+{
+    if (INX_Render3D->renderPass != pass) {
+        const char* request = INX_GetRenderPassName(pass);
+        const char* current = INX_GetRenderPassName(INX_Render3D->renderPass);
+        NX_LOG(W, "RENDER: Cannot end render pass (%s); Current render pass is (%s)", request, current);
+        return false;
+    }
+
+    return true;
+}
+
+static void INX_EndRenderPass()
+{
+    INX_Render3D->renderPass = INX_RenderPass::RENDER_NONE;
+    INX_Render3D->renderFlags = 0;
+
+    INX_Render3D->drawCalls.sharedData.Clear();
+    INX_Render3D->drawCalls.uniqueData.Clear();
+}
+
 static INX_DrawType INX_GetDrawType(const NX_Material& material)
 {
     if (material.depth.prePass) return DRAW_PREPASS;
@@ -745,12 +781,6 @@ static void INX_PushDrawCall(
     }
 }
 
-inline void INX_ClearDrawCalls()
-{
-    INX_Render3D->drawCalls.sharedData.Clear();
-    INX_Render3D->drawCalls.uniqueData.Clear();
-}
-
 static void INX_UploadDrawCalls()
 {
     INX_DrawCallState& state = INX_Render3D->drawCalls;
@@ -817,37 +847,38 @@ static void INX_UploadDrawCalls()
     state.uniqueBuffer.Unmap();
 }
 
+template <bool FrustumCulling>
 static void INX_CullDrawCalls(const INX_Frustum& frustum, NX_Layer frustumCullMask)
 {
     INX_DrawCallState& state = INX_Render3D->drawCalls;
-
     state.uniqueVisible.Clear();
 
     for (const INX_DrawShared& shared : state.sharedData)
     {
-        if (shared.instanceCount > 0) [[unlikely]] {
-            int end = shared.uniqueDataIndex + shared.uniqueDataCount;
-            for (int i = shared.uniqueDataIndex; i < end; ++i) {
-                const INX_DrawUnique& u = state.uniqueData[i];
-                if ((frustumCullMask & u.mesh.GetLayerMask()) != 0) {
-                    state.uniqueVisible.Emplace(u.type, i);
-                }
+        /* --- Classification by bounding sphere if necessary --- */
+
+        bool fullyInside = false;
+        if constexpr (FrustumCulling) {
+            if (shared.instanceCount == 0) [[likely]] {
+                const INX_Frustum::Containment containment = frustum.ClassifySphere(shared.sphere);
+                if (containment == INX_Frustum::Outside) continue;
+                fullyInside = (containment == INX_Frustum::Inside);
             }
-            continue;
         }
 
-        const INX_Frustum::Containment containment = frustum.ClassifySphere(shared.sphere);
-        if (containment == INX_Frustum::Outside) {
-            continue;
-        }
+        /* --- Fine filtering using layer mask and OBB vs Frustum test if necessary --- */
 
-        int end = shared.uniqueDataIndex + shared.uniqueDataCount;
-        bool needsObbTest = (containment == INX_Frustum::Intersect);
+        const int end = shared.uniqueDataIndex + shared.uniqueDataCount;
 
-        for (int i = shared.uniqueDataIndex; i < end; ++i) {
+        for (int i = shared.uniqueDataIndex; i < end; ++i)   {
             const INX_DrawUnique& u = state.uniqueData[i];
             if ((frustumCullMask & u.mesh.GetLayerMask()) != 0) [[likely]] {
-                if (!needsObbTest || frustum.ContainsObb(u.obb)) {
+                if constexpr (FrustumCulling) {
+                    if (fullyInside || frustum.ContainsObb(u.obb)) {
+                        state.uniqueVisible.Emplace(u.type, i);
+                    }
+                }
+                else {
                     state.uniqueVisible.Emplace(u.type, i);
                 }
             }
@@ -858,12 +889,11 @@ static void INX_CullDrawCalls(const INX_Frustum& frustum, NX_Layer frustumCullMa
 static void INX_SortDrawCalls()
 {
     INX_DrawCallState& state = INX_Render3D->drawCalls;
-    const INX_ProcessedEnv& env = INX_Render3D->environment;
     util::DynamicArray<float>& sortDistances = state.sortDistances;
 
-    const bool needsOpaque = NX_FLAG_CHECK(env.flags, NX_ENV_SORT_OPAQUE);
-    const bool needsPrepass = NX_FLAG_CHECK(env.flags, NX_ENV_SORT_PREPASS);
-    const bool needsTransparent = NX_FLAG_CHECK(env.flags, NX_ENV_SORT_TRANSPARENT);
+    const bool needsOpaque = NX_FLAG_CHECK(INX_Render3D->renderFlags, NX_RENDER_SORT_OPAQUE);
+    const bool needsPrepass = NX_FLAG_CHECK(INX_Render3D->renderFlags, NX_RENDER_SORT_PREPASS);
+    const bool needsTransparent = NX_FLAG_CHECK(INX_Render3D->renderFlags, NX_RENDER_SORT_TRANSPARENT);
 
     if (needsOpaque || needsPrepass)
     {
@@ -994,7 +1024,6 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
 
     /* --- Store CPU data */
 
-    state.flags = env.flags;
     state.background = env.background;
 
     // Pre-multiply background with fog
@@ -1502,11 +1531,14 @@ static void INX_PostFinal(const gpu::Texture& source)
 // PUBLIC API
 // ============================================================================
 
-void NX_Begin3D(const NX_Camera* camera, const NX_Environment* env, const NX_RenderTexture* target)
+void NX_Begin3D(const NX_Camera* camera, const NX_Environment* env, NX_RenderFlags flags)
 {
-    if (INX_Render3D->renderPass != INX_RenderPass::RENDER_NONE) {
-        const char* passName = INX_GetRenderPassName(INX_Render3D->renderPass);
-        NX_LOG(W,"RENDER: Cannot begin scene rendering; Another render pass is already active (%s)", passName);
+    NX_BeginEx3D(camera, env, nullptr, flags);
+}
+
+void NX_BeginEx3D(const NX_Camera* camera, const NX_Environment* env, const NX_RenderTexture* target, NX_RenderFlags flags)
+{
+    if (!INX_BeginRenderPass(INX_RenderPass::RENDER_SCENE, flags)) {
         return;
     }
 
@@ -1522,9 +1554,7 @@ void NX_Begin3D(const NX_Camera* camera, const NX_Environment* env, const NX_Ren
 
 void NX_End3D()
 {
-    if (INX_Render3D->renderPass != INX_RenderPass::RENDER_SCENE) {
-        const char* passName = INX_GetRenderPassName(INX_Render3D->renderPass);
-        NX_LOG(W, "RENDER: Cannot end scene rendering; Current render pass is (%s), expected (Scene)", passName);
+    if (!INX_CheckRenderPass(INX_RenderPass::RENDER_SCENE)) {
         return;
     }
 
@@ -1554,7 +1584,13 @@ void NX_End3D()
 
     /* --- View layer/furstum culling and sorting --- */
 
-    INX_CullDrawCalls(INX_Render3D->viewFrustum, INX_Render3D->viewFrustum.GetCullMask());
+    if (INX_Render3D->renderFlags & NX_RENDER_FRUSTUM_CULLING) {
+        INX_CullDrawCalls<true>(INX_Render3D->viewFrustum, INX_Render3D->viewFrustum.GetCullMask());
+    }
+    else {
+        INX_CullDrawCalls<false>(INX_Render3D->viewFrustum, INX_Render3D->viewFrustum.GetCullMask());
+    }
+
     INX_SortDrawCalls();
 
     /* --- Render scene --- */
@@ -1590,33 +1626,29 @@ void NX_End3D()
 
     /* --- Reset state --- */
 
-    INX_ClearDrawCalls();
+    INX_EndRenderPass();
 }
 
-void NX_BeginShadow3D(NX_Light* light, const NX_Camera* camera)
+void NX_BeginShadow3D(NX_Light* light, const NX_Camera* camera, NX_RenderFlags flags)
 {
-    if (INX_Render3D->renderPass != INX_RenderPass::RENDER_NONE) {
-        const char* passName = INX_GetRenderPassName(INX_Render3D->renderPass);
-        NX_LOG(W, "RENDER: Cannot begin shadow rendering; Another render pass is already active (%s)", passName);
+    if (!INX_BeginRenderPass(INX_RenderPass::RENDER_SHADOW, flags)) {
         return;
     }
 
     if (light->shadow.state.mapIndex < 0) {
         const char* typeName = INX_GetLightTypeName(light->type);
         NX_LOG(W, "RENDER: Light has no valid shadow map assigned (type=%s)", typeName);
+        INX_EndRenderPass();
         return;
     }
 
     INX_Render3D->shadowing.casterTarget = light;
-    INX_Render3D->shadowing.mainCamera = camera
-        ? *camera : NX_GetDefaultCamera();
+    INX_Render3D->shadowing.mainCamera = camera ? *camera : NX_GetDefaultCamera();
 }
 
 void NX_EndShadow3D()
 {
-    if (INX_Render3D->renderPass != INX_RenderPass::RENDER_SHADOW) {
-        const char* passName = INX_GetRenderPassName(INX_Render3D->renderPass);
-        NX_LOG(W, "RENDER: Cannot end shadow rendering; Current render pass is (%s), expected (Shadow)", passName);
+    if (!INX_CheckRenderPass(INX_RenderPass::RENDER_SHADOW)) {
         return;
     }
 
@@ -1697,7 +1729,12 @@ void NX_EndShadow3D()
 
         /* --- Cull and render shadow casters --- */
 
-        INX_CullDrawCalls(INX_Frustum(viewProj), light->shadow.cullMask);
+        if (INX_Render3D->renderFlags & NX_RENDER_FRUSTUM_CULLING) {
+            INX_CullDrawCalls<true>(INX_Frustum(viewProj), light->shadow.cullMask);
+        }
+        else {
+            INX_CullDrawCalls<false>(INX_Frustum(viewProj), light->shadow.cullMask);
+        }
 
         for (int uniqueIndex : drawCalls.uniqueVisible.GetCategories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
         {
@@ -1723,6 +1760,10 @@ void NX_EndShadow3D()
             INX_Draw3D(pipeline, unique);
         }
     }
+
+    /* --- Reset state --- */
+
+    INX_EndRenderPass();
 }
 
 void NX_DrawMesh3D(const NX_Mesh* mesh, const NX_Material* material, const NX_Transform* transform)

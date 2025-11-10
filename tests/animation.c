@@ -73,7 +73,7 @@ int main(void)
 
         /* --- 3D rendering --- */
 
-        NX_BeginShadow3D(light, &camera);
+        NX_BeginShadow3D(light, &camera, 0);
         {
             NX_DrawMesh3D(ground, NULL, NULL);
             (instanceCount <= 1)
@@ -82,7 +82,7 @@ int main(void)
         }
         NX_EndShadow3D();
 
-        NX_Begin3D(&camera, NULL, NULL);
+        NX_Begin3D(&camera, NULL, 0);
         {
             NX_DrawMesh3D(ground, NULL, NULL);
             (instanceCount <= 1)

@@ -61,7 +61,7 @@ int main(void)
             currentEnv = (currentEnv + 1) % NX_ARRAY_SIZE(env);
         }
 
-        NX_Begin3D(&camera, &env[currentEnv], NULL);
+        NX_Begin3D(&camera, &env[currentEnv], 0);
         {
             NX_Transform transform = NX_TRANSFORM_IDENTITY;
 

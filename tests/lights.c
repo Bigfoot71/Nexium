@@ -65,7 +65,7 @@ int main(void)
 
         /* --- 3D rendering --- */
 
-        NX_Begin3D(&camera, NULL, NULL);
+        NX_Begin3D(&camera, NULL, 0);
         {
             NX_DrawMesh3D(ground, NULL, NULL);
 

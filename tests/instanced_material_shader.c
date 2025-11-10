@@ -78,7 +78,7 @@ int main(void)
     {
         CMN_UpdateCamera(&camera, NX_VEC3_ZERO, 2.0f, 1.0f);
 
-        NX_Begin3D(&camera, &env, NULL);
+        NX_Begin3D(&camera, &env, 0);
         NX_DrawMeshInstanced3D(cube, instances, NUM_INSTANCES, &material, NULL);
         NX_End3D();
     }

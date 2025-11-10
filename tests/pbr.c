@@ -76,7 +76,7 @@ int main(void)
 
         /* --- 3D rendering --- */
 
-        NX_Begin3D(&camera, &envs[envIndex], NULL);
+        NX_Begin3D(&camera, &envs[envIndex], 0);
         NX_DrawModel3D(model, NULL);
         NX_End3D();
 

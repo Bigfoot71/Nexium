@@ -47,6 +47,11 @@ int main(void)
     NX_SetShadowActive(light, true);
     NX_SetLightActive(light, true);
 
+    NX_BeginShadow3D(light, NULL, 0);
+    NX_DrawMesh3D(quad, &matQuad, &(NX_Transform){ NX_VEC3(0, -0.5f, 0), NX_QUAT_IDENTITY, NX_VEC3_ONE });
+    NX_DrawMesh3D(cube, &matCube, NULL);
+    NX_EndShadow3D();
+
     /* --- Setup camera --- */
 
     NX_Camera camera = NX_GetDefaultCamera();
@@ -59,7 +64,7 @@ int main(void)
 
         /* --- 3D rendering --- */
 
-        NX_Begin3D(&camera, NULL, NULL);
+        NX_Begin3D(&camera, NULL, 0);
         NX_DrawMesh3D(quad, &matQuad, &(NX_Transform){ NX_VEC3(0, -0.5f, 0), NX_QUAT_IDENTITY, NX_VEC3_ONE });
         NX_DrawMesh3D(cube, &matCube, NULL);
         NX_End3D();
