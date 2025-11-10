@@ -19,7 +19,6 @@
 
 #include <SDL3/SDL_assert.h>
 #include <variant>
-#include <array>
 
 // ============================================================================
 // INTERNAL TYPES
@@ -50,13 +49,11 @@ struct INX_GPUShadow {
 };
 
 struct INX_DirectionalLight {
-    NX_Vec3 position{NX_VEC3_ZERO};         //< Internally computed, actual position used to build the light's view matrix for shadow projection
     NX_Vec3 direction{NX_VEC3_FORWARD};
     NX_Vec3 color{NX_VEC3_ONE};
     float energy{1.0f};
     float specular{0.5f};
-    float shadowRadius{8.0f};               //< Public 'range' parameter, defines the radius around the camera within which shadows are rendered
-    float range{0.0f};                      //< Internally computed, corresponds to the shadow projection range (far - near)
+    float range{8.0f};                      //< Defines the radius around the camera within which shadows are rendered
 };
 
 struct INX_SpotLight {
@@ -87,20 +84,14 @@ using INX_LightData = std::variant<
 >;
 
 struct INX_ShadowLightData {
-    // NOTE: We store the viewProj matrices and frustums for each face in case of omni-light
-    std::array<INX_Frustum, 6> frustum{};
-    std::array<NX_Mat4, 6> viewProj{};
     float slopeBias{0.005f};
     float bias{0.001f};
     float softness{2.0f};
 };
 
 struct INX_ShadowLightState {
-    NX_ShadowUpdateMode updateMode{};
-    float intervalSec{0.016f};
-    float timerSec{0.0f};
-    bool forceUpdate{};
-    bool vpDirty{true};
+    NX_Mat4 viewProj{NX_MAT4_IDENTITY};
+    int mapIndex{-1};
 };
 
 // ============================================================================
@@ -151,11 +142,24 @@ inline NX_Light::NX_Light(NX_LightType type)
 // INTERNAL FUNCTIONS
 // ============================================================================
 
-void INX_UpdateLight(NX_Light* light, const INX_ViewFrustum& viewFrustum, bool* needsShadowUpdate);
-void INX_FillGPULight(NX_Light* light, INX_GPULight* gpu, int shadowIndex);
-void INX_FillGPUShadow(NX_Light* light, INX_GPUShadow* gpu, int mapIndex);
+NX_Mat4 INX_GetDirectionalLightViewProj(NX_Light* light, const NX_Camera& camera);
+NX_Mat4 INX_GetSpotLightViewProj(NX_Light* light);
+NX_Mat4 INX_GetOmniLightViewProj(NX_Light* light, int face);
 
-const INX_Frustum& INX_GetLightFrustum(const NX_Light& light, int face);
-const NX_Mat4& INX_GetLightViewProj(const NX_Light& light, int face);
+void INX_FillGPULight(const NX_Light* light, INX_GPULight* gpu, int shadowIndex);
+void INX_FillGPUShadow(const NX_Light* light, INX_GPUShadow* gpu);
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+static const char* INX_GetLightTypeName(NX_LightType type)
+{
+    static constexpr const char* names[NX_LIGHT_TYPE_COUNT] = {
+        "Directional", "Spot", "Omni"
+    };
+
+    return names[type];
+}
 
 #endif // NX_LIGHT_HPP

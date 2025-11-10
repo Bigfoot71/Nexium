@@ -29,19 +29,48 @@ extern "C" {
 #endif
 
 /**
- * @brief Begins 3D rendering.
- * Sets up the rendering state for 3D primitives, meshes, and models.
+ * @brief Begins a 3D scene rendering pass.
  * @param camera Pointer to the camera to use (can be NULL to use the default camera).
  * @param env Pointer to the environment to use (can be NULL to use the default environment).
- * @param target Render texture to draw into (can be NULL to render to the screen).
+ * @param target Optional render target to draw into (can be NULL to render to the backbuffer).
+ *
+ * @note The rendering pass is explicit; you must call NX_End3D() to finalize the scene.
+ * @note Ensure no other render pass is active when calling this function.
  */
 NXAPI void NX_Begin3D(const NX_Camera* camera, const NX_Environment* env, const NX_RenderTexture* target);
 
 /**
- * @brief Finalizes 3D rendering.
- * Renders all accumulated draw calls, applies post-processing, and outputs to the final render target.
+ * @brief Ends the current 3D scene rendering pass.
+ *
+ * Renders all accumulated draw calls, applies post-processing effects, 
+ * and outputs the final image to the render target specified in NX_Begin3D (or the backbuffer if NULL).
+ *
+ * @note Must be called after NX_Begin3D().
+ * @note Logs a warning if no scene render pass is active.
  */
 NXAPI void NX_End3D(void);
+
+/**
+ * @brief Begins shadow map rendering for a specific light.
+ * @param light Pointer to the light whose shadow map will be rendered. Must have shadows enabled.
+ * @param camera Optional pointer to a camera to use for the shadow rendering frustum 
+ *               (used mainly for directional lights; can be NULL for default handling).
+ *
+ * @note The shadow rendering pass is now explicit; you must call NX_EndShadow3D() after this.
+ * @note Ensure no other render pass is active when calling this function.
+ */
+NXAPI void NX_BeginShadow3D(NX_Light* light, const NX_Camera* camera);
+
+/**
+ * @brief Ends the current shadow map rendering pass.
+ *
+ * Finalizes rendering into the shadow map of the active light.
+ * Resets internal state to allow other render passes to begin.
+ *
+ * @note Must be called after NX_BeginShadow3D().
+ * @note Logs a warning if no shadow pass is active.
+ */
+NXAPI void NX_EndShadow3D();
 
 /**
  * @brief Draws a 3D mesh.

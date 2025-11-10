@@ -72,22 +72,36 @@ int main(void)
 
         NX_Transform transform = NX_TRANSFORM_IDENTITY;
 
-        NX_Begin3D(&camera, NULL, NULL);
-        transform.translation.y = -0.5f;
-        NX_DrawMesh3D(ground, NULL, &transform);
+        NX_BeginShadow3D(light, &camera);
+        {
+            transform.translation.y = -0.5f;
+            NX_DrawMesh3D(ground, NULL, &transform);
 
-        transform.translation.y = +0.5f;
-        NX_DrawMesh3D(sprite, &matSprite, &transform);
+            transform.translation.y = +0.5f;
+            NX_DrawMesh3D(sprite, &matSprite, &transform);
+        }
+        NX_EndShadow3D();
+
+        NX_Begin3D(&camera, NULL, NULL);
+        {
+            transform.translation.y = -0.5f;
+            NX_DrawMesh3D(ground, NULL, &transform);
+
+            transform.translation.y = +0.5f;
+            NX_DrawMesh3D(sprite, &matSprite, &transform);
+        }
         NX_End3D();
 
         /* --- 2D UI rendering --- */
 
         NX_Begin2D(NULL);
-        NX_SetColor2D(NX_BLACK);
-        NX_DrawText2D(
-            CMN_FormatText("BILLBOARD: %i\nPress SPACE to switch", matSprite.billboard),
-            NX_VEC2_1(10), 32, NX_VEC2_ONE
-        );
+        {
+            NX_SetColor2D(NX_BLACK);
+            NX_DrawText2D(
+                CMN_FormatText("BILLBOARD: %i\nPress SPACE to switch", matSprite.billboard),
+                NX_VEC2_1(10), 32, NX_VEC2_ONE
+            );
+        }
         NX_End2D();
     }
 

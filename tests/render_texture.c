@@ -8,6 +8,7 @@
 
 #include <NX/Nexium.h>
 #include "./common.h"
+#include "NX/NX_Render3D.h"
 
 int main(void)
 {
@@ -42,9 +43,18 @@ int main(void)
 
         /* --- Render 3D scene to target --- */
 
+        NX_BeginShadow3D(light, &camera);
+        {
+            NX_DrawMesh3D(ground, NULL, NULL);
+            NX_DrawModel3D(model, NULL);
+        }
+        NX_EndShadow3D();
+
         NX_Begin3D(&camera, NULL, target);
-        NX_DrawMesh3D(ground, NULL, NULL);
-        NX_DrawModel3D(model, NULL);
+        {
+            NX_DrawMesh3D(ground, NULL, NULL);
+            NX_DrawModel3D(model, NULL);
+        }
         NX_End3D();
 
         /* --- Draw 2D overlay on target --- */

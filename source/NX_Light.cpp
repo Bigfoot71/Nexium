@@ -12,20 +12,21 @@
 
 #include "./INX_RenderUtils.hpp"
 #include "./INX_GlobalPool.hpp"
+#include "./NX_Render3D.hpp"
 #include <cmath>
 
 // ============================================================================
 // INTERNAL FUNCTIONS
 // ============================================================================
 
-static void INX_UpdateDirectionalLight_ViewProj(NX_Light* light, const INX_ViewFrustum& viewFrustum)
+NX_Mat4 INX_GetDirectionalLightViewProj(NX_Light* light, const NX_Camera& camera)
 {
     SDL_assert(light->type == NX_LIGHT_DIR);
     SDL_assert(light->shadow.active);
 
-    INX_DirectionalLight& dirLight = std::get<INX_DirectionalLight>(light->data);
-    const NX_Vec3& cameraPos = viewFrustum.GetViewPosition();
+    const INX_DirectionalLight& dirLight = std::get<INX_DirectionalLight>(light->data);
     const NX_Vec3& lightDir = dirLight.direction;
+    const NX_Vec3& cameraPos = camera.position;
 
     /* --- Calcuate view matrix --- */
 
@@ -42,7 +43,7 @@ static void INX_UpdateDirectionalLight_ViewProj(NX_Light* light, const INX_ViewF
         std::abs(rightLS.x) + std::abs(upLS.x) + std::abs(forwLS.x),
         std::abs(rightLS.y) + std::abs(upLS.y) + std::abs(forwLS.y),
         std::abs(rightLS.z) + std::abs(upLS.z) + std::abs(forwLS.z)
-    ) * dirLight.shadowRadius;
+    ) * dirLight.range;
 
     NX_Mat4 proj = NX_Mat4Ortho(
         -extentLS.x,
@@ -53,116 +54,46 @@ static void INX_UpdateDirectionalLight_ViewProj(NX_Light* light, const INX_ViewF
         +extentLS.z
     );
 
-    /* --- Store the results --- */
+    /* --- Update and return the view projection matrix --- */
 
-    light->shadow.data.viewProj[0] = view * proj;
+    light->shadow.state.viewProj = view * proj;
 
-    dirLight.position = cameraPos - lightDir * dirLight.shadowRadius;
-    dirLight.range = 2.0f * extentLS.z;
-
-    /* --- Update frustum --- */
-
-    light->shadow.data.frustum[0].Update(light->shadow.data.viewProj[0]);
+    return light->shadow.state.viewProj;
 }
 
-static void INX_UpdateSpotLight_ViewProj(NX_Light* light)
+NX_Mat4 INX_GetSpotLightViewProj(NX_Light* light)
 {
     SDL_assert(light->type == NX_LIGHT_SPOT);
     SDL_assert(light->shadow.active);
 
     const INX_SpotLight& spotLight = std::get<INX_SpotLight>(light->data);
 
-    /* --- Calculate view projection matrix --- */
-
     constexpr float nearPlane = 0.05f;
-
     NX_Mat4 view = NX_Mat4LookAt(spotLight.position, spotLight.position + spotLight.direction, NX_VEC3_UP);
     NX_Mat4 proj = NX_Mat4Perspective(NX_PI / 2.0f, 1.0f, nearPlane, nearPlane + spotLight.range);
 
-    light->shadow.data.viewProj[0] = view * proj;
+    light->shadow.state.viewProj = view * proj;
 
-    /* --- Update frustum --- */
-
-    light->shadow.data.frustum[0].Update(light->shadow.data.viewProj[0]);
+    return light->shadow.state.viewProj;
 }
 
-static void INX_UpdateOmniLight_ViewProj(NX_Light* light)
+NX_Mat4 INX_GetOmniLightViewProj(NX_Light* light, int face)
 {
     SDL_assert(light->type == NX_LIGHT_OMNI);
     SDL_assert(light->shadow.active);
 
     const INX_OmniLight& omniLight = std::get<INX_OmniLight>(light->data);
 
-    /* --- Calculate view projection matrices and frustums --- */
-
     constexpr float nearPlane = 0.05f;
+    NX_Mat4 view = INX_GetCubeView(face, omniLight.position);
+    NX_Mat4 proj = INX_GetCubeProj(nearPlane, nearPlane + omniLight.range);
 
-    for (int i = 0; i < light->shadow.data.viewProj.size(); i++)
-    {
-        light->shadow.data.viewProj[i] =
-            INX_GetCubeView(i, omniLight.position) *
-            INX_GetCubeProj(nearPlane, nearPlane + omniLight.range);
+    light->shadow.state.viewProj = view * proj;
 
-        light->shadow.data.frustum[i].Update(light->shadow.data.viewProj[i]);
-    }
+    return light->shadow.state.viewProj;
 }
 
-void INX_UpdateLight(NX_Light* light, const INX_ViewFrustum& viewFrustum, bool* needsShadowUpdate)
-{
-    SDL_assert(needsShadowUpdate != nullptr);
-    SDL_assert(light->active);
-
-    if (!light->shadow.active) {
-        return;
-    }
-
-    /* --- Checks if the shadow map needs to be updated --- */
-
-    if (light->shadow.state.forceUpdate) {
-        light->shadow.state.forceUpdate = false;
-        *needsShadowUpdate = true;
-    }
-
-    if (light->shadow.state.updateMode == NX_SHADOW_UPDATE_INTERVAL) {
-        light->shadow.state.timerSec += NX_GetDeltaTime();
-        if (light->shadow.state.timerSec >= light->shadow.state.intervalSec) {
-            light->shadow.state.timerSec -= light->shadow.state.intervalSec;
-            *needsShadowUpdate = true;
-        }
-    }
-    else if (light->shadow.state.updateMode == NX_SHADOW_UPDATE_CONTINUOUS) {
-        *needsShadowUpdate = true;
-    }
-
-    /* --- Update view projection if needed --- */
-
-    switch (light->type) {
-    case NX_LIGHT_DIR:
-        // NOTE: The view/proj always needs to be updated relative
-        //       to the camera if the shadow map needs to be updated
-        if (*needsShadowUpdate) {
-            INX_UpdateDirectionalLight_ViewProj(light, viewFrustum);
-        }
-        break;
-    case NX_LIGHT_SPOT:
-        if (light->shadow.state.vpDirty) {
-            light->shadow.state.vpDirty = false;
-            INX_UpdateSpotLight_ViewProj(light);
-        }
-        break;
-    case NX_LIGHT_OMNI:
-        if (light->shadow.state.vpDirty) {
-            light->shadow.state.vpDirty = false;
-            INX_UpdateOmniLight_ViewProj(light);
-        }
-        break;
-    case NX_LIGHT_TYPE_COUNT:
-        NX_UNREACHABLE();
-        break;
-    }
-}
-
-void INX_FillGPULight(NX_Light* light, INX_GPULight* gpu, int shadowIndex)
+void INX_FillGPULight(const NX_Light* light, INX_GPULight* gpu, int shadowIndex)
 {
     SDL_assert(light != nullptr && gpu != nullptr);
     SDL_assert(light->active);
@@ -172,7 +103,6 @@ void INX_FillGPULight(NX_Light* light, INX_GPULight* gpu, int shadowIndex)
         {
             const INX_DirectionalLight& dir = std::get<INX_DirectionalLight>(light->data);
 
-            gpu->position = dir.position;
             gpu->direction = dir.direction;
             gpu->color = dir.color;
             gpu->energy = dir.energy;
@@ -220,40 +150,20 @@ void INX_FillGPULight(NX_Light* light, INX_GPULight* gpu, int shadowIndex)
     gpu->layerMask = light->layerMask;
 }
 
-void INX_FillGPUShadow(NX_Light* light, INX_GPUShadow* gpu, int mapIndex)
+void INX_FillGPUShadow(const NX_Light* light, INX_GPUShadow* gpu)
 {
     SDL_assert(light != nullptr && gpu != nullptr);
     SDL_assert(light->shadow.active);
     SDL_assert(light->active);
 
     if (light->type != NX_LIGHT_OMNI) {
-        gpu->viewProj = light->shadow.data.viewProj[0];
+        gpu->viewProj = light->shadow.state.viewProj;
     }
 
-    gpu->mapIndex = mapIndex;
+    gpu->mapIndex = light->shadow.state.mapIndex;
     gpu->slopeBias = light->shadow.data.slopeBias;
     gpu->bias = light->shadow.data.bias;
     gpu->softness = light->shadow.data.softness;
-}
-
-const INX_Frustum& INX_GetLightFrustum(const NX_Light& light, int face)
-{
-    // Assert that:
-    // - For non-omni lights, only face 0 is valid.
-    // - For omni lights, valid faces are 0 through 5.
-    SDL_assert((light.type != NX_LIGHT_OMNI && face == 0) || (light.type == NX_LIGHT_OMNI && face <= 5));
-
-    return light.shadow.data.frustum[face];
-}
-
-const NX_Mat4& INX_GetLightViewProj(const NX_Light& light, int face)
-{
-    // Assert that:
-    // - For non-omni lights, only face 0 is valid.
-    // - For omni lights, valid faces are 0 through 5.
-    SDL_assert((light.type != NX_LIGHT_OMNI && face == 0) || (light.type == NX_LIGHT_OMNI && face <= 5));
-
-    return light.shadow.data.viewProj[face];
 }
 
 // ============================================================================
@@ -307,8 +217,7 @@ NX_Vec3 NX_GetLightPosition(const NX_Light* light)
     switch (light->type) {
     case NX_LIGHT_DIR:
         {
-            const INX_DirectionalLight& dir = std::get<INX_DirectionalLight>(light->data);
-            result = dir.position; //< Only used for shadow projection
+            NX_LOG(W, "RENDER: Cannot retrieve position of a directional light (operation ignored)");
         }
         break;
     case NX_LIGHT_SPOT:
@@ -341,14 +250,12 @@ void NX_SetLightPosition(NX_Light* light, NX_Vec3 position)
         break;
     case NX_LIGHT_SPOT:
         {
-            light->shadow.state.vpDirty = true;
             INX_SpotLight& spot = std::get<INX_SpotLight>(light->data);
             spot.position = position;
         }
         break;
     case NX_LIGHT_OMNI:
         {
-            light->shadow.state.vpDirty = true;
             INX_OmniLight& omni = std::get<INX_OmniLight>(light->data);
             omni.position = position;
         }
@@ -400,7 +307,6 @@ void NX_SetLightDirection(NX_Light* light, NX_Vec3 direction)
         break;
     case NX_LIGHT_SPOT:
         {
-            light->shadow.state.vpDirty = true;
             INX_SpotLight& spot = std::get<INX_SpotLight>(light->data);
             spot.direction = NX_Vec3Normalize(direction);
         }
@@ -633,19 +539,17 @@ void NX_SetLightRange(NX_Light* light, float range)
     case NX_LIGHT_DIR:
         {
             INX_DirectionalLight& dir = std::get<INX_DirectionalLight>(light->data);
-            dir.shadowRadius = range;
+            dir.range = range;
         }
         break;
     case NX_LIGHT_SPOT:
         {
-            light->shadow.state.vpDirty = true;
             INX_SpotLight& spot = std::get<INX_SpotLight>(light->data);
             spot.range = range;
         }
         break;
     case NX_LIGHT_OMNI:
         {
-            light->shadow.state.vpDirty = true;
             INX_OmniLight& omni = std::get<INX_OmniLight>(light->data);
             omni.range = range;
         }
@@ -805,7 +709,6 @@ void NX_SetLightOuterCutOff(NX_Light* light, float radians)
         break;
     case NX_LIGHT_SPOT:
         {
-            light->shadow.state.vpDirty = true;
             INX_SpotLight& spot = std::get<INX_SpotLight>(light->data);
             spot.outerCutOff = std::cos(radians);
         }
@@ -831,7 +734,6 @@ void NX_SetLightCutOff(NX_Light* light, float inner, float outer)
         break;
     case NX_LIGHT_SPOT:
         {
-            light->shadow.state.vpDirty = true;
             INX_SpotLight& spot = std::get<INX_SpotLight>(light->data);
             spot.innerCutOff = std::cos(inner);
             spot.outerCutOff = std::cos(outer);
@@ -855,6 +757,18 @@ bool NX_IsShadowActive(const NX_Light* light)
 
 void NX_SetShadowActive(NX_Light* light, bool active)
 {
+    if (light->shadow.active == active) {
+        return;
+    }
+
+    if (active) {
+        light->shadow.state.mapIndex = INX_Render3DState_RequestShadowMap(light->type);
+    }
+    else {
+        INX_Render3DState_ReleaseShadowMap(light->type, light->shadow.state.mapIndex);
+        light->shadow.state.mapIndex = -1;
+    }
+
     light->shadow.active = active;
 }
 
@@ -896,33 +810,4 @@ float NX_GetShadowSoftness(const NX_Light* light)
 void NX_SetShadowSoftness(NX_Light* light, float softness)
 {
     light->shadow.data.softness = softness;
-}
-
-NX_ShadowUpdateMode NX_GetShadowUpdateMode(const NX_Light* light)
-{
-    return light->shadow.state.updateMode;
-}
-
-void NX_SetShadowUpdateMode(NX_Light* light, NX_ShadowUpdateMode mode)
-{
-    light->shadow.state.updateMode = mode;
-}
-
-float NX_GetShadowUpdateInterval(const NX_Light* light)
-{
-    return light->shadow.state.intervalSec;
-}
-
-void NX_SetShadowUpdateInterval(NX_Light* light, float sec)
-{
-    light->shadow.state.intervalSec = sec;
-}
-
-void NX_UpdateShadowMap(NX_Light* light)
-{
-    light->shadow.state.forceUpdate = true;
-
-    if (light->shadow.state.updateMode == NX_SHADOW_UPDATE_INTERVAL) {
-        light->shadow.state.timerSec = 0.0f;
-    }
 }

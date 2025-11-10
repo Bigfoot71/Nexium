@@ -73,11 +73,22 @@ int main(void)
 
         /* --- 3D rendering --- */
 
+        NX_BeginShadow3D(light, &camera);
+        {
+            NX_DrawMesh3D(ground, NULL, NULL);
+            (instanceCount <= 1)
+                ? NX_DrawModel3D(model, NULL)
+                : NX_DrawModelInstanced3D(model, instances, instanceCount, NULL);
+        }
+        NX_EndShadow3D();
+
         NX_Begin3D(&camera, NULL, NULL);
-        NX_DrawMesh3D(ground, NULL, NULL);
-        (instanceCount <= 1)
-            ? NX_DrawModel3D(model, NULL)
-            : NX_DrawModelInstanced3D(model, instances, instanceCount, NULL);
+        {
+            NX_DrawMesh3D(ground, NULL, NULL);
+            (instanceCount <= 1)
+                ? NX_DrawModel3D(model, NULL)
+                : NX_DrawModelInstanced3D(model, instances, instanceCount, NULL);
+        }
         NX_End3D();
 
         /* --- 2D UI rendering --- */

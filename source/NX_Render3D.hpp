@@ -10,6 +10,7 @@
 #define NX_RENDER_3D_HPP
 
 #include <NX/NX_Init.h>
+#include <NX/NX_Light.h>
 
 // ============================================================================
 // INTERNAL FUNCTIONS
@@ -20,5 +21,11 @@ bool INX_Render3DState_Init(NX_AppDesc* desc);
 
 /** Should be call in NX_Quit() */
 void INX_Render3DState_Quit();
+
+/** Should be call by NX_Light to get a shadow map */
+int INX_Render3DState_RequestShadowMap(NX_LightType type);
+
+/** Should be call by NX_Light to release a shadow map */
+void INX_Render3DState_ReleaseShadowMap(NX_LightType type, int mapIndex);
 
 #endif // NX_RENDER_3D_HPP

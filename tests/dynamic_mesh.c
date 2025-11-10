@@ -80,7 +80,6 @@ int main(void)
 
     NX_Light* light = NX_CreateLight(NX_LIGHT_DIR);
     NX_SetLightDirection(light, NX_VEC3(-1, -1, -1));
-    NX_SetShadowActive(light, true);
     NX_SetLightActive(light, true);
 
     NX_Camera cam = NX_GetDefaultCamera();
@@ -88,7 +87,6 @@ int main(void)
     while (NX_FrameStep())
     {
         CMN_UpdateCamera(&cam, NX_VEC3(0, 0, 0), 4.0f, 2.0f);
-
         BuildWavePlane(dynMesh, NX_GetElapsedTime());
 
         NX_Begin3D(&cam, NULL, NULL);
