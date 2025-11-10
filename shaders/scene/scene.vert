@@ -60,10 +60,6 @@ layout(std140, binding = 1) uniform U_ViewFrustum {
     Frustum uFrustum;
 };
 
-layout(std140, binding = 2) uniform U_Environment {
-    Environment uEnv;
-};
-
 /* === Uniforms === */
 
 layout(location = 0) uniform uint uDrawSharedIndex;

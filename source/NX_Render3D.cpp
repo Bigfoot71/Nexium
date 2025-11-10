@@ -45,23 +45,70 @@
 #include <numeric>
 
 // ============================================================================
-// INTERNAL TYPES
+// INTERNAL ENUMS
 // ============================================================================
 
 enum class INX_RenderPass {
-    RENDER_NONE,
-    RENDER_SCENE,
-    RENDER_SHADOW,
+    RENDER_NONE,            //< Value indicating that no rendering pass is in progress
+    RENDER_SCENE,           //< Value indicating that a scene rendering pass is in progress
+    RENDER_SHADOW,          //< Value indicating that a shadow rendering pass is in progress
     RENDER_PASS_COUNT
 };
 
-struct INX_RenderTargetInfo {
-    const NX_RenderTexture* target{nullptr};
-    NX_IVec2 resolution{};
-    float aspect{};
+enum INX_DrawType : uint8_t {
+    DRAW_OPAQUE = 0,        //< Represents all purely opaque objects
+    DRAW_PREPASS = 1,       //< Represents objects rendered with a depth pre-pass (can be opaque or transparent)
+    DRAW_TRANSPARENT = 2,   //< Represents all transparent objects
+    DRAW_TYPE_COUNT
 };
 
-struct INX_FrameUniform3D {
+// ============================================================================
+// INTERNAL STRUCTS
+// ============================================================================
+
+/** Shared CPU data per draw call */
+struct INX_DrawShared {
+    /** Spatial data */
+    NX_Transform transform;
+    INX_BoundingSphere3D sphere;
+    /** Instances data */
+    const NX_InstanceBuffer* instances;
+    int instanceCount;
+    /** Animations */
+    int boneMatrixOffset;                   //< If less than zero, no animation assigned
+    /** Unique data */
+    int uniqueDataIndex;
+    int uniqueDataCount;
+};
+
+/** Unique CPU data per draw call */
+struct INX_DrawUnique {
+    /** Object to draw */
+    INX_VariantMesh mesh;
+    NX_Material material;
+    INX_OrientedBoundingBox3D obb;
+    /** Additionnal data */
+    NX_Shader3D::TextureArray textures;     //< Array containing the textures linked to the material shader at the time of draw (if any)
+    int dynamicRangeIndex;                  //< Index of the material shader's dynamic uniform buffer range (if any)
+    /** Shared/Unique data */
+    int sharedDataIndex;                    //< Index to the shared data that this unique draw call data depends on
+    int uniqueDataIndex;                    //< Is actually the index of INX_DrawUnique itself, useful when iterating through sorted categories
+    /** Object type */
+    INX_DrawType type;
+};
+
+/** Data for active lights */
+struct INX_ActiveLight {
+    NX_Light* light;
+    int32_t shadowIndex;
+};
+
+// ============================================================================
+// INTERNAL GPU STRUCTS
+// ============================================================================
+
+/** Per-frame data for scene rendering */
+struct INX_GPUSceneFrame {
     alignas(8) NX_IVec2 screenSize;
     alignas(16) NX_IVec3 clusterCount;
     alignas(4) uint32_t maxLightsPerCluster;
@@ -72,6 +119,16 @@ struct INX_FrameUniform3D {
     alignas(4) int32_t hasProbe;
 };
 
+/** Per-frame data for shadow maps rendering */
+struct INX_GPUShadowFrame {
+    alignas(16) NX_Mat4 lightViewProj;
+    alignas(16) NX_Vec3 lightPosition;
+    alignas(4) float lightRange;
+    alignas(4) int32_t lightType;
+    alignas(4) float elapsedTime;
+};
+
+/** Uniform environment data */
 struct INX_GPUEnvironment {
     alignas(16) NX_Vec3 ambientColor;
     alignas(16) NX_Vec4 skyRotation;
@@ -101,46 +158,6 @@ struct INX_GPUEnvironment {
     alignas(4) int tonemapMode;
 };
 
-struct INX_Environment {
-    /** Textures */
-    NX_Cubemap* skyCubemap;
-    NX_ReflectionProbe* skyProbe;
-
-    /** Scene data */
-    NX_Color background;
-
-    /** Post processing data */
-    util::DynamicArray<float> bloomLevels;
-    NX_Tonemap tonemapMode;
-    NX_Bloom bloomMode;
-    bool ssaoEnabled;
-
-    /** GPU data */
-    gpu::Buffer buffer;
-};
-
-enum INX_DrawType : uint8_t {
-    DRAW_OPAQUE = 0,                //< Represents all purely opaque objects
-    DRAW_PREPASS = 1,               //< Represents objects rendered with a depth pre-pass (can be opaque or transparent)
-    DRAW_TRANSPARENT = 2,           //< Represents all transparent objects
-    DRAW_TYPE_COUNT
-};
-
-/** Shared CPU data per draw call */
-struct INX_DrawShared {
-    /** Spatial data */
-    NX_Transform transform;
-    INX_BoundingSphere3D sphere;
-    /** Instances data */
-    const NX_InstanceBuffer* instances;
-    int instanceCount;
-    /** Animations */
-    int boneMatrixOffset;                   //< If less than zero, no animation assigned
-    /** Unique data */
-    int uniqueDataIndex;
-    int uniqueDataCount;
-};
-
 /** Shared GPU data per draw call */
 struct INX_GPUDrawShared {
     alignas(16) NX_Mat4 matModel;
@@ -148,22 +165,6 @@ struct INX_GPUDrawShared {
     alignas(4) int32_t boneOffset;
     alignas(4) int32_t instancing;
     alignas(4) int32_t skinning;
-};
-
-/** Unique CPU data per draw call */
-struct INX_DrawUnique {
-    /** Object to draw */
-    INX_VariantMesh mesh;
-    NX_Material material;
-    INX_OrientedBoundingBox3D obb;
-    /** Additionnal data */
-    NX_Shader3D::TextureArray textures;     //< Array containing the textures linked to the material shader at the time of draw (if any)
-    int dynamicRangeIndex;                  //< Index of the material shader's dynamic uniform buffer range (if any)
-    /** Shared/Unique data */
-    int sharedDataIndex;                    //< Index to the shared data that this unique draw call data depends on
-    int uniqueDataIndex;                    //< Is actually the index of INX_DrawUnique itself, useful when iterating through sorted categories
-    /** Object type */
-    INX_DrawType type;
 };
 
 /** Unique GPU data per draw call */
@@ -185,24 +186,42 @@ struct INX_GPUDrawUnique {
     alignas(4) uint32_t layerMask;
 };
 
-/** Per-frame data for shadow maps rendering */
-struct INX_FrameUniformShadow {
-    alignas(16) NX_Mat4 lightViewProj;
-    alignas(16) NX_Vec3 lightPosition;
-    alignas(4) float lightRange;
-    alignas(4) int32_t lightType;
-    alignas(4) float elapsedTime;
-};
-
-/** Data for active lights */
-struct INX_ActiveLight {
-    NX_Light* light;
-    int32_t shadowIndex;
-};
-
 // ============================================================================
 // LOCAL STATE
 // ============================================================================
+
+struct INX_SceneState {
+    /** Environment */
+    NX_Color background;
+    NX_Cubemap* skyCubemap;
+    NX_ReflectionProbe* skyProbe;
+
+    /** Scene render targets */
+    gpu::Texture targetSceneColor{};        //< RGBA16F
+    gpu::Texture targetSceneNormal{};       //< RGB8
+    gpu::Texture targetSceneDepth{};        //< D24
+    gpu::Framebuffer framebufferScene{};
+
+    /** Additionnal framebuffers */
+    gpu::SwapBuffer swapPostProcess{};      //< Ping-pong buffer used during scene post process
+    gpu::SwapBuffer swapAuxiliary{};        //< Secondary ping-pong buffer in half resolution
+    gpu::MipBuffer mipChain{};              //< Mipchain, primarily used for down/up sampling the bloom
+
+    /** Post processing data */
+    util::DynamicArray<float> bloomLevels;
+    NX_Tonemap tonemapMode;
+    NX_Bloom bloomMode;
+    bool ssaoEnabled;
+
+    /** Uniform buffers */
+    gpu::Buffer frameUniform{};
+    gpu::Buffer envUniform{};
+
+    /** Target info */
+    const NX_RenderTexture* target{nullptr};
+    NX_IVec2 targetResolution{};
+    float targetAspect{};
+};
 
 struct INX_LightingState {
     /** Aliases */
@@ -265,29 +284,16 @@ struct INX_DrawCallState {
 };
 
 struct INX_Render3DState {
-    /** Scene data */
-    INX_Environment environment{};
+    /** Scene state */
     INX_ViewFrustum viewFrustum{};
-    INX_DrawCallState drawCalls{};
+    INX_SceneState scene{};
+
+    /** Lighting state */
     INX_LightingState lighting{};
     INX_ShadowingState shadowing{};
 
-    /** Scene render targets */
-    gpu::Texture targetSceneColor{};        //< RGBA16F
-    gpu::Texture targetSceneNormal{};       //< RGB8
-    gpu::Texture targetSceneDepth{};        //< D24
-    gpu::Framebuffer framebufferScene{};
-
-    /** Additionnal framebuffers */
-    gpu::SwapBuffer swapPostProcess{};      //< Ping-pong buffer used during scene post process
-    gpu::SwapBuffer swapAuxiliary{};        //< Secondary ping-pong buffer in half resolution
-    gpu::MipBuffer mipChain{};              //< Mipchain, primarily used for down/up sampling the bloom
-
-    /** Uniform buffers */
-    gpu::Buffer frameUniform{};
-
-    /** State infos */
-    INX_RenderTargetInfo renderTarget{};
+    /** Common state infos */
+    INX_DrawCallState drawCalls{};
     NX_RenderFlags renderFlags{};
     INX_RenderPass renderPass{};
 };
@@ -322,6 +328,89 @@ static void INX_UpdateAppDesc(NX_AppDesc* desc)
     }
 
     desc->render3D.sampleCount = NX_MAX(desc->render3D.sampleCount, 1);
+}
+
+static void INX_InitSceneState(INX_SceneState* scene, const NX_AppDesc* desc)
+{
+    /* --- Create scene render targets --- */
+
+    scene->targetSceneColor = gpu::Texture(
+        gpu::TextureConfig
+        {
+            .target = GL_TEXTURE_2D,
+            .internalFormat = GL_RGBA16F,
+            .data = nullptr,
+            .width = desc->render3D.resolution.x,
+            .height = desc->render3D.resolution.y
+        }
+    );
+
+    scene->targetSceneNormal = gpu::Texture(
+        gpu::TextureConfig
+        {
+            .target = GL_TEXTURE_2D,
+            .internalFormat = GL_RG8,
+            .data = nullptr,
+            .width = desc->render3D.resolution.x,
+            .height = desc->render3D.resolution.y
+        }
+    );
+
+    scene->targetSceneDepth = gpu::Texture(
+        gpu::TextureConfig
+        {
+            .target = GL_TEXTURE_2D,
+            .internalFormat = GL_DEPTH_COMPONENT24,
+            .data = nullptr,
+            .width = desc->render3D.resolution.x,
+            .height = desc->render3D.resolution.y
+        }
+    );
+
+    /* --- Configure scene framebuffer --- */
+
+    scene->framebufferScene = gpu::Framebuffer(
+        { &scene->targetSceneColor, &scene->targetSceneNormal },
+        &scene->targetSceneDepth
+    );
+
+    if (desc->render3D.sampleCount > 1) {
+        scene->framebufferScene.SetSampleCount(desc->render3D.sampleCount);
+    }
+
+    /* --- Create swap buffers --- */
+
+    scene->swapPostProcess = gpu::SwapBuffer(
+        desc->render3D.resolution.x,
+        desc->render3D.resolution.y,
+        GL_RGB16F
+    );
+
+    scene->swapAuxiliary = gpu::SwapBuffer(
+        desc->render3D.resolution.x / 2,
+        desc->render3D.resolution.y / 2,
+        GL_RGB16F
+    );
+
+    /* --- Create mip chain --- */
+
+    scene->mipChain = gpu::MipBuffer(
+        desc->render3D.resolution.x / 2,
+        desc->render3D.resolution.y / 2,
+        GL_RGB16F
+    );
+
+    /* --- Create uniform buffers --- */
+
+    scene->frameUniform = gpu::Buffer(
+        GL_UNIFORM_BUFFER, sizeof(INX_GPUSceneFrame),
+        nullptr, GL_DYNAMIC_DRAW
+    );
+
+    scene->envUniform = gpu::Buffer(
+        GL_UNIFORM_BUFFER, sizeof(INX_GPUEnvironment),
+        nullptr, GL_DYNAMIC_DRAW
+    );
 }
 
 static void INX_InitLightingState(INX_LightingState* lighting, const NX_AppDesc* desc)
@@ -466,7 +555,7 @@ static void INX_InitShadowState(INX_ShadowingState* shadowing, const NX_AppDesc*
     /* --- Create frame uniform buffer --- */
 
     shadowing->frameUniform = gpu::Buffer(
-        GL_UNIFORM_BUFFER, sizeof(INX_FrameUniformShadow),
+        GL_UNIFORM_BUFFER, sizeof(INX_GPUShadowFrame),
         nullptr, GL_DYNAMIC_DRAW
     );
 }
@@ -505,91 +594,10 @@ bool INX_Render3DState_Init(NX_AppDesc* desc)
 
     INX_UpdateAppDesc(desc);
 
+    INX_InitSceneState(&INX_Render3D->scene, desc);
     INX_InitLightingState(&INX_Render3D->lighting, desc);
     INX_InitShadowState(&INX_Render3D->shadowing, desc);
     INX_InitDrawCallState(&INX_Render3D->drawCalls);
-
-    /* --- Create environment uniform buffer --- */
-
-    INX_Render3D->environment.buffer = gpu::Buffer(
-        GL_UNIFORM_BUFFER, sizeof(INX_GPUEnvironment),
-        nullptr, GL_DYNAMIC_DRAW
-    );
-
-    /* --- Create scene render targets --- */
-
-    INX_Render3D->targetSceneColor = gpu::Texture(
-        gpu::TextureConfig
-        {
-            .target = GL_TEXTURE_2D,
-            .internalFormat = GL_RGBA16F,
-            .data = nullptr,
-            .width = desc->render3D.resolution.x,
-            .height = desc->render3D.resolution.y
-        }
-    );
-
-    INX_Render3D->targetSceneNormal = gpu::Texture(
-        gpu::TextureConfig
-        {
-            .target = GL_TEXTURE_2D,
-            .internalFormat = GL_RG8,
-            .data = nullptr,
-            .width = desc->render3D.resolution.x,
-            .height = desc->render3D.resolution.y
-        }
-    );
-
-    INX_Render3D->targetSceneDepth = gpu::Texture(
-        gpu::TextureConfig
-        {
-            .target = GL_TEXTURE_2D,
-            .internalFormat = GL_DEPTH_COMPONENT24,
-            .data = nullptr,
-            .width = desc->render3D.resolution.x,
-            .height = desc->render3D.resolution.y
-        }
-    );
-
-    /* --- Configure scene framebuffer --- */
-
-    INX_Render3D->framebufferScene = gpu::Framebuffer(
-        { &INX_Render3D->targetSceneColor, &INX_Render3D->targetSceneNormal },
-        &INX_Render3D->targetSceneDepth
-    );
-
-    if (desc->render3D.sampleCount > 1) {
-        INX_Render3D->framebufferScene.SetSampleCount(desc->render3D.sampleCount);
-    }
-
-    /* --- Create mip chain --- */
-
-    INX_Render3D->mipChain = gpu::MipBuffer(
-        desc->render3D.resolution.x / 2,
-        desc->render3D.resolution.y / 2,
-        GL_RGB16F
-    );
-
-    /* --- Create swap buffers --- */
-
-    INX_Render3D->swapPostProcess = gpu::SwapBuffer(
-        desc->render3D.resolution.x,
-        desc->render3D.resolution.y,
-        GL_RGB16F
-    );
-
-    INX_Render3D->swapAuxiliary = gpu::SwapBuffer(
-        desc->render3D.resolution.x / 2,
-        desc->render3D.resolution.y / 2,
-        GL_RGB16F
-    );
-
-    /* --- Create frame uniform buffer --- */
-
-    INX_Render3D->frameUniform = gpu::Buffer(
-        GL_UNIFORM_BUFFER, sizeof(INX_FrameUniform3D),
-        nullptr, GL_DYNAMIC_DRAW
-    );
 
     return true;
 }
@@ -1015,8 +1023,7 @@ static NX_Vec4 INX_GetBloomPrefilter(float threshold, float softThreshold)
 
 static void INX_ProcessEnvironment(const NX_Environment& env)
 {
-    INX_Environment& state = INX_Render3D->environment;
-    int bloomMipCount = INX_Render3D->mipChain.GetNumLevels();
+    INX_SceneState& state = INX_Render3D->scene;
 
     /* --- Store textures --- */
 
@@ -1033,11 +1040,15 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
     }
 
     // Calculation of physical bloom level factors
-    if (env.bloom.mode != NX_BLOOM_DISABLED) {
+    if (env.bloom.mode != NX_BLOOM_DISABLED)
+    {
         state.bloomLevels.Clear();
+
+        int bloomMipCount = state.mipChain.GetNumLevels();
         if (!state.bloomLevels.Reserve(bloomMipCount)) {
             NX_LOG(E, "RENDER: Bloom mip factor buffer reservation failed (requested: %d levels)", bloomMipCount);
         }
+
         for (uint32_t i = 0; i < bloomMipCount; ++i) {
             float t = float(i) / float(bloomMipCount - 1); // 0 -> 1
             float mapped = t * (int(NX_ARRAY_SIZE(env.bloom.levels)) - 1);
@@ -1093,7 +1104,7 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
 
     /* --- Upload GPU data --- */
 
-    state.buffer.Upload(&data);
+    state.envUniform.Upload(&data);
 }
 
 static void INX_CollectActiveLights()
@@ -1249,35 +1260,38 @@ static void INX_ComputeClusters()
 
 static void INX_RenderBackground(const gpu::Pipeline& pipeline)
 {
-    pipeline.BindFramebuffer(INX_Render3D->framebufferScene);
-    pipeline.SetViewport(INX_Render3D->framebufferScene);
+    INX_SceneState& scene = INX_Render3D->scene;
+
+    pipeline.BindFramebuffer(scene.framebufferScene);
+    pipeline.SetViewport(scene.framebufferScene);
     pipeline.SetDepthMode(gpu::DepthMode::WriteOnly);
 
     pipeline.ClearDepth(1.0f);
-    pipeline.ClearColor(0, INX_Render3D->environment.background);
+    pipeline.ClearColor(0, scene.background);
     pipeline.ClearColor(1, NX_COLOR(0.25f, 0.25f, 1.0f, 1.0f));
 
-    if (INX_Render3D->environment.skyCubemap == nullptr) {
+    if (scene.skyCubemap == nullptr) {
         return;
     }
 
-    INX_Render3D->framebufferScene.SetDrawBuffers({0});
+    scene.framebufferScene.SetDrawBuffers({0});
 
     pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
-    pipeline.BindUniform(2, INX_Render3D->environment.buffer);
+    pipeline.BindUniform(2, scene.envUniform);
 
     pipeline.SetDepthMode(gpu::DepthMode::Disabled);
     pipeline.UseProgram(INX_Programs.GetSkybox());
 
-    pipeline.BindTexture(0, INX_Render3D->environment.skyCubemap->gpu);
+    pipeline.BindTexture(0, scene.skyCubemap->gpu);
     pipeline.Draw(GL_TRIANGLES, 36);
 
-    INX_Render3D->framebufferScene.EnableDrawBuffers();
+    scene.framebufferScene.EnableDrawBuffers();
 }
 
 static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
 {
-    INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
+    const INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
+    const INX_SceneState& scene = INX_Render3D->scene;
 
     if (drawCalls.uniqueVisible.GetCategory(DRAW_PREPASS).IsEmpty()) {
         return;
@@ -1290,9 +1304,9 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
     pipeline.BindStorage(1, drawCalls.uniqueBuffer);
     pipeline.BindStorage(2, drawCalls.boneBuffer.GetBuffer());
 
-    pipeline.BindUniform(0, INX_Render3D->frameUniform);
+    pipeline.BindUniform(0, scene.frameUniform);
     pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
-    pipeline.BindUniform(2, INX_Render3D->environment.buffer);
+    pipeline.BindUniform(2, scene.envUniform);
 
     for (int uniqueIndex : drawCalls.uniqueVisible.GetCategory(DRAW_PREPASS))
     {
@@ -1324,9 +1338,11 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
 
 static void INX_RenderScene(const gpu::Pipeline& pipeline)
 {
-    INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
-    INX_ShadowingState& shadowing = INX_Render3D->shadowing;
-    INX_LightingState& lighting = INX_Render3D->lighting;
+    const INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
+    const INX_SceneState& scene = INX_Render3D->scene;
+
+    const INX_ShadowingState& shadowing = INX_Render3D->shadowing;
+    const INX_LightingState& lighting = INX_Render3D->lighting;
 
     pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.SetColorWrite(gpu::ColorWrite::RGBA);
@@ -1344,13 +1360,13 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
     pipeline.BindTexture(8, shadowing.target[NX_LIGHT_SPOT]);
     pipeline.BindTexture(9, shadowing.target[NX_LIGHT_OMNI]);
 
-    pipeline.BindUniform(0, INX_Render3D->frameUniform);
+    pipeline.BindUniform(0, scene.frameUniform);
     pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
-    pipeline.BindUniform(2, INX_Render3D->environment.buffer);
+    pipeline.BindUniform(2, scene.envUniform);
 
-    if (INX_Render3D->environment.skyProbe != nullptr) {
-        pipeline.BindTexture(5, INX_Render3D->environment.skyProbe->irradiance);
-        pipeline.BindTexture(6, INX_Render3D->environment.skyProbe->prefilter);
+    if (scene.skyProbe != nullptr) {
+        pipeline.BindTexture(5, scene.skyProbe->irradiance);
+        pipeline.BindTexture(6, scene.skyProbe->prefilter);
     }
 
     // Ensures that the SSBOs are ready (especially clusters)
@@ -1386,6 +1402,8 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
 
 static const gpu::Texture& INX_PostSSAO(const gpu::Texture& source)
 {
+    INX_SceneState& scene = INX_Render3D->scene;
+
     // Right now SSAO is done in a simple way by directly darkening
     // the rendered scene, instead of being physically correct.
     // The proper way would be to run a depth pre-pass to get depth
@@ -1400,77 +1418,78 @@ static const gpu::Texture& INX_PostSSAO(const gpu::Texture& source)
     /* --- Bind common stuff --- */
 
     pipeline.BindUniform(0, INX_Render3D->viewFrustum.GetBuffer());
-    pipeline.BindUniform(1, INX_Render3D->environment.buffer);
+    pipeline.BindUniform(1, scene.envUniform);
 
     /* --- Generate ambient occlusion --- */
 
-    pipeline.BindFramebuffer(INX_Render3D->swapAuxiliary.GetTarget());
+    pipeline.BindFramebuffer(scene.swapAuxiliary.GetTarget());
     {
-        pipeline.SetViewport(INX_Render3D->swapAuxiliary.GetTarget());
+        pipeline.SetViewport(scene.swapAuxiliary.GetTarget());
         pipeline.UseProgram(INX_Programs.GetSsaoPass());
 
-        pipeline.BindTexture(0, INX_Render3D->targetSceneDepth);
-        pipeline.BindTexture(1, INX_Render3D->targetSceneNormal);
+        pipeline.BindTexture(0, scene.targetSceneDepth);
+        pipeline.BindTexture(1, scene.targetSceneNormal);
         pipeline.BindTexture(2, INX_Assets.Get(INX_TextureAsset::SSAO_KERNEL)->gpu);
         pipeline.BindTexture(3, INX_Assets.Get(INX_TextureAsset::SSAO_NOISE)->gpu);
 
         pipeline.Draw(GL_TRIANGLES, 3);
     }
-    INX_Render3D->swapAuxiliary.Swap();
+    scene.swapAuxiliary.Swap();
 
     /* --- Blur ambient occlusion --- */
 
     pipeline.UseProgram(INX_Programs.GetSsaoBilateralBlur());
 
-    pipeline.BindTexture(1, INX_Render3D->targetSceneDepth);
+    pipeline.BindTexture(1, scene.targetSceneDepth);
 
-    pipeline.BindFramebuffer(INX_Render3D->swapAuxiliary.GetTarget());
+    pipeline.BindFramebuffer(scene.swapAuxiliary.GetTarget());
     {
-        pipeline.BindTexture(0, INX_Render3D->swapAuxiliary.GetSource());
-        pipeline.SetUniformFloat2(0, NX_VEC2(1.0f / INX_Render3D->swapAuxiliary.GetSource().GetWidth(), 0.0f));
+        pipeline.BindTexture(0, scene.swapAuxiliary.GetSource());
+        pipeline.SetUniformFloat2(0, NX_VEC2(1.0f / scene.swapAuxiliary.GetSource().GetWidth(), 0.0f));
         pipeline.Draw(GL_TRIANGLES, 3);
     }
-    INX_Render3D->swapAuxiliary.Swap();
+    scene.swapAuxiliary.Swap();
 
-    pipeline.BindFramebuffer(INX_Render3D->swapAuxiliary.GetTarget());
+    pipeline.BindFramebuffer(scene.swapAuxiliary.GetTarget());
     {
-        pipeline.BindTexture(0, INX_Render3D->swapAuxiliary.GetSource());
-        pipeline.SetUniformFloat2(0, NX_VEC2(0.0f, 1.0f / INX_Render3D->swapAuxiliary.GetSource().GetHeight()));
+        pipeline.BindTexture(0, scene.swapAuxiliary.GetSource());
+        pipeline.SetUniformFloat2(0, NX_VEC2(0.0f, 1.0f / scene.swapAuxiliary.GetSource().GetHeight()));
         pipeline.Draw(GL_TRIANGLES, 3);
     }
-    INX_Render3D->swapAuxiliary.Swap();
+    scene.swapAuxiliary.Swap();
 
     /* --- Apply SSAO --- */
 
-    pipeline.BindFramebuffer(INX_Render3D->swapPostProcess.GetTarget());
+    pipeline.BindFramebuffer(scene.swapPostProcess.GetTarget());
     {
-        pipeline.SetViewport(INX_Render3D->swapPostProcess.GetTarget());
+        pipeline.SetViewport(scene.swapPostProcess.GetTarget());
         pipeline.UseProgram(INX_Programs.GetSsaoPost());
 
         pipeline.BindTexture(0, source);
-        pipeline.BindTexture(1, INX_Render3D->swapAuxiliary.GetSource());
+        pipeline.BindTexture(1, scene.swapAuxiliary.GetSource());
 
         pipeline.Draw(GL_TRIANGLES, 3);
     }
-    INX_Render3D->swapPostProcess.Swap();
+    scene.swapPostProcess.Swap();
 
-    return INX_Render3D->swapPostProcess.GetSource();
+    return scene.swapPostProcess.GetSource();
 }
 
 static const gpu::Texture& INX_PostBloom(const gpu::Texture& source)
 {
+    INX_SceneState& scene = INX_Render3D->scene;
     gpu::Pipeline pipeline;
 
     /* --- Bind common stuff --- */
 
-    pipeline.BindUniform(0, INX_Render3D->environment.buffer);
+    pipeline.BindUniform(0, scene.envUniform);
 
     /* --- Downsampling of the source --- */
 
     pipeline.UseProgram(INX_Programs.GetDownsampling());
 
-    INX_Render3D->mipChain.Downsample(pipeline, 0, [&](int targetLevel, int sourceLevel) {
-        const gpu::Texture& texSource = (targetLevel == 0) ? source : INX_Render3D->mipChain.GetTexture();
+    scene.mipChain.Downsample(pipeline, 0, [&](int targetLevel, int sourceLevel) {
+        const gpu::Texture& texSource = (targetLevel == 0) ? source : scene.mipChain.GetTexture();
         pipeline.SetUniformFloat2(0, NX_IVec2Rcp(texSource.GetDimensions()));
         pipeline.SetUniformInt1(1, targetLevel);
         pipeline.BindTexture(0, texSource);
@@ -1482,8 +1501,8 @@ static const gpu::Texture& INX_PostBloom(const gpu::Texture& source)
     pipeline.UseProgram(INX_Programs.GetScreenQuad());
     pipeline.SetBlendMode(gpu::BlendMode::Multiply);
 
-    INX_Render3D->mipChain.Iterate(pipeline, [&](int targetLevel) {
-        pipeline.SetUniformFloat4(0, NX_VEC4_1(INX_Render3D->environment.bloomLevels[targetLevel]));
+    scene.mipChain.Iterate(pipeline, [&](int targetLevel) {
+        pipeline.SetUniformFloat4(0, NX_VEC4_1(scene.bloomLevels[targetLevel]));
         pipeline.Draw(GL_TRIANGLES, 3);
     });
 
@@ -1492,7 +1511,7 @@ static const gpu::Texture& INX_PostBloom(const gpu::Texture& source)
     pipeline.UseProgram(INX_Programs.GetUpsampling());
     pipeline.SetBlendMode(gpu::BlendMode::Additive);
 
-    INX_Render3D->mipChain.Upsample(pipeline, [&](int targetLevel, int sourceLevel) {
+    scene.mipChain.Upsample(pipeline, [&](int targetLevel, int sourceLevel) {
         pipeline.Draw(GL_TRIANGLES, 3);
     });
 
@@ -1500,32 +1519,33 @@ static const gpu::Texture& INX_PostBloom(const gpu::Texture& source)
 
     /* --- Applying bloom to the scene --- */
 
-    pipeline.BindFramebuffer(INX_Render3D->swapPostProcess.GetTarget());
-    pipeline.SetViewport(INX_Render3D->swapPostProcess.GetTarget());
+    pipeline.BindFramebuffer(scene.swapPostProcess.GetTarget());
+    pipeline.SetViewport(scene.swapPostProcess.GetTarget());
 
-    pipeline.UseProgram(INX_Programs.GetBloomPost(INX_Render3D->environment.bloomMode));
+    pipeline.UseProgram(INX_Programs.GetBloomPost(scene.bloomMode));
 
     pipeline.BindTexture(0, source);
-    pipeline.BindTexture(1, INX_Render3D->mipChain.GetTexture());
+    pipeline.BindTexture(1, scene.mipChain.GetTexture());
 
     pipeline.Draw(GL_TRIANGLES, 3);
 
-    INX_Render3D->swapPostProcess.Swap();
+    scene.swapPostProcess.Swap();
 
-    return INX_Render3D->swapPostProcess.GetSource();
+    return scene.swapPostProcess.GetSource();
 }
 
 static void INX_PostFinal(const gpu::Texture& source)
 {
+    INX_SceneState& scene = INX_Render3D->scene;
     gpu::Pipeline pipeline;
 
-    if (INX_Render3D->renderTarget.target != nullptr) {
-        pipeline.BindFramebuffer(INX_Render3D->renderTarget.target->gpu);
+    if (scene.target != nullptr) {
+        pipeline.BindFramebuffer(scene.target->gpu);
     }
-    pipeline.SetViewport(INX_Render3D->renderTarget.resolution);
+    pipeline.SetViewport(scene.targetResolution);
 
-    pipeline.UseProgram(INX_Programs.GetOutput(INX_Render3D->environment.tonemapMode));
-    pipeline.BindUniform(0, INX_Render3D->environment.buffer);
+    pipeline.UseProgram(INX_Programs.GetOutput(scene.tonemapMode));
+    pipeline.BindUniform(0, scene.envUniform);
     pipeline.BindTexture(0, source);
 
     pipeline.Draw(GL_TRIANGLES, 3);
@@ -1546,13 +1566,13 @@ void NX_BeginEx3D(const NX_Camera* camera, const NX_Environment* env, const NX_R
         return;
     }
 
-    INX_RenderTargetInfo& renderTarget = INX_Render3D->renderTarget;
+    INX_SceneState& scene = INX_Render3D->scene;
 
-    renderTarget.target = target;
-    renderTarget.resolution = (target) ? NX_GetRenderTextureSize(target) : NX_GetWindowSize();
-    renderTarget.aspect = static_cast<float>(renderTarget.resolution.x) / renderTarget.resolution.y;
+    scene.target = target;
+    scene.targetResolution = (target) ? NX_GetRenderTextureSize(target) : NX_GetWindowSize();
+    scene.targetAspect = static_cast<float>(scene.targetResolution.x) / scene.targetResolution.y;
 
-    INX_Render3D->viewFrustum.Update(camera ? *camera : NX_GetDefaultCamera(), renderTarget.aspect);
+    INX_Render3D->viewFrustum.Update(camera ? *camera : NX_GetDefaultCamera(), scene.targetAspect);
     INX_ProcessEnvironment(env ? *env : NX_GetDefaultEnvironment());
 }
 
@@ -1561,6 +1581,8 @@ void NX_End3D()
     if (!INX_CheckRenderPass(INX_RenderPass::RENDER_SCENE)) {
         return;
     }
+
+    INX_SceneState& scene = INX_Render3D->scene;
 
     /* --- Upload draw calls data --- */
 
@@ -1575,15 +1597,15 @@ void NX_End3D()
 
     /* --- Upload frame info data --- */
 
-    INX_Render3D->frameUniform.UploadObject(INX_FrameUniform3D {
-        .screenSize = INX_Render3D->framebufferScene.GetDimensions(),
+    scene.frameUniform.UploadObject(INX_GPUSceneFrame {
+        .screenSize = scene.framebufferScene.GetDimensions(),
         .clusterCount = INX_Render3D->lighting.clusterCount,
         .maxLightsPerCluster = INX_Render3D->lighting.MaxLightsPerCluster,
         .clusterSliceScale = INX_Render3D->lighting.clusterSliceScale,
         .clusterSliceBias = INX_Render3D->lighting.clusterSliceBias,
         .elapsedTime = static_cast<float>(NX_GetElapsedTime()),
         .hasActiveLights = (INX_Render3D->lighting.activeLights.GetSize() > 0),
-        .hasProbe = (INX_Render3D->environment.skyProbe != nullptr)
+        .hasProbe = (INX_Render3D->scene.skyProbe != nullptr)
     });
 
     /* --- View layer/furstum culling and sorting --- */
@@ -1605,17 +1627,17 @@ void NX_End3D()
         INX_RenderScene(pipeline);
     });
 
-    INX_Render3D->framebufferScene.Resolve();
+    scene.framebufferScene.Resolve();
 
     /* --- Post process --- */
 
-    const gpu::Texture* source = &INX_Render3D->targetSceneColor;
+    const gpu::Texture* source = &scene.targetSceneColor;
 
-    if (INX_Render3D->environment.ssaoEnabled) {
+    if (scene.ssaoEnabled) {
         source = &INX_PostSSAO(*source);
     }
 
-    if (INX_Render3D->environment.bloomMode != NX_BLOOM_DISABLED) {
+    if (scene.bloomMode != NX_BLOOM_DISABLED) {
         source = &INX_PostBloom(*source);
     }
 
@@ -1660,7 +1682,7 @@ void NX_EndShadow3D()
 
     INX_ShadowingState& shadowing = INX_Render3D->shadowing;
     INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
-    INX_LightingState& state = INX_Render3D->lighting;
+    INX_LightingState& lighting = INX_Render3D->lighting;
     NX_Light* light = shadowing.casterTarget;
 
     /* --- Setup common pipeline state --- */
@@ -1674,7 +1696,6 @@ void NX_EndShadow3D()
 
     pipeline.BindUniform(0, shadowing.frameUniform);
     pipeline.BindUniform(1, INX_Render3D->viewFrustum.GetBuffer());
-    pipeline.BindUniform(2, INX_Render3D->environment.buffer);
 
     /* --- Render shadow maps --- */
 
@@ -1723,7 +1744,7 @@ void NX_EndShadow3D()
             NX_COLOR_1(NX_GetLightRange(light))
         );
 
-        shadowing.frameUniform.UploadObject(INX_FrameUniformShadow {
+        shadowing.frameUniform.UploadObject(INX_GPUShadowFrame {
             .lightViewProj = viewProj,
             .lightPosition = position,
             .lightRange = range,
