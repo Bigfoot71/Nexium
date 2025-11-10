@@ -145,6 +145,21 @@ NXAPI void NX_ApplyCameraTransform(NX_Camera* camera, NX_Mat4 transform, NX_Vec3
  */
 NXAPI NX_Transform NX_GetCameraTransform(const NX_Camera* camera);
 
+/**
+ * @brief Retrieves the view matrix of a camera.
+ * @param camera Pointer to the camera.
+ * @return The camera's current view matrix.
+ */
+NXAPI NX_Mat4 NX_GetCameraViewMatrix(const NX_Camera* camera);
+
+/**
+ * @brief Retrieves the projection matrix of a camera.
+ * @param camera Pointer to the camera.
+ * @param aspect Aspect ratio (width / height) for the projection.
+ * @return The camera's current projection matrix.
+ */
+NXAPI NX_Mat4 NX_GetCameraProjectionMatrix(const NX_Camera* camera, float aspect);
+
 #if defined(__cplusplus)
 } // extern "C"
 #endif

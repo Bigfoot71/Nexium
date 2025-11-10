@@ -6,6 +6,7 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
+#include "NX/NX_Math.h"
 #include <NX/NX_Camera.h>
 #include <cmath>
 
@@ -116,4 +117,37 @@ NX_Transform NX_GetCameraTransform(const NX_Camera* camera)
         .rotation = camera->rotation,
         .scale = NX_VEC3_ONE
     };
+}
+
+NX_Mat4 NX_GetCameraViewMatrix(const NX_Camera* camera)
+{
+    NX_Mat4 T = NX_Mat4Translate(-camera->position);
+    NX_Mat4 R = NX_QuatToMat4(camera->rotation);
+    R = NX_Mat4Transpose(&R);
+
+    return NX_Mat4Mul(&T, &R);
+}
+
+NX_Mat4 NX_GetCameraProjectionMatrix(const NX_Camera* camera, float aspect)
+{
+    switch (camera->projection) {
+    case NX_PROJECTION_PERSPECTIVE:
+        {
+            float top = camera->nearPlane * tanf(camera->fov * 0.5f);
+            float right = top * aspect;
+            return NX_Mat4Frustum(-right, right, -top, top, camera->nearPlane, camera->farPlane);
+        }
+        break;
+    case NX_PROJECTION_ORTHOGRAPHIC:
+        {
+            float top = camera->fov * 0.5f;
+            float right = top * aspect;
+            return NX_Mat4Ortho(-right, right, -top, top, camera->nearPlane, camera->farPlane);
+        }
+        break;
+    default:
+        break;
+    }
+
+    return NX_MAT4_IDENTITY;
 }
