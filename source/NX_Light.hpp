@@ -34,7 +34,6 @@ struct INX_GPULight {
     alignas(4) float attenuation{};
     alignas(4) float innerCutOff{};
     alignas(4) float outerCutOff{};
-    alignas(4) uint32_t layerMask{};        //< Bitmask for camera culling, used in the light culling compute shader
     alignas(4) uint32_t cullMask{};         //< Bitmask used for mesh lighting, used during lighting in the fragment shader
     alignas(4) int32_t shadowIndex{-1};     //< -1 means no shadow
     alignas(4) int32_t type{};

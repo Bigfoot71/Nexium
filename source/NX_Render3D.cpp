@@ -99,7 +99,7 @@ struct INX_GPUEnvironment {
     alignas(4) int tonemapMode;
 };
 
-struct INX_ProcessedEnv {
+struct INX_Environment {
     /** Textures */
     NX_Cubemap* skyCubemap;
     NX_ReflectionProbe* skyProbe;
@@ -264,7 +264,7 @@ struct INX_DrawCallState {
 
 struct INX_Render3DState {
     /** Scene data */
-    INX_ProcessedEnv environment{};
+    INX_Environment environment{};
     INX_ViewFrustum viewFrustum{};
     INX_DrawCallState drawCalls{};
     INX_LightingState lighting{};
@@ -998,7 +998,6 @@ static void INX_Draw3D(const gpu::Pipeline& pipeline, const INX_DrawUnique& uniq
     INX_Draw3D(pipeline, unique, INX_Render3D->drawCalls.sharedData[unique.sharedDataIndex]);
 }
 
-
 static NX_Vec4 INX_GetBloomPrefilter(float threshold, float softThreshold)
 {
     float knee = threshold * softThreshold;
@@ -1014,7 +1013,7 @@ static NX_Vec4 INX_GetBloomPrefilter(float threshold, float softThreshold)
 
 static void INX_ProcessEnvironment(const NX_Environment& env)
 {
-    INX_ProcessedEnv& state = INX_Render3D->environment;
+    INX_Environment& state = INX_Render3D->environment;
     int bloomMipCount = INX_Render3D->mipChain.GetNumLevels();
 
     /* --- Store textures --- */
@@ -1095,7 +1094,7 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
     state.buffer.Upload(&data);
 }
 
-static void INX_UpdateLights()
+static void INX_CollectActiveLights()
 {
     INX_LightingState& state = INX_Render3D->lighting;
 
@@ -1127,11 +1126,15 @@ static void INX_UpdateLights()
     offsets[NX_LIGHT_SPOT] = counts[NX_LIGHT_DIR];
     offsets[NX_LIGHT_OMNI] = counts[NX_LIGHT_DIR] + counts[NX_LIGHT_SPOT];
 
-    /* --- Update and insert active lights --- */
+    /* --- Collect all active and visible lights --- */
+
+    const INX_ViewFrustum& frustum = INX_Render3D->viewFrustum;
 
     for (NX_Light& light : INX_Pool.Get<NX_Light>())
     {
-        if (!light.active) continue;
+        if (!light.active || (frustum.GetCullMask() & light.layerMask) == 0) {
+            continue;
+        }
 
         int32_t shadowIndex = -1;
         if (light.shadow.active) {
@@ -1564,7 +1567,7 @@ void NX_End3D()
 
     /* --- Process lights --- */
 
-    INX_UpdateLights();
+    INX_CollectActiveLights();
     INX_UploadLightData();
     INX_UploadShadowData();
     INX_ComputeClusters();

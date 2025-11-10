@@ -147,7 +147,6 @@ void INX_FillGPULight(const NX_Light* light, INX_GPULight* gpu, int shadowIndex)
 
     gpu->shadowIndex = shadowIndex;
     gpu->cullMask = light->cullMask;
-    gpu->layerMask = light->layerMask;
 }
 
 void INX_FillGPUShadow(const NX_Light* light, INX_GPUShadow* gpu)

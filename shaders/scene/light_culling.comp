@@ -207,11 +207,6 @@ void main()
     {
         Light light = sLights[i];
 
-        // Layer culling
-        if ((uFrustum.cullMask & light.layerMask) == 0u) {
-            continue;
-        }
-
         // Frustum culling
         bool affectsCluster = true;
         if (light.type == LIGHT_SPOT) affectsCluster = SpotLightAffectsCluster(light, clusterMin, clusterMax);

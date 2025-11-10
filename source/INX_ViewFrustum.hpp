@@ -56,13 +56,13 @@ private:
         alignas(16) NX_Mat4 invView{};
         alignas(16) NX_Mat4 invProj{};
         alignas(16) NX_Vec3 position{};
-        alignas(4) uint32_t cullMask{};
         alignas(4) float near;
         alignas(4) float far;
     };
 
 private:
     gpu::Buffer mUniform{};     //< Uniform buffer that stores data
+    NX_Layer mCullMask{};       //< Culling mask indicating visible layers
     GPUData mData{};            //< Data uploaded to the uniform buffer
 };
 
@@ -77,9 +77,9 @@ inline void INX_ViewFrustum::Update(const NX_Camera& camera, float aspect)
     /* --- Save raw data from camera --- */
 
     mData.position = camera.position;
-    mData.cullMask = camera.cullMask;
     mData.near = camera.nearPlane;
     mData.far = camera.farPlane;
+    mCullMask = camera.cullMask;
 
     /* --- Compute view matrix --- */
 
@@ -129,7 +129,7 @@ inline void INX_ViewFrustum::Update(const NX_Camera& camera, float aspect)
 
 inline NX_Layer INX_ViewFrustum::GetCullMask() const
 {
-    return mData.cullMask;
+    return mCullMask;
 }
 
 inline float INX_ViewFrustum::GetDistanceSqTo(const NX_Vec3& point) const
