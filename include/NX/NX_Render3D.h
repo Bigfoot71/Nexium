@@ -97,8 +97,10 @@ NXAPI void NX_End3D(void);
  * Starts rendering into the shadow map associated with the given light.
  *
  * @param light Pointer to the light whose shadow map will be rendered. Must have shadows enabled.
- * @param camera Optional pointer to a camera to use for the shadow rendering frustum 
- *               (mainly used for directional lights; can be NULL for default handling).
+ * @param camera Optional pointer to a camera used for determining the shadow frustum.
+ *               It is required for directional lights (to center the shadow frustum around the camera)
+ *               and for correct rendering of billboard shadows. Can be NULL in other cases,
+ *               in which case the default camera will be used.
  * @param flags Render flags controlling optional per-pass behaviors 
  *              (currently only affects frustum culling; sorting flags are ignored).
  *
