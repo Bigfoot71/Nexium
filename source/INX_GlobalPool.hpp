@@ -40,7 +40,7 @@ public:
 
     /** Render */
     using AnimationPlayers  = util::ObjectPool<NX_AnimationPlayer, 128>;
-    using ReflectionProbes  = util::ObjectPool<NX_ReflectionProbe, 32>;
+    using ReflectionProbes  = util::ObjectPool<NX_ReflectionProbe, 128>;
     using VertexBuffers3D   = util::ObjectPool<NX_VertexBuffer3D, 512>;
     using InstanceBuffers   = util::ObjectPool<NX_InstanceBuffer, 32>;
     using RenderTextures    = util::ObjectPool<NX_RenderTexture, 16>;
@@ -49,9 +49,9 @@ public:
     using Skeletons         = util::ObjectPool<NX_Skeleton, 128>;
     using Textures          = util::ObjectPool<NX_Texture, 1024>;
     using Cubemaps          = util::ObjectPool<NX_Cubemap, 32>;
+    using Lights            = util::ObjectPool<NX_Light, 128>;
     using Models            = util::ObjectPool<NX_Model, 128>;
     using Meshes            = util::ObjectPool<NX_Mesh, 512>;
-    using Lights            = util::ObjectPool<NX_Light, 32>;
     using Fonts             = util::ObjectPool<NX_Font, 32>;
 
     /** Shaders */
