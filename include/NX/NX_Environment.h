@@ -188,15 +188,15 @@ extern "C" {
 /**
  * @brief Returns the current default environment.
  *
- * If no environment was set, returns NX_BASE_MATERIAL by default.
+ * If no environment was set, returns NX_BASE_ENVIRONMENT by default.
  */
 NXAPI NX_Environment NX_GetDefaultEnvironment(void);
 
 /**
  * @brief Sets the default environment used by Nexium.
  *
- * Overrides the environment returned by NX_GetDefaultMaterial().
- * Pass NULL to restore the default NX_BASE_MATERIAL.
+ * Overrides the environment returned by NX_GetDefaultEnvironment().
+ * Pass NULL to restore the default NX_BASE_ENVIRONMENT.
  */
 NXAPI void NX_SetDefaultEnvironment(const NX_Environment* env);
 
