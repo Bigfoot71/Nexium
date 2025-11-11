@@ -17,6 +17,36 @@
 // INTERNAL FUNCTIONS
 // ============================================================================
 
+void INX_EnsureCubemapFramebuffer(NX_Cubemap* cubemap, bool depth)
+{
+    if (depth && !cubemap->depth.IsValid())
+    {
+        cubemap->depth = gpu::Texture(
+            gpu::TextureConfig
+            {
+                .target = GL_TEXTURE_2D,
+                .internalFormat = GL_DEPTH_COMPONENT24,
+                .data = nullptr,
+                .width = cubemap->gpu.GetWidth(),
+                .height = cubemap->gpu.GetHeight()
+            }
+        );
+
+        cubemap->framebuffer = gpu::Framebuffer(
+            {&cubemap->gpu}, &cubemap->depth
+        );
+    }
+    else if (!cubemap->framebuffer.IsValid()) {
+        cubemap->framebuffer = gpu::Framebuffer(
+            {&cubemap->gpu}, nullptr
+        );
+    }
+}
+
+// ============================================================================
+// LOCAL FUNCTIONS
+// ============================================================================
+
 static gpu::Texture INX_LoadEquirectangular(const NX_Image& image)
 {
     /* --- Determines the internal source and destination formats --- */
@@ -430,9 +460,7 @@ void NX_DestroyCubemap(NX_Cubemap* cubemap)
 
 void NX_GenerateSkybox(NX_Cubemap* cubemap, const NX_Skybox* skybox)
 {
-    if (!cubemap->framebuffer.IsValid()) {
-        cubemap->framebuffer = gpu::Framebuffer({&cubemap->gpu}, nullptr);
-    }
+    INX_EnsureCubemapFramebuffer(cubemap, false);
 
     gpu::Pipeline pipeline;
 

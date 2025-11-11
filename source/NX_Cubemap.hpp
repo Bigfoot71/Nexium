@@ -19,8 +19,16 @@
 // ============================================================================
 
 struct NX_Cubemap {
+    gpu::Framebuffer framebuffer;   //< Invalid by default, created only if needed
+    gpu::Texture depth;             //< Invalid by default, created only if needed
     gpu::Texture gpu;
-    gpu::Framebuffer framebuffer;  //< Invalid by default, created only if needed
 };
+
+// ============================================================================
+// INTERNAL FUNCTIONS
+// ============================================================================
+
+/** Create the framebuffer if it hasn't already been created */
+void INX_EnsureCubemapFramebuffer(NX_Cubemap* cubemap, bool depth);
 
 #endif // NX_CUBEMAP_HPP
