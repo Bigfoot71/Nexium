@@ -89,6 +89,10 @@ public:
 
     ~Pipeline() noexcept;
 
+    /** No copy for pipeline */
+    Pipeline(const Pipeline&) = delete;
+    Pipeline& operator=(const Pipeline&) = delete;
+
     void SetColorWrite(ColorWrite mode) const noexcept;
     void SetDepthMode(DepthMode mode) const noexcept;
     void SetDepthFunc(DepthFunc func) const noexcept;
@@ -133,7 +137,7 @@ public:
     void SetViewport(int x, int y, int w, int h) const noexcept;
     void SetViewport(const gpu::Framebuffer& dst) const noexcept;
 
-    void Clear(const gpu::Framebuffer& framebuffer, NX_Color color = NX_BLACK, float depth = 1.0) noexcept;
+    void Clear(const gpu::Framebuffer& framebuffer, NX_Color color = NX_BLACK, float depth = 1.0) const noexcept;
     void ClearColor(std::initializer_list<std::pair<int, NX_Color>> attachments) const noexcept;
     void ClearColor(int attachment, NX_Color color) const noexcept;
     void ClearDepth(float depth) const noexcept;
@@ -676,7 +680,7 @@ inline void Pipeline::SetViewport(const gpu::Framebuffer& dst) const noexcept
     glViewport(0, 0, dst.GetWidth(), dst.GetHeight());
 }
 
-inline void Pipeline::Clear(const gpu::Framebuffer& framebuffer, NX_Color color, float depth) noexcept
+inline void Pipeline::Clear(const gpu::Framebuffer& framebuffer, NX_Color color, float depth) const noexcept
 {
     SDL_assert(sBindFramebuffer == &framebuffer && "Likely framebuffer management error"); // NOLINT
 

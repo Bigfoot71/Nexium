@@ -470,7 +470,7 @@ void NX_Begin2D(NX_RenderTexture* target)
     INX_Render2D->currentTarget = target;
 
     // TODO: Move the clear during the first draw
-    gpu::Pipeline([&](gpu::Pipeline pipeline) {
+    gpu::Pipeline([&](const gpu::Pipeline& pipeline) {
         pipeline.BindFramebuffer(INX_Render2D->framebuffer);
         pipeline.Clear(INX_Render2D->framebuffer, NX_BLANK);
     });
