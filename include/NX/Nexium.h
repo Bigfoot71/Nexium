@@ -26,6 +26,7 @@
 #include "./NX_Font.h"
 #include "./NX_Mesh.h"
 #include "./NX_Light.h"
+#include "./NX_Probe.h"
 #include "./NX_Audio.h"
 #include "./NX_Image.h"
 #include "./NX_Mouse.h"

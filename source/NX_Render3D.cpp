@@ -14,6 +14,7 @@
 #include <NX/NX_Display.h>
 #include <NX/NX_Window.h>
 #include <NX/NX_Camera.h>
+#include <NX/NX_Probe.h>
 #include <NX/NX_Init.h>
 #include <NX/NX_Font.h>
 #include <NX/NX_Math.h>
@@ -40,6 +41,7 @@
 #include "./INX_GPUProgramCache.hpp"
 #include "./INX_GlobalAssets.hpp"
 #include "./INX_VariantMesh.hpp"
+#include "./INX_RenderUtils.hpp"
 #include "./INX_GlobalPool.hpp"
 #include "./INX_GPUBridge.hpp"
 #include "./INX_Frustum.hpp"
@@ -54,6 +56,7 @@ enum class INX_RenderPass {
     RENDER_NONE,            //< Value indicating that no rendering pass is in progress
     RENDER_SCENE,           //< Value indicating that a scene rendering pass is in progress
     RENDER_SHADOW,          //< Value indicating that a shadow rendering pass is in progress
+    RENDER_CUBEMAP,         //< Value indicating that a cubemap rendering pass is in progress
     RENDER_PASS_COUNT
 };
 
@@ -259,6 +262,10 @@ struct INX_SceneState {
     const NX_RenderTexture* target{nullptr};
     NX_IVec2 targetResolution{};
     float targetAspect{};
+
+    /** Cubemap rendering */
+    NX_Cubemap* cubemap;
+    NX_Probe probe;
 };
 
 struct INX_LightingState {
@@ -737,6 +744,10 @@ static INX_RenderPassView INX_GetRenderPassView()
         cullMask = INX_Render3D->shadowing.casterTarget->cullMask;
         frustum = &INX_Render3D->shadowing.casterFrustum;
         break;
+    case INX_RenderPass::RENDER_CUBEMAP:
+        cullMask = INX_Render3D->scene.probe.cullMask;
+        frustum = &INX_Render3D->scene.viewFrustum;
+        break;
     case INX_RenderPass::RENDER_NONE:
         break;
     case INX_RenderPass::RENDER_PASS_COUNT:
@@ -1159,6 +1170,39 @@ static void INX_ProcessFrustum(const NX_Camera& camera, float aspect)
     });
 }
 
+static void INX_ProcessFrustum(const NX_Probe& probe, int face)
+{
+    INX_SceneState& scene = INX_Render3D->scene;
+    INX_ViewFrustum& frustum = scene.viewFrustum;
+
+    frustum.cullMask = probe.cullMask;
+    frustum.position = probe.position;
+    frustum.far = probe.range;
+    frustum.near = 0.05f;
+
+    frustum.view = INX_GetCubeView(face, probe.position);
+    frustum.proj = INX_GetCubeProj(0.05f, probe.range);
+    frustum.viewProj = frustum.view * frustum.proj;
+
+    frustum.invView = NX_Mat4Inverse(&frustum.view);
+    frustum.invProj = NX_Mat4Inverse(&frustum.proj);
+    frustum.invViewProj = NX_Mat4Inverse(&frustum.viewProj);
+
+    frustum.Update(frustum.viewProj);
+
+    scene.frustumUniform.UploadObject(INX_GPUFrustum {
+        .viewProj = frustum.viewProj,
+        .view = frustum.view,
+        .proj = frustum.proj,
+        .invViewProj = frustum.invViewProj,
+        .invView = frustum.invView,
+        .invProj = frustum.invProj,
+        .position = frustum.position,
+        .near = frustum.near,
+        .far = frustum.far
+    });
+}
+
 static void INX_ProcessEnvironment(const NX_Environment& env)
 {
     INX_SceneState& state = INX_Render3D->scene;
@@ -1245,7 +1289,7 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
     state.envUniform.Upload(&data);
 }
 
-static void INX_CollectActiveLights()
+static bool INX_CollectActiveLights(NX_Layer cullMask)
 {
     INX_LightingState& state = INX_Render3D->lighting;
 
@@ -1256,11 +1300,9 @@ static void INX_CollectActiveLights()
 
     /* --- Count each active and visible light per type --- */
 
-    NX_Layer viewCullMask = INX_Render3D->scene.viewFrustum.cullMask;
-
     std::array<size_t, NX_LIGHT_TYPE_COUNT> counts{};
     for (const NX_Light& light : INX_Pool.Get<NX_Light>()) {
-        if (light.active && (viewCullMask & light.layerMask) != 0) {
+        if (light.active && (cullMask & light.layerMask) != 0) {
             ++counts[light.type];
         }
     }
@@ -1283,7 +1325,7 @@ static void INX_CollectActiveLights()
 
     for (NX_Light& light : INX_Pool.Get<NX_Light>())
     {
-        if (!light.active || (viewCullMask & light.layerMask) == 0) {
+        if (!light.active || (cullMask & light.layerMask) == 0) {
             continue;
         }
 
@@ -1296,15 +1338,14 @@ static void INX_CollectActiveLights()
         size_t& offset = offsets[light.type];
         state.activeLights[offset++] = INX_ActiveLight(&light, shadowIndex);
     }
+
+    return !state.activeLights.IsEmpty();
 }
 
 static void INX_UploadLightData()
 {
+    SDL_assert(!INX_Render3D->lighting.activeLights.IsEmpty());
     INX_LightingState& state = INX_Render3D->lighting;
-
-    if (state.activeLights.IsEmpty()) {
-        return;
-    }
 
     state.storageLights.Reserve(INX_Pool.Get<NX_Light>().GetSize() * sizeof(INX_GPULight), false);
     INX_GPULight* mappedLights = state.storageLights.MapRange<INX_GPULight>(
@@ -1322,11 +1363,9 @@ static void INX_UploadLightData()
 
 static void INX_UploadShadowData()
 {
+    SDL_assert(!INX_Render3D->lighting.activeLights.IsEmpty());
     INX_LightingState& state = INX_Render3D->lighting;
-
-    if (state.activeShadows.IsEmpty()) {
-        return;
-    }
+    if (state.activeShadows.IsEmpty()) return;
 
     state.storageShadow.Reserve(state.activeShadows.GetSize() * sizeof(INX_GPUShadow), false);
     INX_GPUShadow* mappedShadows = state.storageShadow.MapRange<INX_GPUShadow>(
@@ -1342,16 +1381,27 @@ static void INX_UploadShadowData()
     state.storageShadow.Unmap();
 }
 
-static void INX_ComputeClusters()
+static void INX_ConfigureClusterGrid()
 {
+    SDL_assert(!INX_Render3D->lighting.activeLights.IsEmpty());
     INX_LightingState& state = INX_Render3D->lighting;
     INX_SceneState& scene = INX_Render3D->scene;
 
-    /* --- Early exit if no active light --- */
+    /* --- Update the size and number of clusters on X/Y based on the resolution --- */
 
-    if (state.activeLights.IsEmpty()) {
-        return;
+    NX_IVec2 resolution{};
+    if (INX_Render3D->renderPass == INX_RenderPass::RENDER_SCENE) {
+        resolution = scene.framebufferScene.GetDimensions();
     }
+    else if (INX_Render3D->renderPass == INX_RenderPass::RENDER_CUBEMAP) {
+        resolution = scene.cubemap->framebuffer.GetDimensions();
+    }
+
+    state.clusterSize.x = std::max(16, resolution.x / 80); // 80 px per target cluster
+    state.clusterSize.y = std::max(9, resolution.y / 50);  // 50 px per target cluster
+
+    state.clusterCount.x = NX_DIV_CEIL(resolution.x, state.clusterSize.x);
+    state.clusterCount.y = NX_DIV_CEIL(resolution.y, state.clusterSize.y);
 
     /* --- Adapt the number of clusters in Z according to the view frustum --- */
 
@@ -1359,12 +1409,12 @@ static void INX_ComputeClusters()
     // allocated per doubling of distance from the near plane. Higher values increase
     // cluster resolution near the camera, improving light culling precision.
 
-    float near = scene.viewFrustum.near;
-    float far = scene.viewFrustum.far;
-
+    float near = scene.viewFrustum.near, far = scene.viewFrustum.far;
     state.clusterCount.z = std::clamp(int(std::log2(far / near) * state.SlicesPerDepthOctave), 16, 64);
-    int clusterTotal = state.clusterCount.x * state.clusterCount.y * state.clusterCount.z;
 
+    /* --- Ensures there is enough space in the GPU buffers for the total number of clusters --- */
+
+    int clusterTotal = state.clusterCount.x * state.clusterCount.y * state.clusterCount.z;
     state.storageClusters.Reserve(clusterTotal * 4 * sizeof(uint32_t), false);
     state.storageIndices.Reserve(clusterTotal * state.MaxLightsPerCluster * sizeof(uint32_t), false);
     state.storageClusterAABB.Reserve(clusterTotal * (sizeof(NX_Vec4) + sizeof(NX_Vec3)), false); //< minBounds and maxBounds with padding
@@ -1373,10 +1423,14 @@ static void INX_ComputeClusters()
 
     state.clusterSliceScale = float(state.clusterCount.z) / std::log2(far / near);
     state.clusterSliceBias = -float(state.clusterCount.z) * std::log2(near) / std::log2(far / near);
+}
 
-    /* --- Obtaining the lights affecting each tile --- */
+static void INX_CullLightsPerCluster(gpu::Pipeline& pipeline)
+{
+    SDL_assert(!INX_Render3D->lighting.activeLights.IsEmpty());
+    INX_LightingState& state = INX_Render3D->lighting;
+    INX_SceneState& scene = INX_Render3D->scene;
 
-    gpu::Pipeline pipeline;
     pipeline.UseProgram(INX_Programs.GetLightCulling());
 
     pipeline.BindUniform(0, scene.frustumUniform);
@@ -1402,8 +1456,6 @@ static void INX_RenderBackground(const gpu::Pipeline& pipeline)
 {
     INX_SceneState& scene = INX_Render3D->scene;
 
-    pipeline.BindFramebuffer(scene.framebufferScene);
-    pipeline.SetViewport(scene.framebufferScene);
     pipeline.SetDepthMode(gpu::DepthMode::WriteOnly);
 
     pipeline.ClearDepth(1.0f);
@@ -1419,8 +1471,9 @@ static void INX_RenderBackground(const gpu::Pipeline& pipeline)
     pipeline.BindUniform(1, scene.frustumUniform);
     pipeline.BindUniform(2, scene.envUniform);
 
-    pipeline.SetDepthMode(gpu::DepthMode::Disabled);
     pipeline.UseProgram(INX_Programs.GetSkybox());
+    pipeline.SetDepthMode(gpu::DepthMode::Disabled);
+    pipeline.SetCullMode(gpu::CullMode::Disabled);
 
     pipeline.BindTexture(0, scene.skyCubemap->gpu);
     pipeline.Draw(GL_TRIANGLES, 36);
@@ -1728,12 +1781,16 @@ void NX_End3D()
 
     if (!INX_Render3D->drawCalls.sortedUnique.IsEmpty())
     {
+        gpu::Pipeline pipeline;
+
         INX_UploadDrawCalls();
 
-        INX_CollectActiveLights();
-        INX_UploadLightData();
-        INX_UploadShadowData();
-        INX_ComputeClusters();
+        if (INX_CollectActiveLights(scene.viewFrustum.cullMask)) {
+            INX_UploadLightData();
+            INX_UploadShadowData();
+            INX_ConfigureClusterGrid();
+            INX_CullLightsPerCluster(pipeline);
+        }
 
         scene.frameUniform.UploadObject(INX_GPUSceneFrame {
             .screenSize = scene.framebufferScene.GetDimensions(),
@@ -1742,17 +1799,18 @@ void NX_End3D()
             .clusterSliceScale = INX_Render3D->lighting.clusterSliceScale,
             .clusterSliceBias = INX_Render3D->lighting.clusterSliceBias,
             .elapsedTime = static_cast<float>(NX_GetElapsedTime()),
-            .hasActiveLights = (INX_Render3D->lighting.activeLights.GetSize() > 0),
+            .hasActiveLights = !INX_Render3D->lighting.activeLights.IsEmpty(),
             .hasProbe = (INX_Render3D->scene.skyProbe != nullptr)
         });
 
         INX_SortDrawCalls(scene.viewFrustum.position);
 
-        gpu::Pipeline([](const gpu::Pipeline& pipeline) { // NOLINT
-            INX_RenderBackground(pipeline);
-            INX_RenderPrePass(pipeline);
-            INX_RenderScene(pipeline);
-        });
+        pipeline.BindFramebuffer(scene.framebufferScene);
+        pipeline.SetViewport(scene.framebufferScene);
+
+        INX_RenderBackground(pipeline);
+        INX_RenderPrePass(pipeline);
+        INX_RenderScene(pipeline);
 
         // REVIEW: We can collect the used programs rather than iterating over all programs
         INX_Pool.ForEach<NX_Shader3D>([](NX_Shader3D& shader) {
@@ -1761,7 +1819,11 @@ void NX_End3D()
     }
     else {
         // Fast path when there are no draw calls
-        INX_RenderBackground(gpu::Pipeline());
+        gpu::Pipeline([&scene](const gpu::Pipeline& pipeline) { // NOLINT
+            pipeline.BindFramebuffer(scene.framebufferScene);
+            pipeline.SetViewport(scene.framebufferScene);
+            INX_RenderBackground(pipeline);
+        });
     }
 
     /* --- Post process and outputs the result --- */
@@ -1958,6 +2020,106 @@ void NX_EndShadow3D()
     }
 
     /* --- Reset state --- */
+
+    INX_EndRenderPass();
+}
+
+void NX_BeginCubemap3D(NX_Cubemap* cubemap, const NX_Probe* probe, const NX_Environment* env, NX_RenderFlags flags)
+{
+    if (!INX_BeginRenderPass(INX_RenderPass::RENDER_CUBEMAP, flags)) {
+        return;
+    }
+
+    INX_ProcessEnvironment(env ? *env : NX_GetDefaultEnvironment());
+    INX_EnsureCubemapFramebuffer(cubemap, true);
+
+    INX_SceneState& scene = INX_Render3D->scene;
+
+    scene.probe = probe ? *probe : NX_GetDefaultProbe();
+    scene.cubemap = cubemap;
+
+    float r = scene.probe.range;
+    NX_Mat4 proj = NX_Mat4Ortho(-r, r, -r, r, -r, r);
+    NX_Mat4 view = NX_Mat4LookAt(scene.probe.position, scene.probe.position + NX_VEC3_FORWARD, NX_VEC3_UP);
+
+    scene.viewFrustum.Update(view * proj);
+}
+
+void NX_EndCubemap3D()
+{
+    if (!INX_CheckRenderPass(INX_RenderPass::RENDER_CUBEMAP)) {
+        return;
+    }
+
+    INX_SceneState& scene = INX_Render3D->scene;
+    gpu::Framebuffer& framebuffer = scene.cubemap->framebuffer;
+
+    /* --- Render only the background if no draw call --- */
+
+    if (INX_Render3D->drawCalls.sortedUnique.IsEmpty()) {
+        gpu::Pipeline pipeline;
+        pipeline.BindFramebuffer(framebuffer);
+        pipeline.SetViewport(framebuffer);
+        for (int face = 0; face < 6; ++face) {
+            framebuffer.SetColorAttachmentTarget(0, 0, face, 0);
+            INX_RenderBackground(pipeline);
+        }
+        INX_EndRenderPass();
+        return;
+    }
+
+    /* --- Upload draw calls and processing the display --- */
+
+    INX_UploadDrawCalls();
+
+    if (INX_CollectActiveLights(scene.probe.cullMask)) {
+        INX_UploadLightData();
+        INX_UploadShadowData();
+        INX_ConfigureClusterGrid();
+    }
+
+    /* --- Render the scene for each face of the cube --- */
+
+    gpu::Pipeline pipeline;
+
+    pipeline.BindFramebuffer(framebuffer);
+    pipeline.SetViewport(framebuffer);
+
+    for (int face = 0; face < 6; ++face)
+    {
+        framebuffer.SetColorAttachmentTarget(0, 0, face, 0);
+        INX_ProcessFrustum(scene.probe, face);
+
+        if (!INX_Render3D->lighting.activeLights.IsEmpty()) {
+            INX_CullLightsPerCluster(pipeline);
+        }
+
+        scene.frameUniform.UploadObject(INX_GPUSceneFrame {
+            .screenSize = framebuffer.GetDimensions(),
+            .clusterCount = INX_Render3D->lighting.clusterCount,
+            .maxLightsPerCluster = INX_Render3D->lighting.MaxLightsPerCluster,
+            .clusterSliceScale = INX_Render3D->lighting.clusterSliceScale,
+            .clusterSliceBias = INX_Render3D->lighting.clusterSliceBias,
+            .elapsedTime = static_cast<float>(NX_GetElapsedTime()),
+            .hasActiveLights = !INX_Render3D->lighting.activeLights.IsEmpty(),
+            .hasProbe = (INX_Render3D->scene.skyProbe != nullptr)
+        });
+
+        INX_SortDrawCalls(scene.viewFrustum.position);
+
+        INX_RenderBackground(pipeline);
+        INX_RenderPrePass(pipeline);
+        INX_RenderScene(pipeline);
+    }
+
+    /* --- Generate cubemap mipmaps and cleanup --- */
+
+    scene.cubemap->gpu.GenerateMipmap();
+
+    // REVIEW: We can collect the used programs rather than iterating over all programs
+    INX_Pool.ForEach<NX_Shader3D>([](NX_Shader3D& shader) {
+        shader.ClearDynamicBuffer();
+    });
 
     INX_EndRenderPass();
 }

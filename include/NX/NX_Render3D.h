@@ -16,6 +16,7 @@
 #include "./NX_Material.h"
 #include "./NX_Camera.h"
 #include "./NX_Model.h"
+#include "./NX_Probe.h"
 #include "./NX_Mesh.h"
 #include "./NX_Math.h"
 #include "./NX_API.h"
@@ -120,6 +121,33 @@ NXAPI void NX_BeginShadow3D(NX_Light* light, const NX_Camera* camera, NX_RenderF
  * @note Logs a warning if no shadow pass is active.
  */
 NXAPI void NX_EndShadow3D();
+
+/**
+ * @brief Begins a cubemap rendering pass.
+ *
+ * Starts rendering the 3D scene into the specified cubemap from the position and orientation 
+ * defined by the given probe. This is typically used to capture the environment for reflection probes.
+ *
+ * @param cubemap Pointer to the cubemap to render into.
+ * @param probe Pointer to the probe defining the capture position and orientation (can be NULL to use the default probe).
+ * @param env Pointer to the environment to use (can be NULL to use the default environment).
+ * @param flags Render flags controlling optional per-pass behaviors (e.g. frustum culling, sorting).
+ *
+ * @note The rendering pass is explicit; you must call NX_EndCubemap3D() to finalize it.
+ * @note Ensure no other render pass is active when calling this function.
+ */
+NXAPI void NX_BeginCubemap3D(NX_Cubemap* cubemap, const NX_Probe* probe, const NX_Environment* env, NX_RenderFlags flags);
+
+/**
+ * @brief Ends the current cubemap rendering pass.
+ *
+ * Finalizes the cubemap rendering started with NX_BeginCubemap3D().
+ * Renders all accumulated draw calls for each cubemap face and restores the previous render state.
+ *
+ * @note Must be called after NX_BeginCubemap3D().
+ * @note Logs a warning if no cubemap render pass is active.
+ */
+NXAPI void NX_EndCubemap3D(void);
 
 /**
  * @brief Draws a 3D mesh.

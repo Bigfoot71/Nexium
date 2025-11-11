@@ -318,6 +318,7 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/NX_Image.cpp"
     "${NX_ROOT_PATH}/source/NX_Audio.cpp"
     "${NX_ROOT_PATH}/source/NX_Light.cpp"
+    "${NX_ROOT_PATH}/source/NX_Probe.cpp"
     "${NX_ROOT_PATH}/source/NX_Model.cpp"
     "${NX_ROOT_PATH}/source/NX_Mesh.cpp"
     "${NX_ROOT_PATH}/source/NX_Font.cpp"
