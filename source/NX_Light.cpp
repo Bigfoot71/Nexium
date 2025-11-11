@@ -19,19 +19,18 @@
 // INTERNAL FUNCTIONS
 // ============================================================================
 
-NX_Mat4 INX_GetDirectionalLightViewProj(NX_Light* light, const NX_Camera& camera)
+NX_Mat4 INX_GetDirectionalLightViewProj(NX_Light* light, const NX_Vec3& camPosition)
 {
     SDL_assert(light->type == NX_LIGHT_DIR);
     SDL_assert(light->shadow.active);
 
     const INX_DirectionalLight& dirLight = std::get<INX_DirectionalLight>(light->data);
     const NX_Vec3& lightDir = dirLight.direction;
-    const NX_Vec3& cameraPos = camera.position;
 
     /* --- Calcuate view matrix --- */
 
     NX_Vec3 up = (std::abs(NX_Vec3Dot(lightDir, NX_VEC3_UP)) > 0.99f) ? NX_VEC3_BACK : NX_VEC3_UP;
-    NX_Mat4 view = NX_Mat4LookTo(cameraPos, lightDir, up);
+    NX_Mat4 view = NX_Mat4LookTo(camPosition, lightDir, up);
 
     /* --- Calculate projection matrix --- */
 

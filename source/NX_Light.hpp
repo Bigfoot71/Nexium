@@ -139,7 +139,7 @@ inline NX_Light::NX_Light(NX_LightType type)
 // INTERNAL FUNCTIONS
 // ============================================================================
 
-NX_Mat4 INX_GetDirectionalLightViewProj(NX_Light* light, const NX_Camera& camera);
+NX_Mat4 INX_GetDirectionalLightViewProj(NX_Light* light, const NX_Vec3& camPosition);
 NX_Mat4 INX_GetSpotLightViewProj(NX_Light* light);
 NX_Mat4 INX_GetOmniLightViewProj(NX_Light* light, int face);
 

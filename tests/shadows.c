@@ -8,9 +8,6 @@
 
 #include <NX/Nexium.h>
 #include "./common.h"
-#include "NX/NX_Light.h"
-#include "NX/NX_Math.h"
-#include "NX/NX_Render3D.h"
 
 void DrawScene(const NX_Mesh* ground, const NX_Mesh* cube)
 {

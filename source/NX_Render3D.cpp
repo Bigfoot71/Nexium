@@ -82,11 +82,16 @@ struct INX_ViewFrustum : public INX_Frustum {
     float far;
 };
 
+/** Used to retrieve the frustum of the current render pass */
+struct INX_RenderPassView {
+    const INX_Frustum* frustum;
+    NX_Layer cullMask;
+};
+
 /** Shared CPU data per draw call */
 struct INX_DrawShared {
     /** Spatial data */
     NX_Transform transform;
-    INX_BoundingSphere3D sphere;
     /** Instances data */
     const NX_InstanceBuffer* instances;
     int instanceCount;
@@ -102,7 +107,6 @@ struct INX_DrawUnique {
     /** Object to draw */
     INX_VariantMesh mesh;
     NX_Material material;
-    INX_OrientedBoundingBox3D obb;
     /** Additionnal data */
     NX_Shader3D::TextureArray textures;     //< Array containing the textures linked to the material shader at the time of draw (if any)
     int dynamicRangeIndex;                  //< Index of the material shader's dynamic uniform buffer range (if any)
@@ -296,8 +300,10 @@ struct INX_ShadowingState {
     gpu::Buffer frameUniform{};
 
     /** Current light caster target (during shadow map pass) */
-    NX_Light* casterTarget{};
-    NX_Camera mainCamera{};
+    INX_Frustum casterFrustum{};    ///< For omni-lights, a coarse orthographic projection is used
+    NX_Mat4 casterViewProj{};       ///< Caster view projection matrix
+    NX_Light* casterTarget{};       ///< Light from which shadows are cast
+    NX_Mat4 camInvView{};           ///< To ensures correct shadow rendering of billboards
 };
 
 struct INX_DrawCallState {
@@ -305,11 +311,9 @@ struct INX_DrawCallState {
     util::DynamicArray<INX_DrawShared> sharedData{};
     util::DynamicArray<INX_DrawUnique> uniqueData{};
 
-    /** Sorted draw call array */
-    util::BucketArray<int, INX_DrawType, DRAW_TYPE_COUNT> uniqueVisible{};
-
-    /** Sorting cache */
-    util::DynamicArray<float> sortDistances{};
+    /** Sorted draw call indices array */
+    util::BucketArray<int, INX_DrawType, DRAW_TYPE_COUNT> sortedUnique{};
+    util::DynamicArray<float> sortDistances{}; ///< Sorting cache
 
     /** Draw call data stored in VRAM */
     gpu::StagingBuffer<NX_Mat4> boneBuffer{};
@@ -614,7 +618,7 @@ static void INX_InitDrawCallState(INX_DrawCallState* drawCalls)
         NX_LOG(E, "RENDER: Unique draw call data array pre-allocation failed (requested: %i entries)", drawCallReserveCount);
     }
 
-    if (!drawCalls->uniqueVisible.Reserve(drawCallReserveCount)) {
+    if (!drawCalls->sortedUnique.Reserve(drawCallReserveCount)) {
         NX_LOG(E, "RENDER: Visible unique draw call list pre-allocation failed (requested: %i entries)", drawCallReserveCount);
     }
 }
@@ -714,8 +718,36 @@ static void INX_EndRenderPass()
     INX_Render3D->renderPass = INX_RenderPass::RENDER_NONE;
     INX_Render3D->renderFlags = 0;
 
+    INX_Render3D->drawCalls.sortedUnique.Clear();
     INX_Render3D->drawCalls.sharedData.Clear();
     INX_Render3D->drawCalls.uniqueData.Clear();
+}
+
+static INX_RenderPassView INX_GetRenderPassView()
+{
+    const INX_Frustum* frustum = nullptr;
+    NX_Layer cullMask = NX_LAYER_ALL;
+
+    switch (INX_Render3D->renderPass) {
+    case INX_RenderPass::RENDER_SCENE:
+        cullMask = INX_Render3D->scene.viewFrustum.cullMask;
+        frustum = &INX_Render3D->scene.viewFrustum;
+        break;
+    case INX_RenderPass::RENDER_SHADOW:
+        cullMask = INX_Render3D->shadowing.casterTarget->cullMask;
+        frustum = &INX_Render3D->shadowing.casterFrustum;
+        break;
+    case INX_RenderPass::RENDER_NONE:
+        break;
+    case INX_RenderPass::RENDER_PASS_COUNT:
+        NX_UNREACHABLE();
+        break;
+    }
+
+    return INX_RenderPassView {
+        .frustum = frustum,
+        .cullMask = cullMask
+    };
 }
 
 static INX_DrawType INX_GetDrawType(const NX_Material& material)
@@ -745,14 +777,26 @@ static void INX_PushDrawCall(
     const INX_VariantMesh& mesh, const NX_InstanceBuffer* instances, int instanceCount,
     const NX_Material& material, const NX_Transform& transform)
 {
-    INX_DrawCallState& state = INX_Render3D->drawCalls;
+    INX_RenderPassView view = INX_GetRenderPassView();
+    if ((view.cullMask & mesh.GetLayerMask()) == 0) {
+        return;
+    }
 
+    if (instanceCount == 0) [[likely]] {
+        if ((INX_Render3D->renderFlags & NX_RENDER_FRUSTUM_CULLING) != 0) {
+            INX_OrientedBoundingBox3D obb(mesh.GetAABB(), transform);
+            if (!view.frustum->ContainsObb(obb)) {
+                return;
+            }
+        }
+    }
+
+    INX_DrawCallState& state = INX_Render3D->drawCalls;
     int sharedIndex = state.sharedData.GetSize();
     int uniqueIndex = state.uniqueData.GetSize();
 
     state.sharedData.EmplaceBack(INX_DrawShared {
         .transform = transform,
-        .sphere = INX_BoundingSphere3D(mesh.GetAABB(), transform),
         .instances = instances,
         .instanceCount = instanceCount,
         .boneMatrixOffset = -1,
@@ -763,7 +807,6 @@ static void INX_PushDrawCall(
     INX_DrawUnique uniqueData{
         .mesh = mesh,
         .material = material,
-        .obb = INX_OrientedBoundingBox3D(mesh.GetAABB(), transform),
         .textures = {},
         .dynamicRangeIndex = -1,
         .sharedDataIndex = sharedIndex,
@@ -776,6 +819,7 @@ static void INX_PushDrawCall(
         uniqueData.dynamicRangeIndex = material.shader->GetDynamicRangeIndex();
     }
 
+    state.sortedUnique.Push(uniqueData.type, state.uniqueData.GetSize());
     state.uniqueData.PushBack(uniqueData);
 }
 
@@ -784,35 +828,43 @@ static void INX_PushDrawCall(
     int instanceCount, const NX_Transform& transform)
 {
     INX_DrawCallState& state = INX_Render3D->drawCalls;
+    INX_RenderPassView view = INX_GetRenderPassView();
 
-    /* --- If the model is rigged we process the bone matrices --- */
+    /* --- Classification du model par rapport au frustum --- */
 
-    int boneMatrixOffset = -1;
-    if (model.skeleton != nullptr) {
-        boneMatrixOffset = INX_ComputeBoneMatrices(model);
+    bool fullyInside = true;
+    if (instanceCount == 0) [[likely]] {
+        if ((INX_Render3D->renderFlags & NX_RENDER_FRUSTUM_CULLING) != 0) {
+            INX_BoundingSphere3D sphere(model.aabb, transform);
+            const INX_Frustum::Containment containment = view.frustum->ClassifySphere(sphere);
+            if (containment == INX_Frustum::Outside) return;
+            fullyInside = (containment == INX_Frustum::Inside);
+        }
     }
 
-    /* --- Push draw calls data --- */
+    /* --- Push and count unique draw call data --- */
 
     int sharedIndex = state.sharedData.GetSize();
     int uniqueIndex = state.uniqueData.GetSize();
 
-    state.sharedData.EmplaceBack(INX_DrawShared {
-        .transform = transform,
-        .sphere = INX_BoundingSphere3D(model.aabb, transform),
-        .instances = instances,
-        .instanceCount = instanceCount,
-        .boneMatrixOffset = boneMatrixOffset,
-        .uniqueDataIndex = uniqueIndex,
-        .uniqueDataCount = model.meshCount
-    });
+    int uniqueCount = 0;
 
     for (int i = 0; i < model.meshCount; ++i)
     {
+        const NX_Mesh& mesh = *model.meshes[i];
+
+        if ((view.cullMask & mesh.layerMask) == 0) {
+            continue;
+        }
+
+        if (!fullyInside) /* 'false' means frustum culling is enabled */ {
+            INX_OrientedBoundingBox3D obb(mesh.aabb, transform);
+            if (!view.frustum->ContainsObb(obb)) continue;
+        }
+
         INX_DrawUnique uniqueData{
             .mesh = model.meshes[i],
             .material = model.materials[model.meshMaterials[i]],
-            .obb = INX_OrientedBoundingBox3D(model.aabb, transform),
             .textures = {},
             .dynamicRangeIndex = -1,
             .sharedDataIndex = sharedIndex,
@@ -825,8 +877,32 @@ static void INX_PushDrawCall(
             uniqueData.dynamicRangeIndex = uniqueData.material.shader->GetDynamicRangeIndex();
         }
 
+        state.sortedUnique.Push(uniqueData.type, state.uniqueData.GetSize());
         state.uniqueData.PushBack(uniqueData);
+        ++uniqueCount;
     }
+
+    if (uniqueCount == 0) {
+        return;
+    }
+
+    /* --- If the model is rigged we process the bone matrices --- */
+
+    int boneMatrixOffset = -1;
+    if (model.skeleton != nullptr) {
+        boneMatrixOffset = INX_ComputeBoneMatrices(model);
+    }
+
+    /* --- Push shared draw call data --- */
+
+    state.sharedData.EmplaceBack(INX_DrawShared {
+        .transform = transform,
+        .instances = instances,
+        .instanceCount = instanceCount,
+        .boneMatrixOffset = boneMatrixOffset,
+        .uniqueDataIndex = uniqueIndex,
+        .uniqueDataCount = uniqueCount
+    });
 }
 
 static void INX_UploadDrawCalls()
@@ -895,45 +971,6 @@ static void INX_UploadDrawCalls()
     state.uniqueBuffer.Unmap();
 }
 
-template <bool FrustumCulling>
-static void INX_CullDrawCalls(const INX_Frustum& frustum, NX_Layer frustumCullMask)
-{
-    INX_DrawCallState& state = INX_Render3D->drawCalls;
-    state.uniqueVisible.Clear();
-
-    for (const INX_DrawShared& shared : state.sharedData)
-    {
-        /* --- Classification by bounding sphere if necessary --- */
-
-        bool fullyInside = false;
-        if constexpr (FrustumCulling) {
-            if (shared.instanceCount == 0) [[likely]] {
-                const INX_Frustum::Containment containment = frustum.ClassifySphere(shared.sphere);
-                if (containment == INX_Frustum::Outside) continue;
-                fullyInside = (containment == INX_Frustum::Inside);
-            }
-        }
-
-        /* --- Fine filtering using layer mask and OBB vs Frustum test if necessary --- */
-
-        const int end = shared.uniqueDataIndex + shared.uniqueDataCount;
-
-        for (int i = shared.uniqueDataIndex; i < end; ++i)   {
-            const INX_DrawUnique& u = state.uniqueData[i];
-            if ((frustumCullMask & u.mesh.GetLayerMask()) != 0) [[likely]] {
-                if constexpr (FrustumCulling) {
-                    if (fullyInside || frustum.ContainsObb(u.obb)) {
-                        state.uniqueVisible.Emplace(u.type, i);
-                    }
-                }
-                else {
-                    state.uniqueVisible.Emplace(u.type, i);
-                }
-            }
-        }
-    }
-}
-
 static void INX_SortDrawCalls(const NX_Vec3& viewPosition)
 {
     INX_DrawCallState& state = INX_Render3D->drawCalls;
@@ -965,13 +1002,13 @@ static void INX_SortDrawCalls(const NX_Vec3& viewPosition)
         }
 
         if (needsOpaque) {
-            state.uniqueVisible.Sort(DRAW_OPAQUE, [&sortDistances](int a, int b) {
+            state.sortedUnique.Sort(DRAW_OPAQUE, [&sortDistances](int a, int b) {
                 return sortDistances[a] < sortDistances[b];
             });
         }
 
         if (needsPrepass) {
-            state.uniqueVisible.Sort(DRAW_PREPASS, [&sortDistances](int a, int b) {
+            state.sortedUnique.Sort(DRAW_PREPASS, [&sortDistances](int a, int b) {
                 return sortDistances[a] < sortDistances[b];
             });
         }
@@ -1012,7 +1049,7 @@ static void INX_SortDrawCalls(const NX_Vec3& viewPosition)
             sortDistances[i] = maxDistSq;
         }
 
-        state.uniqueVisible.Sort(DRAW_TRANSPARENT, [&sortDistances](int a, int b) {
+        state.sortedUnique.Sort(DRAW_TRANSPARENT, [&sortDistances](int a, int b) {
             return sortDistances[a] > sortDistances[b];
         });
     }
@@ -1396,7 +1433,7 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
     const INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
     const INX_SceneState& scene = INX_Render3D->scene;
 
-    if (drawCalls.uniqueVisible.GetCategory(DRAW_PREPASS).IsEmpty()) {
+    if (drawCalls.sortedUnique.GetCategory(DRAW_PREPASS).IsEmpty()) {
         return;
     }
 
@@ -1411,7 +1448,7 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
     pipeline.BindUniform(1, scene.frustumUniform);
     pipeline.BindUniform(2, scene.envUniform);
 
-    for (int uniqueIndex : drawCalls.uniqueVisible.GetCategory(DRAW_PREPASS))
+    for (int uniqueIndex : drawCalls.sortedUnique.GetCategory(DRAW_PREPASS))
     {
         const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
         const NX_Material& mat = unique.material;
@@ -1476,7 +1513,7 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
     // Ensures that the generated images are ready (especially reflection probes)
     pipeline.MemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-    for (int uniqueIndex : drawCalls.uniqueVisible.GetCategories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
+    for (int uniqueIndex : drawCalls.sortedUnique.GetCategories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
     {
         const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
         const NX_Material& mat = unique.material;
@@ -1685,55 +1722,51 @@ void NX_End3D()
         return;
     }
 
+    /* --- Renders the scene --- */
+
     INX_SceneState& scene = INX_Render3D->scene;
 
-    /* --- Upload draw calls data --- */
+    if (!INX_Render3D->drawCalls.sortedUnique.IsEmpty())
+    {
+        INX_UploadDrawCalls();
 
-    INX_UploadDrawCalls();
+        INX_CollectActiveLights();
+        INX_UploadLightData();
+        INX_UploadShadowData();
+        INX_ComputeClusters();
 
-    /* --- Process lights --- */
+        scene.frameUniform.UploadObject(INX_GPUSceneFrame {
+            .screenSize = scene.framebufferScene.GetDimensions(),
+            .clusterCount = INX_Render3D->lighting.clusterCount,
+            .maxLightsPerCluster = INX_Render3D->lighting.MaxLightsPerCluster,
+            .clusterSliceScale = INX_Render3D->lighting.clusterSliceScale,
+            .clusterSliceBias = INX_Render3D->lighting.clusterSliceBias,
+            .elapsedTime = static_cast<float>(NX_GetElapsedTime()),
+            .hasActiveLights = (INX_Render3D->lighting.activeLights.GetSize() > 0),
+            .hasProbe = (INX_Render3D->scene.skyProbe != nullptr)
+        });
 
-    INX_CollectActiveLights();
-    INX_UploadLightData();
-    INX_UploadShadowData();
-    INX_ComputeClusters();
+        INX_SortDrawCalls(scene.viewFrustum.position);
 
-    /* --- Upload frame info data --- */
+        gpu::Pipeline([](const gpu::Pipeline& pipeline) { // NOLINT
+            INX_RenderBackground(pipeline);
+            INX_RenderPrePass(pipeline);
+            INX_RenderScene(pipeline);
+        });
 
-    scene.frameUniform.UploadObject(INX_GPUSceneFrame {
-        .screenSize = scene.framebufferScene.GetDimensions(),
-        .clusterCount = INX_Render3D->lighting.clusterCount,
-        .maxLightsPerCluster = INX_Render3D->lighting.MaxLightsPerCluster,
-        .clusterSliceScale = INX_Render3D->lighting.clusterSliceScale,
-        .clusterSliceBias = INX_Render3D->lighting.clusterSliceBias,
-        .elapsedTime = static_cast<float>(NX_GetElapsedTime()),
-        .hasActiveLights = (INX_Render3D->lighting.activeLights.GetSize() > 0),
-        .hasProbe = (INX_Render3D->scene.skyProbe != nullptr)
-    });
-
-    /* --- View layer/furstum culling and sorting --- */
-
-    if (INX_Render3D->renderFlags & NX_RENDER_FRUSTUM_CULLING) {
-        INX_CullDrawCalls<true>(scene.viewFrustum, scene.viewFrustum.cullMask);
+        // REVIEW: We can collect the used programs rather than iterating over all programs
+        INX_Pool.ForEach<NX_Shader3D>([](NX_Shader3D& shader) {
+            shader.ClearDynamicBuffer();
+        });
     }
     else {
-        INX_CullDrawCalls<false>(scene.viewFrustum, scene.viewFrustum.cullMask);
+        // Fast path when there are no draw calls
+        INX_RenderBackground(gpu::Pipeline());
     }
 
-    INX_SortDrawCalls(scene.viewFrustum.position);
-
-    /* --- Render scene --- */
-
-    gpu::Pipeline([](const gpu::Pipeline& pipeline) { // NOLINT
-        INX_RenderBackground(pipeline);
-        INX_RenderPrePass(pipeline);
-        INX_RenderScene(pipeline);
-    });
+    /* --- Post process and outputs the result --- */
 
     scene.framebufferScene.Resolve();
-
-    /* --- Post process --- */
-
     const gpu::Texture* source = &scene.targetSceneColor;
 
     if (scene.ssaoEnabled) {
@@ -1745,16 +1778,6 @@ void NX_End3D()
     }
 
     INX_PostFinal(*source);
-
-    /* --- Clear dynamic uniform buffers --- */
-
-    // REVIEW: We can collect the used programs rather than iterating over all programs
-    INX_Pool.ForEach<NX_Shader3D>([](NX_Shader3D& shader) {
-        shader.ClearDynamicBuffer();
-    });
-
-    /* --- Reset state --- */
-
     INX_EndRenderPass();
 }
 
@@ -1771,8 +1794,55 @@ void NX_BeginShadow3D(NX_Light* light, const NX_Camera* camera, NX_RenderFlags f
         return;
     }
 
-    INX_Render3D->shadowing.casterTarget = light;
-    INX_Render3D->shadowing.mainCamera = camera ? *camera : NX_GetDefaultCamera();
+    INX_ShadowingState& state = INX_Render3D->shadowing;
+
+    NX_Camera cam = camera ? *camera : NX_GetDefaultCamera();
+    NX_Mat4 view = NX_GetCameraViewMatrix(&cam);
+    state.camInvView = NX_Mat4Inverse(&view);
+    state.casterTarget = light;
+
+    switch (light->type) {
+    case NX_LIGHT_DIR:
+        state.casterViewProj = INX_GetDirectionalLightViewProj(light, cam.position);
+        state.casterFrustum = INX_Frustum(state.casterViewProj);
+        break;
+    case NX_LIGHT_SPOT:
+        state.casterViewProj = INX_GetSpotLightViewProj(light);
+        state.casterFrustum = INX_Frustum(state.casterViewProj);
+        break;
+    case NX_LIGHT_OMNI:
+        {
+            // For omni-light frustums we use a simple approximation,
+            // we create an orthographic view/projection along the Z axis,
+            // covering the full cubemap size, allowing frustum culling with a
+            // single test.
+            //
+            // This is an approximation because the omni-light is spherical.
+            // A single orthographic frustum may produce false positives for
+            // objects slightly outside the range, and such objects will be
+            // considered visible for all cubemap faces. It cannot produce
+            // false negatives, making this tradeoff acceptable for automatic
+            // frustum culling when per-face tests are not feasible.
+            //
+            // Also, this view/projection is not stored in the 'shadowing' state,
+            // it will be computed per face in NX_EndShadow3D during rendering.
+            //
+            // Note: if per-face culling is reintroduced, this naive frustum
+            // could be kept as a coarse pre-pass.
+
+            INX_OmniLight& omni = std::get<INX_OmniLight>(light->data);
+
+            float r = omni.range;
+            NX_Mat4 proj = NX_Mat4Ortho(-r, r, -r, r, -r, r);
+            NX_Mat4 view = NX_Mat4LookAt(omni.position, omni.position + NX_VEC3_FORWARD, NX_VEC3_UP);
+
+            state.casterFrustum = INX_Frustum(view * proj);
+        }
+        break;
+    case NX_LIGHT_TYPE_COUNT:
+        NX_UNREACHABLE();
+        break;
+    }
 }
 
 void NX_EndShadow3D()
@@ -1788,16 +1858,18 @@ void NX_EndShadow3D()
     INX_LightingState& lighting = INX_Render3D->lighting;
     NX_Light* light = shadowing.casterTarget;
 
-    /* --- Setup common pipeline state --- */
+    /* --- Setup common pipeline state and upload draw calls --- */
 
     gpu::Pipeline pipeline;
     pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
 
-    pipeline.BindStorage(0, drawCalls.sharedBuffer);
-    pipeline.BindStorage(1, drawCalls.uniqueBuffer);
-    pipeline.BindStorage(2, drawCalls.boneBuffer.GetBuffer());
-
-    pipeline.BindUniform(0, shadowing.frameUniform);
+    if (!drawCalls.sortedUnique.IsEmpty()) {
+        INX_UploadDrawCalls();
+        pipeline.BindUniform(0, shadowing.frameUniform);
+        pipeline.BindStorage(0, drawCalls.sharedBuffer);
+        pipeline.BindStorage(1, drawCalls.uniqueBuffer);
+        pipeline.BindStorage(2, drawCalls.boneBuffer.GetBuffer());
+    }
 
     /* --- Render shadow maps --- */
 
@@ -1808,25 +1880,37 @@ void NX_EndShadow3D()
 
     for (int face = 0; face < faceCount; ++face)
     {
+        /* --- Set shadow map face and clear it --- */
+
+        if (faceCount > 1) {
+            shadowing.framebuffer[light->type].SetColorAttachmentTarget(
+                0, light->shadow.state.mapIndex, face
+            );
+        }
+
+        NX_Color clear = NX_COLOR_1(NX_GetLightRange(light));
+        pipeline.Clear(shadowing.framebuffer[light->type], clear);
+
+        if (drawCalls.sortedUnique.IsEmpty()) {
+            continue;
+        }
+
         /* --- Update and get caster's data --- */
 
-        NX_Mat4 viewProj;
         NX_Vec3 position;
         float range;
 
         switch (light->type) {
         case NX_LIGHT_DIR:
-            viewProj = INX_GetDirectionalLightViewProj(light, shadowing.mainCamera);
             range = std::get<INX_DirectionalLight>(light->data).range;
             position = NX_VEC3_ZERO;
             break;
         case NX_LIGHT_SPOT:
-            viewProj = INX_GetSpotLightViewProj(light);
             position = std::get<INX_SpotLight>(light->data).position;
             range = std::get<INX_SpotLight>(light->data).range;
             break;
         case NX_LIGHT_OMNI:
-            viewProj = INX_GetOmniLightViewProj(light, face);
+            shadowing.casterViewProj = INX_GetOmniLightViewProj(light, face);
             position = std::get<INX_OmniLight>(light->data).position;
             range = std::get<INX_OmniLight>(light->data).range;
             break;
@@ -1837,38 +1921,18 @@ void NX_EndShadow3D()
 
         /* --- Upload frame uniform --- */
 
-        NX_Mat4 camView = NX_GetCameraViewMatrix(&shadowing.mainCamera);
-
         shadowing.frameUniform.UploadObject(INX_GPUShadowFrame {
-            .lightViewProj = viewProj,
-            .cameraInvView = NX_Mat4Inverse(&camView),
+            .lightViewProj = shadowing.casterViewProj,
+            .cameraInvView = shadowing.camInvView,
             .lightPosition = position,
             .lightRange = range,
             .lightType = light->type,
             .elapsedTime = static_cast<float>(NX_GetElapsedTime())
         });
 
-        /* --- Setup shadow map face --- */
+        /* --- Render shadow map face --- */
 
-        shadowing.framebuffer[light->type].SetColorAttachmentTarget(
-            0, light->shadow.state.mapIndex, face
-        );
-
-        pipeline.Clear(
-            shadowing.framebuffer[light->type],
-            NX_COLOR_1(NX_GetLightRange(light))
-        );
-
-        /* --- Cull and render shadow casters --- */
-
-        if (INX_Render3D->renderFlags & NX_RENDER_FRUSTUM_CULLING) {
-            INX_CullDrawCalls<true>(INX_Frustum(viewProj), light->shadow.cullMask);
-        }
-        else {
-            INX_CullDrawCalls<false>(INX_Frustum(viewProj), light->shadow.cullMask);
-        }
-
-        for (int uniqueIndex : drawCalls.uniqueVisible.GetCategories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
+        for (int uniqueIndex : drawCalls.sortedUnique.GetCategories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
         {
             const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
             if (unique.mesh.GetShadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
