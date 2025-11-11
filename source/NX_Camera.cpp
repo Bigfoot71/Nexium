@@ -6,9 +6,15 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#include "NX/NX_Math.h"
 #include <NX/NX_Camera.h>
+#include <NX/NX_Math.h>
 #include <cmath>
+
+// ============================================================================
+// LOCAL MANAGEMENT
+// ============================================================================
+
+static NX_Camera INX_DefaultCamera = NX_BASE_CAMERA;
 
 // ============================================================================
 // PUBLIC API
@@ -16,15 +22,12 @@
 
 NX_Camera NX_GetDefaultCamera()
 {
-    return NX_Camera {
-        .position = NX_VEC3_ZERO,
-        .rotation = NX_QUAT_IDENTITY,
-        .nearPlane = 0.05f,
-        .farPlane = 4000.0f,
-        .fov = 60.0f * NX_DEG2RAD,
-        .projection = NX_PROJECTION_PERSPECTIVE,
-        .cullMask = NX_LAYER_ALL,
-    };
+    return INX_DefaultCamera;
+}
+
+void NX_SetDefaultCamera(const NX_Camera* camera)
+{
+    INX_DefaultCamera = camera ? *camera : NX_BASE_CAMERA;
 }
 
 void NX_UpdateCameraOrbital(NX_Camera* camera, NX_Vec3 center, float distance, float height, float rotation)
