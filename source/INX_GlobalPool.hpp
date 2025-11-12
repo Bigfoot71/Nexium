@@ -149,95 +149,31 @@ inline void INX_GlobalPool::ForEach(F&& func)
 
 inline void INX_GlobalPool::UnloadAll()
 {
-    if (!mShaders2D.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_Shader2D objects were not freed! Possible memory leak", mShaders2D.GetSize());
-        mShaders2D.Clear();
-    }
+    auto clear = [](auto& pool, const char* typeName) {
+        if (!pool.IsEmpty()) {
+            NX_LOG(W, "POOL: %i %s objects were not freed! Possible memory leak", pool.GetSize(), typeName);
+            pool.Clear();
+        }
+    };
 
-    if (!mShaders3D.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_Shader3D objects were not freed! Possible memory leak", mShaders3D.GetSize());
-        mShaders3D.Clear();
-    }
-
-    if (!mLights.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_Light objects were not freed! Possible memory leak", mLights.GetSize());
-        mLights.Clear();
-    }
-
-    if (!mModels.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_Model objects were not freed! Possible memory leak", mModels.GetSize());
-        mModels.Clear();
-    }
-
-    if (!mMeshes.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_Mesh objects were not freed! Possible memory leak", mMeshes.GetSize());
-        mMeshes.Clear();
-    }
-
-    if (!mSkeletons.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_Skeleton objects were not freed! Possible memory leak", mSkeletons.GetSize());
-        mSkeletons.Clear();
-    }
-
-    if (!mAnimationPlayers.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_AnimationPlayer objects were not freed! Possible memory leak", mAnimationPlayers.GetSize());
-        mAnimationPlayers.Clear();
-    }
-
-    if (!mAnimationLibs.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_AnimationLib objects were not freed! Possible memory leak", mAnimationLibs.GetSize());
-        mAnimationLibs.Clear();
-    }
-
-    if (!mDynamicMeshes.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_DynamicMesh objects were not freed! Possible memory leak", mDynamicMeshes.GetSize());
-        mDynamicMeshes.Clear();
-    }
-
-    if (!mInstanceBuffers.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_InstanceBuffer objects were not freed! Possible memory leak", mInstanceBuffers.GetSize());
-        mInstanceBuffers.Clear();
-    }
-
-    if (!mVertexBuffers3D.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_VertexBuffer3D objects were not freed! Possible memory leak", mVertexBuffers3D.GetSize());
-        mVertexBuffers3D.Clear();
-    }
-
-    if (!mIndirectLights.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_IndirectLight objects were not freed! Possible memory leak", mIndirectLights.GetSize());
-        mIndirectLights.Clear();
-    }
-
-    if (!mRenderTextures.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_RenderTexture objects were not freed! Possible memory leak", mRenderTextures.GetSize());
-        mRenderTextures.Clear();
-    }
-
-    if (!mCubemaps.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_Cubemap objects were not freed! Possible memory leak", mCubemaps.GetSize());
-        mCubemaps.Clear();
-    }
-
-    if (!mFonts.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_Font objects were not freed! Possible memory leak", mFonts.GetSize());
-        mFonts.Clear();
-    }
-
-    if (!mTextures.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_Texture objects were not freed! Possible memory leak", mTextures.GetSize());
-        mTextures.Clear();
-    }
-
-    if (!mAudioClips.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_AudioClip objects were not freed! Possible memory leak", mAudioClips.GetSize());
-        mAudioClips.Clear();
-    }
-
-    if (!mAudioStreams.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_AudioStream objects were not freed! Possible memory leak", mAudioStreams.GetSize());
-        mAudioStreams.Clear();
-    }
+    clear(mShaders2D,        "NX_Shader2D");
+    clear(mShaders3D,        "NX_Shader3D");
+    clear(mLights,           "NX_Light");
+    clear(mModels,           "NX_Model");
+    clear(mMeshes,           "NX_Mesh");
+    clear(mSkeletons,        "NX_Skeleton");
+    clear(mAnimationPlayers, "NX_AnimationPlayer");
+    clear(mAnimationLibs,    "NX_AnimationLib");
+    clear(mDynamicMeshes,    "NX_DynamicMesh");
+    clear(mInstanceBuffers,  "NX_InstanceBuffer");
+    clear(mVertexBuffers3D,  "NX_VertexBuffer3D");
+    clear(mIndirectLights,   "NX_IndirectLight");
+    clear(mRenderTextures,   "NX_RenderTexture");
+    clear(mCubemaps,         "NX_Cubemap");
+    clear(mFonts,            "NX_Font");
+    clear(mTextures,         "NX_Texture");
+    clear(mAudioClips,       "NX_AudioClip");
+    clear(mAudioStreams,     "NX_AudioStream");
 }
 
 #endif // INX_GLOBAL_POOL_HPP
