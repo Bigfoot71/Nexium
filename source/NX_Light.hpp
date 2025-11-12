@@ -43,6 +43,7 @@ struct INX_GPUShadow {
     alignas(4) float slopeBias{};
     alignas(4) float bias{};
     alignas(4) float softness{};
+    alignas(4) float opacity{};
 };
 
 struct INX_DirectionalLight {
@@ -84,6 +85,7 @@ struct INX_ShadowLightData {
     float slopeBias{0.005f};
     float bias{0.001f};
     float softness{2.0f};
+    float opacity{1.0f};
 };
 
 struct INX_ShadowLightState {

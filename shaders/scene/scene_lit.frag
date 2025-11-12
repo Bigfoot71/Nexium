@@ -274,7 +274,8 @@ vec3 LightDir(uint lightIndex, const in LightParams params)
             vec2 sampleDir = projCoords.xy + params.diskRotation * VOGEL_DISK[i] * softRadius;
             shadowAtten += step(currentDepth, texture(uTexShadowDir, vec3(sampleDir, float(shadow.mapIndex))).r);
         }
-        shadowAtten /= float(SHADOW_SAMPLES);
+
+        shadowAtten = mix(1.0, shadowAtten / float(SHADOW_SAMPLES), shadow.opacity);
 
         /* --- Applying a fade to the edges of the projection --- */
 
@@ -359,7 +360,7 @@ vec3 LightSpot(uint lightIndex, const in LightParams params)
             shadowAtten += step(currentDepth, texture(uTexShadowSpot, vec3(sampleDir, float(shadow.mapIndex))).r);
         }
 
-        shadowAtten /= float(SHADOW_SAMPLES);
+        shadowAtten = mix(1.0, shadowAtten / float(SHADOW_SAMPLES), shadow.opacity);
 
         /* --- Apply shadow attenuation with out of bounds mask --- */
 
@@ -440,7 +441,7 @@ vec3 LightOmni(uint lightIndex, const in LightParams params)
             shadowAtten += step(currentDepth, texture(uTexShadowOmni, vec4(sampleDir, float(shadow.mapIndex))).r);
         }
 
-        attenuation *= shadowAtten / float(SHADOW_SAMPLES);
+        attenuation *= mix(1.0, shadowAtten / float(SHADOW_SAMPLES), shadow.opacity);
     }
 
     /* --- Return final contribution --- */

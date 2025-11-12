@@ -173,6 +173,7 @@ void INX_FillGPUShadow(const NX_Light* light, INX_GPUShadow* gpu)
     gpu->slopeBias = light->shadow.data.slopeBias;
     gpu->bias = light->shadow.data.bias;
     gpu->softness = light->shadow.data.softness;
+    gpu->opacity = light->shadow.data.opacity;
 }
 
 // ============================================================================
@@ -819,4 +820,14 @@ float NX_GetShadowSoftness(const NX_Light* light)
 void NX_SetShadowSoftness(NX_Light* light, float softness)
 {
     light->shadow.data.softness = softness;
+}
+
+float NX_GetShadowOpacity(const NX_Light* light)
+{
+    return light->shadow.data.opacity;
+}
+
+void NX_SetShadowOpacity(NX_Light* light, float opacity)
+{
+    light->shadow.data.opacity = opacity;
 }

@@ -365,6 +365,22 @@ NXAPI float NX_GetShadowSoftness(const NX_Light* light);
  */
 NXAPI void NX_SetShadowSoftness(NX_Light* light, float softness);
 
+/**
+ * @brief Gets the shadow opacity factor.
+ * @param light Pointer to the NX_Light.
+ * @return Current shadow opacity.
+ * @note Default value is 1.0.
+ */
+NXAPI float NX_GetShadowOpacity(const NX_Light* light);
+
+/**
+ * @brief Sets the shadow opacity factor.
+ * @param light Pointer to the NX_Light.
+ * @param opacity New shadow opacity.
+ * @note Default value is 1.0.
+ */
+NXAPI void NX_SetShadowOpacity(NX_Light* light, float opacity);
+
 #if defined(__cplusplus)
 } // extern "C"
 #endif

@@ -37,6 +37,7 @@ struct Shadow {
     float slopeBias;
     float bias;
     float softness;
+    float opacity;
 };
 
 struct Cluster {
