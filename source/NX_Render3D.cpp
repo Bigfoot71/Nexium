@@ -35,6 +35,7 @@
 #include "./Detail/GPU/Framebuffer.hpp"
 #include "./Detail/GPU/SwapBuffer.hpp"
 #include "./Detail/GPU/MipBuffer.hpp"
+#include "./Detail/GPU/Pipeline.hpp"
 #include "./Detail/GPU/Texture.hpp"
 #include "./Detail/GPU/Buffer.hpp"
 
@@ -45,7 +46,6 @@
 #include "./INX_GlobalPool.hpp"
 #include "./INX_GPUBridge.hpp"
 #include "./INX_Frustum.hpp"
-#include "Detail/GPU/Pipeline.hpp"
 
 #include <numeric>
 

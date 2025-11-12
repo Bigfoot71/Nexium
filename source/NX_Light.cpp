@@ -13,7 +13,6 @@
 #include "./INX_RenderUtils.hpp"
 #include "./INX_GlobalPool.hpp"
 #include "./NX_Render3D.hpp"
-#include "NX/NX_Light.h"
 #include <cmath>
 
 // ============================================================================
