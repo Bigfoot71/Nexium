@@ -55,7 +55,7 @@ Here’s a checklist of the major features that are still missing:
 - [X] Dynamic 3D geometry drawing
 - [x] Rendering to custom render targets
 - [x] Procedural skybox cubemap generation
-- [ ] Dynamic reflection probes
+- [x] Dynamic reflection probes
 - [x] Screen space ambient occlusion
 - [x] Bloom in post process
 - [x] Fog effect
