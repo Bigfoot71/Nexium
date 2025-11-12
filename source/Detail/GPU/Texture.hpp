@@ -26,15 +26,6 @@ class Framebuffer;
 
 /* === TextureConfig === */
 
-struct TextureParam {
-    GLenum minFilter = GL_NEAREST;
-    GLenum magFilter = GL_NEAREST;
-    GLenum sWrap = GL_CLAMP_TO_EDGE;
-    GLenum tWrap = GL_CLAMP_TO_EDGE;
-    GLenum rWrap = GL_CLAMP_TO_EDGE;
-    float anisotropy = 1.0f;
-};
-
 struct TextureConfig {
     GLenum target = GL_TEXTURE_2D;
     GLenum internalFormat = GL_RGBA8;
@@ -68,6 +59,28 @@ struct TextureConfig {
             break;
         }
         return *this;
+    }
+};
+
+struct TextureParam {
+    GLenum minFilter = GL_NEAREST;
+    GLenum magFilter = GL_NEAREST;
+    GLenum sWrap = GL_CLAMP_TO_EDGE;
+    GLenum tWrap = GL_CLAMP_TO_EDGE;
+    GLenum rWrap = GL_CLAMP_TO_EDGE;
+    float anisotropy = 1.0f;
+
+    bool operator==(const TextureParam& other) const {
+        return minFilter == other.minFilter &&
+               magFilter == other.magFilter &&
+               sWrap == other.sWrap &&
+               tWrap == other.tWrap &&
+               rWrap == other.rWrap &&
+               anisotropy == other.anisotropy;
+    }
+
+    bool operator!=(const TextureParam& other) const {
+        return !(*this == other);
     }
 };
 
@@ -122,6 +135,7 @@ public:
     int GetWidth() const noexcept;
     int GetHeight() const noexcept;
     int GetDepth() const noexcept;
+    const TextureParam& GetParameters() const noexcept;
 
     /** Post-creation manipulation (keeps the ID, only affects the current target) */
     void Realloc(int w, int h, int d, const void* data = nullptr) noexcept;
@@ -129,6 +143,10 @@ public:
 
     /** Ensures the required dimensions are available, calls realloc if the size needs to be increased */
     void Reserve(int w, int h, int d) noexcept;
+
+    /** Only valid for array textures; the texture will have a new ID if keepData is true */
+    void ReallocLayers(int count, bool keepData = false) noexcept;
+    void ReserveLayers(int count, bool keepData = false) noexcept;
 
     /** Data upload */
     void Upload(const void* data, int depth = 0, int level = 0) noexcept;
@@ -150,6 +168,7 @@ private:
     GLenum mInternalFormat{GL_RGBA8};
     int mWidth{0}, mHeight{0}, mDepth{0};
     int mMipLevels{1};
+    TextureParam mParameters{};
 
     /** Anisotropy support */
     static inline bool sAnisotropyInitialized = false;
@@ -191,6 +210,7 @@ private:
 /* === Inline Implementations === */
 
 inline Texture::Texture(const TextureConfig& config, const TextureParam& param) noexcept
+    : mParameters(param)
 {
     CreateTexture(config.Check(), param);
 }
@@ -208,6 +228,7 @@ inline Texture::Texture(Texture&& other) noexcept
     , mHeight(other.mHeight)
     , mDepth(other.mDepth)
     , mMipLevels(other.mMipLevels)
+    , mParameters(other.mParameters)
 { }
 
 inline Texture& Texture::operator=(Texture&& other) noexcept
@@ -221,6 +242,7 @@ inline Texture& Texture::operator=(Texture&& other) noexcept
         mHeight = other.mHeight;
         mDepth = other.mDepth;
         mMipLevels = other.mMipLevels;
+        mParameters = other.mParameters;
     }
     return *this;
 }
@@ -293,6 +315,11 @@ inline int Texture::GetDepth() const noexcept
     return mDepth;
 }
 
+inline const TextureParam& Texture::GetParameters() const noexcept
+{
+    return mParameters;
+}
+
 inline void Texture::Realloc(int w, int h, int d, const void* data) noexcept
 {
     TextureConfig config {
@@ -351,6 +378,13 @@ inline void Texture::Reserve(int w, int h, int d) noexcept
     };
 
     Realloc(config);
+}
+
+inline void Texture::ReserveLayers(int count, bool keepData) noexcept
+{
+    if (count > mDepth) {
+        ReallocLayers(count, keepData);
+    }
 }
 
 inline void Texture::DestroyTexture() noexcept

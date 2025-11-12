@@ -738,7 +738,7 @@ int INX_Render3DState_RequestShadowMap(NX_LightType type)
     }
 
     if (mapIndex > shadowMap.GetDepth()) {
-        shadowMap.Realloc(shadowMap.GetWidth(), shadowMap.GetHeight(), mapIndex + 1);
+        shadowMap.ReallocLayers(mapIndex + 1, true);
         shadowFb.UpdateColorTextureView(0, shadowMap);
     }
 
@@ -775,8 +775,8 @@ int INX_Render3DState_RequestProbe()
     }
 
     if (probeIndex >= irradiance.GetDepth()) {
-        irradiance.Realloc(irradiance.GetWidth(), irradiance.GetHeight(), probeIndex + 1);
-        prefilter.Realloc(prefilter.GetWidth(), prefilter.GetHeight(), probeIndex + 1);
+        irradiance.ReallocLayers(probeIndex + 1, true);
+        prefilter.ReallocLayers(probeIndex + 1, true);
     }
 
     return probeIndex;
