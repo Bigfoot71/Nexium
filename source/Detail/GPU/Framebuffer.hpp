@@ -74,6 +74,10 @@ public:
     const TextureView& GetDepthAttachment() const noexcept;
     size_t GetColorAttachmentCount() const noexcept;
 
+    /** Attachment checks */
+    bool HasColorAttachment(int index) const noexcept;
+    bool HasDepthAttachment() const noexcept;
+
     /** Draw buffers control */
     void SetDrawBuffers(std::initializer_list<int> buffers) noexcept;
     void EnableDrawBuffers() noexcept;
@@ -285,6 +289,16 @@ inline const TextureView& Framebuffer::GetDepthAttachment() const noexcept
 inline size_t Framebuffer::GetColorAttachmentCount() const noexcept
 {
     return mColorAttachments.GetSize();
+}
+
+inline bool Framebuffer::HasColorAttachment(int index) const noexcept
+{
+    return (index < mColorAttachments.GetSize() && mColorAttachments[index].IsValid());
+}
+
+inline bool Framebuffer::HasDepthAttachment() const noexcept
+{
+    return mDepthStencilAttachment.IsValid();
 }
 
 inline void Framebuffer::SetSampleCount(int sampleCount) noexcept
