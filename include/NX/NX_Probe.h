@@ -1,4 +1,4 @@
-/* NX_Probe.c -- API declaration for Nexium's environment module
+/* NX_Probe.h -- API declaration for Nexium's probe module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
