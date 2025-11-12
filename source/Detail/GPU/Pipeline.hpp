@@ -695,19 +695,26 @@ inline void Pipeline::Clear(const gpu::Framebuffer& framebuffer, NX_Color color,
 
 inline void Pipeline::ClearColor(std::initializer_list<std::pair<int, NX_Color>> attachments) const noexcept
 {
-    for (const auto& attachment : attachments) {
-        glClearBufferfv(GL_COLOR, attachment.first, reinterpret_cast<const float*>(&attachment.second));
+    for (const auto& [index, color] : attachments) {
+        ClearColor(index, color);
     }
 }
 
 inline void Pipeline::ClearColor(int attachment, NX_Color color) const noexcept
 {
-    glClearBufferfv(GL_COLOR, attachment, reinterpret_cast<const float*>(&color));
+    const bool validAttachment = (sBindFramebuffer == nullptr)
+        ? (attachment == 0) : sBindFramebuffer->HasColorAttachment(attachment);
+
+    if (validAttachment) {
+        glClearBufferfv(GL_COLOR, attachment, reinterpret_cast<const float*>(&color));
+    }
 }
 
 inline void Pipeline::ClearDepth(float depth) const noexcept
 {
-    glClearBufferfv(GL_DEPTH, 0, &depth);
+    if (sBindFramebuffer == nullptr || sBindFramebuffer->HasDepthAttachment()) {
+        glClearBufferfv(GL_DEPTH, 0, &depth);
+    }
 }
 
 inline void Pipeline::Draw(GLenum mode, GLsizei count) const noexcept
