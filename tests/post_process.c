@@ -54,7 +54,7 @@ int main(void)
             env.bloom.mode = (env.bloom.mode == NX_BLOOM_DISABLED) ? NX_BLOOM_ADDITIVE : NX_BLOOM_DISABLED;
         }
 
-        NX_Begin3D(&camera, &env, NULL);
+        NX_Begin3D(&camera, &env, 0);
         {
             mat.emission.energy = 0.0f;
             mat.albedo.color = NX_GREEN;

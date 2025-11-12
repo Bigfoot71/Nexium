@@ -59,25 +59,26 @@ int main(void)
 
         /* --- 3D rendering --- */
 
-        NX_Begin3D(&camera, &env, NULL);
-        NX_Transform T = NX_TRANSFORM_IDENTITY;
+        NX_Begin3D(&camera, &env, 0);
+        {
+            NX_Transform T = NX_TRANSFORM_IDENTITY;
 
-        /* Left cube with dynamic color and tex0 */
-        NX_Color c0 = NX_ColorFromHSV(90.0f * t, 1, 1, 1);
-        NX_UpdateDynamicShader3DBuffer(shader, sizeof(NX_Color), &c0);
-        NX_SetShader3DTexture(shader, 0, tex0);
+            /* Left cube with dynamic color and tex0 */
+            NX_Color c0 = NX_ColorFromHSV(90.0f * t, 1, 1, 1);
+            NX_UpdateDynamicShader3DBuffer(shader, sizeof(NX_Color), &c0);
+            NX_SetShader3DTexture(shader, 0, tex0);
 
-        T.translation.x = -1.5f;
-        NX_DrawMesh3D(cube, &material, &T);
+            T.translation.x = -1.5f;
+            NX_DrawMesh3D(cube, &material, &T);
 
-        /* Right cube with dynamic color and tex1 */
-        NX_Color c1 = NX_ColorFromHSV(90.0f * t + 90.0f, 1, 1, 1);
-        NX_UpdateDynamicShader3DBuffer(shader, sizeof(NX_Color), &c1);
-        NX_SetShader3DTexture(shader, 0, tex1);
+            /* Right cube with dynamic color and tex1 */
+            NX_Color c1 = NX_ColorFromHSV(90.0f * t + 90.0f, 1, 1, 1);
+            NX_UpdateDynamicShader3DBuffer(shader, sizeof(NX_Color), &c1);
+            NX_SetShader3DTexture(shader, 0, tex1);
 
-        T.translation.x = +1.5f;
-        NX_DrawMesh3D(cube, &material, &T);
-
+            T.translation.x = +1.5f;
+            NX_DrawMesh3D(cube, &material, &T);
+        }
         NX_End3D();
     }
 

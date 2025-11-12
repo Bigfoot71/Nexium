@@ -13,6 +13,7 @@
  */
 struct Frame {
     mat4 lightViewProj;
+    mat4 cameraInvView;
     vec3 lightPosition;
     float lightRange;
     int lightType;
@@ -27,12 +28,12 @@ struct Frame {
 struct Frame {
     uvec2 screenSize;               // Render target dimensions
     uvec3 clusterCount;
-    uint  maxLightsPerCluster;
+    uint maxLightsPerCluster;
+    uint reflectionProbeCount; 
     float clusterSliceScale;
     float clusterSliceBias;
     float elapsedTime;
     bool hasActiveLights;
-    bool hasProbe;
 };
 
 #endif // SHADOW

@@ -8,6 +8,7 @@
 
 #include <NX/Nexium.h>
 #include "./common.h"
+#include "NX/NX_Render3D.h"
 
 int main(void)
 {
@@ -51,16 +52,24 @@ int main(void)
 
         /* --- 3D rendering --- */
 
-        NX_Begin3D(&camera, NULL, NULL);
+        NX_BeginShadow3D(light, &camera, 0);
+        {
+            material.albedo.color = NX_GREEN;
+            NX_DrawMesh3D(quad, &material, &(NX_Transform){ NX_VEC3(0, -0.501f, 0), NX_QUAT_IDENTITY, NX_VEC3_ONE });
 
-        /* Draw ground quad */
-        material.albedo.color = NX_GREEN;
-        NX_DrawMesh3D(quad, &material, &(NX_Transform){ NX_VEC3(0, -0.501f, 0), NX_QUAT_IDENTITY, NX_VEC3_ONE });
+            material.albedo.color = NX_BLUE;
+            NX_DrawMesh3D(cube, &material, NULL);
+        }
+        NX_EndShadow3D();
 
-        /* Draw cube */
-        material.albedo.color = NX_BLUE;
-        NX_DrawMesh3D(cube, &material, NULL);
+        NX_Begin3D(&camera, NULL, 0);
+        {
+            material.albedo.color = NX_GREEN;
+            NX_DrawMesh3D(quad, &material, &(NX_Transform){ NX_VEC3(0, -0.501f, 0), NX_QUAT_IDENTITY, NX_VEC3_ONE });
 
+            material.albedo.color = NX_BLUE;
+            NX_DrawMesh3D(cube, &material, NULL);
+        }
         NX_End3D();
 
         /* --- 2D UI --- */

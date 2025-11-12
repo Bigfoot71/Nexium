@@ -7,7 +7,14 @@
  */
 
 #include <NX/NX_Camera.h>
+#include <NX/NX_Math.h>
 #include <cmath>
+
+// ============================================================================
+// LOCAL MANAGEMENT
+// ============================================================================
+
+static NX_Camera INX_DefaultCamera = NX_BASE_CAMERA;
 
 // ============================================================================
 // PUBLIC API
@@ -15,15 +22,12 @@
 
 NX_Camera NX_GetDefaultCamera()
 {
-    return NX_Camera {
-        .position = NX_VEC3_ZERO,
-        .rotation = NX_QUAT_IDENTITY,
-        .nearPlane = 0.05f,
-        .farPlane = 4000.0f,
-        .fov = 60.0f * NX_DEG2RAD,
-        .projection = NX_PROJECTION_PERSPECTIVE,
-        .cullMask = NX_LAYER_ALL,
-    };
+    return INX_DefaultCamera;
+}
+
+void NX_SetDefaultCamera(const NX_Camera* camera)
+{
+    INX_DefaultCamera = camera ? *camera : NX_BASE_CAMERA;
 }
 
 void NX_UpdateCameraOrbital(NX_Camera* camera, NX_Vec3 center, float distance, float height, float rotation)
@@ -116,4 +120,68 @@ NX_Transform NX_GetCameraTransform(const NX_Camera* camera)
         .rotation = camera->rotation,
         .scale = NX_VEC3_ONE
     };
+}
+
+NX_Mat4 NX_GetCameraViewMatrix(const NX_Camera* camera)
+{
+    // Equivalent to:
+    //  translate(-position) * transpose(mat4(rotation))
+
+    float a2 = camera->rotation.x * camera->rotation.x;
+    float b2 = camera->rotation.y * camera->rotation.y;
+    float c2 = camera->rotation.z * camera->rotation.z;
+    float ac = camera->rotation.x * camera->rotation.z;
+    float ab = camera->rotation.x * camera->rotation.y;
+    float bc = camera->rotation.y * camera->rotation.z;
+    float ad = camera->rotation.w * camera->rotation.x;
+    float bd = camera->rotation.w * camera->rotation.y;
+    float cd = camera->rotation.w * camera->rotation.z;
+
+    NX_Mat4 view;
+
+    view.m00 = 1 - 2 * (b2 + c2);
+    view.m01 = 2 * (ab - cd);
+    view.m02 = 2 * (ac + bd);
+    view.m03 = 0.0f;
+
+    view.m10 = 2 * (ab + cd);
+    view.m11 = 1 - 2 * (a2 + c2);
+    view.m12 = 2 * (bc - ad);
+    view.m13 = 0.0f;
+
+    view.m20 = 2 * (ac - bd);
+    view.m21 = 2 * (bc + ad);
+    view.m22 = 1 - 2 * (a2 + b2);
+    view.m23 = 0.0f;
+
+    view.m30 = -(view.m00 * camera->position.x + view.m10 * camera->position.y + view.m20 * camera->position.z);
+    view.m31 = -(view.m01 * camera->position.x + view.m11 * camera->position.y + view.m21 * camera->position.z);
+    view.m32 = -(view.m02 * camera->position.x + view.m12 * camera->position.y + view.m22 * camera->position.z);
+    view.m33 = 1.0f;
+
+    return view;
+}
+
+NX_Mat4 NX_GetCameraProjectionMatrix(const NX_Camera* camera, float aspect)
+{
+    switch (camera->projection) {
+    case NX_PROJECTION_PERSPECTIVE:
+        {
+            float top = camera->nearPlane * tanf(camera->fov * 0.5f);
+            float right = top * aspect;
+            return NX_Mat4Frustum(-right, right, -top, top, camera->nearPlane, camera->farPlane);
+        }
+        break;
+    case NX_PROJECTION_ORTHOGRAPHIC:
+        {
+            float top = camera->fov * 0.5f;
+            float right = top * aspect;
+            return NX_Mat4Ortho(-right, right, -top, top, camera->nearPlane, camera->farPlane);
+        }
+        break;
+    default:
+        break;
+    }
+
+    return NX_MAT4_IDENTITY;
 }

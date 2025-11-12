@@ -16,7 +16,6 @@ struct Frustum {
     mat4 invView;
     mat4 invProj;
     vec3 position;
-    uint cullMask;
     float near;
     float far;
 };

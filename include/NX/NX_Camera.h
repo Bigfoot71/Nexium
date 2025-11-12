@@ -13,6 +13,21 @@
 #include "./NX_API.h"
 
 // ============================================================================
+// MACROS DEFINITIONS
+// ============================================================================
+
+#define NX_BASE_CAMERA NX_LITERAL(NX_Camera)    \
+{                                               \
+    .position = NX_VEC3_ZERO,                   \
+    .rotation = NX_QUAT_IDENTITY,               \
+    .nearPlane = 0.05f,                         \
+    .farPlane = 4000.0f,                        \
+    .fov = 60.0f * NX_DEG2RAD,                  \
+    .projection = NX_PROJECTION_PERSPECTIVE,    \
+    .cullMask = NX_LAYER_ALL                    \
+}
+
+// ============================================================================
 // TYPES DEFINITIONS
 // ============================================================================
 
@@ -91,11 +106,19 @@ extern "C" {
 #endif
 
 /**
- * @brief Returns the default camera.
- * @return NX_Camera initialized at (0,0,0) looking forward with identity rotation.
- * @note Near plane = 0.05, Far plane = 4000.0, Vertical FOV = 60 degrees, Perspective projection.
+ * @brief Returns the current default camera.
+ *
+ * If no camera was set, returns NX_BASE_CAMERA by default.
  */
 NXAPI NX_Camera NX_GetDefaultCamera(void);
+
+/**
+ * @brief Sets the default camera used by Nexium.
+ *
+ * Overrides the camera returned by NX_GetDefaultCamera().
+ * Pass NULL to restore the default NX_BASE_CAMERA.
+ */
+NXAPI void NX_SetDefaultCamera(const NX_Camera* camera);
 
 /**
  * @brief Updates an orbital camera around a target point.
@@ -144,6 +167,21 @@ NXAPI void NX_ApplyCameraTransform(NX_Camera* camera, NX_Mat4 transform, NX_Vec3
  * @return The camera's current transform.
  */
 NXAPI NX_Transform NX_GetCameraTransform(const NX_Camera* camera);
+
+/**
+ * @brief Retrieves the view matrix of a camera.
+ * @param camera Pointer to the camera.
+ * @return The camera's current view matrix.
+ */
+NXAPI NX_Mat4 NX_GetCameraViewMatrix(const NX_Camera* camera);
+
+/**
+ * @brief Retrieves the projection matrix of a camera.
+ * @param camera Pointer to the camera.
+ * @param aspect Aspect ratio (width / height) for the projection.
+ * @return The camera's current projection matrix.
+ */
+NXAPI NX_Mat4 NX_GetCameraProjectionMatrix(const NX_Camera* camera, float aspect);
 
 #if defined(__cplusplus)
 } // extern "C"

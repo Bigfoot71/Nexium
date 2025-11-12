@@ -47,6 +47,72 @@ void Texture::Realloc(const TextureConfig& config) noexcept
     );
 }
 
+void Texture::ReallocLayers(int newDepth, bool keepData) noexcept
+{
+    SDL_assert(IsValid() && "Cannot realloc layers on invalid texture"); // NOLINT
+    SDL_assert((mTarget == GL_TEXTURE_2D_ARRAY || mTarget == GL_TEXTURE_CUBE_MAP_ARRAY) && "ReallocLayers only works with array textures"); // NOLINT
+
+    if (newDepth == mDepth) {
+        return;
+    }
+
+    /* --- Just realloc if we don't need to keep data --- */
+
+    if (!keepData) {
+        Realloc(mWidth, mHeight, newDepth, nullptr);
+        return;
+    }
+
+    /* --- Create new texture with same parameters but different depth --- */
+
+    TextureConfig newConfig {
+        .target = mTarget,
+        .internalFormat = mInternalFormat,
+        .data = nullptr,
+        .width = mWidth,
+        .height = mHeight,
+        .depth = newDepth,
+        .mipmap = (mMipLevels > 1)
+    };
+
+    Texture newTexture(newConfig, mParameters);
+
+    if (!newTexture.IsValid()) {
+        NX_LOG(E, "GPU: Failed to create new texture for ReallocLayers");
+        return;
+    }
+
+    /* --- Copy existing layers (min of old and new depth) --- */
+
+    int layersToCopy = NX_MIN(mDepth, newDepth);
+    int physicalLayers = layersToCopy * (mTarget == GL_TEXTURE_CUBE_MAP_ARRAY ? 6 : 1);
+
+    for (int mip = 0; mip < mMipLevels; mip++)
+    {
+        int mipWidth = NX_MAX(1, mWidth >> mip);
+        int mipHeight = NX_MAX(1, mHeight >> mip);
+
+        glCopyImageSubData(
+            mID, mTarget, mip, 0, 0, 0,
+            newTexture.GetID(), newTexture.GetTarget(), mip, 0, 0, 0,
+            mipWidth, mipHeight, physicalLayers
+        );
+
+        GLenum err = glGetError();
+        if (err != GL_NO_ERROR) {
+            NX_LOG(E, "GPU: glCopyImageSubData failed at mip %d: 0x%x", mip, err);
+        }
+    }
+
+    /* --- Swap with new texture (move assignment) --- */
+
+    *this = std::move(newTexture);
+
+    NX_LOG(D, "GPU: ReallocLayers completed: %s from %d to %d layers (kept %d layers)",
+        TargetToString(mTarget), layersToCopy, newDepth, layersToCopy
+    );
+}
+
 void Texture::Upload(const void* data, int depth, int level) noexcept
 {
     SDL_assert(IsValid() && "Cannot upload data to invalid texture"); // NOLINT
@@ -97,6 +163,12 @@ void Texture::SetParameters(const TextureParam& parameters) noexcept
 {
     SDL_assert(IsValid() && "Cannot set parameters on invalid texture"); // NOLINT
 
+    if (mParameters == parameters) {
+        return;
+    }
+
+    mParameters = parameters;
+
     Pipeline::WithTextureBind(mTarget, mID, [&]() {
         SetFilter_Bound(parameters.minFilter, parameters.magFilter);
         SetWrap_Bound(parameters.sWrap, parameters.tWrap, parameters.rWrap);
@@ -108,6 +180,14 @@ void Texture::SetWrap(GLenum sWrap, GLenum tWrap, GLenum rWrap) noexcept
 {
     SDL_assert(IsValid() && "Cannot set wrap on invalid texture"); // NOLINT
 
+    if (mParameters.sWrap == sWrap && mParameters.tWrap == tWrap && mParameters.rWrap == rWrap) {
+        return;
+    }
+
+    mParameters.sWrap = sWrap;
+    mParameters.tWrap = tWrap;
+    mParameters.rWrap = rWrap;
+
     Pipeline::WithTextureBind(mTarget, mID, [&]() {
         SetWrap_Bound(sWrap, tWrap, rWrap);
     });
@@ -117,6 +197,13 @@ void Texture::SetFilter(GLenum minFilter, GLenum magFilter) noexcept
 {
     SDL_assert(IsValid() && "Cannot set filter on invalid texture"); // NOLINT
 
+    if (mParameters.minFilter == minFilter && mParameters.magFilter == magFilter) {
+        return;
+    }
+
+    mParameters.minFilter = minFilter;
+    mParameters.magFilter = magFilter;
+
     Pipeline::WithTextureBind(mTarget, mID, [&]() {
         SetFilter_Bound(minFilter, magFilter);
     });
@@ -125,6 +212,12 @@ void Texture::SetFilter(GLenum minFilter, GLenum magFilter) noexcept
 void Texture::SetAnisotropy(float anisotropy) noexcept
 {
     SDL_assert(IsValid() && "Cannot set anisotropy on invalid texture"); // NOLINT
+
+    if (mParameters.anisotropy == anisotropy) {
+        return;
+    }
+
+    mParameters.anisotropy = anisotropy;
 
     Pipeline::WithTextureBind(mTarget, mID, [&]() {
         SetAnisotropy_Bound(anisotropy);

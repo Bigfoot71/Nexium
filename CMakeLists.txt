@@ -284,9 +284,9 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/INX_Utils.cpp"
 
     "${NX_ROOT_PATH}/source/NX_AnimationPlayer.cpp"
-    "${NX_ROOT_PATH}/source/NX_ReflectionProbe.cpp"
     "${NX_ROOT_PATH}/source/NX_InstanceBuffer.cpp"
     "${NX_ROOT_PATH}/source/NX_RenderTexture.cpp"
+    "${NX_ROOT_PATH}/source/NX_IndirectLight.cpp"
     "${NX_ROOT_PATH}/source/NX_DynamicMesh.cpp"
     "${NX_ROOT_PATH}/source/NX_Environment.cpp"
     "${NX_ROOT_PATH}/source/NX_AudioStream.cpp"
@@ -318,6 +318,7 @@ set(NX_SOURCES
     "${NX_ROOT_PATH}/source/NX_Image.cpp"
     "${NX_ROOT_PATH}/source/NX_Audio.cpp"
     "${NX_ROOT_PATH}/source/NX_Light.cpp"
+    "${NX_ROOT_PATH}/source/NX_Probe.cpp"
     "${NX_ROOT_PATH}/source/NX_Model.cpp"
     "${NX_ROOT_PATH}/source/NX_Mesh.cpp"
     "${NX_ROOT_PATH}/source/NX_Font.cpp"

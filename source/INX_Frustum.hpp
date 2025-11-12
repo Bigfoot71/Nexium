@@ -29,7 +29,9 @@ public:
     };
 
 public:
+    /** Constructors */
     INX_Frustum() = default;
+    INX_Frustum(const NX_Mat4& viewProj);
 
     /** INX_Frustum update */
     void Update(const NX_Mat4& viewProj);
@@ -53,6 +55,11 @@ private:
 };
 
 /* === Public Implementation === */
+
+inline INX_Frustum::INX_Frustum(const NX_Mat4& viewProj)
+{
+    this->Update(viewProj);
+}
 
 inline void INX_Frustum::Update(const NX_Mat4& viewProj)
 {

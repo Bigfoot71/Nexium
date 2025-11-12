@@ -26,7 +26,6 @@ struct Light {
     float attenuation;
     float innerCutOff;
     float outerCutOff;
-    uint layerMask;
     uint cullMask;
     int shadowIndex;
     int type;

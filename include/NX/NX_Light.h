@@ -39,17 +39,6 @@ typedef enum NX_ShadowFaceMode {
 } NX_ShadowFaceMode;
 
 /**
- * @brief Modes for updating shadow maps.
- *
- * Determines how often the shadow maps are refreshed.
- */
-typedef enum NX_ShadowUpdateMode {
-    NX_SHADOW_UPDATE_CONTINUOUS,       ///< Shadow maps update every frame.
-    NX_SHADOW_UPDATE_INTERVAL,         ///< Shadow maps update at defined time intervals.
-    NX_SHADOW_UPDATE_MANUAL,           ///< Shadow maps update only when explicitly requested.
-} NX_ShadowUpdateMode;
-
-/**
  * @brief Types of lights supported by the rendering engine.
  *
  * Each light type has different behaviors and use cases.
@@ -375,45 +364,6 @@ NXAPI float NX_GetShadowSoftness(const NX_Light* light);
  * @note A value below 1.0 produces hard shadows, larger values produce softer, more diffuse shadows.
  */
 NXAPI void NX_SetShadowSoftness(NX_Light* light, float softness);
-
-/**
- * @brief Gets the shadow map update mode.
- * @param light Pointer to the NX_Light.
- * @return Current shadow update mode.
- */
-NXAPI NX_ShadowUpdateMode NX_GetShadowUpdateMode(const NX_Light* light);
-
-/**
- * @brief Sets the shadow map update mode.
- * @param light Pointer to the NX_Light.
- * @param mode Shadow update mode (Continuous, Interval, or Manual).
- * @note Controls when and how often the shadow map is refreshed.
- */
-NXAPI void NX_SetShadowUpdateMode(NX_Light* light, NX_ShadowUpdateMode mode);
-
-/**
- * @brief Gets the shadow update interval.
- * @param light Pointer to the NX_Light.
- * @return Update interval in seconds.
- * @note Only relevant when update mode is set to Interval.
- */
-NXAPI float NX_GetShadowUpdateInterval(const NX_Light* light);
-
-/**
- * @brief Sets the shadow update interval.
- * @param light Pointer to the NX_Light.
- * @param sec Interval in seconds between shadow updates.
- * @note Only relevant when update mode is set to Interval.
- */
-NXAPI void NX_SetShadowUpdateInterval(NX_Light* light, float sec);
-
-/**
- * @brief Forces an immediate shadow map update.
- * @param light Pointer to the NX_Light.
- * @note The shadow map will be refreshed on the next rendering pass.
- *       Useful in Manual update mode, but also works with Interval mode.
- */
-NXAPI void NX_UpdateShadowMap(NX_Light* light);
 
 #if defined(__cplusplus)
 } // extern "C"

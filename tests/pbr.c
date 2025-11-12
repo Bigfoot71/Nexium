@@ -30,7 +30,7 @@ int main(void)
     NX_Model* model = NX_LoadModel("models/DamagedHelmet.glb");
 
     NX_Cubemap* skybox = NX_LoadCubemap("cubemaps/panorama.hdr");
-    NX_ReflectionProbe* skyprobe = NX_CreateReflectionProbe(skybox);
+    NX_IndirectLight* skyLight = NX_CreateIndirectLight(skybox);
 
     NX_Light* light = NX_CreateLight(NX_LIGHT_DIR);
     NX_SetLightDirection(light, NX_VEC3(-1, -1, -1));
@@ -58,7 +58,7 @@ int main(void)
     envs[1].tonemap.white = 8.0f;
     envs[1].sky.intensity = 0.2f;
     envs[1].sky.cubemap = skybox;
-    envs[1].sky.probe = skyprobe;
+    envs[1].sky.light = skyLight;
 
     int envIndex = 0;
 
@@ -76,7 +76,7 @@ int main(void)
 
         /* --- 3D rendering --- */
 
-        NX_Begin3D(&camera, &envs[envIndex], NULL);
+        NX_Begin3D(&camera, &envs[envIndex], 0);
         NX_DrawModel3D(model, NULL);
         NX_End3D();
 
@@ -91,7 +91,7 @@ int main(void)
 
     NX_DestroyModel(model);
     NX_DestroyCubemap(skybox);
-    NX_DestroyReflectionProbe(skyprobe);
+    NX_DestroyIndirectLight(skyLight);
     NX_DestroyLight(light);
 
     NX_Quit();

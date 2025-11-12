@@ -9,7 +9,7 @@
 #ifndef NX_ENVIRONMENT_H
 #define NX_ENVIRONMENT_H
 
-#include "./NX_ReflectionProbe.h"
+#include "./NX_IndirectLight.h"
 #include "./NX_Cubemap.h"
 #include "./NX_Math.h"
 #include "./NX_API.h"
@@ -24,11 +24,9 @@
     .ambient = NX_DARK_GRAY,                            \
     .sky = {                                            \
         .cubemap = NULL,                                \
-        .probe = NULL,                                  \
+        .light = NULL,                                  \
         .rotation = NX_QUAT_IDENTITY,                   \
-        .intensity = 1.0f,                              \
-        .specular = 1.0f,                               \
-        .diffuse = 1.0f                                 \
+        .intensity = 1.0f                               \
     },                                                  \
     .fog = {                                            \
         .mode = NX_FOG_DISABLED,                        \
@@ -77,17 +75,6 @@
 // ============================================================================
 // TYPES DEFINITIONS
 // ============================================================================
-
-/**
- * @brief Extra flags for NX_Environment specifying rendering behaviors.
- *
- * These flags control optional rendering features that Nexium can enable per-environment.
- */
-typedef uint32_t NX_EnvironmentFlag;
-
-#define NX_ENV_SORT_OPAQUE              (1 << 0)    ///< Sort opaque objects front-to-back
-#define NX_ENV_SORT_PREPASS             (1 << 1)    ///< Sort pre-pass objects front-to-back
-#define NX_ENV_SORT_TRANSPARENT         (1 << 2)    ///< Sort transparent objects back-to-front
 
 /**
  * @brief Modes for applying bloom effect.
@@ -141,11 +128,9 @@ typedef struct NX_Environment {
 
     struct {
         NX_Cubemap* cubemap;        ///< Skybox cubemap texture. If null, 'background' is used.
-        NX_ReflectionProbe* probe;  ///< Global reflection probe derived from the skybox. If null, 'ambient' is used.
+        NX_IndirectLight* light;    ///< Global indirect lighting from the sky. If null, 'ambient' is used.
         NX_Quat rotation;           ///< Orientation applied to the skybox and its reflection probe.
-        float intensity;            ///< Overall sky contribution (affects cubemap and IBL).
-        float specular;             ///< Specular reflection contribution (prefiltered environment).
-        float diffuse;              ///< Diffuse lighting contribution (irradiance).
+        float intensity;            ///< Overall sky contribution (affects sky cubemap and IBL).
     } sky;
 
     struct {
@@ -186,8 +171,6 @@ typedef struct NX_Environment {
         float white;                ///< White point reference (unused with AGX).
     } tonemap;
 
-    NX_EnvironmentFlag flags;       ///< Extra flags about rendering behavior.
-
 } NX_Environment;
 
 // ============================================================================
@@ -201,15 +184,15 @@ extern "C" {
 /**
  * @brief Returns the current default environment.
  *
- * If no environment was set, returns NX_BASE_MATERIAL by default.
+ * If no environment was set, returns NX_BASE_ENVIRONMENT by default.
  */
 NXAPI NX_Environment NX_GetDefaultEnvironment(void);
 
 /**
  * @brief Sets the default environment used by Nexium.
  *
- * Overrides the environment returned by NX_GetDefaultMaterial().
- * Pass NULL to restore the default NX_BASE_MATERIAL.
+ * Overrides the environment returned by NX_GetDefaultEnvironment().
+ * Pass NULL to restore the default NX_BASE_ENVIRONMENT.
  */
 NXAPI void NX_SetDefaultEnvironment(const NX_Environment* env);
 

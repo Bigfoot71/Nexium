@@ -68,6 +68,23 @@ const vec2 VOGEL_DISK[16] = vec2[16](
 );
 #endif
 
+/* === Structures === */
+
+struct ReflectionProbe {
+    vec3 position;
+    float range;
+    float falloff;
+    uint index;
+};
+
+struct LightParams {
+    vec3 N, V, F0;
+    vec3 diffuse;
+    float cNdotV;
+    float alphaGGX;
+    mat2  diskRotation;
+};
+
 /* === Varyings === */
 
 layout(location = 0) in VaryInternal {
@@ -94,11 +111,20 @@ layout(std430, binding = 1) buffer S_DrawUniqueBuffer {
 };
 
 /** 
+ * sReflectionProbes[] : list of active reflection probes
+ *   - Contains per-probe parameters (position, range, falloff, index)
+ *   - Used for blending local and global IBL contributions
+ */
+layout(std430, binding = 3) buffer S_ProbeBuffer {
+    ReflectionProbe sReflectionProbes[];
+};
+
+/** 
  * sLights[] : list of active lights
  *   - MUST be sorted CPU-side: DIR -> SPOT -> OMNI
  *   - Shaders assume this order for sIndices and per-type offsets
  */
-layout(std430, binding = 3) buffer S_LightBuffer {
+layout(std430, binding = 4) buffer S_LightBuffer {
     Light sLights[];
 };
 
@@ -107,7 +133,7 @@ layout(std430, binding = 3) buffer S_LightBuffer {
  *   - Indexed via Light.shadowIndex when shadow casting is active
  *   - Contains shadow map parameters per light
  */
-layout(std430, binding = 4) buffer S_ShadowBuffer {
+layout(std430, binding = 5) buffer S_ShadowBuffer {
     Shadow sShadows[];
 };
 
@@ -116,7 +142,7 @@ layout(std430, binding = 4) buffer S_ShadowBuffer {
  *   - xyz = number of lights per type (numDir, numSpot, numOmni)
  *   - w   = unused
  */
-layout(std430, binding = 5) buffer S_ClusterBuffer {
+layout(std430, binding = 6) buffer S_ClusterBuffer {
     uvec4 sClusters[];
 };
 
@@ -124,7 +150,7 @@ layout(std430, binding = 5) buffer S_ClusterBuffer {
  * sIndices[] : light indices per cluster
  *   - Indices into sLights[], grouped by type: DIR -> SPOT -> OMNI
  */
-layout(std430, binding = 6) buffer S_IndexBuffer {
+layout(std430, binding = 7) buffer S_IndexBuffer {
     uint sIndices[];
 };
 
@@ -136,12 +162,12 @@ layout(binding = 2) uniform sampler2D uTexORM;
 layout(binding = 3) uniform sampler2D uTexNormal;
 
 layout(binding = 4) uniform sampler2D uTexBrdfLut;
-layout(binding = 5) uniform samplerCube uTexProbeIrradiance;
-layout(binding = 6) uniform samplerCube uTexProbePrefilter;
+layout(binding = 5) uniform highp samplerCubeArray uTexIrradiance;
+layout(binding = 6) uniform highp samplerCubeArray uTexPrefilter;
 
-layout(binding = 7) uniform highp sampler2DArray uTexShadowDir;
-layout(binding = 8) uniform highp sampler2DArray uTexShadowSpot;
-layout(binding = 9) uniform highp samplerCubeArray uTexShadowOmni;
+layout(binding = 7) uniform mediump sampler2DArray uTexShadowDir;
+layout(binding = 8) uniform mediump sampler2DArray uTexShadowSpot;
+layout(binding = 9) uniform mediump samplerCubeArray uTexShadowOmni;
 
 /* === Uniform Buffers === */
 
@@ -194,14 +220,6 @@ vec3 Specular(vec3 F0, float cLdotH, float cNdotH, float cNdotV, float cNdotL, f
 }
 
 /* === Light Functions === */
-
-struct LightParams {
-    vec3 N, V, F0;
-    vec3 diffuse;
-    float cNdotV;
-    float alphaGGX;
-    mat2  diskRotation;
-};
 
 vec3 LightDir(uint lightIndex, const in LightParams params)
 {
@@ -438,15 +456,26 @@ float IBL_GetSpecularOcclusion(float NdotV, float ao, float roughness)
     return clamp(pow(NdotV + ao, exp2(-16.0 * roughness - 1.0)) - 1.0 + ao, 0.0, 1.0);
 }
 
-vec3 IBL_SampleIrradiance(samplerCube irradiance, vec3 N, vec4 rotation)
+vec3 IBL_SampleIrradiance(samplerCubeArray irradiance, uint index, vec3 N)
 {
-    return texture(irradiance, M_Rotate3D(N, rotation)).rgb;
+    return texture(irradiance, vec4(N, float(index))).rgb;
 }
 
-vec3 IBL_SamplePrefilter(samplerCube prefilter, vec3 V, vec3 N, vec4 rotation, float roughness)
+vec3 IBL_SampleIrradiance(samplerCubeArray irradiance, uint index, vec3 N, vec4 rotation)
 {
-    float mipLevel = roughness * (float(textureQueryLevels(prefilter)) - 1.0);
-    return textureLod(prefilter, M_Rotate3D(reflect(-V, N), rotation), mipLevel).rgb;
+    return texture(irradiance, vec4(M_Rotate3D(N, rotation), float(index))).rgb;
+}
+
+vec3 IBL_SamplePrefilter(samplerCubeArray prefilter, uint index, vec3 V, vec3 N, float roughness)
+{
+    float mipLevel = roughness * float(textureQueryLevels(prefilter) - 1);
+    return textureLod(prefilter, vec4(reflect(-V, N), float(index)), mipLevel).rgb;
+}
+
+vec3 IBL_SamplePrefilter(samplerCubeArray prefilter, uint index, vec3 V, vec3 N, vec4 rotation, float roughness)
+{
+    float mipLevel = roughness * float(textureQueryLevels(prefilter) - 1);
+    return textureLod(prefilter, vec4(M_Rotate3D(reflect(-V, N), rotation), float(index)), mipLevel).rgb;
 }
 
 vec3 IBL_MultiScattering(vec3 irradiance, vec3 radiance, vec3 diffuse, vec3 F0, vec2 brdf, float NdotV, float roughness)
@@ -563,27 +592,48 @@ void main()
 
     /* --- Compute IBL contribution  --- */
 
-    if (uFrame.hasProbe)
-    {
-        vec2 brdf = texture(uTexBrdfLut, vec2(NdotV, ROUGHNESS)).xy;
+    vec3 irradiance = vec3(0.0);
+    vec3 radiance = vec3(0.0);
+    float totalWeight = 0.0;
 
-        vec3 irradiance = IBL_SampleIrradiance(uTexProbeIrradiance, N, uEnv.skyRotation);
-        irradiance *= uEnv.skyDiffuse;
+    for (uint i = 0; i < uFrame.reflectionProbeCount; ++i) {
+        ReflectionProbe probe = sReflectionProbes[i];
+        float dist = length(vInt.position - probe.position);
+        float weight = pow(clamp(1.0 - dist / probe.range, 0.0, 1.0), probe.falloff);
+        if (weight > 0.0) {
+            vec3 probeIrradiance = IBL_SampleIrradiance(uTexIrradiance, probe.index, N);
+            vec3 probeRadiance = IBL_SamplePrefilter(uTexPrefilter, probe.index, V, N, ROUGHNESS);
+            irradiance += probeIrradiance * weight;
+            radiance += probeRadiance * weight;
+            totalWeight += weight;
+        }
+    }
+
+    if (totalWeight < 1.0 && uEnv.skyLightMapIndex >= 0) {
+        vec3 skyIrradiance = IBL_SampleIrradiance(uTexIrradiance, uint(uEnv.skyLightMapIndex), N, uEnv.skyRotation);
+        vec3 skyRadiance = IBL_SamplePrefilter(uTexPrefilter, uint(uEnv.skyLightMapIndex), V, N, uEnv.skyRotation, ROUGHNESS);
+        skyRadiance = mix(skyRadiance, uEnv.fogColor, uEnv.fogSkyAffect); // Applies fog (by skyAffect) to the radiance
+        float skyWeight = (1.0 - totalWeight) * uEnv.skyIntensity;
+        irradiance += skyIrradiance * skyWeight;
+        radiance += skyRadiance * skyWeight;
+        totalWeight = 1.0;
+    }
+    else if (totalWeight > 1.0) {
+        float invTotalWeight = 1.0 * totalWeight;
+        irradiance *= invTotalWeight;
+        radiance *= invTotalWeight;
+        totalWeight = 1.0;
+    }
+
+    if (totalWeight > 0.0) {
         irradiance *= OCCLUSION;
-
-        vec3 radiance = IBL_SamplePrefilter(uTexProbePrefilter, V, N, uEnv.skyRotation, ROUGHNESS);
         radiance *= IBL_GetSpecularOcclusion(NdotV, OCCLUSION, ROUGHNESS);
-        radiance *= uEnv.skySpecular;
-
+        vec2 brdf = texture(uTexBrdfLut, vec2(NdotV, ROUGHNESS)).xy;
         Lo += IBL_MultiScattering(irradiance, radiance, diffuse, F0, brdf, NdotV, ROUGHNESS);
     }
-    else
-    {
+    else {
         Lo += diffuse * uEnv.ambientColor;
     }
-
-    // Applies fog according to skyAffect to the radiance
-    //skyIrradiance = mix(skyIrradiance, uEnv.fogColor, uEnv.fogSkyAffect);
 
     /* --- Compute the fog factor --- */
 

@@ -10,15 +10,35 @@
 #define NX_RENDER_3D_H
 
 #include "./NX_InstanceBuffer.h"
+#include "./NX_IndirectLight.h"
 #include "./NX_RenderTexture.h"
 #include "./NX_DynamicMesh.h"
 #include "./NX_Environment.h"
 #include "./NX_Material.h"
 #include "./NX_Camera.h"
 #include "./NX_Model.h"
+#include "./NX_Probe.h"
 #include "./NX_Mesh.h"
 #include "./NX_Math.h"
 #include "./NX_API.h"
+
+// ============================================================================
+// TYPES DEFINITIONS
+// ============================================================================
+
+/**
+ * @brief Bitfield flags controlling optional per-pass rendering behaviors.
+ *
+ * These flags allow enabling or disabling automatic operations such as 
+ * frustum culling and draw call sorting for specific rendering passes.
+ */
+typedef uint32_t NX_RenderFlags;
+
+#define NX_RENDER_FRUSTUM_CULLING          (1 << 0)     ///< Enables naive frustum culling over all draw calls
+
+#define NX_RENDER_SORT_OPAQUE              (1 << 1)     ///< Sort opaque objects front-to-back
+#define NX_RENDER_SORT_PREPASS             (1 << 2)     ///< Sort pre-pass objects front-to-back
+#define NX_RENDER_SORT_TRANSPARENT         (1 << 3)     ///< Sort transparent objects back-to-front
 
 // ============================================================================
 // FUNCTIONS DECLARATIONS
@@ -29,19 +49,106 @@ extern "C" {
 #endif
 
 /**
- * @brief Begins 3D rendering.
- * Sets up the rendering state for 3D primitives, meshes, and models.
+ * @brief Begins a 3D scene rendering pass.
+ *
+ * Starts rendering for the main 3D scene using the given camera and environment.
+ * This function uses the default render target (backbuffer) and default render options.
+ *
  * @param camera Pointer to the camera to use (can be NULL to use the default camera).
  * @param env Pointer to the environment to use (can be NULL to use the default environment).
- * @param target Render texture to draw into (can be NULL to render to the screen).
+ * @param flags Render flags controlling optional per-pass behaviors (e.g. frustum culling, sorting).
+ *
+ * @note This function automatically renders to the backbuffer.
+ *       For custom render targets, use NX_BeginEx3D().
+ * @note The rendering pass is explicit; you must call NX_End3D() to finalize it.
+ * @note Ensure no other render pass is active when calling this function.
  */
-NXAPI void NX_Begin3D(const NX_Camera* camera, const NX_Environment* env, const NX_RenderTexture* target);
+NXAPI void NX_Begin3D(const NX_Camera* camera, const NX_Environment* env, NX_RenderFlags flags);
 
 /**
- * @brief Finalizes 3D rendering.
- * Renders all accumulated draw calls, applies post-processing, and outputs to the final render target.
+ * @brief Begins an extended 3D scene rendering pass.
+ *
+ * Starts rendering for the main 3D scene using the given camera, environment,
+ * and a custom render target. This version provides full control over render flags
+ * and output destination.
+ *
+ * @param camera Pointer to the camera to use (can be NULL to use the default camera).
+ * @param env Pointer to the environment to use (can be NULL to use the default environment).
+ * @param target Render texture to draw into (can be NULL to render to the backbuffer).
+ * @param flags Render flags controlling optional per-pass behaviors (e.g. frustum culling, sorting).
+ *
+ * @note The rendering pass is explicit; you must call NX_End3D() to finalize it.
+ * @note Ensure no other render pass is active when calling this function.
+ */
+NXAPI void NX_BeginEx3D(const NX_Camera* camera, const NX_Environment* env, const NX_RenderTexture* target, NX_RenderFlags flags);
+
+/**
+ * @brief Ends the current 3D scene rendering pass.
+ *
+ * Renders all accumulated draw calls, applies post-processing effects, 
+ * and outputs the final image to the render target specified in NX_Begin3D (or the backbuffer if NULL).
+ *
+ * @note Must be called after NX_Begin3D().
+ * @note Logs a warning if no scene render pass is active.
  */
 NXAPI void NX_End3D(void);
+
+/**
+ * @brief Begins shadow map rendering for a specific light.
+ *
+ * Starts rendering into the shadow map associated with the given light.
+ *
+ * @param light Pointer to the light whose shadow map will be rendered. Must have shadows enabled.
+ * @param camera Optional pointer to a camera used for determining the shadow frustum.
+ *               It is required for directional lights (to center the shadow frustum around the camera)
+ *               and for correct rendering of billboard shadows. Can be NULL in other cases,
+ *               in which case the default camera will be used.
+ * @param flags Render flags controlling optional per-pass behaviors 
+ *              (currently only affects frustum culling; sorting flags are ignored).
+ *
+ * @note You must call NX_EndShadow3D() to finalize the shadow rendering pass.
+ * @note Ensure no other render pass is active when calling this function.
+ * @note A warning will be logged if the light has no valid shadow map assigned.
+ */
+NXAPI void NX_BeginShadow3D(NX_Light* light, const NX_Camera* camera, NX_RenderFlags flags);
+
+/**
+ * @brief Ends the current shadow map rendering pass.
+ *
+ * Finalizes rendering into the shadow map of the active light.
+ * Resets internal state to allow other render passes to begin.
+ *
+ * @note Must be called after NX_BeginShadow3D().
+ * @note Logs a warning if no shadow pass is active.
+ */
+NXAPI void NX_EndShadow3D();
+
+/**
+ * @brief Begins a cubemap rendering pass.
+ *
+ * Starts rendering the 3D scene into the specified cubemap from the position and orientation 
+ * defined by the given probe. This is typically used to capture the environment for reflection probes.
+ *
+ * @param cubemap Pointer to the cubemap to render into.
+ * @param probe Pointer to the probe defining the capture position and orientation (can be NULL to use the default probe).
+ * @param env Pointer to the environment to use (can be NULL to use the default environment).
+ * @param flags Render flags controlling optional per-pass behaviors (e.g. frustum culling, sorting).
+ *
+ * @note The rendering pass is explicit; you must call NX_EndCubemap3D() to finalize it.
+ * @note Ensure no other render pass is active when calling this function.
+ */
+NXAPI void NX_BeginCubemap3D(NX_Cubemap* cubemap, const NX_Probe* probe, const NX_Environment* env, NX_RenderFlags flags);
+
+/**
+ * @brief Ends the current cubemap rendering pass.
+ *
+ * Finalizes the cubemap rendering started with NX_BeginCubemap3D().
+ * Renders all accumulated draw calls for each cubemap face and restores the previous render state.
+ *
+ * @note Must be called after NX_BeginCubemap3D().
+ * @note Logs a warning if no cubemap render pass is active.
+ */
+NXAPI void NX_EndCubemap3D(void);
 
 /**
  * @brief Draws a 3D mesh.
@@ -120,6 +227,24 @@ NXAPI void NX_DrawModel3D(const NX_Model* model, const NX_Transform* transform);
  */
 NXAPI void NX_DrawModelInstanced3D(const NX_Model* model, const NX_InstanceBuffer* instances,
                                    int instanceCount, const NX_Transform* transform);
+
+/**
+ * @brief Draws a 3D reflection probe using the specified indirect lighting data.
+ *
+ * Renders the visual representation and influence volume of a reflection probe 
+ * in the current 3D pass. The probe uses the lighting data provided by the 
+ * given NX_IndirectLight handle (irradiance + prefiltered radiance).
+ *
+ * @param indirectLight Pointer to the indirect light handle containing precomputed
+ *                      environment lighting data (cannot be NULL).
+ * @param probe Pointer to the probe defining the reflection volume and capture
+ *              position (cannot be NULL).
+ *
+ * @note Can be called during a standard scene pass (NX_Begin3D/NX_End3D) or a 
+ *       cubemap rendering pass (NX_BeginCubemap3D/NX_EndCubemap3D).
+ * @note Cannot be called during shadow map rendering or other non-scene passes.
+ */
+NXAPI void NX_DrawReflectionProbe3D(const NX_IndirectLight* indirectLight, const NX_Probe* probe);
 
 #if defined(__cplusplus)
 } // extern "C"

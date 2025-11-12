@@ -20,8 +20,7 @@ struct Environment {
     vec3 fogColor;
     vec4 bloomPrefilter;
     float skyIntensity;
-    float skySpecular;
-    float skyDiffuse;
+    int skyLightMapIndex;       // -1 if no environment reflections
     float fogDensity;
     float fogStart;
     float fogEnd;

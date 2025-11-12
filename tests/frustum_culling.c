@@ -8,6 +8,7 @@
 
 #include <NX/Nexium.h>
 #include "./common.h"
+#include "NX/NX_Render3D.h"
 
 int main(void)
 {
@@ -33,7 +34,7 @@ int main(void)
     {
         /* --- 3D rendering --- */
 
-        NX_Begin3D(NULL, NULL, NULL);
+        NX_Begin3D(NULL, NULL, NX_RENDER_FRUSTUM_CULLING);
         NX_Transform transform = NX_TRANSFORM_IDENTITY;
 
         for (int z = -10; z <= 10; z++)
