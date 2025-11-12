@@ -63,6 +63,6 @@
 #include "./NX_Environment.h"
 #include "./NX_RenderTexture.h"
 #include "./NX_InstanceBuffer.h"
-#include "./NX_ReflectionProbe.h"
+#include "./NX_IndirectLight.h"
 
 #endif // NEXIUM_H

@@ -9,7 +9,7 @@
 #ifndef NX_ENVIRONMENT_H
 #define NX_ENVIRONMENT_H
 
-#include "./NX_ReflectionProbe.h"
+#include "./NX_IndirectLight.h"
 #include "./NX_Cubemap.h"
 #include "./NX_Math.h"
 #include "./NX_API.h"
@@ -24,11 +24,9 @@
     .ambient = NX_DARK_GRAY,                            \
     .sky = {                                            \
         .cubemap = NULL,                                \
-        .probe = NULL,                                  \
+        .light = NULL,                                  \
         .rotation = NX_QUAT_IDENTITY,                   \
-        .intensity = 1.0f,                              \
-        .specular = 1.0f,                               \
-        .diffuse = 1.0f                                 \
+        .intensity = 1.0f                               \
     },                                                  \
     .fog = {                                            \
         .mode = NX_FOG_DISABLED,                        \
@@ -130,11 +128,9 @@ typedef struct NX_Environment {
 
     struct {
         NX_Cubemap* cubemap;        ///< Skybox cubemap texture. If null, 'background' is used.
-        NX_ReflectionProbe* probe;  ///< Global reflection probe derived from the skybox. If null, 'ambient' is used.
+        NX_IndirectLight* light;    ///< Global indirect lighting from the sky. If null, 'ambient' is used.
         NX_Quat rotation;           ///< Orientation applied to the skybox and its reflection probe.
-        float intensity;            ///< Overall sky contribution (affects cubemap and IBL).
-        float specular;             ///< Specular reflection contribution (prefiltered environment).
-        float diffuse;              ///< Diffuse lighting contribution (irradiance).
+        float intensity;            ///< Overall sky contribution (affects sky cubemap and IBL).
     } sky;
 
     struct {

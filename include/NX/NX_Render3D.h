@@ -10,6 +10,7 @@
 #define NX_RENDER_3D_H
 
 #include "./NX_InstanceBuffer.h"
+#include "./NX_IndirectLight.h"
 #include "./NX_RenderTexture.h"
 #include "./NX_DynamicMesh.h"
 #include "./NX_Environment.h"
@@ -226,6 +227,24 @@ NXAPI void NX_DrawModel3D(const NX_Model* model, const NX_Transform* transform);
  */
 NXAPI void NX_DrawModelInstanced3D(const NX_Model* model, const NX_InstanceBuffer* instances,
                                    int instanceCount, const NX_Transform* transform);
+
+/**
+ * @brief Draws a 3D reflection probe using the specified indirect lighting data.
+ *
+ * Renders the visual representation and influence volume of a reflection probe 
+ * in the current 3D pass. The probe uses the lighting data provided by the 
+ * given NX_IndirectLight handle (irradiance + prefiltered radiance).
+ *
+ * @param indirectLight Pointer to the indirect light handle containing precomputed
+ *                      environment lighting data (cannot be NULL).
+ * @param probe Pointer to the probe defining the reflection volume and capture
+ *              position (cannot be NULL).
+ *
+ * @note Can be called during a standard scene pass (NX_Begin3D/NX_End3D) or a 
+ *       cubemap rendering pass (NX_BeginCubemap3D/NX_EndCubemap3D).
+ * @note Cannot be called during shadow map rendering or other non-scene passes.
+ */
+NXAPI void NX_DrawReflectionProbe3D(const NX_IndirectLight* indirectLight, const NX_Probe* probe);
 
 #if defined(__cplusplus)
 } // extern "C"

@@ -44,10 +44,10 @@ int main(void)
     }
 
     env[0].sky.cubemap = NX_LoadCubemap("cubemaps/panorama.hdr");
-    env[0].sky.probe = NX_CreateReflectionProbe(env[0].sky.cubemap);
+    env[0].sky.light = NX_CreateIndirectLight(env[0].sky.cubemap);
 
     env[1].sky.cubemap = GenerateSkybox(1024);
-    env[1].sky.probe = NX_CreateReflectionProbe(env[1].sky.cubemap);
+    env[1].sky.light = NX_CreateIndirectLight(env[1].sky.cubemap);
 
     NX_Camera camera = NX_GetDefaultCamera();
 
@@ -85,8 +85,8 @@ int main(void)
         NX_End2D();
     }
 
-    NX_DestroyReflectionProbe(env[0].sky.probe);
-    NX_DestroyReflectionProbe(env[1].sky.probe);
+    NX_DestroyIndirectLight(env[0].sky.light);
+    NX_DestroyIndirectLight(env[1].sky.light);
     NX_DestroyCubemap(env[0].sky.cubemap);
     NX_DestroyCubemap(env[1].sky.cubemap);
     NX_DestroyMesh(sphere);

@@ -1,4 +1,4 @@
-/* NX_ReflectionProbe.cpp -- API definition for Nexium's reflection probe module
+/* NX_IndirectLight.cpp -- API definition for Nexium's reflection indirectLight module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,7 +6,7 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#include "./NX_ReflectionProbe.hpp"
+#include "./NX_IndirectLight.hpp"
 #include "./NX_Render3D.hpp"
 
 #include "./INX_GPUProgramCache.hpp"
@@ -19,37 +19,37 @@
 // PUBLIC API
 // ============================================================================
 
-NX_ReflectionProbe* NX_CreateReflectionProbe(const NX_Cubemap* cubemap)
+NX_IndirectLight* NX_CreateIndirectLight(const NX_Cubemap* cubemap)
 {
-    NX_ReflectionProbe* probe = INX_Pool.Create<NX_ReflectionProbe>();
+    NX_IndirectLight* indirectLight = INX_Pool.Create<NX_IndirectLight>();
 
-    probe->probeIndex = INX_Render3DState_RequestProbe();
+    indirectLight->mapIndex = INX_Render3DState_RequestIndirectLightMap();
 
     if (cubemap != nullptr) {
-        NX_UpdateReflectionProbe(probe, cubemap);
+        NX_UpdateIndirectLight(indirectLight, cubemap);
     }
 
-    return probe;
+    return indirectLight;
 }
 
-NX_ReflectionProbe* NX_LoadReflectionProbe(const char* filePath)
+NX_IndirectLight* NX_LoadIndirectLight(const char* filePath)
 {
     NX_Cubemap* cubemap = NX_LoadCubemap(filePath);
     if (cubemap == nullptr) return nullptr;
 
-    NX_ReflectionProbe* probe = NX_CreateReflectionProbe(cubemap);
+    NX_IndirectLight* indirectLight = NX_CreateIndirectLight(cubemap);
     NX_DestroyCubemap(cubemap);
 
-    return probe;
+    return indirectLight;
 }
 
-void NX_DestroyReflectionProbe(NX_ReflectionProbe* probe)
+void NX_DestroyIndirectLight(NX_IndirectLight* indirectLight)
 {
-    INX_Render3DState_ReleaseProbe(probe->probeIndex);
-    INX_Pool.Destroy(probe);
+    INX_Render3DState_ReleaseIndirectLightMap(indirectLight->mapIndex);
+    INX_Pool.Destroy(indirectLight);
 }
 
-void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap* cubemap)
+void NX_UpdateIndirectLight(NX_IndirectLight* indirectLight, const NX_Cubemap* cubemap)
 {
     gpu::Pipeline pipeline;
     pipeline.BindTexture(0, cubemap->gpu);
@@ -64,7 +64,7 @@ void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap* cubem
     pipeline.UseProgram(INX_Programs.GetCubemapIrradiance());
 
     pipeline.BindImageTexture(1, irradiance, 0, -1, GL_WRITE_ONLY);
-    pipeline.SetUniformInt1(0, probe->probeIndex);
+    pipeline.SetUniformInt1(0, indirectLight->mapIndex);
 
     int irradianceSize = irradiance.GetWidth();
     int groupsX = NX_DIV_CEIL(irradianceSize, 8);
@@ -76,7 +76,7 @@ void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap* cubem
     /* --- Generate prefilter --- */
 
     pipeline.UseProgram(INX_Programs.GetCubemapPrefilter());
-    pipeline.SetUniformInt1(0, probe->probeIndex);
+    pipeline.SetUniformInt1(0, indirectLight->mapIndex);
 
     int baseSize = prefilter.GetWidth();
     for (int mip = 0; mip < prefilter.GetNumLevels(); mip++)

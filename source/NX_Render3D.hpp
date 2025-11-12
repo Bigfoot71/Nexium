@@ -30,16 +30,16 @@ int INX_Render3DState_RequestShadowMap(NX_LightType type);
 /** Should be called by NX_Light to release a shadow map */
 void INX_Render3DState_ReleaseShadowMap(NX_LightType type, int mapIndex);
 
-/** Should be called by NX_ReflectionProbe to get a probe cubemap */
-int INX_Render3DState_RequestProbe();
+/** Should be called by NX_IndirectLight to get an indirect light map */
+int INX_Render3DState_RequestIndirectLightMap();
 
-/** Should be called by NX_ReflectionProbe to release a probe cubemap */
-void INX_Render3DState_ReleaseProbe(int probeIndex);
+/** Should be called by NX_IndirectLight to release an indirect light map */
+void INX_Render3DState_ReleaseIndirectLightMap(int probeIndex);
 
-/** Should be called by NX_ReflectionProbe to irradiance cubemaps */
+/** Should be called by NX_IndirectLight to irradiance cubemaps */
 const gpu::Texture& INX_Render3DState_GetIrradianceArray();
 
-/** Should be called by NX_ReflectionProbe to prefilter cubemaps */
+/** Should be called by NX_IndirectLight to prefilter cubemaps */
 const gpu::Texture& INX_Render3DState_GetPrefilterArray();
 
 /** Should be called */

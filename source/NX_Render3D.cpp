@@ -148,6 +148,7 @@ struct INX_GPUSceneFrame {
     alignas(8) NX_IVec2 screenSize;
     alignas(16) NX_IVec3 clusterCount;
     alignas(4) uint32_t maxLightsPerCluster;
+    alignas(4) uint32_t reflectionProbeCount;
     alignas(4) float clusterSliceScale;
     alignas(4) float clusterSliceBias;
     alignas(4) float elapsedTime;
@@ -171,28 +172,26 @@ struct INX_GPUEnvironment {
     alignas(16) NX_Vec3 fogColor;
     alignas(16) NX_Vec4 bloomPrefilter;
     alignas(4) float skyIntensity;
-    alignas(4) float skySpecular;
-    alignas(4) float skyDiffuse;
-    alignas(4) int skyProbeIndex;           // -1 if no environment reflections
+    alignas(4) int32_t skyLightMapIndex;    // -1 if no environment reflections
     alignas(4) float fogDensity;
     alignas(4) float fogStart;
     alignas(4) float fogEnd;
     alignas(4) float fogSkyAffect;
-    alignas(4) int fogMode;
+    alignas(4) int32_t fogMode;
     alignas(4) float ssaoIntensity;
     alignas(4) float ssaoRadius;
     alignas(4) float ssaoPower;
     alignas(4) float ssaoBias;
-    alignas(4) int ssaoEnabled;
+    alignas(4) int32_t ssaoEnabled;
     alignas(4) float bloomFilterRadius;
     alignas(4) float bloomStrength;
-    alignas(4) int bloomMode;
+    alignas(4) int32_t bloomMode;
     alignas(4) float adjustBrightness;
     alignas(4) float adjustContrast;
     alignas(4) float adjustSaturation;
     alignas(4) float tonemapExposure;
     alignas(4) float tonemapWhite;
-    alignas(4) int tonemapMode;
+    alignas(4) int32_t tonemapMode;
 };
 
 /** Shared GPU data per draw call */
@@ -221,6 +220,14 @@ struct INX_GPUDrawUnique {
     alignas(8) NX_Vec2 texScale;
     alignas(4) int32_t billboard;
     alignas(4) uint32_t layerMask;
+};
+
+/** Reflection probe data */
+struct INX_GPUReflectionProbe {
+    alignas(16) NX_Vec3 position;
+    alignas(4) float range;
+    alignas(4) float falloff;
+    alignas(4) uint32_t mapIndex;
 };
 
 // ============================================================================
@@ -312,6 +319,12 @@ struct INX_ShadowingState {
     NX_Mat4 camInvView{};           ///< To ensures correct shadow rendering of billboards
 };
 
+struct INX_IndirectLightingState {
+    util::DynamicArray<bool> assigned;
+    gpu::Texture irradianceArray;
+    gpu::Texture prefilterArray;
+};
+
 struct INX_DrawCallState {
     /** Draw call data stored in RAM */
     util::DynamicArray<INX_DrawShared> sharedData{};
@@ -322,15 +335,13 @@ struct INX_DrawCallState {
     util::DynamicArray<float> sortDistances{}; ///< Sorting cache
 
     /** Draw call data stored in VRAM */
+    gpu::StagingBuffer<INX_GPUReflectionProbe> reflectionProbeBuffer{};
     gpu::StagingBuffer<NX_Mat4> boneBuffer{};
     gpu::Buffer sharedBuffer{};
     gpu::Buffer uniqueBuffer{};
-};
 
-struct INX_ProbeState {
-    util::DynamicArray<bool> assigned;
-    gpu::Texture irradianceArray;
-    gpu::Texture prefilterArray;
+    /** Additional infos */
+    uint32_t reflectionProbeCount{};
 };
 
 struct INX_Render3DState {
@@ -338,10 +349,8 @@ struct INX_Render3DState {
     INX_SceneState scene{};
     INX_LightingState lighting{};
     INX_ShadowingState shadowing{};
-
-    /** Misc managers */
+    INX_IndirectLightingState indirect{};
     INX_DrawCallState drawCalls{};
-    INX_ProbeState probes{};
 
     /** Common state infos */
     NX_RenderFlags renderFlags{};
@@ -615,30 +624,9 @@ static void INX_InitShadowState(INX_ShadowingState* shadowing, const NX_AppDesc*
     );
 }
 
-static void INX_InitDrawCallState(INX_DrawCallState* drawCalls)
+static void INX_InitIndirectLightingState(INX_IndirectLightingState* indirect)
 {
-    constexpr int drawCallReserveCount = 1024;
-
-    drawCalls->sharedBuffer = gpu::Buffer(GL_SHADER_STORAGE_BUFFER, drawCallReserveCount * sizeof(INX_GPUDrawShared));
-    drawCalls->uniqueBuffer = gpu::Buffer(GL_SHADER_STORAGE_BUFFER, drawCallReserveCount * sizeof(INX_GPUDrawUnique));
-    drawCalls->boneBuffer = gpu::StagingBuffer<NX_Mat4>(GL_SHADER_STORAGE_BUFFER, 1024);
-
-    if (!drawCalls->sharedData.Reserve(drawCallReserveCount)) {
-        NX_LOG(E, "RENDER: Shared draw call data array pre-allocation failed (requested: %i entries)", drawCallReserveCount);
-    }
-
-    if (!drawCalls->uniqueData.Reserve(drawCallReserveCount)) {
-        NX_LOG(E, "RENDER: Unique draw call data array pre-allocation failed (requested: %i entries)", drawCallReserveCount);
-    }
-
-    if (!drawCalls->sortedUnique.Reserve(drawCallReserveCount)) {
-        NX_LOG(E, "RENDER: Visible unique draw call list pre-allocation failed (requested: %i entries)", drawCallReserveCount);
-    }
-}
-
-static void INX_InitProbeState(INX_ProbeState* probes)
-{
-    probes->irradianceArray = gpu::Texture(
+    indirect->irradianceArray = gpu::Texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP_ARRAY,
@@ -659,7 +647,7 @@ static void INX_InitProbeState(INX_ProbeState* probes)
         }
     );
 
-    probes->prefilterArray = gpu::Texture(
+    indirect->prefilterArray = gpu::Texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_CUBE_MAP_ARRAY,
@@ -680,8 +668,31 @@ static void INX_InitProbeState(INX_ProbeState* probes)
         }
     );
 
-    if (!probes->assigned.Resize(8, false)) {
-        NX_LOG(E, "RENDER: Probes assignments list pre-allocation failed (requested: %i entries)", 8);
+    if (!indirect->assigned.Resize(8, false)) {
+        NX_LOG(E, "RENDER: Indirect light map assignments list pre-allocation failed (requested: %i entries)", 8);
+    }
+}
+
+static void INX_InitDrawCallState(INX_DrawCallState* drawCalls)
+{
+    constexpr int drawCallReserveCount = 1024;
+
+    drawCalls->sharedBuffer = gpu::Buffer(GL_SHADER_STORAGE_BUFFER, drawCallReserveCount * sizeof(INX_GPUDrawShared));
+    drawCalls->uniqueBuffer = gpu::Buffer(GL_SHADER_STORAGE_BUFFER, drawCallReserveCount * sizeof(INX_GPUDrawUnique));
+
+    drawCalls->reflectionProbeBuffer = gpu::StagingBuffer<INX_GPUReflectionProbe>(GL_SHADER_STORAGE_BUFFER, 32);
+    drawCalls->boneBuffer = gpu::StagingBuffer<NX_Mat4>(GL_SHADER_STORAGE_BUFFER, 1024);
+
+    if (!drawCalls->sharedData.Reserve(drawCallReserveCount)) {
+        NX_LOG(E, "RENDER: Shared draw call data array pre-allocation failed (requested: %i entries)", drawCallReserveCount);
+    }
+
+    if (!drawCalls->uniqueData.Reserve(drawCallReserveCount)) {
+        NX_LOG(E, "RENDER: Unique draw call data array pre-allocation failed (requested: %i entries)", drawCallReserveCount);
+    }
+
+    if (!drawCalls->sortedUnique.Reserve(drawCallReserveCount)) {
+        NX_LOG(E, "RENDER: Visible unique draw call list pre-allocation failed (requested: %i entries)", drawCallReserveCount);
     }
 }
 
@@ -701,8 +712,8 @@ bool INX_Render3DState_Init(NX_AppDesc* desc)
     INX_InitSceneState(&INX_Render3D->scene, desc);
     INX_InitLightingState(&INX_Render3D->lighting, desc);
     INX_InitShadowState(&INX_Render3D->shadowing, desc);
+    INX_InitIndirectLightingState(&INX_Render3D->indirect);
     INX_InitDrawCallState(&INX_Render3D->drawCalls);
-    INX_InitProbeState(&INX_Render3D->probes);
 
     return true;
 }
@@ -750,51 +761,51 @@ void INX_Render3DState_ReleaseShadowMap(NX_LightType type, int mapIndex)
     INX_Render3D->shadowing.assigned[type][mapIndex] = false;
 }
 
-int INX_Render3DState_RequestProbe()
+int INX_Render3DState_RequestIndirectLightMap()
 {
-    INX_ProbeState& probes = INX_Render3D->probes;
+    INX_IndirectLightingState& indirect = INX_Render3D->indirect;
 
-    gpu::Texture& irradiance = probes.irradianceArray;
-    gpu::Texture& prefilter = probes.prefilterArray;
+    gpu::Texture& irradiance = indirect.irradianceArray;
+    gpu::Texture& prefilter = indirect.prefilterArray;
 
-    int probeIndex = 0;
+    int mapIndex = 0;
 
     while (true) {
-        if (probeIndex >= probes.assigned.GetSize()) {
-            size_t newSize = std::max<size_t>(1, 2 * probes.assigned.GetSize());
-            if (!probes.assigned.Resize(newSize, false)) {
-                NX_LOG(E, "RENDER: Failed to resize probe assignment list (requested: %zu entries)", newSize);
+        if (mapIndex >= indirect.assigned.GetSize()) {
+            size_t newSize = std::max<size_t>(1, 2 * indirect.assigned.GetSize());
+            if (!indirect.assigned.Resize(newSize, false)) {
+                NX_LOG(E, "RENDER: Failed to resize indiect light map assignment list (requested: %zu entries)", newSize);
                 return -1;
             }
         }
-        if (!probes.assigned[probeIndex]) {
-            probes.assigned[probeIndex] = true;
+        if (!indirect.assigned[mapIndex]) {
+            indirect.assigned[mapIndex] = true;
             break;
         }
-        probeIndex++;
+        mapIndex++;
     }
 
-    if (probeIndex >= irradiance.GetDepth()) {
-        irradiance.ReallocLayers(probeIndex + 1, true);
-        prefilter.ReallocLayers(probeIndex + 1, true);
+    if (mapIndex >= irradiance.GetDepth()) {
+        irradiance.ReallocLayers(mapIndex + 1, true);
+        prefilter.ReallocLayers(mapIndex + 1, true);
     }
 
-    return probeIndex;
+    return mapIndex;
 }
 
-void INX_Render3DState_ReleaseProbe(int probeIndex)
+void INX_Render3DState_ReleaseIndirectLightMap(int mapIndex)
 {
-    INX_Render3D->probes.assigned[probeIndex] = false;
+    INX_Render3D->indirect.assigned[mapIndex] = false;
 }
 
 const gpu::Texture& INX_Render3DState_GetIrradianceArray()
 {
-    return INX_Render3D->probes.irradianceArray;
+    return INX_Render3D->indirect.irradianceArray;
 }
 
 const gpu::Texture& INX_Render3DState_GetPrefilterArray()
 {
-    return INX_Render3D->probes.prefilterArray;
+    return INX_Render3D->indirect.prefilterArray;
 }
 
 // ============================================================================
@@ -833,6 +844,7 @@ static void INX_EndRenderPass()
     INX_Render3D->renderPass = INX_RenderPass::RENDER_NONE;
     INX_Render3D->renderFlags = 0;
 
+    INX_Render3D->drawCalls.reflectionProbeCount = 0;
     INX_Render3D->drawCalls.sortedUnique.Clear();
     INX_Render3D->drawCalls.sharedData.Clear();
     INX_Render3D->drawCalls.uniqueData.Clear();
@@ -1028,6 +1040,7 @@ static void INX_UploadDrawCalls()
 {
     INX_DrawCallState& state = INX_Render3D->drawCalls;
 
+    state.reflectionProbeBuffer.Upload();
     state.boneBuffer.Upload();
 
     const size_t sharedCount = state.sharedData.GetSize();
@@ -1362,9 +1375,7 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
     data.ambientColor = NX_VEC3(env.ambient.r, env.ambient.g, env.ambient.b);
     data.skyRotation = NX_VEC4(env.sky.rotation.x, env.sky.rotation.y, env.sky.rotation.z, env.sky.rotation.w);
     data.skyIntensity = env.sky.intensity;
-    data.skySpecular = env.sky.specular * env.sky.intensity;
-    data.skyDiffuse = env.sky.diffuse * env.sky.intensity;
-    data.skyProbeIndex = env.sky.probe ? env.sky.probe->probeIndex : -1;
+    data.skyLightMapIndex = env.sky.light ? env.sky.light->mapIndex : -1;
 
     data.fogDensity = env.fog.density;
     data.fogStart = env.fog.start;
@@ -1651,14 +1662,15 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
     pipeline.BindStorage(0, drawCalls.sharedBuffer);
     pipeline.BindStorage(1, drawCalls.uniqueBuffer);
     pipeline.BindStorage(2, drawCalls.boneBuffer.GetBuffer());
-    pipeline.BindStorage(3, lighting.storageLights);
-    pipeline.BindStorage(4, lighting.storageShadow);
-    pipeline.BindStorage(5, lighting.storageClusters);
-    pipeline.BindStorage(6, lighting.storageIndices);
+    pipeline.BindStorage(3, drawCalls.reflectionProbeBuffer.GetBuffer());
+    pipeline.BindStorage(4, lighting.storageLights);
+    pipeline.BindStorage(5, lighting.storageShadow);
+    pipeline.BindStorage(6, lighting.storageClusters);
+    pipeline.BindStorage(7, lighting.storageIndices);
 
     pipeline.BindTexture(4, INX_Assets.Get(INX_TextureAsset::BRDF_LUT)->gpu);
-    pipeline.BindTexture(5, INX_Render3D->probes.irradianceArray);
-    pipeline.BindTexture(6, INX_Render3D->probes.prefilterArray);
+    pipeline.BindTexture(5, INX_Render3D->indirect.irradianceArray);
+    pipeline.BindTexture(6, INX_Render3D->indirect.prefilterArray);
     pipeline.BindTexture(7, shadowing.target[NX_LIGHT_DIR]);
     pipeline.BindTexture(8, shadowing.target[NX_LIGHT_SPOT]);
     pipeline.BindTexture(9, shadowing.target[NX_LIGHT_OMNI]);
@@ -1668,7 +1680,7 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
     pipeline.BindUniform(2, scene.envUniform);
 
     // Ensures that the SSBOs are ready (especially clusters)
-    // Ensures that the generated images are ready (especially reflection probes)
+    // Ensures that the generated images are ready (especially reflection indirect)
     pipeline.MemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
     for (int uniqueIndex : drawCalls.sortedUnique.GetCategories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
@@ -1901,6 +1913,7 @@ void NX_End3D()
             .screenSize = scene.framebufferScene.GetDimensions(),
             .clusterCount = INX_Render3D->lighting.clusterCount,
             .maxLightsPerCluster = INX_Render3D->lighting.MaxLightsPerCluster,
+            .reflectionProbeCount = INX_Render3D->drawCalls.reflectionProbeCount,
             .clusterSliceScale = INX_Render3D->lighting.clusterSliceScale,
             .clusterSliceBias = INX_Render3D->lighting.clusterSliceBias,
             .elapsedTime = static_cast<float>(NX_GetElapsedTime()),
@@ -2202,6 +2215,7 @@ void NX_EndCubemap3D()
             .screenSize = framebuffer.GetDimensions(),
             .clusterCount = INX_Render3D->lighting.clusterCount,
             .maxLightsPerCluster = INX_Render3D->lighting.MaxLightsPerCluster,
+            .reflectionProbeCount = INX_Render3D->drawCalls.reflectionProbeCount,
             .clusterSliceScale = INX_Render3D->lighting.clusterSliceScale,
             .clusterSliceBias = INX_Render3D->lighting.clusterSliceBias,
             .elapsedTime = static_cast<float>(NX_GetElapsedTime()),
@@ -2279,4 +2293,18 @@ void NX_DrawModelInstanced3D(const NX_Model* model, const NX_InstanceBuffer* ins
         *model, instances, instanceCount,
         transform ? *transform : NX_TRANSFORM_IDENTITY
     );
+}
+
+void NX_DrawReflectionProbe3D(const NX_IndirectLight* indirectLight, const NX_Probe* probe)
+{
+    NX_Probe cProbe = probe ? *probe : NX_GetDefaultProbe();
+
+    INX_Render3D->drawCalls.reflectionProbeBuffer.Stage(INX_GPUReflectionProbe {
+        .position = cProbe.position,
+        .range = cProbe.range,
+        .falloff = cProbe.falloff,
+        .mapIndex = uint32_t(indirectLight->mapIndex)
+    });
+
+    INX_Render3D->drawCalls.reflectionProbeCount++;
 }

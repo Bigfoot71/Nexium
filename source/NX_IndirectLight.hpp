@@ -1,4 +1,4 @@
-/* NX_ReflectionProbe.hpp -- API definition for Nexium's reflection probe module
+/* NX_IndirectLight.hpp -- API definition for Nexium's indirect light module
  *
  * Copyright (c) 2025 Le Juez Victor
  *
@@ -6,17 +6,17 @@
  * For conditions of distribution and use, see accompanying LICENSE file.
  */
 
-#ifndef NX_REFLECTION_PROBE_HPP
-#define NX_REFLECTION_PROBE_HPP
+#ifndef NX_INDIRECT_LIGHT_HPP
+#define NX_INDIRECT_LIGHT_HPP
 
-#include <NX/NX_ReflectionProbe.h>
+#include <NX/NX_IndirectLight.h>
 
 // ============================================================================
 // OPAQUE DEFINITION
 // ============================================================================
 
-struct NX_ReflectionProbe {
-    int probeIndex;
+struct NX_IndirectLight {
+    int mapIndex;
 };
 
-#endif // NX_REFLECTION_PROBE_HPP
+#endif // NX_INDIRECT_LIGHT_HPP

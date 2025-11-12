@@ -15,9 +15,9 @@
 #include <NX/NX_Model.h>
 
 #include "./Detail/Util/ObjectPool.hpp"
-#include "./NX_ReflectionProbe.hpp"
 #include "./NX_InstanceBuffer.hpp"
 #include "./NX_RenderTexture.hpp"
+#include "./NX_IndirectLight.hpp"
 #include "./NX_DynamicMesh.hpp"
 #include "./NX_AudioStream.hpp"
 #include "./NX_AudioClip.hpp"
@@ -40,9 +40,9 @@ public:
 
     /** Render */
     using AnimationPlayers  = util::ObjectPool<NX_AnimationPlayer, 128>;
-    using ReflectionProbes  = util::ObjectPool<NX_ReflectionProbe, 128>;
     using VertexBuffers3D   = util::ObjectPool<NX_VertexBuffer3D, 512>;
     using InstanceBuffers   = util::ObjectPool<NX_InstanceBuffer, 32>;
+    using IndirectLights    = util::ObjectPool<NX_IndirectLight, 128>;
     using RenderTextures    = util::ObjectPool<NX_RenderTexture, 16>;
     using AnimationLibs     = util::ObjectPool<NX_AnimationLib, 256>;
     using DynamicMeshes     = util::ObjectPool<NX_DynamicMesh, 32>;
@@ -80,9 +80,9 @@ private:
 
     /** Render */
     AnimationPlayers mAnimationPlayers;
-    ReflectionProbes mReflectionProbes;
     VertexBuffers3D  mVertexBuffers3D;
     InstanceBuffers  mInstanceBuffers;
+    IndirectLights   mIndirectLights;
     RenderTextures   mRenderTextures;
     AnimationLibs    mAnimationLibs;
     DynamicMeshes    mDynamicMeshes;
@@ -108,9 +108,9 @@ inline auto& INX_GlobalPool::Get()
     if constexpr (std::is_same_v<T, NX_AudioStream>)          return mAudioStreams;
     else if constexpr (std::is_same_v<T, NX_AudioClip>)       return mAudioClips;
     else if constexpr (std::is_same_v<T, NX_AnimationPlayer>) return mAnimationPlayers;
-    else if constexpr (std::is_same_v<T, NX_ReflectionProbe>) return mReflectionProbes;
     else if constexpr (std::is_same_v<T, NX_VertexBuffer3D>)  return mVertexBuffers3D;
     else if constexpr (std::is_same_v<T, NX_InstanceBuffer>)  return mInstanceBuffers;
+    else if constexpr (std::is_same_v<T, NX_IndirectLight>)   return mIndirectLights;
     else if constexpr (std::is_same_v<T, NX_RenderTexture>)   return mRenderTextures;
     else if constexpr (std::is_same_v<T, NX_AnimationLib>)    return mAnimationLibs;
     else if constexpr (std::is_same_v<T, NX_DynamicMesh>)     return mDynamicMeshes;
@@ -204,9 +204,9 @@ inline void INX_GlobalPool::UnloadAll()
         mVertexBuffers3D.Clear();
     }
 
-    if (!mReflectionProbes.IsEmpty()) {
-        NX_LOG(W, "POOL: %i NX_ReflectionProbe objects were not freed! Possible memory leak", mReflectionProbes.GetSize());
-        mReflectionProbes.Clear();
+    if (!mIndirectLights.IsEmpty()) {
+        NX_LOG(W, "POOL: %i NX_IndirectLight objects were not freed! Possible memory leak", mIndirectLights.GetSize());
+        mIndirectLights.Clear();
     }
 
     if (!mRenderTextures.IsEmpty()) {
