@@ -22,6 +22,7 @@ struct Environment {
     float skyIntensity;
     float skySpecular;
     float skyDiffuse;
+    int skyProbeIndex;              // -1 if no environment reflections
     float fogDensity;
     float fogStart;
     float fogEnd;

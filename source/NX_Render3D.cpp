@@ -152,7 +152,6 @@ struct INX_GPUSceneFrame {
     alignas(4) float clusterSliceBias;
     alignas(4) float elapsedTime;
     alignas(4) int32_t hasActiveLights;
-    alignas(4) int32_t hasProbe;
 };
 
 /** Per-frame data for shadow maps rendering */
@@ -174,6 +173,7 @@ struct INX_GPUEnvironment {
     alignas(4) float skyIntensity;
     alignas(4) float skySpecular;
     alignas(4) float skyDiffuse;
+    alignas(4) int skyProbeIndex;           // -1 if no environment reflections
     alignas(4) float fogDensity;
     alignas(4) float fogStart;
     alignas(4) float fogEnd;
@@ -231,7 +231,6 @@ struct INX_SceneState {
     /** Environment */
     NX_Color background{};
     NX_Cubemap* skyCubemap{};
-    NX_ReflectionProbe* skyProbe{};
 
     /** Frustum data */
     INX_ViewFrustum viewFrustum{};
@@ -328,16 +327,23 @@ struct INX_DrawCallState {
     gpu::Buffer uniqueBuffer{};
 };
 
-struct INX_Render3DState {
-    /** Scene state */
-    INX_SceneState scene{};
+struct INX_ProbeState {
+    util::DynamicArray<bool> assigned;
+    gpu::Texture irradianceArray;
+    gpu::Texture prefilterArray;
+};
 
-    /** Lighting state */
+struct INX_Render3DState {
+    /** Rendering States */
+    INX_SceneState scene{};
     INX_LightingState lighting{};
     INX_ShadowingState shadowing{};
 
-    /** Common state infos */
+    /** Misc managers */
     INX_DrawCallState drawCalls{};
+    INX_ProbeState probes{};
+
+    /** Common state infos */
     NX_RenderFlags renderFlags{};
     INX_RenderPass renderPass{};
 };
@@ -630,6 +636,55 @@ static void INX_InitDrawCallState(INX_DrawCallState* drawCalls)
     }
 }
 
+static void INX_InitProbeState(INX_ProbeState* probes)
+{
+    probes->irradianceArray = gpu::Texture(
+        gpu::TextureConfig
+        {
+            .target = GL_TEXTURE_CUBE_MAP_ARRAY,
+            .internalFormat = GL_RGBA16F,
+            .data = nullptr,
+            .width = 32,
+            .height = 32,
+            .depth = 1,
+            .mipmap = false
+        },
+        gpu::TextureParam
+        {
+            .minFilter = GL_LINEAR,
+            .magFilter = GL_LINEAR,
+            .sWrap = GL_CLAMP_TO_EDGE,
+            .tWrap = GL_CLAMP_TO_EDGE,
+            .rWrap = GL_CLAMP_TO_EDGE
+        }
+    );
+
+    probes->prefilterArray = gpu::Texture(
+        gpu::TextureConfig
+        {
+            .target = GL_TEXTURE_CUBE_MAP_ARRAY,
+            .internalFormat = GL_RGBA16F,
+            .data = nullptr,
+            .width = 128,
+            .height = 128,
+            .depth = 1,
+            .mipmap = true
+        },
+        gpu::TextureParam
+        {
+            .minFilter = GL_LINEAR_MIPMAP_LINEAR,
+            .magFilter = GL_LINEAR,
+            .sWrap = GL_CLAMP_TO_EDGE,
+            .tWrap = GL_CLAMP_TO_EDGE,
+            .rWrap = GL_CLAMP_TO_EDGE
+        }
+    );
+
+    if (!probes->assigned.Resize(8, false)) {
+        NX_LOG(E, "RENDER: Probes assignments list pre-allocation failed (requested: %i entries)", 8);
+    }
+}
+
 // ============================================================================
 // INTERNAL FUNCTIONS
 // ============================================================================
@@ -647,6 +702,7 @@ bool INX_Render3DState_Init(NX_AppDesc* desc)
     INX_InitLightingState(&INX_Render3D->lighting, desc);
     INX_InitShadowState(&INX_Render3D->shadowing, desc);
     INX_InitDrawCallState(&INX_Render3D->drawCalls);
+    INX_InitProbeState(&INX_Render3D->probes);
 
     return true;
 }
@@ -667,17 +723,22 @@ int INX_Render3DState_RequestShadowMap(NX_LightType type)
     int mapIndex = 0;
 
     while (true) {
-        if (mapIndex > usageCache.GetSize()) {
-            usageCache.Resize(2 * usageCache.GetSize());
+        if (mapIndex >= usageCache.GetSize()) {
+            size_t newSize = std::max<size_t>(1, 2 * usageCache.GetSize());
+            if (!usageCache.Resize(newSize, false)) {
+                NX_LOG(E, "RENDER: Failed to resize shadow map assignment list (requested: %zu entries)", newSize);
+                return -1;
+            }
         }
         if (!usageCache[mapIndex]) {
             usageCache[mapIndex] = true;
             break;
         }
+        ++mapIndex;
     }
 
     if (mapIndex > shadowMap.GetDepth()) {
-        shadowMap.Realloc(shadowMap.GetWidth(), shadowMap.GetHeight(), mapIndex);
+        shadowMap.Realloc(shadowMap.GetWidth(), shadowMap.GetHeight(), mapIndex + 1);
         shadowFb.UpdateColorTextureView(0, shadowMap);
     }
 
@@ -687,6 +748,53 @@ int INX_Render3DState_RequestShadowMap(NX_LightType type)
 void INX_Render3DState_ReleaseShadowMap(NX_LightType type, int mapIndex)
 {
     INX_Render3D->shadowing.assigned[type][mapIndex] = false;
+}
+
+int INX_Render3DState_RequestProbe()
+{
+    INX_ProbeState& probes = INX_Render3D->probes;
+
+    gpu::Texture& irradiance = probes.irradianceArray;
+    gpu::Texture& prefilter = probes.prefilterArray;
+
+    int probeIndex = 0;
+
+    while (true) {
+        if (probeIndex >= probes.assigned.GetSize()) {
+            size_t newSize = std::max<size_t>(1, 2 * probes.assigned.GetSize());
+            if (!probes.assigned.Resize(newSize, false)) {
+                NX_LOG(E, "RENDER: Failed to resize probe assignment list (requested: %zu entries)", newSize);
+                return -1;
+            }
+        }
+        if (!probes.assigned[probeIndex]) {
+            probes.assigned[probeIndex] = true;
+            break;
+        }
+        probeIndex++;
+    }
+
+    if (probeIndex >= irradiance.GetDepth()) {
+        irradiance.Realloc(irradiance.GetWidth(), irradiance.GetHeight(), probeIndex + 1);
+        prefilter.Realloc(prefilter.GetWidth(), prefilter.GetHeight(), probeIndex + 1);
+    }
+
+    return probeIndex;
+}
+
+void INX_Render3DState_ReleaseProbe(int probeIndex)
+{
+    INX_Render3D->probes.assigned[probeIndex] = false;
+}
+
+const gpu::Texture& INX_Render3DState_GetIrradianceArray()
+{
+    return INX_Render3D->probes.irradianceArray;
+}
+
+const gpu::Texture& INX_Render3DState_GetPrefilterArray()
+{
+    return INX_Render3D->probes.prefilterArray;
 }
 
 // ============================================================================
@@ -1210,7 +1318,6 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
     /* --- Store textures --- */
 
     state.skyCubemap = env.sky.cubemap;
-    state.skyProbe = env.sky.probe;
 
     /* --- Store CPU data */
 
@@ -1257,6 +1364,7 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
     data.skyIntensity = env.sky.intensity;
     data.skySpecular = env.sky.specular * env.sky.intensity;
     data.skyDiffuse = env.sky.diffuse * env.sky.intensity;
+    data.skyProbeIndex = env.sky.probe ? env.sky.probe->probeIndex : -1;
 
     data.fogDensity = env.fog.density;
     data.fogStart = env.fog.start;
@@ -1549,6 +1657,8 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
     pipeline.BindStorage(6, lighting.storageIndices);
 
     pipeline.BindTexture(4, INX_Assets.Get(INX_TextureAsset::BRDF_LUT)->gpu);
+    pipeline.BindTexture(5, INX_Render3D->probes.irradianceArray);
+    pipeline.BindTexture(6, INX_Render3D->probes.prefilterArray);
     pipeline.BindTexture(7, shadowing.target[NX_LIGHT_DIR]);
     pipeline.BindTexture(8, shadowing.target[NX_LIGHT_SPOT]);
     pipeline.BindTexture(9, shadowing.target[NX_LIGHT_OMNI]);
@@ -1556,11 +1666,6 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
     pipeline.BindUniform(0, scene.frameUniform);
     pipeline.BindUniform(1, scene.frustumUniform);
     pipeline.BindUniform(2, scene.envUniform);
-
-    if (scene.skyProbe != nullptr) {
-        pipeline.BindTexture(5, scene.skyProbe->irradiance);
-        pipeline.BindTexture(6, scene.skyProbe->prefilter);
-    }
 
     // Ensures that the SSBOs are ready (especially clusters)
     // Ensures that the generated images are ready (especially reflection probes)
@@ -1799,8 +1904,7 @@ void NX_End3D()
             .clusterSliceScale = INX_Render3D->lighting.clusterSliceScale,
             .clusterSliceBias = INX_Render3D->lighting.clusterSliceBias,
             .elapsedTime = static_cast<float>(NX_GetElapsedTime()),
-            .hasActiveLights = !INX_Render3D->lighting.activeLights.IsEmpty(),
-            .hasProbe = (INX_Render3D->scene.skyProbe != nullptr)
+            .hasActiveLights = !INX_Render3D->lighting.activeLights.IsEmpty()
         });
 
         INX_SortDrawCalls(scene.viewFrustum.position);
@@ -2101,8 +2205,7 @@ void NX_EndCubemap3D()
             .clusterSliceScale = INX_Render3D->lighting.clusterSliceScale,
             .clusterSliceBias = INX_Render3D->lighting.clusterSliceBias,
             .elapsedTime = static_cast<float>(NX_GetElapsedTime()),
-            .hasActiveLights = !INX_Render3D->lighting.activeLights.IsEmpty(),
-            .hasProbe = (INX_Render3D->scene.skyProbe != nullptr)
+            .hasActiveLights = !INX_Render3D->lighting.activeLights.IsEmpty()
         });
 
         INX_SortDrawCalls(scene.viewFrustum.position);

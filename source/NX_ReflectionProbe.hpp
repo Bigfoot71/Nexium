@@ -11,16 +11,12 @@
 
 #include <NX/NX_ReflectionProbe.h>
 
-#include "./Detail/GPU/Framebuffer.hpp"
-#include "./Detail/GPU/Texture.hpp"
-
 // ============================================================================
 // OPAQUE DEFINITION
 // ============================================================================
 
 struct NX_ReflectionProbe {
-    gpu::Texture irradiance;
-    gpu::Texture prefilter;
+    int probeIndex;
 };
 
 #endif // NX_REFLECTION_PROBE_HPP

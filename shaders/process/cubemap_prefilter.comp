@@ -28,12 +28,12 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 6) in;
 /* === Uniforms === */
 
 layout(binding = 0) uniform samplerCube uTexCubemap;
-layout(binding = 1, rgba16f) uniform writeonly imageCube uTargetCubemap;
+layout(binding = 1, rgba16f) uniform writeonly imageCubeArray uTargetCubemap;
 
-layout(location = 1) uniform float uCubeResolution;     // Resolution of source cubemap (per face)
-layout(location = 2) uniform int uMaxCubeMipLevel;      // Maximum mipmap level in source cubemap
-layout(location = 3) uniform float uRoughness;          // Roughness level for this mip level
-layout(location = 4) uniform float uMipLevel;           // Current mip level being generated
+/* === Samplers === */
+
+layout(location = 0) uniform int uTargetIndex;          // Destination cubemap index
+layout(location = 1) uniform float uRoughness;          // Roughness level for this mip level
 
 /* === Helper functions === */
 
@@ -116,6 +116,10 @@ void main()
     if (globalId.x >= int(mipImageSize) || globalId.y >= int(mipImageSize)) {
         return;
     }
+
+    /* --- Calculate cubemap/face index in the texture array --- */
+
+    int layer = uTargetIndex * 6 + globalId.z;
     
     /* --- Get the world space direction for this texel --- */
 
@@ -127,7 +131,7 @@ void main()
 
     if (uRoughness < EPSILON) {
         vec4 color = textureLod(uTexCubemap, N, 0.0);
-        imageStore(uTargetCubemap, globalId, color);
+        imageStore(uTargetCubemap, ivec3(globalId.xy, layer), color);
         return;
     }
 
@@ -158,8 +162,8 @@ void main()
             float HdotV = max(dot(H, V), 0.0);
 
             float pdf = (D * NdotH) / max(4.0 * HdotV, EPSILON);
-            float mipLevel = ComputeMipLevel(pdf, uCubeResolution);
-            mipLevel = clamp(mipLevel, 0.0, float(uMaxCubeMipLevel - 1));
+            float mipLevel = ComputeMipLevel(pdf, float(textureSize(uTexCubemap, 0).x));
+            mipLevel = clamp(mipLevel, 0.0, float(textureQueryLevels(uTexCubemap) - 1));
 
             vec3 sampleColor = textureLod(uTexCubemap, L, mipLevel).rgb;
             prefilteredColor += sampleColor * NdotL;
@@ -170,5 +174,5 @@ void main()
     /* --- Normalize and store --- */
 
     prefilteredColor = prefilteredColor / max(totalWeight, EPSILON);
-    imageStore(uTargetCubemap, globalId, vec4(prefilteredColor, 1.0));
+    imageStore(uTargetCubemap, ivec3(globalId.xy, layer), vec4(prefilteredColor, 1.0));
 }

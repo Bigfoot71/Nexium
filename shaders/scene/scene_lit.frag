@@ -136,8 +136,8 @@ layout(binding = 2) uniform sampler2D uTexORM;
 layout(binding = 3) uniform sampler2D uTexNormal;
 
 layout(binding = 4) uniform sampler2D uTexBrdfLut;
-layout(binding = 5) uniform samplerCube uTexProbeIrradiance;
-layout(binding = 6) uniform samplerCube uTexProbePrefilter;
+layout(binding = 5) uniform samplerCubeArray uTexIrradiance;
+layout(binding = 6) uniform samplerCubeArray uTexPrefilter;
 
 layout(binding = 7) uniform highp sampler2DArray uTexShadowDir;
 layout(binding = 8) uniform highp sampler2DArray uTexShadowSpot;
@@ -438,15 +438,15 @@ float IBL_GetSpecularOcclusion(float NdotV, float ao, float roughness)
     return clamp(pow(NdotV + ao, exp2(-16.0 * roughness - 1.0)) - 1.0 + ao, 0.0, 1.0);
 }
 
-vec3 IBL_SampleIrradiance(samplerCube irradiance, vec3 N, vec4 rotation)
+vec3 IBL_SampleIrradiance(samplerCubeArray irradiance, int index, vec3 N, vec4 rotation)
 {
-    return texture(irradiance, M_Rotate3D(N, rotation)).rgb;
+    return texture(irradiance, vec4(M_Rotate3D(N, rotation), float(index))).rgb;
 }
 
-vec3 IBL_SamplePrefilter(samplerCube prefilter, vec3 V, vec3 N, vec4 rotation, float roughness)
+vec3 IBL_SamplePrefilter(samplerCubeArray prefilter, int index, vec3 V, vec3 N, vec4 rotation, float roughness)
 {
-    float mipLevel = roughness * (float(textureQueryLevels(prefilter)) - 1.0);
-    return textureLod(prefilter, M_Rotate3D(reflect(-V, N), rotation), mipLevel).rgb;
+    float mipLevel = roughness * float(textureQueryLevels(prefilter) - 1);
+    return textureLod(prefilter, vec4(M_Rotate3D(reflect(-V, N), rotation), float(index)), mipLevel).rgb;
 }
 
 vec3 IBL_MultiScattering(vec3 irradiance, vec3 radiance, vec3 diffuse, vec3 F0, vec2 brdf, float NdotV, float roughness)
@@ -563,15 +563,15 @@ void main()
 
     /* --- Compute IBL contribution  --- */
 
-    if (uFrame.hasProbe)
+    if (uEnv.skyProbeIndex >= 0)
     {
         vec2 brdf = texture(uTexBrdfLut, vec2(NdotV, ROUGHNESS)).xy;
 
-        vec3 irradiance = IBL_SampleIrradiance(uTexProbeIrradiance, N, uEnv.skyRotation);
+        vec3 irradiance = IBL_SampleIrradiance(uTexIrradiance, uEnv.skyProbeIndex, N, uEnv.skyRotation);
         irradiance *= uEnv.skyDiffuse;
         irradiance *= OCCLUSION;
 
-        vec3 radiance = IBL_SamplePrefilter(uTexProbePrefilter, V, N, uEnv.skyRotation, ROUGHNESS);
+        vec3 radiance = IBL_SamplePrefilter(uTexPrefilter, uEnv.skyProbeIndex, V, N, uEnv.skyRotation, ROUGHNESS);
         radiance *= IBL_GetSpecularOcclusion(NdotV, OCCLUSION, ROUGHNESS);
         radiance *= uEnv.skySpecular;
 

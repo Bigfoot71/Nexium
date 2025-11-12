@@ -7,10 +7,9 @@
  */
 
 #include "./NX_ReflectionProbe.hpp"
-#include "./NX_Cubemap.hpp"
+#include "./NX_Render3D.hpp"
 
 #include "./INX_GPUProgramCache.hpp"
-#include "./INX_RenderUtils.hpp"
 #include "./INX_GlobalPool.hpp"
 
 #include "./Detail/GPU/Pipeline.hpp"
@@ -24,51 +23,7 @@ NX_ReflectionProbe* NX_CreateReflectionProbe(const NX_Cubemap* cubemap)
 {
     NX_ReflectionProbe* probe = INX_Pool.Create<NX_ReflectionProbe>();
 
-    /* --- Create textures --- */
-
-    probe->irradiance = gpu::Texture(
-        gpu::TextureConfig
-        {
-            .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = GL_RGBA16F,
-            .data = nullptr,
-            .width = 32,
-            .height = 32,
-            .depth = 0,
-            .mipmap = false
-        },
-        gpu::TextureParam
-        {
-            .minFilter = GL_LINEAR,
-            .magFilter = GL_LINEAR,
-            .sWrap = GL_CLAMP_TO_EDGE,
-            .tWrap = GL_CLAMP_TO_EDGE,
-            .rWrap = GL_CLAMP_TO_EDGE
-        }
-    );
-
-    probe->prefilter = gpu::Texture(
-        gpu::TextureConfig
-        {
-            .target = GL_TEXTURE_CUBE_MAP,
-            .internalFormat = GL_RGBA16F,
-            .data = nullptr,
-            .width = 128,
-            .height = 128,
-            .depth = 0,
-            .mipmap = true
-        },
-        gpu::TextureParam
-        {
-            .minFilter = GL_LINEAR_MIPMAP_LINEAR,
-            .magFilter = GL_LINEAR,
-            .sWrap = GL_CLAMP_TO_EDGE,
-            .tWrap = GL_CLAMP_TO_EDGE,
-            .rWrap = GL_CLAMP_TO_EDGE
-        }
-    );
-
-    /* --- Generate maps if cubemap is provided --- */
+    probe->probeIndex = INX_Render3DState_RequestProbe();
 
     if (cubemap != nullptr) {
         NX_UpdateReflectionProbe(probe, cubemap);
@@ -90,6 +45,7 @@ NX_ReflectionProbe* NX_LoadReflectionProbe(const char* filePath)
 
 void NX_DestroyReflectionProbe(NX_ReflectionProbe* probe)
 {
+    INX_Render3DState_ReleaseProbe(probe->probeIndex);
     INX_Pool.Destroy(probe);
 }
 
@@ -98,12 +54,19 @@ void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap* cubem
     gpu::Pipeline pipeline;
     pipeline.BindTexture(0, cubemap->gpu);
 
+    /* --- Get cubemaps stored in the Render3D state --- */
+
+    const gpu::Texture& irradiance = INX_Render3DState_GetIrradianceArray();
+    const gpu::Texture& prefilter = INX_Render3DState_GetPrefilterArray();
+
     /* --- Generate irradiance --- */
 
     pipeline.UseProgram(INX_Programs.GetCubemapIrradiance());
-    pipeline.BindImageTexture(1, probe->irradiance, 0, -1, GL_WRITE_ONLY);
 
-    int irradianceSize = probe->irradiance.GetWidth();
+    pipeline.BindImageTexture(1, irradiance, 0, -1, GL_WRITE_ONLY);
+    pipeline.SetUniformInt1(0, probe->probeIndex);
+
+    int irradianceSize = irradiance.GetWidth();
     int groupsX = NX_DIV_CEIL(irradianceSize, 8);
     int groupsY = NX_DIV_CEIL(irradianceSize, 8);
     int groupsZ = 1;
@@ -113,17 +76,15 @@ void NX_UpdateReflectionProbe(NX_ReflectionProbe* probe, const NX_Cubemap* cubem
     /* --- Generate prefilter --- */
 
     pipeline.UseProgram(INX_Programs.GetCubemapPrefilter());
-    pipeline.SetUniformFloat1(1, cubemap->gpu.GetDimensions().x);
-    pipeline.SetUniformInt1(2, cubemap->gpu.GetNumLevels());
+    pipeline.SetUniformInt1(0, probe->probeIndex);
 
-    int baseSize = probe->prefilter.GetWidth();
-    for (int mip = 0; mip < probe->prefilter.GetNumLevels(); mip++)
+    int baseSize = prefilter.GetWidth();
+    for (int mip = 0; mip < prefilter.GetNumLevels(); mip++)
     {
-        pipeline.BindImageTexture(1, probe->prefilter, mip, -1, GL_WRITE_ONLY);
+        pipeline.BindImageTexture(1, prefilter, mip, -1, GL_WRITE_ONLY);
 
-        float roughness = static_cast<float>(mip) / (probe->prefilter.GetNumLevels() - 1);
-        pipeline.SetUniformFloat1(3, roughness);
-        pipeline.SetUniformFloat1(4, static_cast<float>(mip));
+        float roughness = static_cast<float>(mip) / (prefilter.GetNumLevels() - 1);
+        pipeline.SetUniformFloat1(1, roughness);
 
         int mipSize = std::max(1, baseSize >> mip);
         int groupsX = NX_DIV_CEIL(mipSize, 8);

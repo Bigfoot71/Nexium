@@ -20,10 +20,14 @@ precision highp float;
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 6) in;
 
-/* === Uniforms === */
+/* === Samplers === */
 
 layout(binding = 0) uniform samplerCube uTexCubemap;
-layout(binding = 1, rgba16f) uniform writeonly imageCube uTargetCubemap;
+layout(binding = 1, rgba16f) uniform writeonly imageCubeArray uTargetCubemap;
+
+/* === Uniforms === */
+
+layout(location = 0) uniform int uTargetIndex; // Destination cubemap index
 
 /* === Helper Functions === */
 
@@ -55,6 +59,10 @@ void main()
         return;
     }
 
+    /* --- Calculate cubemap/face index in the texture array --- */
+
+    int layer = uTargetIndex * 6 + globalId.z;
+
     /* --- Get the world space direction for this texel and build orthonormal basis --- */
 
     vec3 N = GetDirection(globalId, imgSize);
@@ -82,5 +90,5 @@ void main()
     /* --- Normalize and store --- */
 
     irradiance = M_PI * irradiance * (1.0 / float(nrSamples));
-    imageStore(uTargetCubemap, globalId, vec4(irradiance, 1.0));
+    imageStore(uTargetCubemap, ivec3(globalId.xy, layer), vec4(irradiance, 1.0));
 }

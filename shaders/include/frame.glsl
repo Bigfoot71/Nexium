@@ -33,7 +33,6 @@ struct Frame {
     float clusterSliceBias;
     float elapsedTime;
     bool hasActiveLights;
-    bool hasProbe;
 };
 
 #endif // SHADOW
