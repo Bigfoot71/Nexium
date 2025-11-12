@@ -136,12 +136,12 @@ layout(binding = 2) uniform sampler2D uTexORM;
 layout(binding = 3) uniform sampler2D uTexNormal;
 
 layout(binding = 4) uniform sampler2D uTexBrdfLut;
-layout(binding = 5) uniform samplerCubeArray uTexIrradiance;
-layout(binding = 6) uniform samplerCubeArray uTexPrefilter;
+layout(binding = 5) uniform highp samplerCubeArray uTexIrradiance;
+layout(binding = 6) uniform highp samplerCubeArray uTexPrefilter;
 
-layout(binding = 7) uniform highp sampler2DArray uTexShadowDir;
-layout(binding = 8) uniform highp sampler2DArray uTexShadowSpot;
-layout(binding = 9) uniform highp samplerCubeArray uTexShadowOmni;
+layout(binding = 7) uniform mediump sampler2DArray uTexShadowDir;
+layout(binding = 8) uniform mediump sampler2DArray uTexShadowSpot;
+layout(binding = 9) uniform mediump samplerCubeArray uTexShadowOmni;
 
 /* === Uniform Buffers === */
 
