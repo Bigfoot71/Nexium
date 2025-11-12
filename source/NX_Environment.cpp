@@ -25,5 +25,5 @@ NX_Environment NX_GetDefaultEnvironment()
 
 void NX_SetDefaultEnvironment(const NX_Environment* env)
 {
-    INX_DefaultEnvironment = *env;
+    INX_DefaultEnvironment = env ? *env : INX_DefaultEnvironment;
 }
