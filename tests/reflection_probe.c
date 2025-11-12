@@ -84,7 +84,12 @@ int main(void)
 
     /* --- Cleanup --- */
 
+    NX_DestroyIndirectLight(reflection);
+    NX_DestroyIndirectLight(skyLight);
+    NX_DestroyCubemap(probeCubemap);
+    NX_DestroyCubemap(skyCubemap);
     NX_DestroyMesh(ground);
+    NX_DestroyMesh(sphere);
     NX_DestroyModel(model);
     NX_DestroyLight(light);
 
