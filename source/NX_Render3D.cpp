@@ -45,6 +45,7 @@
 #include "./INX_GlobalPool.hpp"
 #include "./INX_GPUBridge.hpp"
 #include "./INX_Frustum.hpp"
+#include "Detail/GPU/Pipeline.hpp"
 
 #include <numeric>
 
@@ -1575,15 +1576,14 @@ static void INX_RenderBackground(const gpu::Pipeline& pipeline)
 {
     INX_SceneState& scene = INX_Render3D->scene;
 
+    pipeline.SetBlendMode(gpu::BlendMode::Disabled);
     pipeline.SetDepthMode(gpu::DepthMode::WriteOnly);
 
     pipeline.ClearDepth(1.0f);
     pipeline.ClearColor(0, scene.background);
     pipeline.ClearColor(1, NX_COLOR(0.25f, 0.25f, 1.0f, 1.0f));
 
-    if (scene.skyCubemap == nullptr) {
-        return;
-    }
+    if (scene.skyCubemap == nullptr) return;
 
     if (INX_Render3D->renderPass == INX_RenderPass::RENDER_SCENE) {
         scene.framebufferScene.SetDrawBuffers({0});
