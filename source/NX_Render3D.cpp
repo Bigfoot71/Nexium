@@ -1585,7 +1585,9 @@ static void INX_RenderBackground(const gpu::Pipeline& pipeline)
         return;
     }
 
-    scene.framebufferScene.SetDrawBuffers({0});
+    if (INX_Render3D->renderPass == INX_RenderPass::RENDER_SCENE) {
+        scene.framebufferScene.SetDrawBuffers({0});
+    }
 
     pipeline.BindUniform(1, scene.frustumUniform);
     pipeline.BindUniform(2, scene.envUniform);
@@ -1597,7 +1599,9 @@ static void INX_RenderBackground(const gpu::Pipeline& pipeline)
     pipeline.BindTexture(0, scene.skyCubemap->gpu);
     pipeline.Draw(GL_TRIANGLES, 36);
 
-    scene.framebufferScene.EnableDrawBuffers();
+    if (INX_Render3D->renderPass == INX_RenderPass::RENDER_SCENE) {
+        scene.framebufferScene.EnableDrawBuffers();
+    }
 }
 
 static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
