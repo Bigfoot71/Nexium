@@ -30,6 +30,9 @@ int INX_Render3DState_RequestShadowMap(NX_LightType type);
 /** Should be called by NX_Light to release a shadow map */
 void INX_Render3DState_ReleaseShadowMap(NX_LightType type, int mapIndex);
 
+/** Should be called by NX_Light when we need the shadow map resolution */
+int INX_Render3DState_GetShadowMapResolution(NX_LightType type);
+
 /** Should be called by NX_IndirectLight to get an indirect light map */
 int INX_Render3DState_RequestIndirectLightMap();
 

@@ -762,6 +762,11 @@ void INX_Render3DState_ReleaseShadowMap(NX_LightType type, int mapIndex)
     INX_Render3D->shadowing.assigned[type][mapIndex] = false;
 }
 
+int INX_Render3DState_GetShadowMapResolution(NX_LightType type)
+{
+    return INX_Render3D->shadowing.target[type].GetWidth();
+}
+
 int INX_Render3DState_RequestIndirectLightMap()
 {
     INX_IndirectLightingState& indirect = INX_Render3D->indirect;

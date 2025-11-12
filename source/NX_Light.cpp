@@ -13,6 +13,7 @@
 #include "./INX_RenderUtils.hpp"
 #include "./INX_GlobalPool.hpp"
 #include "./NX_Render3D.hpp"
+#include "NX/NX_Light.h"
 #include <cmath>
 
 // ============================================================================
@@ -26,34 +27,45 @@ NX_Mat4 INX_GetDirectionalLightViewProj(NX_Light* light, const NX_Vec3& camPosit
 
     const INX_DirectionalLight& dirLight = std::get<INX_DirectionalLight>(light->data);
     const NX_Vec3& lightDir = dirLight.direction;
+    const float extent = dirLight.range;
 
-    /* --- Calcuate view matrix --- */
+    /* --- Create an orthonormal basis for light --- */
 
     NX_Vec3 up = (std::abs(NX_Vec3Dot(lightDir, NX_VEC3_UP)) > 0.99f) ? NX_VEC3_BACK : NX_VEC3_UP;
-    NX_Mat4 view = NX_Mat4LookTo(camPosition, lightDir, up);
+    NX_Vec3 lightRight = NX_Vec3Normalize(NX_Vec3Cross(up, lightDir));
+    NX_Vec3 lightUp = NX_Vec3Cross(lightDir, lightRight);
 
-    /* --- Calculate projection matrix --- */
+    /* --- Project the camera's position into light space --- */
 
-    NX_Vec3 rightLS = NX_VEC3(view.m00, view.m10, view.m20);
-    NX_Vec3 upLS    = NX_VEC3(view.m01, view.m11, view.m21);
-    NX_Vec3 forwLS  = NX_VEC3(view.m02, view.m12, view.m22);
+    float camX = NX_Vec3Dot(camPosition, lightRight);
+    float camY = NX_Vec3Dot(camPosition, lightUp);
+    float camZ = NX_Vec3Dot(camPosition, lightDir);
 
-    NX_Vec3 extentLS = NX_VEC3(
-        std::abs(rightLS.x) + std::abs(upLS.x) + std::abs(forwLS.x),
-        std::abs(rightLS.y) + std::abs(upLS.y) + std::abs(forwLS.y),
-        std::abs(rightLS.z) + std::abs(upLS.z) + std::abs(forwLS.z)
-    ) * dirLight.range;
+    /* --- Snap to the texel grid --- */
+
+    float shadowMapSize = INX_Render3DState_GetShadowMapResolution(NX_LIGHT_DIR);
+    float worldUnitsPerTexel = (2.0f * extent) / shadowMapSize;
+
+    float snappedX = std::floor(camX / worldUnitsPerTexel) * worldUnitsPerTexel;
+    float snappedY = std::floor(camY / worldUnitsPerTexel) * worldUnitsPerTexel;
+
+    /* --- Reconstruct the snapped world space position --- */
+
+    NX_Vec3 lightPosition = lightRight * snappedX + 
+                            lightUp * snappedY + 
+                            lightDir * camZ;
+
+    /* --- Construct view and projection --- */
+
+    NX_Mat4 view = NX_Mat4LookTo(lightPosition, lightDir, lightUp);
 
     NX_Mat4 proj = NX_Mat4Ortho(
-        -extentLS.x,
-        +extentLS.x,
-        -extentLS.y,
-        +extentLS.y,
-        -extentLS.z,
-        +extentLS.z
+        -extent, +extent,
+        -extent, +extent,
+        -extent, +extent
     );
 
-    /* --- Update and return the view projection matrix --- */
+    /* --- Return the final matrix --- */
 
     light->shadow.state.viewProj = view * proj;
 
