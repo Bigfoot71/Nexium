@@ -748,7 +748,7 @@ int INX_Render3DState_RequestShadowMap(NX_LightType type)
         ++mapIndex;
     }
 
-    if (mapIndex > shadowMap.GetDepth()) {
+    if (mapIndex >= shadowMap.GetDepth()) {
         shadowMap.ReallocLayers(mapIndex + 1, true);
         shadowFb.UpdateColorTextureView(0, shadowMap);
     }
