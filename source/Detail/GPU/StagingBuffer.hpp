@@ -23,6 +23,9 @@ public:
     StagingBuffer() noexcept = default;
     StagingBuffer(GLenum target, int initialCapacity) noexcept;
 
+    /** Casts */
+    operator const gpu::Buffer&() const noexcept;
+
     /** Update methods */
     T* StageMap(int count, int* index) noexcept;
     int Stage(const T& data) noexcept;
@@ -45,6 +48,12 @@ StagingBuffer<T>::StagingBuffer(GLenum target, int initialCapacity) noexcept
     if (!mStagingBuffer.Reserve(initialCapacity)) {
         NX_LOG(E, "RENDER: Staging buffer memory reservation failed (requested: %i entries)", initialCapacity);
     }
+}
+
+template <typename T>
+StagingBuffer<T>::operator const gpu::Buffer&() const noexcept
+{
+    return mBuffer;
 }
 
 template <typename T>

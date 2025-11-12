@@ -1614,7 +1614,7 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
 
     pipeline.BindStorage(0, drawCalls.sharedBuffer);
     pipeline.BindStorage(1, drawCalls.uniqueBuffer);
-    pipeline.BindStorage(2, drawCalls.boneBuffer.GetBuffer());
+    pipeline.BindStorage(2, drawCalls.boneBuffer);
 
     pipeline.BindUniform(0, scene.frameUniform);
     pipeline.BindUniform(1, scene.frustumUniform);
@@ -1661,8 +1661,8 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
 
     pipeline.BindStorage(0, drawCalls.sharedBuffer);
     pipeline.BindStorage(1, drawCalls.uniqueBuffer);
-    pipeline.BindStorage(2, drawCalls.boneBuffer.GetBuffer());
-    pipeline.BindStorage(3, drawCalls.reflectionProbeBuffer.GetBuffer());
+    pipeline.BindStorage(2, drawCalls.boneBuffer);
+    pipeline.BindStorage(3, drawCalls.reflectionProbeBuffer);
     pipeline.BindStorage(4, lighting.storageLights);
     pipeline.BindStorage(5, lighting.storageShadow);
     pipeline.BindStorage(6, lighting.storageClusters);
@@ -2047,7 +2047,7 @@ void NX_EndShadow3D()
         pipeline.BindUniform(0, shadowing.frameUniform);
         pipeline.BindStorage(0, drawCalls.sharedBuffer);
         pipeline.BindStorage(1, drawCalls.uniqueBuffer);
-        pipeline.BindStorage(2, drawCalls.boneBuffer.GetBuffer());
+        pipeline.BindStorage(2, drawCalls.boneBuffer);
     }
 
     /* --- Render shadow maps --- */
