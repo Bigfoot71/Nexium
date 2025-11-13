@@ -46,6 +46,7 @@
 #include "./INX_GlobalPool.hpp"
 #include "./INX_GPUBridge.hpp"
 #include "./INX_Frustum.hpp"
+#include "NX/NX_Material.h"
 
 #include <numeric>
 
@@ -62,8 +63,9 @@ enum class INX_RenderPass {
 };
 
 enum INX_DrawType : uint8_t {
-    DRAW_OPAQUE = 0,        //< Represents all purely opaque objects
-    DRAW_TRANSPARENT = 2,   //< Represents all transparent objects
+    DRAW_OPAQUE_LIT   = 0,  //< Lit and purely opaque objects
+    DRAW_OPAQUE_UNLIT = 1,  //< Unlit and purely opaque objects
+    DRAW_TRANSPARENT  = 2,  //< Transparent objects (lit and unlit)
     DRAW_TYPE_COUNT
 };
 
@@ -888,10 +890,10 @@ static INX_RenderPassView INX_GetRenderPassView()
 
 static INX_DrawType INX_GetDrawType(const NX_Material& material)
 {
-    if (material.blend != NX_BLEND_OPAQUE) {
-        return DRAW_TRANSPARENT;
-    }
-    return DRAW_OPAQUE;
+    int type = DRAW_OPAQUE_LIT;
+    type += 2 * (material.blend != NX_BLEND_OPAQUE);
+    type += (material.shading == NX_SHADING_UNLIT);
+    return INX_DrawType(type);
 }
 
 static int INX_ComputeBoneMatrices(const NX_Model& model)
@@ -1133,7 +1135,11 @@ static void INX_SortDrawCalls(const NX_Vec3& viewPosition)
             sortDistances[i] = NX_Vec3DistanceSq(viewPosition, world);
         }
 
-        state.sortedUnique.Sort(DRAW_OPAQUE, [&sortDistances](int a, int b) {
+        state.sortedUnique.Sort(DRAW_OPAQUE_LIT, [&sortDistances](int a, int b) {
+            return sortDistances[a] < sortDistances[b];
+        });
+
+        state.sortedUnique.Sort(DRAW_OPAQUE_UNLIT, [&sortDistances](int a, int b) {
             return sortDistances[a] < sortDistances[b];
         });
     }
@@ -1595,27 +1601,47 @@ static void INX_RenderBackground(const gpu::Pipeline& pipeline)
     }
 }
 
-static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
+static void INX_RenderSceneOpaqueLit(const gpu::Pipeline& pipeline)
 {
     const INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
     const INX_SceneState& scene = INX_Render3D->scene;
 
-    if (drawCalls.sortedUnique.GetCategory(DRAW_OPAQUE).IsEmpty()) {
-        return;
-    }
+    const INX_ShadowingState& shadowing = INX_Render3D->shadowing;
+    const INX_LightingState& lighting = INX_Render3D->lighting;
 
-    pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
-    pipeline.SetColorWrite(gpu::ColorWrite::Disabled);
+    /* --- Get view over all lit opaque objects --- */
+
+    auto catView = drawCalls.sortedUnique.GetCategory(DRAW_OPAQUE_LIT);
+    if (catView.IsEmpty()) return;
+
+    /* --- Setup pipeline state --- */
 
     pipeline.BindStorage(0, drawCalls.sharedBuffer);
     pipeline.BindStorage(1, drawCalls.uniqueBuffer);
     pipeline.BindStorage(2, drawCalls.boneBuffer);
+    pipeline.BindStorage(3, drawCalls.reflectionProbeBuffer);
+    pipeline.BindStorage(4, lighting.storageLights);
+    pipeline.BindStorage(5, lighting.storageShadow);
+    pipeline.BindStorage(6, lighting.storageClusters);
+    pipeline.BindStorage(7, lighting.storageIndices);
+
+    pipeline.BindTexture(4, INX_Assets.Get(INX_TextureAsset::BRDF_LUT)->gpu);
+    pipeline.BindTexture(5, INX_Render3D->indirect.irradianceArray);
+    pipeline.BindTexture(6, INX_Render3D->indirect.prefilterArray);
+    pipeline.BindTexture(7, shadowing.target[NX_LIGHT_DIR]);
+    pipeline.BindTexture(8, shadowing.target[NX_LIGHT_SPOT]);
+    pipeline.BindTexture(9, shadowing.target[NX_LIGHT_OMNI]);
 
     pipeline.BindUniform(0, scene.frameUniform);
     pipeline.BindUniform(1, scene.frustumUniform);
     pipeline.BindUniform(2, scene.envUniform);
 
-    for (int uniqueIndex : drawCalls.sortedUnique.GetCategory(DRAW_OPAQUE))
+    /* --- Depth pre-pass for opaque lit objects --- */
+
+    pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
+    pipeline.SetColorWrite(gpu::ColorWrite::Disabled);
+
+    for (int uniqueIndex : catView)
     {
         const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
         const NX_Material& mat = unique.material;
@@ -1629,13 +1655,35 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
         shader->BindTextures(pipeline, unique.textures);
         shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
 
-        const NX_Texture* texAlbedo = INX_Assets.Select(
-            unique.material.albedo.texture,
-            INX_TextureAsset::WHITE
-        );
+        pipeline.BindTexture(0, INX_Assets.Select(mat.albedo.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.SetUniformUint1(0, unique.sharedDataIndex);
+        pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
 
-        pipeline.BindTexture(0, texAlbedo->gpu);
+        INX_Draw3D(pipeline, unique);
+    }
 
+    /* --- Iterate trough all opaque and transparent lit objects --- */
+
+    pipeline.SetDepthMode(gpu::DepthMode::TestOnly);
+    pipeline.SetDepthFunc(gpu::DepthFunc::Equal);
+    pipeline.SetColorWrite(gpu::ColorWrite::RGB);
+
+    for (int uniqueIndex : catView)
+    {
+        const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
+        const NX_Material& mat = unique.material;
+
+        const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
+        pipeline.UseProgram(shader->GetProgramFromShadingMode(unique.material.shading));
+        pipeline.SetCullMode(INX_GPU_GetCullMode(mat.cull));
+
+        shader->BindTextures(pipeline, unique.textures);
+        shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
+
+        pipeline.BindTexture(0, INX_Assets.Select(mat.albedo.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.BindTexture(1, INX_Assets.Select(mat.emission.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.BindTexture(2, INX_Assets.Select(mat.orm.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.BindTexture(3, INX_Assets.Select(mat.normal.texture, INX_TextureAsset::NORMAL)->gpu);
         pipeline.SetUniformUint1(0, unique.sharedDataIndex);
         pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
 
@@ -1643,13 +1691,73 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
     }
 }
 
-static void INX_RenderScene(const gpu::Pipeline& pipeline)
+static void INX_RenderSceneOpaqueUnlit(const gpu::Pipeline& pipeline)
 {
     const INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
     const INX_SceneState& scene = INX_Render3D->scene;
 
     const INX_ShadowingState& shadowing = INX_Render3D->shadowing;
     const INX_LightingState& lighting = INX_Render3D->lighting;
+
+    /* --- Get view over all unlit opaque objects --- */
+
+    auto catView = drawCalls.sortedUnique.GetCategory(DRAW_OPAQUE_UNLIT);
+    if (catView.IsEmpty()) return;
+
+    /* --- Setup pipeline state --- */
+
+    pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
+    pipeline.SetColorWrite(gpu::ColorWrite::RGBA);
+
+    pipeline.BindStorage(0, drawCalls.sharedBuffer);
+    pipeline.BindStorage(1, drawCalls.uniqueBuffer);
+    pipeline.BindStorage(2, drawCalls.boneBuffer);
+
+    pipeline.BindUniform(0, scene.frameUniform);
+    pipeline.BindUniform(1, scene.frustumUniform);
+    pipeline.BindUniform(2, scene.envUniform);
+
+    /* --- Iterate trough all opaque and transparent lit objects --- */
+
+    for (int uniqueIndex : catView)
+    {
+        const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
+        const NX_Material& mat = unique.material;
+
+        const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
+        pipeline.UseProgram(shader->GetProgramFromShadingMode(unique.material.shading));
+
+        pipeline.SetDepthFunc(INX_GPU_GetDepthFunc(mat.depth.test));
+        pipeline.SetCullMode(INX_GPU_GetCullMode(mat.cull));
+
+        shader->BindTextures(pipeline, unique.textures);
+        shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
+
+        pipeline.BindTexture(0, INX_Assets.Select(mat.albedo.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.BindTexture(1, INX_Assets.Select(mat.emission.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.BindTexture(2, INX_Assets.Select(mat.orm.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.BindTexture(3, INX_Assets.Select(mat.normal.texture, INX_TextureAsset::NORMAL)->gpu);
+        pipeline.SetUniformUint1(0, unique.sharedDataIndex);
+        pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
+
+        INX_Draw3D(pipeline, unique);
+    }
+}
+
+static void INX_RenderSceneTransparent(const gpu::Pipeline& pipeline)
+{
+    const INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
+    const INX_SceneState& scene = INX_Render3D->scene;
+
+    const INX_ShadowingState& shadowing = INX_Render3D->shadowing;
+    const INX_LightingState& lighting = INX_Render3D->lighting;
+
+    /* --- Get view over categories that we want to draw --- */
+
+    auto catView = drawCalls.sortedUnique.GetCategory(DRAW_TRANSPARENT);
+    if (catView.IsEmpty()) return;
+
+    /* --- Setup pipeline state --- */
 
     pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
     pipeline.SetColorWrite(gpu::ColorWrite::RGBA);
@@ -1674,11 +1782,11 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
     pipeline.BindUniform(1, scene.frustumUniform);
     pipeline.BindUniform(2, scene.envUniform);
 
-    // Ensures that the SSBOs are ready (especially clusters)
-    // Ensures that the generated images are ready (especially reflection indirect)
-    pipeline.MemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    /* --- Iterate trough all transparent (lit/unlit) objects --- */
 
-    for (auto [category, uniqueIndex]  : drawCalls.sortedUnique.GetCategories(DRAW_OPAQUE, DRAW_TRANSPARENT))
+    pipeline.SetDepthFunc(gpu::DepthFunc::Equal);
+
+    for (int uniqueIndex : catView)
     {
         const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
         const NX_Material& mat = unique.material;
@@ -1686,20 +1794,17 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
         const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
         pipeline.UseProgram(shader->GetProgramFromShadingMode(unique.material.shading));
 
-        shader->BindTextures(pipeline, unique.textures);
-        shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
-
-        if (category == DRAW_OPAQUE) pipeline.SetDepthFunc(gpu::DepthFunc::Equal);
-        else pipeline.SetDepthFunc(INX_GPU_GetDepthFunc(mat.depth.test));
-
+        pipeline.SetDepthFunc(INX_GPU_GetDepthFunc(mat.depth.test));
         pipeline.SetBlendMode(INX_GPU_GetBlendMode(mat.blend));
         pipeline.SetCullMode(INX_GPU_GetCullMode(mat.cull));
+
+        shader->BindTextures(pipeline, unique.textures);
+        shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
 
         pipeline.BindTexture(0, INX_Assets.Select(mat.albedo.texture, INX_TextureAsset::WHITE)->gpu);
         pipeline.BindTexture(1, INX_Assets.Select(mat.emission.texture, INX_TextureAsset::WHITE)->gpu);
         pipeline.BindTexture(2, INX_Assets.Select(mat.orm.texture, INX_TextureAsset::WHITE)->gpu);
         pipeline.BindTexture(3, INX_Assets.Select(mat.normal.texture, INX_TextureAsset::NORMAL)->gpu);
-
         pipeline.SetUniformUint1(0, unique.sharedDataIndex);
         pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
 
@@ -1923,8 +2028,14 @@ void NX_End3D()
         pipeline.SetViewport(scene.framebufferScene);
 
         INX_RenderBackground(pipeline);
-        INX_RenderPrePass(pipeline);
-        INX_RenderScene(pipeline);
+
+        // Ensures that the SSBOs are ready (especially clusters)
+        // Ensures that the generated images are ready (especially reflection indirect)
+        pipeline.MemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        INX_RenderSceneOpaqueLit(pipeline);
+        INX_RenderSceneOpaqueUnlit(pipeline);
+        INX_RenderSceneTransparent(pipeline);
 
         // REVIEW: We can collect the used programs rather than iterating over all programs
         INX_Pool.ForEach<NX_Shader3D>([](NX_Shader3D& shader) {
@@ -2108,24 +2219,21 @@ void NX_EndShadow3D()
 
         /* --- Render shadow map face --- */
 
-        for (auto [category, uniqueIndex] : drawCalls.sortedUnique.GetCategories(DRAW_OPAQUE, DRAW_TRANSPARENT))
+        for (int uniqueIndex : drawCalls.sortedUnique.GetAll())
         {
             const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
             if (unique.mesh.GetShadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
 
-            const NX_Shader3D* shader = INX_Assets.Select(unique.material.shader, INX_Shader3DAsset::DEFAULT);
+            const NX_Material& mat = unique.material;
+            const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
+
             pipeline.UseProgram(shader->GetProgram(NX_Shader3D::Variant::SCENE_SHADOW));
-            pipeline.SetCullMode(INX_GPU_GetCullMode(unique.mesh.GetShadowFaceMode(), unique.material.cull));
+            pipeline.SetCullMode(INX_GPU_GetCullMode(unique.mesh.GetShadowFaceMode(), mat.cull));
 
             shader->BindTextures(pipeline, unique.textures);
             shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
 
-            const NX_Texture* texAlbedo = INX_Assets.Select(
-                unique.material.albedo.texture,
-                INX_TextureAsset::WHITE
-            );
-
-            pipeline.BindTexture(0, texAlbedo->gpu);
+            pipeline.BindTexture(0, INX_Assets.Select(mat.albedo.texture, INX_TextureAsset::WHITE)->gpu);
             pipeline.SetUniformUint1(0, unique.sharedDataIndex);
             pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
 
@@ -2220,10 +2328,15 @@ void NX_EndCubemap3D()
         });
 
         INX_SortDrawCalls(scene.viewFrustum.position);
-
         INX_RenderBackground(pipeline);
-        INX_RenderPrePass(pipeline);
-        INX_RenderScene(pipeline);
+
+        // Ensures that the SSBOs are ready (especially clusters)
+        // Ensures that the generated images are ready (especially reflection indirect)
+        pipeline.MemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+        INX_RenderSceneOpaqueLit(pipeline);
+        INX_RenderSceneOpaqueUnlit(pipeline);
+        INX_RenderSceneTransparent(pipeline);
     }
 
     /* --- Generate cubemap mipmaps and cleanup --- */
