@@ -44,8 +44,7 @@
     .depth = {                                          \
         .test = NX_DEPTH_TEST_LESS,                     \
         .offset = 0.0f,                                 \
-        .scale = 1.0f,                                  \
-        .prePass = false                                \
+        .scale = 1.0f                                   \
     },                                                  \
     .alphaCutOff = 1e-6f,                               \
     .texOffset = NX_VEC2_ZERO,                          \
@@ -150,7 +149,6 @@ typedef struct NX_Material {
         NX_DepthTest test;          ///< Controls whether a fragment is visible compared to others. Default: NX_DEPTH_TEST_LESS
         float offset;               ///< Additive depth offset in clip space; + = farther, - = closer. Default: 0.0f
         float scale;                ///< Multiplicative depth scale in clip space; <1 = closer, >1 = farther. Default: 1.0f
-        bool prePass;               ///< Enable depth pre-pass to reduce overdraw or support alpha cutoff; may be costly with heavy vertex shaders. Default: false
     } depth;
 
     float alphaCutOff;              ///< Fragments with alpha below this value are discarded (only with depth pre-pass). Default: 1e-6f.

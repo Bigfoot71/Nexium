@@ -73,14 +73,17 @@ public:
     public:
         MultiCategoryIterator(const BucketArray& parent, std::array<Category, CatCount>&& categories, size_t catIdx, size_t elemIdx) noexcept;
 
-        const T& operator*() const noexcept;
-        const T* operator->() const noexcept;
+        std::pair<Category, const T&> operator*() const noexcept;
 
         MultiCategoryIterator& operator++() noexcept;
         MultiCategoryIterator operator++(int) noexcept;
 
         bool operator==(const MultiCategoryIterator& other) const noexcept;
         bool operator!=(const MultiCategoryIterator& other) const noexcept;
+
+        Category GetCategory() const noexcept;
+        size_t GetIndex() const noexcept;
+        const T& GetValue() const noexcept;
 
     private:
         void FindNextValidPosition() noexcept;
@@ -450,19 +453,12 @@ void BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::FindNextValid
 
 template<typename T, typename Category, size_t N>
 template<size_t CatCount>
-const T& BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::operator*() const noexcept
+std::pair<Category, const T&> BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::operator*() const noexcept
 {
     const size_t bucketIdx = static_cast<size_t>(mCategories[mCatIdx]);
     const auto& bucket = mParent.mBuckets[bucketIdx];
     const size_t dataIdx = bucket[mElemIdx];
-    return mParent.mObjects[dataIdx];
-}
-
-template<typename T, typename Category, size_t N>
-template<size_t CatCount>
-const T* BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::operator->() const noexcept
-{
-    return &(operator*());
+    return { mCategories[mCatIdx], mParent.mObjects[dataIdx] };
 }
 
 template<typename T, typename Category, size_t N>
@@ -502,6 +498,29 @@ template<size_t CatCount>
 bool BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::operator!=(const MultiCategoryIterator& other) const noexcept
 {
     return !(*this == other);
+}
+
+template<typename T, typename Category, size_t N>
+template<size_t CatCount>
+Category BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::GetCategory() const noexcept
+{
+    return mCategories[mCatIdx];
+}
+
+template<typename T, typename Category, size_t N>
+template<size_t CatCount>
+size_t BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::GetIndex() const noexcept
+{
+    const size_t bucketIdx = static_cast<size_t>(mCategories[mCatIdx]);
+    return mParent.mBuckets[bucketIdx][mElemIdx];
+}
+
+template<typename T, typename Category, size_t N>
+template<size_t CatCount>
+const T& BucketArray<T, Category, N>::MultiCategoryIterator<CatCount>::GetValue() const noexcept
+{
+    const size_t dataIdx = GetIndex();
+    return mParent.mObjects[dataIdx];
 }
 
 /* === Category View Implementation === */

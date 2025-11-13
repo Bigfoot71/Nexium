@@ -137,7 +137,6 @@ inline void MaterialImporter::LoadMaterial(NX_Material* material, int index)
     float alphaCutOff;
     if (aiMat->Get(AI_MATKEY_GLTF_ALPHACUTOFF, alphaCutOff) == AI_SUCCESS) {
         material->alphaCutOff = alphaCutOff;
-        material->depth.prePass = true;
     }
 
     /* --- Handle shading mode --- */
@@ -154,8 +153,7 @@ inline void MaterialImporter::LoadMaterial(NX_Material* material, int index)
     aiString alphaMode;
     if (aiMat->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == AI_SUCCESS) {
         if (SDL_strcmp(alphaMode.data, "MASK") == 0) {
-            // This means alphaCutOff should be used
-            material->depth.prePass = true;
+            material->blend = NX_BLEND_OPAQUE; //< performed during pre-pass
         }
         else if (strcmp(alphaMode.C_Str(), "BLEND") == 0) {
             material->blend = NX_BLEND_ALPHA;

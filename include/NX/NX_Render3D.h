@@ -35,10 +35,8 @@
 typedef uint32_t NX_RenderFlags;
 
 #define NX_RENDER_FRUSTUM_CULLING          (1 << 0)     ///< Enables naive frustum culling over all draw calls
-
 #define NX_RENDER_SORT_OPAQUE              (1 << 1)     ///< Sort opaque objects front-to-back
-#define NX_RENDER_SORT_PREPASS             (1 << 2)     ///< Sort pre-pass objects front-to-back
-#define NX_RENDER_SORT_TRANSPARENT         (1 << 3)     ///< Sort transparent objects back-to-front
+#define NX_RENDER_SORT_TRANSPARENT         (1 << 2)     ///< Sort transparent objects back-to-front
 
 // ============================================================================
 // FUNCTIONS DECLARATIONS

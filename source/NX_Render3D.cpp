@@ -63,7 +63,6 @@ enum class INX_RenderPass {
 
 enum INX_DrawType : uint8_t {
     DRAW_OPAQUE = 0,        //< Represents all purely opaque objects
-    DRAW_PREPASS = 1,       //< Represents objects rendered with a depth pre-pass (can be opaque or transparent)
     DRAW_TRANSPARENT = 2,   //< Represents all transparent objects
     DRAW_TYPE_COUNT
 };
@@ -889,7 +888,6 @@ static INX_RenderPassView INX_GetRenderPassView()
 
 static INX_DrawType INX_GetDrawType(const NX_Material& material)
 {
-    if (material.depth.prePass) return DRAW_PREPASS;
     if (material.blend != NX_BLEND_OPAQUE) {
         return DRAW_TRANSPARENT;
     }
@@ -1114,11 +1112,7 @@ static void INX_SortDrawCalls(const NX_Vec3& viewPosition)
     INX_DrawCallState& state = INX_Render3D->drawCalls;
     util::DynamicArray<float>& sortDistances = state.sortDistances;
 
-    const bool needsOpaque = NX_FLAG_CHECK(INX_Render3D->renderFlags, NX_RENDER_SORT_OPAQUE);
-    const bool needsPrepass = NX_FLAG_CHECK(INX_Render3D->renderFlags, NX_RENDER_SORT_PREPASS);
-    const bool needsTransparent = NX_FLAG_CHECK(INX_Render3D->renderFlags, NX_RENDER_SORT_TRANSPARENT);
-
-    if (needsOpaque || needsPrepass)
+    if (NX_FLAG_CHECK(INX_Render3D->renderFlags, NX_RENDER_SORT_OPAQUE))
     {
         const size_t count = state.uniqueData.GetSize();
         sortDistances.Resize(count);
@@ -1139,20 +1133,12 @@ static void INX_SortDrawCalls(const NX_Vec3& viewPosition)
             sortDistances[i] = NX_Vec3DistanceSq(viewPosition, world);
         }
 
-        if (needsOpaque) {
-            state.sortedUnique.Sort(DRAW_OPAQUE, [&sortDistances](int a, int b) {
-                return sortDistances[a] < sortDistances[b];
-            });
-        }
-
-        if (needsPrepass) {
-            state.sortedUnique.Sort(DRAW_PREPASS, [&sortDistances](int a, int b) {
-                return sortDistances[a] < sortDistances[b];
-            });
-        }
+        state.sortedUnique.Sort(DRAW_OPAQUE, [&sortDistances](int a, int b) {
+            return sortDistances[a] < sortDistances[b];
+        });
     }
 
-    if (needsTransparent)
+    if (NX_FLAG_CHECK(INX_Render3D->renderFlags, NX_RENDER_SORT_TRANSPARENT))
     {
         const size_t count = state.uniqueData.GetSize();
         sortDistances.Resize(count);
@@ -1614,7 +1600,7 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
     const INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
     const INX_SceneState& scene = INX_Render3D->scene;
 
-    if (drawCalls.sortedUnique.GetCategory(DRAW_PREPASS).IsEmpty()) {
+    if (drawCalls.sortedUnique.GetCategory(DRAW_OPAQUE).IsEmpty()) {
         return;
     }
 
@@ -1629,7 +1615,7 @@ static void INX_RenderPrePass(const gpu::Pipeline& pipeline)
     pipeline.BindUniform(1, scene.frustumUniform);
     pipeline.BindUniform(2, scene.envUniform);
 
-    for (int uniqueIndex : drawCalls.sortedUnique.GetCategory(DRAW_PREPASS))
+    for (int uniqueIndex : drawCalls.sortedUnique.GetCategory(DRAW_OPAQUE))
     {
         const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
         const NX_Material& mat = unique.material;
@@ -1692,7 +1678,7 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
     // Ensures that the generated images are ready (especially reflection indirect)
     pipeline.MemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-    for (int uniqueIndex : drawCalls.sortedUnique.GetCategories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
+    for (auto [category, uniqueIndex]  : drawCalls.sortedUnique.GetCategories(DRAW_OPAQUE, DRAW_TRANSPARENT))
     {
         const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
         const NX_Material& mat = unique.material;
@@ -1703,7 +1689,9 @@ static void INX_RenderScene(const gpu::Pipeline& pipeline)
         shader->BindTextures(pipeline, unique.textures);
         shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
 
-        pipeline.SetDepthFunc(mat.depth.prePass ? gpu::DepthFunc::Equal : INX_GPU_GetDepthFunc(mat.depth.test));
+        if (category == DRAW_OPAQUE) pipeline.SetDepthFunc(gpu::DepthFunc::Equal);
+        else pipeline.SetDepthFunc(INX_GPU_GetDepthFunc(mat.depth.test));
+
         pipeline.SetBlendMode(INX_GPU_GetBlendMode(mat.blend));
         pipeline.SetCullMode(INX_GPU_GetCullMode(mat.cull));
 
@@ -2120,7 +2108,7 @@ void NX_EndShadow3D()
 
         /* --- Render shadow map face --- */
 
-        for (int uniqueIndex : drawCalls.sortedUnique.GetCategories(DRAW_OPAQUE, DRAW_PREPASS, DRAW_TRANSPARENT))
+        for (auto [category, uniqueIndex] : drawCalls.sortedUnique.GetCategories(DRAW_OPAQUE, DRAW_TRANSPARENT))
         {
             const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
             if (unique.mesh.GetShadowCastMode() == NX_SHADOW_CAST_DISABLED) continue;
