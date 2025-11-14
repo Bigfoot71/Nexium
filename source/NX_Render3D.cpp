@@ -1246,19 +1246,6 @@ static void INX_Draw3D(const gpu::Pipeline& pipeline, const INX_DrawUnique& uniq
     INX_Draw3D(pipeline, unique, INX_Render3D->drawCalls.sharedData[unique.sharedDataIndex]);
 }
 
-static NX_Vec4 INX_GetBloomPrefilter(float threshold, float softThreshold)
-{
-    float knee = threshold * softThreshold;
-
-    NX_Vec4 prefilter;
-    prefilter.x = threshold;
-    prefilter.y = threshold - knee;
-    prefilter.z = 2.0f * knee;
-    prefilter.w = 0.25f / (knee + 1e-6f);
-
-    return prefilter;
-}
-
 static void INX_ProcessFrustum(const NX_Camera& camera, float aspect)
 {
     INX_SceneState& scene = INX_Render3D->scene;
@@ -1325,6 +1312,19 @@ static void INX_ProcessFrustum(const NX_Probe& probe, int face)
     });
 }
 
+static NX_Vec4 INX_GetBloomPrefilter(float threshold, float softThreshold)
+{
+    float knee = threshold * softThreshold;
+
+    NX_Vec4 prefilter;
+    prefilter.x = threshold;
+    prefilter.y = threshold - knee;
+    prefilter.z = 2.0f * knee;
+    prefilter.w = 0.25f / (knee + 1e-6f);
+
+    return prefilter;
+}
+
 static void INX_ProcessEnvironment(const NX_Environment& env)
 {
     INX_SceneState& state = INX_Render3D->scene;
@@ -1369,7 +1369,7 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
     state.ssaoEnabled = env.ssao.enabled;
     state.bloomMode = env.bloom.mode;
 
-    /* --- Get all GPU data --- */
+    /* --- Get all GPU data and upload it --- */
 
     INX_GPUEnvironment data{};
 
@@ -1403,8 +1403,6 @@ static void INX_ProcessEnvironment(const NX_Environment& env)
     data.tonemapExposure = env.tonemap.exposure;
     data.tonemapWhite = env.tonemap.white;
     data.tonemapMode = env.tonemap.mode;
-
-    /* --- Upload GPU data --- */
 
     state.envUniform.Upload(&data);
 }
