@@ -14,6 +14,7 @@ precision highp float;
 
 /* === Includes === */
 
+#include "../include/frame.glsl"
 #include "../include/math.glsl"
 #include "../include/draw.glsl"
 
@@ -43,6 +44,12 @@ layout(binding = 0) uniform sampler2D uTexAlbedo;
 layout(binding = 1) uniform sampler2D uTexEmission;     //< Override compatibility
 layout(binding = 2) uniform sampler2D uTexORM;          //< Override compatibility
 layout(binding = 3) uniform sampler2D uTexNormal;
+
+/* === Uniform Buffers === */
+
+layout(std140, binding = 0) uniform U_Frame {
+    Frame uFrame;
+};
 
 /* === Uniforms === */
 
