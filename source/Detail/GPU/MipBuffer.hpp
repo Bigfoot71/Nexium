@@ -64,7 +64,8 @@ inline MipBuffer::MipBuffer(int w, int h, GLenum internalFormat) noexcept
             .width = w,
             .height = h,
             .depth = 0,
-            .mipmap = true
+            .mipmap = true,
+            .immutable = true
         },
         gpu::TextureParam
         {

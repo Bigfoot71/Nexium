@@ -208,7 +208,8 @@ bool INX_Render2DState_Init(NX_AppDesc* desc)
             .width = desc->render2D.resolution.x,
             .height = desc->render2D.resolution.y,
             .depth = 0,
-            .mipmap = false
+            .mipmap = false,
+            .immutable = true
         },
         gpu::TextureParam
         {

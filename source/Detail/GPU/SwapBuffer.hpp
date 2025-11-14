@@ -49,7 +49,8 @@ inline SwapBuffer::SwapBuffer(int w, int h, GLenum internalFormat) noexcept
                 .internalFormat = internalFormat,
                 .data = nullptr,
                 .width = w,
-                .height = h
+                .height = h,
+                .immutable = true
             },
             TextureParam
             {

@@ -402,7 +402,8 @@ static void INX_InitSceneState(INX_SceneState* scene, const NX_AppDesc* desc)
             .internalFormat = GL_RGBA16F,
             .data = nullptr,
             .width = desc->render3D.resolution.x,
-            .height = desc->render3D.resolution.y
+            .height = desc->render3D.resolution.y,
+            .immutable = true
         }
     );
 
@@ -413,7 +414,8 @@ static void INX_InitSceneState(INX_SceneState* scene, const NX_AppDesc* desc)
             .internalFormat = GL_RG8,
             .data = nullptr,
             .width = desc->render3D.resolution.x,
-            .height = desc->render3D.resolution.y
+            .height = desc->render3D.resolution.y,
+            .immutable = true
         }
     );
 
@@ -424,7 +426,8 @@ static void INX_InitSceneState(INX_SceneState* scene, const NX_AppDesc* desc)
             .internalFormat = GL_DEPTH_COMPONENT24,
             .data = nullptr,
             .width = desc->render3D.resolution.x,
-            .height = desc->render3D.resolution.y
+            .height = desc->render3D.resolution.y,
+            .immutable = true
         }
     );
 
@@ -574,7 +577,8 @@ static void INX_InitShadowState(INX_ShadowingState* shadowing, const NX_AppDesc*
             .width = desc->render3D.shadowRes,
             .height = desc->render3D.shadowRes,
             .depth = 1,
-            .mipmap = false
+            .mipmap = false,
+            .immutable = false  //< No copy, nor requirement to be immutable
         }
     );
 
@@ -586,7 +590,8 @@ static void INX_InitShadowState(INX_ShadowingState* shadowing, const NX_AppDesc*
             .width = desc->render3D.shadowRes,
             .height = desc->render3D.shadowRes,
             .depth = 1,
-            .mipmap = false
+            .mipmap = false,
+            .immutable = false  //< No copy, nor requirement to be immutable
         }
     );
 
@@ -597,7 +602,8 @@ static void INX_InitShadowState(INX_ShadowingState* shadowing, const NX_AppDesc*
             .width = desc->render3D.shadowRes,
             .height = desc->render3D.shadowRes,
             .depth = 1,
-            .mipmap = false
+            .mipmap = false,
+            .immutable = false  //< No copy, nor requirement to be immutable
         }
     );
 
@@ -609,6 +615,7 @@ static void INX_InitShadowState(INX_ShadowingState* shadowing, const NX_AppDesc*
             .width = desc->render3D.shadowRes,
             .height = desc->render3D.shadowRes,
             .mipmap = false,
+            .immutable = true
         }
     );
 
@@ -631,6 +638,10 @@ static void INX_InitShadowState(INX_ShadowingState* shadowing, const NX_AppDesc*
 
 static void INX_InitIndirectLightingState(INX_IndirectLightingState* indirect)
 {
+    // Despite the fact that these textures need to be resized, they are defined as immutable
+    // because in OpenGL ES 3.2 image storage must be immutable, and since we make a copy
+    // of the previous state when resizing, a new texture is created anyway.
+
     indirect->irradianceArray = gpu::Texture(
         gpu::TextureConfig
         {
@@ -640,7 +651,8 @@ static void INX_InitIndirectLightingState(INX_IndirectLightingState* indirect)
             .width = 32,
             .height = 32,
             .depth = 1,
-            .mipmap = false
+            .mipmap = false,
+            .immutable = true
         },
         gpu::TextureParam
         {
@@ -661,7 +673,8 @@ static void INX_InitIndirectLightingState(INX_IndirectLightingState* indirect)
             .width = 128,
             .height = 128,
             .depth = 1,
-            .mipmap = true
+            .mipmap = true,
+            .immutable = true
         },
         gpu::TextureParam
         {

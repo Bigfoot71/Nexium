@@ -28,7 +28,8 @@ void INX_EnsureCubemapFramebuffer(NX_Cubemap* cubemap, bool depth)
                 .internalFormat = GL_DEPTH_COMPONENT24,
                 .data = nullptr,
                 .width = cubemap->gpu.GetWidth(),
-                .height = cubemap->gpu.GetHeight()
+                .height = cubemap->gpu.GetHeight(),
+                .immutable = true
             }
         );
 
@@ -63,7 +64,9 @@ static gpu::Texture INX_LoadEquirectangular(const NX_Image& image)
             .internalFormat = dstInternalFormat,
             .data = nullptr,
             .width = image.h,
-            .height = image.h
+            .height = image.h,
+            .mipmap = true,
+            .immutable = true
         },
         gpu::TextureParam
         {
@@ -84,7 +87,8 @@ static gpu::Texture INX_LoadEquirectangular(const NX_Image& image)
             .internalFormat = srcInternalFormat,
             .data = image.pixels,
             .width = image.w,
-            .height = image.h
+            .height = image.h,
+            .immutable = true
         },
         gpu::TextureParam
         {
@@ -131,7 +135,9 @@ static gpu::Texture INX_LoadLineHorizontal(const NX_Image& image)
             .internalFormat = INX_GPU_GetInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
-            .height = cubeFaceSize
+            .height = cubeFaceSize,
+            .mipmap = true,
+            .immutable = true
         },
         gpu::TextureParam
         {
@@ -187,7 +193,9 @@ static gpu::Texture INX_LoadLineVertical(const NX_Image& image)
             .internalFormat = INX_GPU_GetInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
-            .height = cubeFaceSize
+            .height = cubeFaceSize,
+            .mipmap = true,
+            .immutable = true
         },
         gpu::TextureParam
         {
@@ -237,7 +245,9 @@ static gpu::Texture INX_LoadCrossThreeByFour(const NX_Image& image)
             .internalFormat = INX_GPU_GetInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
-            .height = cubeFaceSize
+            .height = cubeFaceSize,
+            .mipmap = true,
+            .immutable = true
         },
         gpu::TextureParam
         {
@@ -311,7 +321,9 @@ static gpu::Texture INX_LoadCrossFourByThree(const NX_Image& image)
             .internalFormat = INX_GPU_GetInternalFormat(image.format, false),
             .data = nullptr,
             .width = cubeFaceSize,
-            .height = cubeFaceSize
+            .height = cubeFaceSize,
+            .mipmap = true,
+            .immutable = true
         },
         gpu::TextureParam
         {
@@ -386,7 +398,8 @@ NX_Cubemap* NX_CreateCubemap(int size, NX_PixelFormat format)
             .width = size,
             .height = size,
             .depth = 0,
-            .mipmap = true
+            .mipmap = true,
+            .immutable = true
         },
         gpu::TextureParam
         {
