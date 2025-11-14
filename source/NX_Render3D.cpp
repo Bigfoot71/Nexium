@@ -246,7 +246,7 @@ struct INX_SceneState {
 
     /** Render targets */
     gpu::Texture targetColor{};        //< RGBA16F
-    gpu::Texture targetNormal{};       //< RG8
+    gpu::Texture targetNormal{};       //< RG16F
     gpu::Texture targetDepth{};        //< D24
     gpu::Framebuffer framebuffer{};
 
@@ -411,7 +411,7 @@ static void INX_InitSceneState(INX_SceneState* scene, const NX_AppDesc* desc)
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_2D,
-            .internalFormat = GL_RG8,
+            .internalFormat = GL_RG16F,
             .data = nullptr,
             .width = desc->render3D.resolution.x,
             .height = desc->render3D.resolution.y,
