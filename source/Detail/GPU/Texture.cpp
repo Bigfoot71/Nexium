@@ -13,6 +13,44 @@ namespace gpu {
 
 /* === Public Implementation === */
 
+Texture::Texture(const TextureConfig& config, const TextureParam& param) noexcept
+    : mTarget(config.target), mParameters(param)
+{
+    glGenTextures(1, &mID);
+    if (mID == 0) {
+        NX_LOG(E, "GPU: Failed to create texture object");
+        return;
+    }
+
+    Pipeline::WithTextureBind(mTarget, mID,
+        [&]()
+        {
+            AllocateTexture(config);
+            if (!IsValid()) {
+                return;
+            }
+
+            if (config.data != nullptr) {
+                if (mTarget == GL_TEXTURE_CUBE_MAP) {
+                    UploadCube(static_cast<const void* const*>(config.data), 0);
+                }
+                else {
+                    UploadRegion fullRegion;
+                    fullRegion.level = 0;
+                    UploadData_Bound(config.data, fullRegion);
+                }
+                if (config.mipmap) {
+                    GenerateMipmap_Bound();
+                }
+            }
+
+            SetFilter_Bound(param.minFilter, param.magFilter);
+            SetWrap_Bound(param.sWrap, param.tWrap, param.rWrap);
+            SetAnisotropy_Bound(param.anisotropy);
+        }
+    );
+}
+
 void Texture::Realloc(const TextureConfig& config) noexcept
 {
     if (!IsValid()) {
@@ -20,8 +58,15 @@ void Texture::Realloc(const TextureConfig& config) noexcept
         return;
     }
 
+    SDL_assert(config.immutable == mImmutable && "realloc cannot change texture immutability"); // NOLINT
     SDL_assert(config.target == mTarget && "realloc cannot change texture target"); // NOLINT
+
     config.Check();
+
+    if (mImmutable) {
+        *this = Texture(config, mParameters);
+        return;
+    }
 
     Pipeline::WithTextureBind(mTarget, mID,
         [&]()
@@ -63,7 +108,7 @@ void Texture::ReallocLayers(int newDepth, bool keepData) noexcept
         return;
     }
 
-    /* --- Create new texture with same parameters but different depth --- */
+    /* --- Create new texture with same parameters --- */
 
     TextureConfig newConfig {
         .target = mTarget,
@@ -72,7 +117,8 @@ void Texture::ReallocLayers(int newDepth, bool keepData) noexcept
         .width = mWidth,
         .height = mHeight,
         .depth = newDepth,
-        .mipmap = (mMipLevels > 1)
+        .mipmap = (mMipLevels > 1),
+        .immutable = mImmutable
     };
 
     Texture newTexture(newConfig, mParameters);
@@ -82,20 +128,29 @@ void Texture::ReallocLayers(int newDepth, bool keepData) noexcept
         return;
     }
 
-    /* --- Copy existing layers (min of old and new depth) --- */
+    if (newTexture.GetNumLevels() != mMipLevels) {
+        NX_LOG(E, "GPU: Mipmap level mismatch in ReallocLayers: old=%d, new=%d",
+            mMipLevels, newTexture.GetNumLevels()
+        );
+        return;
+    }
+
+    /* --- Copy existing layers --- */
 
     int layersToCopy = NX_MIN(mDepth, newDepth);
-    int physicalLayers = layersToCopy * (mTarget == GL_TEXTURE_CUBE_MAP_ARRAY ? 6 : 1);
 
     for (int mip = 0; mip < mMipLevels; mip++)
     {
         int mipWidth = NX_MAX(1, mWidth >> mip);
         int mipHeight = NX_MAX(1, mHeight >> mip);
 
+        int depthToCopy = (mTarget == GL_TEXTURE_CUBE_MAP_ARRAY)
+            ? (layersToCopy * 6) : layersToCopy;
+
         glCopyImageSubData(
             mID, mTarget, mip, 0, 0, 0,
             newTexture.GetID(), newTexture.GetTarget(), mip, 0, 0, 0,
-            mipWidth, mipHeight, physicalLayers
+            mipWidth, mipHeight, depthToCopy
         );
 
         GLenum err = glGetError();
@@ -104,12 +159,12 @@ void Texture::ReallocLayers(int newDepth, bool keepData) noexcept
         }
     }
 
-    /* --- Swap with new texture (move assignment) --- */
+    /* --- Swap with new texture --- */
 
     *this = std::move(newTexture);
 
-    NX_LOG(D, "GPU: ReallocLayers completed: %s from %d to %d layers (kept %d layers)",
-        TargetToString(mTarget), layersToCopy, newDepth, layersToCopy
+    NX_LOG(D, "GPU: ReallocLayers completed: %s from %d to %d layers (copied %d layers)",
+        TargetToString(mTarget), mDepth, newDepth, layersToCopy
     );
 }
 
@@ -235,67 +290,42 @@ void Texture::GenerateMipmap() noexcept
 
 /* === Private Implementation === */
 
-void Texture::CreateTexture(const TextureConfig& config, const TextureParam& param) noexcept
-{
-    mTarget = config.target;
-
-    glGenTextures(1, &mID);
-    if (mID == 0) {
-        NX_LOG(E, "GPU: Failed to create texture object");
-        return;
-    }
-
-    Pipeline::WithTextureBind(mTarget, mID,
-        [&]()
-        {
-            AllocateTexture(config);
-            if (!IsValid()) {
-                return;
-            }
-
-            if (config.data != nullptr) {
-                if (mTarget == GL_TEXTURE_CUBE_MAP) {
-                    UploadCube(static_cast<const void* const*>(config.data), 0);
-                }
-                else {
-                    UploadRegion fullRegion;
-                    fullRegion.level = 0;
-                    UploadData_Bound(config.data, fullRegion);
-                }
-            }
-
-            if (config.mipmap) {
-                GenerateMipmap_Bound();
-            }
-
-            SetFilter_Bound(param.minFilter, param.magFilter);
-            SetWrap_Bound(param.sWrap, param.tWrap, param.rWrap);
-            SetAnisotropy_Bound(param.anisotropy);
-        }
-    );
-}
-
 void Texture::AllocateTexture(const TextureConfig& config) noexcept
 {
     FormatKey key = {config.target, config.internalFormat};
 
-    /* --- Check cache --- */
+    /* --- Lambda to allocate mutable texture or immutable storage --- */
+
+    auto alloc = [this](GLenum internalFormat) -> bool {
+        if (mImmutable) {
+            return AllocateImmutableWithFormat(internalFormat);
+        }
+        return AllocateMutableWithFormat(internalFormat);
+    };
+
+    /* --- Calculate mipmap count first --- */
+
+    int mipCount = 1;
+    if (config.mipmap) {
+        mipCount = CalculateMaxMipLevels(config.width, config.height, config.depth);
+    }
+
+    /* --- Check the cache if the format has already been tested --- */
 
     auto it = sFormatFallbacks.find(key);
     if (it != sFormatFallbacks.end()) {
-        // Format already tested
         GLenum formatToUse = (it->second == GL_NONE) ? config.internalFormat : it->second;
         mInternalFormat = formatToUse;
         mWidth = config.width;
         mHeight = config.height;
         mDepth = config.depth;
-        mMipLevels = 1;
-        // Allocate directly with known format
-        AllocateWithFormat(formatToUse);
+        mMipLevels = mipCount;
+        mImmutable = config.immutable;
+        alloc(formatToUse);
         return;
     }
 
-    /* --- Test the requested format and its fallbacks --- */
+    /* --- Test format and fallbacks --- */
 
     GLenum currentFormat = config.internalFormat;
     while (currentFormat != GL_NONE)
@@ -304,26 +334,27 @@ void Texture::AllocateTexture(const TextureConfig& config) noexcept
         mWidth = config.width;
         mHeight = config.height;
         mDepth = config.depth;
-        mMipLevels = 1;
+        mMipLevels = mipCount;
+        mImmutable = config.immutable;
 
-        // Try the allocation
-        glGetError(); // Clean up previous errors
-        if (AllocateWithFormat(currentFormat)) {
+        if (alloc(currentFormat)) {
             if (currentFormat != config.internalFormat) {
                 NX_LOG(W, "GPU: Format %s not supported for %s, using fallback %s",
-                    FormatToString(config.internalFormat), TargetToString(config.target), FormatToString(currentFormat));
+                    FormatToString(config.internalFormat),
+                    TargetToString(config.target),
+                    FormatToString(currentFormat)
+                );
                 sFormatFallbacks[key] = currentFormat;
             }
             else {
-                sFormatFallbacks[key] = GL_NONE; // Original format supported
+                sFormatFallbacks[key] = GL_NONE;
             }
             return;
         }
 
-        // Failed, try fallback
         GLenum nextFormat = GetFallbackFormat(currentFormat);
         if (nextFormat == currentFormat) {
-            break; // No more fallbacks
+            break;
         }
         currentFormat = nextFormat;
     }
@@ -331,50 +362,151 @@ void Texture::AllocateTexture(const TextureConfig& config) noexcept
     /* --- All formats failed --- */
 
     NX_LOG(E, "GPU: All formats failed for %s (%dx%dx%d), texture creation failed",
-        TargetToString(config.target), config.width, config.height, config.depth);
+        TargetToString(config.target), config.width, config.height, config.depth
+    );
 
-    sFormatFallbacks[key] = GL_NONE;    // Mark as tested but failed
-    DestroyTexture();                   // Invalidate texture
+    sFormatFallbacks[key] = GL_NONE;
+    DestroyTexture();
 }
 
-bool Texture::AllocateWithFormat(GLenum internalFormat) noexcept
+bool Texture::AllocateMutableWithFormat(GLenum internalFormat) noexcept
 {
     GLenum format, type;
     GetFormatAndType(internalFormat, format, type);
 
+    int w = mWidth;
+    int h = mHeight;
+    int d = mDepth;
+
+    for (int level = 0; level < mMipLevels; ++level)
+    {
+        switch (mTarget)
+        {
+        case GL_TEXTURE_2D:
+            glTexImage2D(
+                GL_TEXTURE_2D,
+                level,
+                internalFormat,
+                w, h,
+                0,
+                format, type,
+                nullptr
+            );
+            break;
+        case GL_TEXTURE_3D:
+            glTexImage3D(
+                GL_TEXTURE_3D,
+                level,
+                internalFormat,
+                w, h, d,
+                0,
+                format, type,
+                nullptr
+            );
+            break;
+        case GL_TEXTURE_2D_ARRAY:
+            glTexImage3D(
+                GL_TEXTURE_2D_ARRAY,
+                level,
+                internalFormat,
+                w, h, mDepth,
+                0,
+                format, type,
+                nullptr
+            );
+            break;
+        case GL_TEXTURE_CUBE_MAP_ARRAY:
+            glTexImage3D(
+                GL_TEXTURE_CUBE_MAP_ARRAY,
+                level,
+                internalFormat,
+                w, h, 6 * mDepth, 
+                0,
+                format, type,
+                nullptr
+            );
+            break;
+        case GL_TEXTURE_CUBE_MAP:
+            for (int face = 0; face < 6; ++face)
+            {
+                glTexImage2D(
+                    GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
+                    level,
+                    internalFormat,
+                    w, h,
+                    0,
+                    format, type,
+                    nullptr
+                );
+            }
+            break;
+        default:
+            SDL_assert(false && "Unsupported texture target");  // NOLINT
+            return false;
+        }
+
+        if (glGetError() != GL_NO_ERROR) {
+            return false;
+        }
+
+        w = std::max(1, w >> 1);
+        h = std::max(1, h >> 1);
+        if (mTarget == GL_TEXTURE_3D) {
+            d = std::max(1, d >> 1);
+        }
+    }
+
+    return true;
+}
+
+bool Texture::AllocateImmutableWithFormat(GLenum internalFormat) noexcept
+{
     switch (mTarget) {
     case GL_TEXTURE_2D:
-        glTexImage2D(mTarget, 0, internalFormat, mWidth, mHeight, 0, format, type, nullptr);
+        glTexStorage2D(
+            GL_TEXTURE_2D,
+            mMipLevels,
+            internalFormat,
+            mWidth,
+            mHeight
+        );
         break;
     case GL_TEXTURE_3D:
     case GL_TEXTURE_2D_ARRAY:
-        glTexImage3D(mTarget, 0, internalFormat, mWidth, mHeight, mDepth, 0, format, type, nullptr);
+        glTexStorage3D(
+            mTarget,
+            mMipLevels,
+            internalFormat,
+            mWidth,
+            mHeight,
+            mDepth
+        );
         break;
     case GL_TEXTURE_CUBE_MAP_ARRAY:
-        glTexImage3D(mTarget, 0, internalFormat, mWidth, mHeight, mDepth * 6, 0, format, type, nullptr);
+        glTexStorage3D(
+            GL_TEXTURE_CUBE_MAP_ARRAY,
+            mMipLevels,
+            internalFormat,
+            mWidth,
+            mHeight,
+            6 * mDepth
+        );
         break;
     case GL_TEXTURE_CUBE_MAP:
-        {
-            const GLenum faces[6] = {
-                GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-                GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-                GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
-            };
-
-            for (int i = 0; i < 6; ++i) {
-                glTexImage2D(faces[i], 0, internalFormat, mWidth, mHeight, 0, format, type, nullptr);
-                if (glGetError() != GL_NO_ERROR) {
-                    return false;
-                }
-            }
-        }
+        glTexStorage2D(
+            GL_TEXTURE_CUBE_MAP,
+            mMipLevels,
+            internalFormat,
+            mWidth,
+            mHeight
+        );
         break;
     default:
         SDL_assert(false && "Unsupported texture target"); // NOLINT
         return false;
     }
 
-    return glGetError() == GL_NO_ERROR;
+    return (glGetError() == GL_NO_ERROR);
 }
 
 void Texture::UploadData_Bound(const void* data, const UploadRegion& region) noexcept

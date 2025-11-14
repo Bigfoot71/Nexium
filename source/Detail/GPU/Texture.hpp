@@ -34,6 +34,7 @@ struct TextureConfig {
     int height = 0;
     int depth = 0;
     bool mipmap = false;
+    bool immutable = false;
 
     const TextureConfig& Check() const {
         switch (target) {
@@ -137,7 +138,7 @@ public:
     int GetDepth() const noexcept;
     const TextureParam& GetParameters() const noexcept;
 
-    /** Post-creation manipulation (keeps the ID, only affects the current target) */
+    /** Re-allocations (keeps the same ID only if the texture is mutable) */
     void Realloc(int w, int h, int d, const void* data = nullptr) noexcept;
     void Realloc(const TextureConfig& config) noexcept;
 
@@ -169,6 +170,7 @@ private:
     int mWidth{0}, mHeight{0}, mDepth{0};
     int mMipLevels{1};
     TextureParam mParameters{};
+    bool mImmutable{};
 
     /** Anisotropy support */
     static inline bool sAnisotropyInitialized = false;
@@ -184,9 +186,9 @@ private:
     static inline std::unordered_map<FormatKey, GLenum, FormatKeyHash> sFormatFallbacks;
 
     /** Creation and allocation */
-    void CreateTexture(const TextureConfig& config, const TextureParam& param) noexcept;
-    void AllocateTexture(const TextureConfig& config) noexcept; // Allocates via glTexImage*, tests fallbacks
-    bool AllocateWithFormat(GLenum internalFormat) noexcept;    // Attempts allocation with a specific format
+    void AllocateTexture(const TextureConfig& config) noexcept;         // Allocates texture (mutable or immtuable), tests fallbacks
+    bool AllocateMutableWithFormat(GLenum internalFormat) noexcept;     // Attempts mutable texture allocation with a specific format
+    bool AllocateImmutableWithFormat(GLenum internalFormat) noexcept;   // Attempts immutable texture allocation with a specific format
     void DestroyTexture() noexcept;
 
     /** Internal operations (require the texture to be bound) */
@@ -204,16 +206,10 @@ private:
     static const char* TargetToString(GLenum target) noexcept;
 
     /** Static mipmap helpers */
-    static int CalculateMaxMipLevels(int width, int height, int depth = 1) noexcept;
+    int CalculateMaxMipLevels(int width, int height, int depth = 1) noexcept;
 };
 
 /* === Inline Implementations === */
-
-inline Texture::Texture(const TextureConfig& config, const TextureParam& param) noexcept
-    : mParameters(param)
-{
-    CreateTexture(config.Check(), param);
-}
 
 inline Texture::~Texture() noexcept
 {
@@ -228,6 +224,7 @@ inline Texture::Texture(Texture&& other) noexcept
     , mHeight(other.mHeight)
     , mDepth(other.mDepth)
     , mMipLevels(other.mMipLevels)
+    , mImmutable(other.mImmutable)
     , mParameters(other.mParameters)
 { }
 
@@ -242,6 +239,7 @@ inline Texture& Texture::operator=(Texture&& other) noexcept
         mHeight = other.mHeight;
         mDepth = other.mDepth;
         mMipLevels = other.mMipLevels;
+        mImmutable = other.mImmutable;
         mParameters = other.mParameters;
     }
     return *this;
@@ -481,8 +479,8 @@ inline const char* Texture::TargetToString(GLenum target) noexcept
 
 inline int Texture::CalculateMaxMipLevels(int width, int height, int depth) noexcept
 {
-    int maxDimension = NX_MAX3(width, height, depth);
-    return static_cast<int>(std::floor(std::log2(maxDimension))) + 1;
+    int maxDimension = NX_MAX3(width, height, (mTarget == GL_TEXTURE_3D) ? depth : 1);
+    return 1 + static_cast<int>(std::floor(std::log2(maxDimension)));
 }
 
 } // namespace gpu
