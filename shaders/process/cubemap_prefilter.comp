@@ -28,7 +28,7 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 6) in;
 /* === Uniforms === */
 
 layout(binding = 0) uniform samplerCube uTexCubemap;
-layout(binding = 1, rgba16f) uniform writeonly imageCubeArray uTargetCubemap;
+layout(binding = 1, rgba16f) uniform writeonly highp imageCubeArray uTargetCubemap;
 
 /* === Samplers === */
 
@@ -110,7 +110,7 @@ void main()
 {
     /* --- Check if we're within bounds --- */
 
-    const float mipImageSize = float(imageSize(uTargetCubemap).x);
+    float mipImageSize = float(imageSize(uTargetCubemap).x);
     ivec3 globalId = ivec3(gl_GlobalInvocationID.xyz);
 
     if (globalId.x >= int(mipImageSize) || globalId.y >= int(mipImageSize)) {
@@ -137,10 +137,10 @@ void main()
 
     /* --- Pre calculate invariants --- */
 
-    const float a = uRoughness * uRoughness;
-    const float a2 = a * a;
+    float a = uRoughness * uRoughness;
+    float a2 = a * a;
 
-    const mat3 OBN = M_OrthonormalBasis(N);
+    mat3 OBN = M_OrthonormalBasis(N);
 
     /* --- Convolve environment map --- */
 

@@ -622,7 +622,7 @@ void main()
     vec3 radiance = vec3(0.0);
     float totalWeight = 0.0;
 
-    for (uint i = 0; i < uFrame.reflectionProbeCount; ++i) {
+    for (uint i = 0u; i < uFrame.reflectionProbeCount; ++i) {
         ReflectionProbe probe = sReflectionProbes[i];
         float dist = length(vInt.position - probe.position);
         float weight = pow(clamp(1.0 - dist / probe.range, 0.0, 1.0), probe.falloff);
