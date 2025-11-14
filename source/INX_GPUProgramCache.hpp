@@ -45,7 +45,6 @@ enum INX_ProgramID : uint16_t {
     INX_PROG_DOWNSAMPLING,
     INX_PROG_UPSAMPLING,
     INX_PROG_SSAO_PASS,
-    INX_PROG_SSAO_POST,
     /** Overlay/screen */
     INX_PROG_OVERLAY,
     INX_PROG_SCREEN_QUAD,
@@ -76,7 +75,6 @@ public:
     gpu::Program& GetDownsampling();
     gpu::Program& GetUpsampling();
     gpu::Program& GetSsaoPass();
-    gpu::Program& GetSsaoPost();
 
     /** Overlay */
     gpu::Program& GetOverlay();

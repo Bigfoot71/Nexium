@@ -30,7 +30,6 @@
 #include <shaders/upsampling.frag.h>
 #include <shaders/bloom_post.frag.h>
 #include <shaders/ssao_pass.frag.h>
-#include <shaders/ssao_post.frag.h>
 #include <shaders/output.frag.h>
 
 #include <shaders/overlay.frag.h>
@@ -349,28 +348,6 @@ gpu::Program& INX_GPUProgramCache::GetSsaoPass()
             INX_ShaderDecoder(
                 SSAO_PASS_FRAG,
                 SSAO_PASS_FRAG_SIZE
-            )
-        )
-    );
-
-    return program;
-}
-
-gpu::Program& INX_GPUProgramCache::GetSsaoPost()
-{
-    gpu::Program& program = mPrograms[INX_PROG_SSAO_POST];
-
-    if (program.IsValid()) {
-        return program;
-    }
-
-    program = gpu::Program(
-        GetVertexShaderScreen(),
-        gpu::Shader(
-            GL_FRAGMENT_SHADER,
-            INX_ShaderDecoder(
-                SSAO_POST_FRAG,
-                SSAO_POST_FRAG_SIZE
             )
         )
     );

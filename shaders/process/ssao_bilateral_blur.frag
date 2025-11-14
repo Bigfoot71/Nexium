@@ -31,11 +31,11 @@ layout(binding = 1) uniform sampler2D uTexDepth;
 
 /* === Uniform Buffers === */
 
-layout(std140, binding = 0) uniform U_ViewFrustum {
+layout(std140, binding = 1) uniform U_ViewFrustum {
     Frustum uFrustum;
 };
 
-layout(std140, binding = 1) uniform U_Environment {
+layout(std140, binding = 2) uniform U_Environment {
     Environment uEnv;
 };
 

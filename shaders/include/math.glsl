@@ -109,6 +109,13 @@ vec3 M_DecodeOctahedral(vec2 encoded)
     return normalize(normal);
 }
 
+vec3 M_NormalScale(vec3 normal, float scale)
+{
+    normal.xy *= scale;
+    normal.z = sqrt(1.0 - clamp(dot(normal.xy, normal.xy), 0.0, 1.0));
+    return normal;
+}
+
 float M_HashIGN(vec2 pos)
 {
     // http://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare

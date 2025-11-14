@@ -169,6 +169,11 @@ layout(binding = 7) uniform mediump sampler2DArray uTexShadowDir;
 layout(binding = 8) uniform mediump sampler2DArray uTexShadowSpot;
 layout(binding = 9) uniform mediump samplerCubeArray uTexShadowOmni;
 
+#if defined(PREPASS)
+layout(binding = 10) uniform sampler2D uTexNormalBuffer;
+layout(binding = 11) uniform sampler2D uTexSsaoBuffer;
+#endif
+
 /* === Uniform Buffers === */
 
 layout(std140, binding = 0) uniform U_Frame {
@@ -187,10 +192,14 @@ layout(std140, binding = 2) uniform U_Environment {
 
 layout(location = 1) uniform uint uDrawUniqueIndex;
 
+#if defined(PREPASS)
+layout(location = 2) uniform vec2 uInvResolution;
+layout(location = 3) uniform bool uSsaoEnabled;
+#endif
+
 /* === Fragments === */
 
 layout(location = 0) out vec4 FragColor;
-layout(location = 1) out vec4 FragNormal;
 
 /* === Fragment Override === */
 
@@ -495,15 +504,6 @@ vec3 IBL_MultiScattering(vec3 irradiance, vec3 radiance, vec3 diffuse, vec3 F0, 
     return irradiance * (FmsEms + kD) + radiance * FssEss;
 }
 
-/* === Helper functions === */
-
-vec3 NormalScale(vec3 normal, float scale)
-{
-    normal.xy *= scale;
-    normal.z = sqrt(1.0 - clamp(dot(normal.xy, normal.xy), 0.0, 1.0));
-    return normal;
-}
-
 /* === Program === */
 
 void main()
@@ -512,7 +512,27 @@ void main()
 
     FragmentOverride();
 
-    /* --- Compute base material properties --- */ 
+    /* --- Alpha cutoff with GLES (no pre-pass) --- */
+
+    // TODO: Test pre-pass on mobile
+
+//#if defined(GL_ES)
+//    if (ALBEDO.a < sDrawUnique[uDrawUniqueIndex].alphaCutOff) {
+//        discard;
+//    }
+//#endif
+
+    /* --- Get occlusion from SSAO buffer --- */
+
+#if defined(PREPASS)
+    if (uSsaoEnabled) {
+        float ssao = texture(uTexSsaoBuffer, gl_FragCoord.xy * uInvResolution).r;
+        if (uEnv.ssaoPower != 1.0) ssao = pow(ssao, uEnv.ssaoPower);
+        OCCLUSION *= mix(1.0, ssao, uEnv.ssaoIntensity);
+    }
+#endif
+
+    /* --- Compute base material properties --- */
 
     const float SPECULAR = 0.5;
     float dielectric = 0.16 * SPECULAR * SPECULAR;
@@ -525,8 +545,13 @@ void main()
 
     /* --- Sample normal and compute view direction vector --- */
 
-    vec3 N = normalize(vInt.tbn * NormalScale(NORMAL_MAP.rgb * 2.0 - 1.0, NORMAL_SCALE));
-    N *= (gl_FrontFacing ? 1.0 : -1.0);
+#if defined(PREPASS)
+    vec2 No = texture(uTexNormalBuffer, gl_FragCoord.xy * uInvResolution).rg;
+    vec3 N = M_DecodeOctahedral(No);
+#else
+    vec3 N = M_NormalScale(NORMAL_MAP.rgb * 2.0 - 1.0, NORMAL_SCALE);
+    N = normalize(vInt.tbn * N) * (gl_FrontFacing ? 1.0 : -1.0);
+#endif
 
     vec3 V = normalize(uFrustum.position - vInt.position);
 
@@ -633,7 +658,7 @@ void main()
         Lo += IBL_MultiScattering(irradiance, radiance, diffuse, F0, brdf, NdotV, ROUGHNESS);
     }
     else {
-        Lo += diffuse * uEnv.ambientColor;
+        Lo += diffuse * uEnv.ambientColor * OCCLUSION;
     }
 
     /* --- Compute the fog factor --- */
@@ -656,12 +681,7 @@ void main()
 
     /* --- Output the final lighting contribution with emission and fog --- */
 
-    FragColor.rgb = mix(uEnv.fogColor, Lo + EMISSION, fogFactor);
-    FragColor.a   = ALBEDO.a;
-
-    /* --- Store normals --- */
-
-    FragNormal = vec4(vec2(M_EncodeOctahedral(N)), vec2(1.0));
+    FragColor = vec4(mix(uEnv.fogColor, Lo + EMISSION, fogFactor), ALBEDO.a);
 
     /* DEBUG: Clusters */
 

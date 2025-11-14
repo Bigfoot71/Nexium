@@ -35,17 +35,19 @@ NX_Shader3D::NX_Shader3D()
 
     gpu::Shader vertScene(GL_VERTEX_SHADER, vertSceneCode);
     gpu::Shader vertShadow(GL_VERTEX_SHADER, vertSceneCode, {"SHADOW"});
-    gpu::Shader fragLit(GL_FRAGMENT_SHADER, fragLitCode);
+    gpu::Shader fragLitGeneric(GL_FRAGMENT_SHADER, fragLitCode, {"GENERIC"});
+    gpu::Shader fragLitPrepass(GL_FRAGMENT_SHADER, fragLitCode, {"PREPASS"});
     gpu::Shader fragUnlit(GL_FRAGMENT_SHADER, fragUnlitCode);
     gpu::Shader fragPrepass(GL_FRAGMENT_SHADER, fragPrepassCode);
     gpu::Shader fragShadow(GL_FRAGMENT_SHADER, fragShadowCode);
 
     /* --- Link all programs --- */
 
-    mPrograms[Variant::SCENE_LIT]       = gpu::Program(vertScene, fragLit);
-    mPrograms[Variant::SCENE_UNLIT]     = gpu::Program(vertScene, fragUnlit);
-    mPrograms[Variant::SCENE_PREPASS]   = gpu::Program(vertScene, fragPrepass);
-    mPrograms[Variant::SCENE_SHADOW]    = gpu::Program(vertShadow, fragShadow);
+    mPrograms[Variant::LIT_GENERIC] = gpu::Program(vertScene, fragLitGeneric);
+    mPrograms[Variant::LIT_PREPASS] = gpu::Program(vertScene, fragLitPrepass);
+    mPrograms[Variant::UNLIT]       = gpu::Program(vertScene, fragUnlit);
+    mPrograms[Variant::PREPASS]     = gpu::Program(vertScene, fragPrepass);
+    mPrograms[Variant::SHADOW]      = gpu::Program(vertShadow, fragShadow);
 }
 
 NX_Shader3D::NX_Shader3D(const char* vert, const char* frag)
@@ -57,9 +59,10 @@ NX_Shader3D::NX_Shader3D(const char* vert, const char* frag)
 
     /* --- Prepare base sources --- */
 
-    util::String vertSceneCode = INX_ShaderDecoder(SCENE_VERT, SCENE_VERT_SIZE).GetCode();
-    util::String fragLitCode   = INX_ShaderDecoder(SCENE_LIT_FRAG, SCENE_LIT_FRAG_SIZE).GetCode();
-    util::String fragUnlitCode = INX_ShaderDecoder(SCENE_UNLIT_FRAG, SCENE_UNLIT_FRAG_SIZE).GetCode();
+    util::String vertSceneCode   = INX_ShaderDecoder(SCENE_VERT, SCENE_VERT_SIZE).GetCode();
+    util::String fragLitCode     = INX_ShaderDecoder(SCENE_LIT_FRAG, SCENE_LIT_FRAG_SIZE).GetCode();
+    util::String fragUnlitCode   = INX_ShaderDecoder(SCENE_UNLIT_FRAG, SCENE_UNLIT_FRAG_SIZE).GetCode();
+    util::String fragPrepassCode = INX_ShaderDecoder(SCENE_PREPASS_FRAG, SCENE_PREPASS_FRAG_SIZE).GetCode();
 
     /* --- Process and insert the user code --- */
 
@@ -70,25 +73,28 @@ NX_Shader3D::NX_Shader3D(const char* vert, const char* frag)
 
     if (frag != nullptr) {
         util::String fragUser = ProcessUserCode(frag);
-        InsertUserCode(fragLitCode,   fragMarker, fragUser.GetCString());
+        InsertUserCode(fragLitCode, fragMarker, fragUser.GetCString());
         InsertUserCode(fragUnlitCode, fragMarker, fragUser.GetCString());
+        InsertUserCode(fragPrepassCode, fragMarker, fragUser.GetCString());
     }
 
     /* --- Compile shaders --- */
 
     gpu::Shader vertScene(GL_VERTEX_SHADER, vertSceneCode.GetCString());
     gpu::Shader vertShadow(GL_VERTEX_SHADER, vertSceneCode.GetCString(), {"SHADOW"});
-    gpu::Shader fragLit(GL_FRAGMENT_SHADER, fragLitCode.GetCString());
+    gpu::Shader fragLitGeneric(GL_FRAGMENT_SHADER, fragLitCode.GetCString(), {"GENERIC"});
+    gpu::Shader fragLitPrepass(GL_FRAGMENT_SHADER, fragLitCode.GetCString(), {"PREPASS"});
     gpu::Shader fragUnlit(GL_FRAGMENT_SHADER, fragUnlitCode.GetCString());
-    gpu::Shader fragPrepass(GL_FRAGMENT_SHADER, INX_ShaderDecoder(SCENE_PREPASS_FRAG, SCENE_PREPASS_FRAG_SIZE));
+    gpu::Shader fragPrepass(GL_FRAGMENT_SHADER, fragPrepassCode.GetCString());
     gpu::Shader fragShadow(GL_FRAGMENT_SHADER, INX_ShaderDecoder(SCENE_SHADOW_FRAG, SCENE_SHADOW_FRAG_SIZE));
 
     /* --- Link all programs --- */
 
-    mPrograms[Variant::SCENE_LIT]       = gpu::Program(vertScene, fragLit);
-    mPrograms[Variant::SCENE_UNLIT]     = gpu::Program(vertScene, fragUnlit);
-    mPrograms[Variant::SCENE_PREPASS]   = gpu::Program(vertScene, fragPrepass);
-    mPrograms[Variant::SCENE_SHADOW]    = gpu::Program(vertShadow, fragShadow);
+    mPrograms[Variant::LIT_GENERIC] = gpu::Program(vertScene, fragLitGeneric);
+    mPrograms[Variant::LIT_PREPASS] = gpu::Program(vertScene, fragLitPrepass);
+    mPrograms[Variant::UNLIT]       = gpu::Program(vertScene, fragUnlit);
+    mPrograms[Variant::PREPASS]     = gpu::Program(vertScene, fragPrepass);
+    mPrograms[Variant::SHADOW]      = gpu::Program(vertShadow, fragShadow);
 
     /* --- Collect uniform block sizes and setup bindings --- */
 

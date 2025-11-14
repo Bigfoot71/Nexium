@@ -14,6 +14,7 @@ precision highp float;
 
 /* === Includes === */
 
+#include "../include/math.glsl"
 #include "../include/draw.glsl"
 
 /* === Varyings === */
@@ -39,15 +40,33 @@ layout(std430, binding = 1) buffer S_DrawUniqueBuffer {
 /* === Samplers === */
 
 layout(binding = 0) uniform sampler2D uTexAlbedo;
+layout(binding = 1) uniform sampler2D uTexEmission;     //< Override compatibility
+layout(binding = 2) uniform sampler2D uTexORM;          //< Override compatibility
+layout(binding = 3) uniform sampler2D uTexNormal;
 
 /* === Uniforms === */
 
 layout(location = 1) uniform uint uDrawUniqueIndex;
 
+/* === Fragments === */
+
+layout(location = 0) out vec4 FragNormal;
+
+/* === Fragment Override === */
+
+#include "../override/scene.frag"
+
 /* === Program === */
 
 void main()
 {
-    float alpha = vInt.color.a * texture(uTexAlbedo, vInt.texCoord).a;
-    if (alpha < sDrawUnique[uDrawUniqueIndex].alphaCutOff) discard;
+    FragmentOverride();
+
+    if (ALBEDO.a < sDrawUnique[uDrawUniqueIndex].alphaCutOff) {
+        discard;
+    }
+
+    vec3 N = M_NormalScale(NORMAL_MAP.rgb * 2.0 - 1.0, NORMAL_SCALE);
+    N = normalize(vInt.tbn * N) * (gl_FrontFacing ? 1.0 : -1.0);
+    FragNormal = vec4(M_EncodeOctahedral(N), vec2(1.0));
 }

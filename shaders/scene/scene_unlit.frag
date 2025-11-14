@@ -68,20 +68,10 @@ layout(location = 1) uniform uint uDrawUniqueIndex;
 /* === Fragments === */
 
 layout(location = 0) out vec4 FragColor;
-layout(location = 1) out vec4 FragNormal;
 
 /* === Fragment Override === */
 
 #include "../override/scene.frag"
-
-/* === Helper functions === */
-
-vec3 NormalScale(vec3 normal, float scale)
-{
-    normal.xy *= scale;
-    normal.z = sqrt(1.0 - clamp(dot(normal.xy, normal.xy), 0.0, 1.0));
-    return normal;
-}
 
 /* === Program === */
 
@@ -91,9 +81,11 @@ void main()
 
     FragmentOverride();
 
-    /* --- Sample normal and compute view direction vector --- */
+    /* --- Alpha cutoff (no pre-pass for unlit opaque) --- */
 
-    vec3 N = normalize(vInt.tbn * NormalScale(NORMAL_MAP.rgb * 2.0 - 1.0, NORMAL_SCALE));
+    if (ALBEDO.a < sDrawUnique[uDrawUniqueIndex].alphaCutOff) {
+        discard;
+    }
 
     /* --- Calculation of the distance from the fragment to the camera in scene units --- */
 
@@ -123,5 +115,4 @@ void main()
     color = mix(uEnv.fogColor, color, fogFactor);
 
     FragColor = vec4(color, ALBEDO.a);
-    FragNormal = vec4(vec2(M_EncodeOctahedral(N)), vec2(1.0));
 }

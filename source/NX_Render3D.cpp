@@ -244,11 +244,11 @@ struct INX_SceneState {
     /** Frustum data */
     INX_ViewFrustum viewFrustum{};
 
-    /** Scene render targets */
-    gpu::Texture targetSceneColor{};        //< RGBA16F
-    gpu::Texture targetSceneNormal{};       //< RGB8
-    gpu::Texture targetSceneDepth{};        //< D24
-    gpu::Framebuffer framebufferScene{};
+    /** Render targets */
+    gpu::Texture targetColor{};        //< RGBA16F
+    gpu::Texture targetNormal{};       //< RG8
+    gpu::Texture targetDepth{};        //< D24
+    gpu::Framebuffer framebuffer{};
 
     /** Additionnal framebuffers */
     gpu::SwapBuffer swapPostProcess{};      //< Ping-pong buffer used during scene post process
@@ -395,7 +395,7 @@ static void INX_InitSceneState(INX_SceneState* scene, const NX_AppDesc* desc)
 {
     /* --- Create scene render targets --- */
 
-    scene->targetSceneColor = gpu::Texture(
+    scene->targetColor = gpu::Texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_2D,
@@ -406,7 +406,7 @@ static void INX_InitSceneState(INX_SceneState* scene, const NX_AppDesc* desc)
         }
     );
 
-    scene->targetSceneNormal = gpu::Texture(
+    scene->targetNormal = gpu::Texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_2D,
@@ -417,7 +417,7 @@ static void INX_InitSceneState(INX_SceneState* scene, const NX_AppDesc* desc)
         }
     );
 
-    scene->targetSceneDepth = gpu::Texture(
+    scene->targetDepth = gpu::Texture(
         gpu::TextureConfig
         {
             .target = GL_TEXTURE_2D,
@@ -430,14 +430,17 @@ static void INX_InitSceneState(INX_SceneState* scene, const NX_AppDesc* desc)
 
     /* --- Configure scene framebuffer --- */
 
-    scene->framebufferScene = gpu::Framebuffer(
-        { &scene->targetSceneColor, &scene->targetSceneNormal },
-        &scene->targetSceneDepth
+    scene->framebuffer = gpu::Framebuffer(
+        { &scene->targetColor, &scene->targetNormal },
+        &scene->targetDepth
     );
 
     if (desc->render3D.sampleCount > 1) {
-        scene->framebufferScene.SetSampleCount(desc->render3D.sampleCount);
+        scene->framebuffer.SetSampleCount(desc->render3D.sampleCount);
     }
+
+    // Normal target enabled only for depth pre-pass
+    scene->framebuffer.SetDrawBuffers({0});
 
     /* --- Create swap buffers --- */
 
@@ -1508,7 +1511,7 @@ static void INX_ConfigureClusterGrid()
 
     NX_IVec2 resolution{};
     if (INX_Render3D->renderPass == INX_RenderPass::RENDER_SCENE) {
-        resolution = scene.framebufferScene.GetDimensions();
+        resolution = scene.framebuffer.GetDimensions();
     }
     else if (INX_Render3D->renderPass == INX_RenderPass::RENDER_CUBEMAP) {
         resolution = scene.cubemap->framebuffer.GetDimensions();
@@ -1578,13 +1581,12 @@ static void INX_RenderBackground(const gpu::Pipeline& pipeline)
 
     pipeline.ClearDepth(1.0f);
     pipeline.ClearColor(0, scene.background);
-    pipeline.ClearColor(1, NX_COLOR(0.25f, 0.25f, 1.0f, 1.0f));
-
-    if (scene.skyCubemap == nullptr) return;
 
     if (INX_Render3D->renderPass == INX_RenderPass::RENDER_SCENE) {
-        scene.framebufferScene.SetDrawBuffers({0});
+        scene.framebuffer.Invalidate({1});
     }
+
+    if (scene.skyCubemap == nullptr) return;
 
     pipeline.BindUniform(1, scene.frustumUniform);
     pipeline.BindUniform(2, scene.envUniform);
@@ -1595,16 +1597,16 @@ static void INX_RenderBackground(const gpu::Pipeline& pipeline)
 
     pipeline.BindTexture(0, scene.skyCubemap->gpu);
     pipeline.Draw(GL_TRIANGLES, 36);
-
-    if (INX_Render3D->renderPass == INX_RenderPass::RENDER_SCENE) {
-        scene.framebufferScene.EnableDrawBuffers();
-    }
 }
 
 static void INX_RenderSceneOpaqueLit(const gpu::Pipeline& pipeline)
 {
+    // WARNING: This version is reserved for rendering the main scene
+    //          See `INX_RenderScene(DrawType...)` for a generic version
+
+    SDL_assert(INX_Render3D->renderPass == INX_RenderPass::RENDER_SCENE);
     const INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
-    const INX_SceneState& scene = INX_Render3D->scene;
+    INX_SceneState& scene = INX_Render3D->scene;
 
     const INX_ShadowingState& shadowing = INX_Render3D->shadowing;
     const INX_LightingState& lighting = INX_Render3D->lighting;
@@ -1614,23 +1616,11 @@ static void INX_RenderSceneOpaqueLit(const gpu::Pipeline& pipeline)
     auto catView = drawCalls.sortedUnique.GetCategory(DRAW_OPAQUE_LIT);
     if (catView.IsEmpty()) return;
 
-    /* --- Setup pipeline state --- */
+    /* --- Setup common pipeline state --- */
 
     pipeline.BindStorage(0, drawCalls.sharedBuffer);
     pipeline.BindStorage(1, drawCalls.uniqueBuffer);
     pipeline.BindStorage(2, drawCalls.boneBuffer);
-    pipeline.BindStorage(3, drawCalls.reflectionProbeBuffer);
-    pipeline.BindStorage(4, lighting.storageLights);
-    pipeline.BindStorage(5, lighting.storageShadow);
-    pipeline.BindStorage(6, lighting.storageClusters);
-    pipeline.BindStorage(7, lighting.storageIndices);
-
-    pipeline.BindTexture(4, INX_Assets.Get(INX_TextureAsset::BRDF_LUT)->gpu);
-    pipeline.BindTexture(5, INX_Render3D->indirect.irradianceArray);
-    pipeline.BindTexture(6, INX_Render3D->indirect.prefilterArray);
-    pipeline.BindTexture(7, shadowing.target[NX_LIGHT_DIR]);
-    pipeline.BindTexture(8, shadowing.target[NX_LIGHT_SPOT]);
-    pipeline.BindTexture(9, shadowing.target[NX_LIGHT_OMNI]);
 
     pipeline.BindUniform(0, scene.frameUniform);
     pipeline.BindUniform(1, scene.frustumUniform);
@@ -1639,7 +1629,8 @@ static void INX_RenderSceneOpaqueLit(const gpu::Pipeline& pipeline)
     /* --- Depth pre-pass for opaque lit objects --- */
 
     pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
-    pipeline.SetColorWrite(gpu::ColorWrite::Disabled);
+    pipeline.SetColorWrite(gpu::ColorWrite::RGBA);
+    scene.framebuffer.SetDrawBuffers({1});
 
     for (int uniqueIndex : catView)
     {
@@ -1647,7 +1638,7 @@ static void INX_RenderSceneOpaqueLit(const gpu::Pipeline& pipeline)
         const NX_Material& mat = unique.material;
 
         const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
-        pipeline.UseProgram(shader->GetProgram(NX_Shader3D::Variant::SCENE_PREPASS));
+        pipeline.UseProgram(shader->GetProgram(NX_Shader3D::Variant::PREPASS));
 
         pipeline.SetDepthFunc(INX_GPU_GetDepthFunc(mat.depth.test));
         pipeline.SetCullMode(INX_GPU_GetCullMode(mat.cull));
@@ -1656,17 +1647,80 @@ static void INX_RenderSceneOpaqueLit(const gpu::Pipeline& pipeline)
         shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
 
         pipeline.BindTexture(0, INX_Assets.Select(mat.albedo.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.BindTexture(1, INX_Assets.Select(mat.emission.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.BindTexture(2, INX_Assets.Select(mat.orm.texture, INX_TextureAsset::WHITE)->gpu);
+        pipeline.BindTexture(3, INX_Assets.Select(mat.normal.texture, INX_TextureAsset::NORMAL)->gpu);
         pipeline.SetUniformUint1(0, unique.sharedDataIndex);
         pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
 
         INX_Draw3D(pipeline, unique);
     }
 
+    /* --- Compute screen space ambient occlusion --- */
+
+    if (scene.ssaoEnabled)
+    {
+        /* --- Set viewport to auxiliary framebuffer size --- */
+
+        pipeline.SetViewport(scene.swapAuxiliary.GetTarget());
+
+        /* --- Generate ambient occlusion --- */
+
+        pipeline.BindTexture(0, scene.targetDepth);
+        pipeline.BindTexture(1, scene.targetNormal);
+        pipeline.BindTexture(2, INX_Assets.Get(INX_TextureAsset::SSAO_KERNEL)->gpu);
+        pipeline.BindTexture(3, INX_Assets.Get(INX_TextureAsset::SSAO_NOISE)->gpu);
+
+        pipeline.BindFramebuffer(scene.swapAuxiliary.GetTarget());
+        pipeline.UseProgram(INX_Programs.GetSsaoPass());
+        pipeline.Draw(GL_TRIANGLES, 3);
+        scene.swapAuxiliary.Swap();
+
+        /* --- Blur ambient occlusion --- */
+
+        pipeline.UseProgram(INX_Programs.GetSsaoBilateralBlur());
+        pipeline.BindTexture(1, scene.targetDepth);
+
+        pipeline.BindFramebuffer(scene.swapAuxiliary.GetTarget());
+        pipeline.BindTexture(0, scene.swapAuxiliary.GetSource());
+        pipeline.SetUniformFloat2(0, NX_VEC2(1.0f / scene.swapAuxiliary.GetSource().GetWidth(), 0.0f));
+        pipeline.Draw(GL_TRIANGLES, 3);
+        scene.swapAuxiliary.Swap();
+
+        pipeline.BindFramebuffer(scene.swapAuxiliary.GetTarget());
+        pipeline.BindTexture(0, scene.swapAuxiliary.GetSource());
+        pipeline.SetUniformFloat2(0, NX_VEC2(0.0f, 1.0f / scene.swapAuxiliary.GetSource().GetHeight()));
+        pipeline.Draw(GL_TRIANGLES, 3);
+        scene.swapAuxiliary.Swap();
+
+        /* --- Reset viewport to scene framebuffer size --- */
+
+        pipeline.SetViewport(scene.framebuffer);
+    }
+
     /* --- Iterate trough all opaque and transparent lit objects --- */
+
+    pipeline.BindFramebuffer(scene.framebuffer);
+    scene.framebuffer.SetDrawBuffers({0});
+
+    pipeline.BindStorage(3, drawCalls.reflectionProbeBuffer);
+    pipeline.BindStorage(4, lighting.storageLights);
+    pipeline.BindStorage(5, lighting.storageShadow);
+    pipeline.BindStorage(6, lighting.storageClusters);
+    pipeline.BindStorage(7, lighting.storageIndices);
+
+    pipeline.BindTexture(4, INX_Assets.Get(INX_TextureAsset::BRDF_LUT)->gpu);
+    pipeline.BindTexture(5, INX_Render3D->indirect.irradianceArray);
+    pipeline.BindTexture(6, INX_Render3D->indirect.prefilterArray);
+    pipeline.BindTexture(7, shadowing.target[NX_LIGHT_DIR]);
+    pipeline.BindTexture(8, shadowing.target[NX_LIGHT_SPOT]);
+    pipeline.BindTexture(9, shadowing.target[NX_LIGHT_OMNI]);
+
+    pipeline.BindTexture(10, scene.targetNormal);
+    pipeline.BindTexture(11, scene.swapAuxiliary.GetSource());
 
     pipeline.SetDepthMode(gpu::DepthMode::TestOnly);
     pipeline.SetDepthFunc(gpu::DepthFunc::Equal);
-    pipeline.SetColorWrite(gpu::ColorWrite::RGB);
 
     for (int uniqueIndex : catView)
     {
@@ -1674,7 +1728,7 @@ static void INX_RenderSceneOpaqueLit(const gpu::Pipeline& pipeline)
         const NX_Material& mat = unique.material;
 
         const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
-        pipeline.UseProgram(shader->GetProgramFromShadingMode(unique.material.shading));
+        pipeline.UseProgram(shader->GetProgramFromMaterial(unique.material, true));
         pipeline.SetCullMode(INX_GPU_GetCullMode(mat.cull));
 
         shader->BindTextures(pipeline, unique.textures);
@@ -1684,78 +1738,25 @@ static void INX_RenderSceneOpaqueLit(const gpu::Pipeline& pipeline)
         pipeline.BindTexture(1, INX_Assets.Select(mat.emission.texture, INX_TextureAsset::WHITE)->gpu);
         pipeline.BindTexture(2, INX_Assets.Select(mat.orm.texture, INX_TextureAsset::WHITE)->gpu);
         pipeline.BindTexture(3, INX_Assets.Select(mat.normal.texture, INX_TextureAsset::NORMAL)->gpu);
+
         pipeline.SetUniformUint1(0, unique.sharedDataIndex);
         pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
+
+        pipeline.SetUniformFloat2(2, NX_IVec2Rcp(scene.framebuffer.GetDimensions()));
+        pipeline.SetUniformInt1(3, scene.ssaoEnabled);
 
         INX_Draw3D(pipeline, unique);
     }
 }
 
-static void INX_RenderSceneOpaqueUnlit(const gpu::Pipeline& pipeline)
+template <typename ...Args>
+static void INX_RenderScene(const gpu::Pipeline& pipeline, Args&&... args)
 {
     const INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
     const INX_SceneState& scene = INX_Render3D->scene;
 
     const INX_ShadowingState& shadowing = INX_Render3D->shadowing;
     const INX_LightingState& lighting = INX_Render3D->lighting;
-
-    /* --- Get view over all unlit opaque objects --- */
-
-    auto catView = drawCalls.sortedUnique.GetCategory(DRAW_OPAQUE_UNLIT);
-    if (catView.IsEmpty()) return;
-
-    /* --- Setup pipeline state --- */
-
-    pipeline.SetDepthMode(gpu::DepthMode::TestAndWrite);
-    pipeline.SetColorWrite(gpu::ColorWrite::RGBA);
-
-    pipeline.BindStorage(0, drawCalls.sharedBuffer);
-    pipeline.BindStorage(1, drawCalls.uniqueBuffer);
-    pipeline.BindStorage(2, drawCalls.boneBuffer);
-
-    pipeline.BindUniform(0, scene.frameUniform);
-    pipeline.BindUniform(1, scene.frustumUniform);
-    pipeline.BindUniform(2, scene.envUniform);
-
-    /* --- Iterate trough all opaque and transparent lit objects --- */
-
-    for (int uniqueIndex : catView)
-    {
-        const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
-        const NX_Material& mat = unique.material;
-
-        const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
-        pipeline.UseProgram(shader->GetProgramFromShadingMode(unique.material.shading));
-
-        pipeline.SetDepthFunc(INX_GPU_GetDepthFunc(mat.depth.test));
-        pipeline.SetCullMode(INX_GPU_GetCullMode(mat.cull));
-
-        shader->BindTextures(pipeline, unique.textures);
-        shader->BindUniforms(pipeline, unique.dynamicRangeIndex);
-
-        pipeline.BindTexture(0, INX_Assets.Select(mat.albedo.texture, INX_TextureAsset::WHITE)->gpu);
-        pipeline.BindTexture(1, INX_Assets.Select(mat.emission.texture, INX_TextureAsset::WHITE)->gpu);
-        pipeline.BindTexture(2, INX_Assets.Select(mat.orm.texture, INX_TextureAsset::WHITE)->gpu);
-        pipeline.BindTexture(3, INX_Assets.Select(mat.normal.texture, INX_TextureAsset::NORMAL)->gpu);
-        pipeline.SetUniformUint1(0, unique.sharedDataIndex);
-        pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
-
-        INX_Draw3D(pipeline, unique);
-    }
-}
-
-static void INX_RenderSceneTransparent(const gpu::Pipeline& pipeline)
-{
-    const INX_DrawCallState& drawCalls = INX_Render3D->drawCalls;
-    const INX_SceneState& scene = INX_Render3D->scene;
-
-    const INX_ShadowingState& shadowing = INX_Render3D->shadowing;
-    const INX_LightingState& lighting = INX_Render3D->lighting;
-
-    /* --- Get view over categories that we want to draw --- */
-
-    auto catView = drawCalls.sortedUnique.GetCategory(DRAW_TRANSPARENT);
-    if (catView.IsEmpty()) return;
 
     /* --- Setup pipeline state --- */
 
@@ -1782,17 +1783,17 @@ static void INX_RenderSceneTransparent(const gpu::Pipeline& pipeline)
     pipeline.BindUniform(1, scene.frustumUniform);
     pipeline.BindUniform(2, scene.envUniform);
 
-    /* --- Iterate trough all transparent (lit/unlit) objects --- */
+    /* --- Iterate trough all objects in the order of their declaration in arguments --- */
 
-    pipeline.SetDepthFunc(gpu::DepthFunc::Equal);
+    auto catView = drawCalls.sortedUnique.GetCategories(std::forward<Args>(args)...);
 
-    for (int uniqueIndex : catView)
+    for (auto [category, uniqueIndex] : catView)
     {
         const INX_DrawUnique& unique = drawCalls.uniqueData[uniqueIndex];
         const NX_Material& mat = unique.material;
 
         const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
-        pipeline.UseProgram(shader->GetProgramFromShadingMode(unique.material.shading));
+        pipeline.UseProgram(shader->GetProgramFromMaterial(unique.material));
 
         pipeline.SetDepthFunc(INX_GPU_GetDepthFunc(mat.depth.test));
         pipeline.SetBlendMode(INX_GPU_GetBlendMode(mat.blend));
@@ -1810,81 +1811,6 @@ static void INX_RenderSceneTransparent(const gpu::Pipeline& pipeline)
 
         INX_Draw3D(pipeline, unique);
     }
-}
-
-static const gpu::Texture& INX_PostSSAO(const gpu::Texture& source)
-{
-    INX_SceneState& scene = INX_Render3D->scene;
-
-    // Right now SSAO is done in a simple way by directly darkening
-    // the rendered scene, instead of being physically correct.
-    // The proper way would be to run a depth pre-pass to get depth
-    // and normals of opaque objects, compute SSAO, and apply it to
-    // ambient light during the forward pass. But that makes things
-    // more complicated for material shaders, which
-    // aren’t in yet, and could hurt performance on mobile.
-    // So for now we stick with this simpler version until it’s needed.
-
-    gpu::Pipeline pipeline;
-
-    /* --- Bind common stuff --- */
-
-    pipeline.BindUniform(0, scene.frustumUniform);
-    pipeline.BindUniform(1, scene.envUniform);
-
-    /* --- Generate ambient occlusion --- */
-
-    pipeline.BindFramebuffer(scene.swapAuxiliary.GetTarget());
-    {
-        pipeline.SetViewport(scene.swapAuxiliary.GetTarget());
-        pipeline.UseProgram(INX_Programs.GetSsaoPass());
-
-        pipeline.BindTexture(0, scene.targetSceneDepth);
-        pipeline.BindTexture(1, scene.targetSceneNormal);
-        pipeline.BindTexture(2, INX_Assets.Get(INX_TextureAsset::SSAO_KERNEL)->gpu);
-        pipeline.BindTexture(3, INX_Assets.Get(INX_TextureAsset::SSAO_NOISE)->gpu);
-
-        pipeline.Draw(GL_TRIANGLES, 3);
-    }
-    scene.swapAuxiliary.Swap();
-
-    /* --- Blur ambient occlusion --- */
-
-    pipeline.UseProgram(INX_Programs.GetSsaoBilateralBlur());
-
-    pipeline.BindTexture(1, scene.targetSceneDepth);
-
-    pipeline.BindFramebuffer(scene.swapAuxiliary.GetTarget());
-    {
-        pipeline.BindTexture(0, scene.swapAuxiliary.GetSource());
-        pipeline.SetUniformFloat2(0, NX_VEC2(1.0f / scene.swapAuxiliary.GetSource().GetWidth(), 0.0f));
-        pipeline.Draw(GL_TRIANGLES, 3);
-    }
-    scene.swapAuxiliary.Swap();
-
-    pipeline.BindFramebuffer(scene.swapAuxiliary.GetTarget());
-    {
-        pipeline.BindTexture(0, scene.swapAuxiliary.GetSource());
-        pipeline.SetUniformFloat2(0, NX_VEC2(0.0f, 1.0f / scene.swapAuxiliary.GetSource().GetHeight()));
-        pipeline.Draw(GL_TRIANGLES, 3);
-    }
-    scene.swapAuxiliary.Swap();
-
-    /* --- Apply SSAO --- */
-
-    pipeline.BindFramebuffer(scene.swapPostProcess.GetTarget());
-    {
-        pipeline.SetViewport(scene.swapPostProcess.GetTarget());
-        pipeline.UseProgram(INX_Programs.GetSsaoPost());
-
-        pipeline.BindTexture(0, source);
-        pipeline.BindTexture(1, scene.swapAuxiliary.GetSource());
-
-        pipeline.Draw(GL_TRIANGLES, 3);
-    }
-    scene.swapPostProcess.Swap();
-
-    return scene.swapPostProcess.GetSource();
 }
 
 static const gpu::Texture& INX_PostBloom(const gpu::Texture& source)
@@ -2012,7 +1938,7 @@ void NX_End3D()
         }
 
         scene.frameUniform.UploadObject(INX_GPUSceneFrame {
-            .screenSize = scene.framebufferScene.GetDimensions(),
+            .screenSize = scene.framebuffer.GetDimensions(),
             .clusterCount = INX_Render3D->lighting.clusterCount,
             .maxLightsPerCluster = INX_Render3D->lighting.MaxLightsPerCluster,
             .reflectionProbeCount = INX_Render3D->drawCalls.reflectionProbeCount,
@@ -2024,8 +1950,8 @@ void NX_End3D()
 
         INX_SortDrawCalls(scene.viewFrustum.position);
 
-        pipeline.BindFramebuffer(scene.framebufferScene);
-        pipeline.SetViewport(scene.framebufferScene);
+        pipeline.BindFramebuffer(scene.framebuffer);
+        pipeline.SetViewport(scene.framebuffer);
 
         INX_RenderBackground(pipeline);
 
@@ -2033,9 +1959,9 @@ void NX_End3D()
         // Ensures that the generated images are ready (especially reflection indirect)
         pipeline.MemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
+        // TODO: Test pre-pass mobile, if bad performances, render everything with 'INX_RenderScene(...)'
         INX_RenderSceneOpaqueLit(pipeline);
-        INX_RenderSceneOpaqueUnlit(pipeline);
-        INX_RenderSceneTransparent(pipeline);
+        INX_RenderScene(pipeline, DRAW_OPAQUE_UNLIT, DRAW_TRANSPARENT);
 
         // REVIEW: We can collect the used programs rather than iterating over all programs
         INX_Pool.ForEach<NX_Shader3D>([](NX_Shader3D& shader) {
@@ -2045,20 +1971,16 @@ void NX_End3D()
     else {
         // Fast path when there are no draw calls
         gpu::Pipeline([&scene](const gpu::Pipeline& pipeline) { // NOLINT
-            pipeline.BindFramebuffer(scene.framebufferScene);
-            pipeline.SetViewport(scene.framebufferScene);
+            pipeline.BindFramebuffer(scene.framebuffer);
+            pipeline.SetViewport(scene.framebuffer);
             INX_RenderBackground(pipeline);
         });
     }
 
     /* --- Post process and outputs the result --- */
 
-    scene.framebufferScene.Resolve();
-    const gpu::Texture* source = &scene.targetSceneColor;
-
-    if (scene.ssaoEnabled) {
-        source = &INX_PostSSAO(*source);
-    }
+    scene.framebuffer.Resolve();
+    const gpu::Texture* source = &scene.targetColor;
 
     if (scene.bloomMode != NX_BLOOM_DISABLED) {
         source = &INX_PostBloom(*source);
@@ -2227,7 +2149,7 @@ void NX_EndShadow3D()
             const NX_Material& mat = unique.material;
             const NX_Shader3D* shader = INX_Assets.Select(mat.shader, INX_Shader3DAsset::DEFAULT);
 
-            pipeline.UseProgram(shader->GetProgram(NX_Shader3D::Variant::SCENE_SHADOW));
+            pipeline.UseProgram(shader->GetProgram(NX_Shader3D::Variant::SHADOW));
             pipeline.SetCullMode(INX_GPU_GetCullMode(unique.mesh.GetShadowFaceMode(), mat.cull));
 
             shader->BindTextures(pipeline, unique.textures);
@@ -2334,9 +2256,7 @@ void NX_EndCubemap3D()
         // Ensures that the generated images are ready (especially reflection indirect)
         pipeline.MemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-        INX_RenderSceneOpaqueLit(pipeline);
-        INX_RenderSceneOpaqueUnlit(pipeline);
-        INX_RenderSceneTransparent(pipeline);
+        INX_RenderScene(pipeline, DRAW_OPAQUE_LIT, DRAW_OPAQUE_UNLIT, DRAW_TRANSPARENT);
     }
 
     /* --- Generate cubemap mipmaps and cleanup --- */

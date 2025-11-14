@@ -22,10 +22,11 @@
 template <>
 struct INX_ShaderTraits<NX_Shader3D> {
     enum Variant {
-        SCENE_LIT,        // Full PBR lighting
-        SCENE_UNLIT,      // No lighting, just albedo
-        SCENE_PREPASS,    // Depth/normal prepass
-        SCENE_SHADOW,     // Shadow map generation
+        LIT_GENERIC,    // Generic forward, opaque or transparent
+        LIT_PREPASS,    // For opaque lit after pre-pass
+        UNLIT,          // No lighting, just albedo
+        PREPASS,        // Depth/normal prepass
+        SHADOW,         // Shadow map generation
         VARIANT_COUNT
     };
 };
@@ -37,17 +38,18 @@ public:
 public:
     NX_Shader3D(); //< Creates default shader
     NX_Shader3D(const char* vertexCode, const char* fragmentCode);
-    const gpu::Program& GetProgramFromShadingMode(NX_ShadingMode shading) const;
+    const gpu::Program& GetProgramFromMaterial(const NX_Material& material, bool prepass = false) const;
 };
 
-inline const gpu::Program& NX_Shader3D::GetProgramFromShadingMode(NX_ShadingMode shading) const
+inline const gpu::Program& NX_Shader3D::GetProgramFromMaterial(const NX_Material& material, bool prepass) const
 {
-    Variant variant = Variant::SCENE_LIT;
+    Variant variant = Variant::LIT_GENERIC;
 
-    switch (shading) {
-    case NX_SHADING_LIT: variant = Variant::SCENE_LIT; break;
-    case NX_SHADING_UNLIT: variant = Variant::SCENE_UNLIT; break;
-    default: break;
+    if (material.shading == NX_SHADING_UNLIT) {
+        variant = Variant::UNLIT;
+    }
+    else if (prepass) {
+        variant = Variant::LIT_PREPASS;
     }
 
     return INX_Shader::GetProgram(variant);
