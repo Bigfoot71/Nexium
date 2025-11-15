@@ -35,7 +35,11 @@ public:
     int GetWidth(int level) const noexcept;
     int GetHeight(int level) const noexcept;
     NX_IVec2 GetDimensions(int level) const noexcept;
+    const gpu::Texture& GetLevel(int level) noexcept;
     const gpu::Texture& GetTexture() const noexcept;
+
+    template <std::invocable<> Func>
+    void RenderLevel(const gpu::Pipeline& pipeline, int level, Func&& f) noexcept;
 
     template <std::invocable<int, int> Func>
     void Downsample(const gpu::Pipeline& pipeline, int firstLevel, Func&& f) noexcept;
@@ -119,9 +123,25 @@ inline NX_IVec2 MipBuffer::GetDimensions(int level) const noexcept
     return NX_IVEC2(w, h);
 }
 
+inline const gpu::Texture& MipBuffer::GetLevel(int level) noexcept
+{
+    mTexture.SetMipLevelRange(level, level);
+    return mTexture;
+}
+
 inline const gpu::Texture& MipBuffer::GetTexture() const noexcept
 {
     return mTexture;
+}
+
+template <std::invocable<> Func>
+inline void MipBuffer::RenderLevel(const gpu::Pipeline& pipeline, int level, Func&& f) noexcept
+{
+    mFramebuffer.SetColorAttachmentTarget(0, 0, 0, level);
+    pipeline.BindFramebuffer(mFramebuffer);
+    pipeline.SetViewport(GetDimensions(level));
+
+    f();
 }
 
 template <std::invocable<int, int> Func>
