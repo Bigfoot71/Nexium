@@ -544,13 +544,15 @@ void main()
 
     /* --- Sample normal and compute view direction vector --- */
 
-#if defined(PREPASS)
-    vec2 No = texelFetch(uTexNormalBuffer, ivec2(gl_FragCoord.xy), 0).rg;
-    vec3 N = normalize(M_DecodeOctahedral(No));
-#else
+    // REVIEW: MSAA... The re-sampling is annoying...
+
+//#if defined(PREPASS)
+//    vec2 No = texelFetch(uTexNormalBuffer, ivec2(gl_FragCoord.xy), 0).rg;
+//    vec3 N = normalize(M_DecodeOctahedral(No));
+//#else
     vec3 N = M_NormalScale(NORMAL_MAP.rgb * 2.0 - 1.0, NORMAL_SCALE);
     N = normalize(vInt.tbn * N) * (gl_FrontFacing ? 1.0 : -1.0);
-#endif
+//#endif
 
     vec3 V = normalize(uFrustum.position - vInt.position);
 
