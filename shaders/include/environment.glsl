@@ -30,7 +30,7 @@ struct Environment {
     float ssaoRadius;
     float ssaoPower;
     float ssaoBias;
-    int ssaoEnabled;
+    bool ssaoEnabled;
     float bloomFilterRadius;
     float bloomStrength;
     int bloomMode;

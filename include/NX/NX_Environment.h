@@ -43,7 +43,7 @@
         .bias = 0.025f,                                 \
         .enabled = false                                \
     },                                                  \
-    .bloom {                                            \
+    .bloom = {                                          \
         .mode = NX_BLOOM_DISABLED,                      \
         .threshold = 0.0f,                              \
         .softThreshold = 0.5f,                          \

@@ -372,10 +372,11 @@ embed_shaders(${PROJECT_NAME}
     "${NX_ROOT_PATH}/shaders/process/cubemap_irradiance.comp"
     "${NX_ROOT_PATH}/shaders/process/cubemap_prefilter.comp"
     "${NX_ROOT_PATH}/shaders/process/cubemap_skybox.frag"
-    "${NX_ROOT_PATH}/shaders/process/downsampling.frag"
-    "${NX_ROOT_PATH}/shaders/process/upsampling.frag"
-    "${NX_ROOT_PATH}/shaders/process/ssao_bilateral_blur.frag"
+    "${NX_ROOT_PATH}/shaders/process/bloom_composite.frag"
+    "${NX_ROOT_PATH}/shaders/process/bloom_downsample.frag"
+    "${NX_ROOT_PATH}/shaders/process/bloom_upsample.frag"
     "${NX_ROOT_PATH}/shaders/process/ssao_pass.frag"
+    "${NX_ROOT_PATH}/shaders/process/edge_aware_blur.frag"
     "${NX_ROOT_PATH}/shaders/process/screen_quad.frag"
     "${NX_ROOT_PATH}/shaders/overlay/shape.vert"
     "${NX_ROOT_PATH}/shaders/overlay/shape.frag"
@@ -388,7 +389,6 @@ embed_shaders(${PROJECT_NAME}
     "${NX_ROOT_PATH}/shaders/scene/scene_lit.frag"
     "${NX_ROOT_PATH}/shaders/scene/scene_unlit.frag"
     "${NX_ROOT_PATH}/shaders/scene/scene_shadow.frag"
-    "${NX_ROOT_PATH}/shaders/scene/bloom_post.frag"
     "${NX_ROOT_PATH}/shaders/scene/output.frag"
 )
 

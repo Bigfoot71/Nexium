@@ -251,8 +251,8 @@ struct INX_SceneState {
     gpu::Framebuffer framebuffer{};
 
     /** Additionnal framebuffers */
-    gpu::SwapBuffer swapPostProcess{};      //< Ping-pong buffer used during scene post process
-    gpu::SwapBuffer swapAuxiliary{};        //< Secondary ping-pong buffer in half resolution
+    gpu::SwapBuffer swapFramebuffer{};      //< Ping-pong buffer used during scene post process
+    gpu::SwapBuffer swapHalfRes{};          //< Secondary ping-pong buffer in half resolution
     gpu::MipBuffer mipChain{};              //< Mipchain, primarily used for down/up sampling the bloom
 
     /** Post processing data */
@@ -447,13 +447,13 @@ static void INX_InitSceneState(INX_SceneState* scene, const NX_AppDesc* desc)
 
     /* --- Create swap buffers --- */
 
-    scene->swapPostProcess = gpu::SwapBuffer(
+    scene->swapFramebuffer = gpu::SwapBuffer(
         desc->render3D.resolution.x,
         desc->render3D.resolution.y,
         GL_RGB16F
     );
 
-    scene->swapAuxiliary = gpu::SwapBuffer(
+    scene->swapHalfRes = gpu::SwapBuffer(
         desc->render3D.resolution.x / 2,
         desc->render3D.resolution.y / 2,
         GL_RGB16F
@@ -1673,7 +1673,7 @@ static void INX_RenderSceneOpaqueLit(const gpu::Pipeline& pipeline)
     {
         /* --- Set viewport to auxiliary framebuffer size --- */
 
-        pipeline.SetViewport(scene.swapAuxiliary.GetTarget());
+        pipeline.SetViewport(scene.swapHalfRes.GetTarget());
 
         /* --- Generate ambient occlusion --- */
 
@@ -1682,27 +1682,28 @@ static void INX_RenderSceneOpaqueLit(const gpu::Pipeline& pipeline)
         pipeline.BindTexture(2, INX_Assets.Get(INX_TextureAsset::SSAO_KERNEL)->gpu);
         pipeline.BindTexture(3, INX_Assets.Get(INX_TextureAsset::SSAO_NOISE)->gpu);
 
-        pipeline.BindFramebuffer(scene.swapAuxiliary.GetTarget());
+        pipeline.BindFramebuffer(scene.swapHalfRes.GetTarget());
         pipeline.UseProgram(INX_Programs.GetSsaoPass());
         pipeline.Draw(GL_TRIANGLES, 3);
-        scene.swapAuxiliary.Swap();
+        scene.swapHalfRes.Swap();
 
         /* --- Blur ambient occlusion --- */
 
-        pipeline.UseProgram(INX_Programs.GetSsaoBilateralBlur());
-        pipeline.BindTexture(1, scene.targetDepth);
+        pipeline.UseProgram(INX_Programs.GetEdgeAwareBlur());
+        pipeline.BindTexture(1, scene.targetNormal);
+        pipeline.BindTexture(2, scene.targetDepth);
 
-        pipeline.BindFramebuffer(scene.swapAuxiliary.GetTarget());
-        pipeline.BindTexture(0, scene.swapAuxiliary.GetSource());
-        pipeline.SetUniformFloat2(0, NX_VEC2(1.0f / scene.swapAuxiliary.GetSource().GetWidth(), 0.0f));
+        pipeline.BindFramebuffer(scene.swapHalfRes.GetTarget());
+        pipeline.BindTexture(0, scene.swapHalfRes.GetSource());
+        pipeline.SetUniformFloat2(0, NX_VEC2(1.0f, 0.0f));
         pipeline.Draw(GL_TRIANGLES, 3);
-        scene.swapAuxiliary.Swap();
+        scene.swapHalfRes.Swap();
 
-        pipeline.BindFramebuffer(scene.swapAuxiliary.GetTarget());
-        pipeline.BindTexture(0, scene.swapAuxiliary.GetSource());
-        pipeline.SetUniformFloat2(0, NX_VEC2(0.0f, 1.0f / scene.swapAuxiliary.GetSource().GetHeight()));
+        pipeline.BindFramebuffer(scene.swapHalfRes.GetTarget());
+        pipeline.BindTexture(0, scene.swapHalfRes.GetSource());
+        pipeline.SetUniformFloat2(0, NX_VEC2(0.0f, 1.0f));
         pipeline.Draw(GL_TRIANGLES, 3);
-        scene.swapAuxiliary.Swap();
+        scene.swapHalfRes.Swap();
 
         /* --- Reset viewport to scene framebuffer size --- */
 
@@ -1728,7 +1729,7 @@ static void INX_RenderSceneOpaqueLit(const gpu::Pipeline& pipeline)
     pipeline.BindTexture(9, shadowing.target[NX_LIGHT_OMNI]);
 
     pipeline.BindTexture(10, scene.targetNormal);
-    pipeline.BindTexture(11, scene.swapAuxiliary.GetSource());
+    pipeline.BindTexture(11, scene.swapHalfRes.GetSource());
 
     pipeline.SetDepthMode(gpu::DepthMode::TestOnly);
     pipeline.SetDepthFunc(gpu::DepthFunc::Equal);
@@ -1752,9 +1753,7 @@ static void INX_RenderSceneOpaqueLit(const gpu::Pipeline& pipeline)
 
         pipeline.SetUniformUint1(0, unique.sharedDataIndex);
         pipeline.SetUniformUint1(1, unique.uniqueDataIndex);
-
         pipeline.SetUniformFloat2(2, NX_IVec2Rcp(scene.framebuffer.GetDimensions()));
-        pipeline.SetUniformInt1(3, scene.ssaoEnabled);
 
         INX_Draw3D(pipeline, unique);
     }
@@ -1835,7 +1834,7 @@ static const gpu::Texture& INX_PostBloom(const gpu::Texture& source)
 
     /* --- Downsampling of the source --- */
 
-    pipeline.UseProgram(INX_Programs.GetDownsampling());
+    pipeline.UseProgram(INX_Programs.GetBloomDownsample());
 
     scene.mipChain.Downsample(pipeline, 0, [&](int targetLevel, int sourceLevel) {
         const gpu::Texture& texSource = (targetLevel == 0) ? source : scene.mipChain.GetTexture();
@@ -1857,7 +1856,7 @@ static const gpu::Texture& INX_PostBloom(const gpu::Texture& source)
 
     /* --- Upsampling of the source --- */
 
-    pipeline.UseProgram(INX_Programs.GetUpsampling());
+    pipeline.UseProgram(INX_Programs.GetBloomUpsample());
     pipeline.SetBlendMode(gpu::BlendMode::Additive);
 
     scene.mipChain.Upsample(pipeline, [&](int targetLevel, int sourceLevel) {
@@ -1868,19 +1867,19 @@ static const gpu::Texture& INX_PostBloom(const gpu::Texture& source)
 
     /* --- Applying bloom to the scene --- */
 
-    pipeline.BindFramebuffer(scene.swapPostProcess.GetTarget());
-    pipeline.SetViewport(scene.swapPostProcess.GetTarget());
+    pipeline.BindFramebuffer(scene.swapFramebuffer.GetTarget());
+    pipeline.SetViewport(scene.swapFramebuffer.GetTarget());
 
-    pipeline.UseProgram(INX_Programs.GetBloomPost(scene.bloomMode));
+    pipeline.UseProgram(INX_Programs.GetBloomComposite(scene.bloomMode));
 
     pipeline.BindTexture(0, source);
     pipeline.BindTexture(1, scene.mipChain.GetTexture());
 
     pipeline.Draw(GL_TRIANGLES, 3);
 
-    scene.swapPostProcess.Swap();
+    scene.swapFramebuffer.Swap();
 
-    return scene.swapPostProcess.GetSource();
+    return scene.swapFramebuffer.GetSource();
 }
 
 static void INX_PostFinal(const gpu::Texture& source)

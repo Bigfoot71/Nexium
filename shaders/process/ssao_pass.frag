@@ -77,7 +77,7 @@ void main()
     /* --- Get current depth and view-space position --- */
 
     float depth = texture(uTexDepth, vTexCoord).r;
-    if (depth > 0.9999) {
+    if (depth > 0.99999) {
         FragOcclusion = 1.0;
         return;
     }

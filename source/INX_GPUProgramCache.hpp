@@ -11,7 +11,6 @@
 
 #include <NX/NX_Environment.h>
 
-#include "./Detail/Util/Memory.hpp"
 #include "./Detail/GPU/Program.hpp"
 #include "./Detail/GPU/Shader.hpp"
 
@@ -30,23 +29,29 @@ enum INX_ProgramID : uint16_t {
     /** Scene */
     INX_PROG_LIGHT_CULLING,
     INX_PROG_SKYBOX,
-    /** Bloom post */
-    INX_PROG_BLOOM_POST_MIX,
-    INX_PROG_BLOOM_POST_ADDITIVE,
-    INX_PROG_BLOOM_POST_SCREEN,
+    /** Bloom generation */
+    INX_PROG_BLOOM_DOWNSAMPLE,
+    INX_PROG_BLOOM_UPSAMPLE,
+    /** Bloom composite */
+    INX_PROG_BLOOM_COMPOSITE_MIX,
+    INX_PROG_BLOOM_COMPOSITE_ADDITIVE,
+    INX_PROG_BLOOM_COMPOSITE_SCREEN,
+    /** Screen space effects */
+    INX_PROG_SSAO_PASS,
+    INX_PROG_SSGI_PASS,
+    /** Screen space post process */
+    INX_PROG_EDGE_AWARE_ATROUS,
+    INX_PROG_EDGE_AWARE_UPSAMPLE,
+    INX_PROG_EDGE_AWARE_BLUR,
     /** Output */
     INX_PROG_OUTPUT_LINEAR,
     INX_PROG_OUTPUT_REINHARD,
     INX_PROG_OUTPUT_FILMIC,
     INX_PROG_OUTPUT_ACES,
     INX_PROG_OUTPUT_AGX,
-    /** SSAO */
-    INX_PROG_SSAO_BILATERAL_BLUR,
-    INX_PROG_DOWNSAMPLING,
-    INX_PROG_UPSAMPLING,
-    INX_PROG_SSAO_PASS,
-    /** Overlay/screen */
+    /** Overlay */
     INX_PROG_OVERLAY,
+    /** Generic */
     INX_PROG_SCREEN_QUAD,
     /** Sentinel */
     INX_PROG_COUNT
@@ -68,13 +73,19 @@ public:
     gpu::Program& GetLightCulling();
     gpu::Program& GetSkybox();
 
-    /** Scene post process programs */
-    gpu::Program& GetBloomPost(NX_Bloom mode);
-    gpu::Program& GetOutput(NX_Tonemap tonemap);
-    gpu::Program& GetSsaoBilateralBlur();
-    gpu::Program& GetDownsampling();
-    gpu::Program& GetUpsampling();
+    /** Bloom programs */
+    gpu::Program& GetBloomComposite(NX_Bloom mode);
+    gpu::Program& GetBloomDownsample();
+    gpu::Program& GetBloomUpsample();
+
+    /** Screen space effects */
     gpu::Program& GetSsaoPass();
+
+    /** Screen space post process */
+    gpu::Program& GetEdgeAwareBlur();
+
+    /** Scene output program */
+    gpu::Program& GetOutput(NX_Tonemap tonemap);
 
     /** Overlay */
     gpu::Program& GetOverlay();

@@ -24,11 +24,11 @@
 #include <shaders/skybox.vert.h>
 #include <shaders/skybox.frag.h>
 
-#include <shaders/ssao_bilateral_blur.frag.h>
-#include <shaders/downsampling.frag.h>
+#include <shaders/edge_aware_blur.frag.h>
+#include <shaders/bloom_composite.frag.h>
+#include <shaders/bloom_downsample.frag.h>
+#include <shaders/bloom_upsample.frag.h>
 #include <shaders/screen_quad.frag.h>
-#include <shaders/upsampling.frag.h>
-#include <shaders/bloom_post.frag.h>
 #include <shaders/ssao_pass.frag.h>
 #include <shaders/output.frag.h>
 
@@ -179,22 +179,22 @@ gpu::Program& INX_GPUProgramCache::GetSkybox()
     return program;
 }
 
-gpu::Program& INX_GPUProgramCache::GetBloomPost(NX_Bloom mode)
+gpu::Program& INX_GPUProgramCache::GetBloomComposite(NX_Bloom mode)
 {
     SDL_assert(mode != NX_BLOOM_DISABLED);
 
-    INX_ProgramID id{INX_PROG_BLOOM_POST_MIX};
+    INX_ProgramID id{INX_PROG_BLOOM_COMPOSITE_MIX};
     const char* bloomMode = "BLOOM_MIX";
 
     switch (mode) {
     case NX_BLOOM_MIX:
         break;
     case NX_BLOOM_ADDITIVE:
-        id = INX_PROG_BLOOM_POST_ADDITIVE;
+        id = INX_PROG_BLOOM_COMPOSITE_ADDITIVE;
         bloomMode = "BLOOM_ADDITIVE";
         break;
     case NX_BLOOM_SCREEN:
-        id = INX_PROG_BLOOM_POST_SCREEN;
+        id = INX_PROG_BLOOM_COMPOSITE_SCREEN;
         bloomMode = "BLOOM_SCREEN";
         break;
     default:
@@ -212,10 +212,98 @@ gpu::Program& INX_GPUProgramCache::GetBloomPost(NX_Bloom mode)
         gpu::Shader(
             GL_FRAGMENT_SHADER,
             INX_ShaderDecoder(
-                BLOOM_POST_FRAG,
-                BLOOM_POST_FRAG_SIZE
+                BLOOM_COMPOSITE_FRAG,
+                BLOOM_COMPOSITE_FRAG_SIZE
             ),
             {bloomMode}
+        )
+    );
+
+    return program;
+}
+
+gpu::Program& INX_GPUProgramCache::GetBloomDownsample()
+{
+    gpu::Program& program = mPrograms[INX_PROG_BLOOM_DOWNSAMPLE];
+
+    if (program.IsValid()) {
+        return program;
+    }
+
+    program = gpu::Program(
+        GetVertexShaderScreen(),
+        gpu::Shader(
+            GL_FRAGMENT_SHADER,
+            INX_ShaderDecoder(
+                BLOOM_DOWNSAMPLE_FRAG,
+                BLOOM_DOWNSAMPLE_FRAG_SIZE
+            )
+        )
+    );
+
+    return program;
+}
+
+gpu::Program& INX_GPUProgramCache::GetBloomUpsample()
+{
+    gpu::Program& program = mPrograms[INX_PROG_BLOOM_UPSAMPLE];
+
+    if (program.IsValid()) {
+        return program;
+    }
+
+    program = gpu::Program(
+        GetVertexShaderScreen(),
+        gpu::Shader(
+            GL_FRAGMENT_SHADER,
+            INX_ShaderDecoder(
+                BLOOM_UPSAMPLE_FRAG,
+                BLOOM_UPSAMPLE_FRAG_SIZE
+            )
+        )
+    );
+
+    return program;
+}
+
+gpu::Program& INX_GPUProgramCache::GetSsaoPass()
+{
+    gpu::Program& program = mPrograms[INX_PROG_SSAO_PASS];
+
+    if (program.IsValid()) {
+        return program;
+    }
+
+    program = gpu::Program(
+        GetVertexShaderScreen(),
+        gpu::Shader(
+            GL_FRAGMENT_SHADER,
+            INX_ShaderDecoder(
+                SSAO_PASS_FRAG,
+                SSAO_PASS_FRAG_SIZE
+            )
+        )
+    );
+
+    return program;
+}
+
+gpu::Program& INX_GPUProgramCache::GetEdgeAwareBlur()
+{
+    gpu::Program& program = mPrograms[INX_PROG_EDGE_AWARE_BLUR];
+
+    if (program.IsValid()) {
+        return program;
+    }
+
+    program = gpu::Program(
+        GetVertexShaderScreen(),
+        gpu::Shader(
+            GL_FRAGMENT_SHADER,
+            INX_ShaderDecoder(
+                EDGE_AWARE_BLUR_FRAG,
+                EDGE_AWARE_BLUR_FRAG_SIZE
+            )
         )
     );
 
@@ -263,94 +351,6 @@ gpu::Program& INX_GPUProgramCache::GetOutput(NX_Tonemap tonemap)
     );
 
     program = gpu::Program(GetVertexShaderScreen(), frag);
-
-    return program;
-}
-
-gpu::Program& INX_GPUProgramCache::GetSsaoBilateralBlur()
-{
-    gpu::Program& program = mPrograms[INX_PROG_SSAO_BILATERAL_BLUR];
-
-    if (program.IsValid()) {
-        return program;
-    }
-
-    program = gpu::Program(
-        GetVertexShaderScreen(),
-        gpu::Shader(
-            GL_FRAGMENT_SHADER,
-            INX_ShaderDecoder(
-                SSAO_BILATERAL_BLUR_FRAG,
-                SSAO_BILATERAL_BLUR_FRAG_SIZE
-            )
-        )
-    );
-
-    return program;
-}
-
-gpu::Program& INX_GPUProgramCache::GetDownsampling()
-{
-    gpu::Program& program = mPrograms[INX_PROG_DOWNSAMPLING];
-
-    if (program.IsValid()) {
-        return program;
-    }
-
-    program = gpu::Program(
-        GetVertexShaderScreen(),
-        gpu::Shader(
-            GL_FRAGMENT_SHADER,
-            INX_ShaderDecoder(
-                DOWNSAMPLING_FRAG,
-                DOWNSAMPLING_FRAG_SIZE
-            )
-        )
-    );
-
-    return program;
-}
-
-gpu::Program& INX_GPUProgramCache::GetUpsampling()
-{
-    gpu::Program& program = mPrograms[INX_PROG_UPSAMPLING];
-
-    if (program.IsValid()) {
-        return program;
-    }
-
-    program = gpu::Program(
-        GetVertexShaderScreen(),
-        gpu::Shader(
-            GL_FRAGMENT_SHADER,
-            INX_ShaderDecoder(
-                UPSAMPLING_FRAG,
-                UPSAMPLING_FRAG_SIZE
-            )
-        )
-    );
-
-    return program;
-}
-
-gpu::Program& INX_GPUProgramCache::GetSsaoPass()
-{
-    gpu::Program& program = mPrograms[INX_PROG_SSAO_PASS];
-
-    if (program.IsValid()) {
-        return program;
-    }
-
-    program = gpu::Program(
-        GetVertexShaderScreen(),
-        gpu::Shader(
-            GL_FRAGMENT_SHADER,
-            INX_ShaderDecoder(
-                SSAO_PASS_FRAG,
-                SSAO_PASS_FRAG_SIZE
-            )
-        )
-    );
 
     return program;
 }

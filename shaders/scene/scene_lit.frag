@@ -194,7 +194,6 @@ layout(location = 1) uniform uint uDrawUniqueIndex;
 
 #if defined(PREPASS)
 layout(location = 2) uniform vec2 uInvResolution;
-layout(location = 3) uniform bool uSsaoEnabled;
 #endif
 
 /* === Fragments === */
@@ -525,7 +524,7 @@ void main()
     /* --- Get occlusion from SSAO buffer --- */
 
 #if defined(PREPASS)
-    if (uSsaoEnabled) {
+    if (uEnv.ssaoEnabled) {
         float ssao = texture(uTexSsaoBuffer, gl_FragCoord.xy * uInvResolution).r;
         if (uEnv.ssaoPower != 1.0) ssao = pow(ssao, uEnv.ssaoPower);
         OCCLUSION *= mix(1.0, ssao, uEnv.ssaoIntensity);
