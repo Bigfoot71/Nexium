@@ -545,8 +545,8 @@ void main()
     /* --- Sample normal and compute view direction vector --- */
 
 #if defined(PREPASS)
-    vec2 No = texture(uTexNormalBuffer, gl_FragCoord.xy * uInvResolution).rg;
-    vec3 N = M_DecodeOctahedral(No);
+    vec2 No = texelFetch(uTexNormalBuffer, ivec2(gl_FragCoord.xy), 0).rg;
+    vec3 N = normalize(M_DecodeOctahedral(No));
 #else
     vec3 N = M_NormalScale(NORMAL_MAP.rgb * 2.0 - 1.0, NORMAL_SCALE);
     N = normalize(vInt.tbn * N) * (gl_FrontFacing ? 1.0 : -1.0);
